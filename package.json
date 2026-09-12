@@ -1,0 +1,15 @@
+{
+  "name": "icompress-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mass image compressor: a client-side, local-processing web app for batch image compression, resizing and format conversion.",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "echo \"no checks configured yet (added in T04)\" && exit 1",
+    "test": "echo \"no test runner configured yet (added in T04)\" && exit 1"
+  }
+}

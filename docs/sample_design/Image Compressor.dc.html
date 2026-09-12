@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Archivo,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#cf0000;text-decoration:none}
+a:hover{color:#ff3232}
+input[type=range]{accent-color:#cf0000}
+input[type=checkbox]{accent-color:#cf0000}
+button{font-family:inherit}
+::selection{background:#cf0000;color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+<div style="min-height:100vh;height:100vh;display:flex;flex-direction:column;background:#000;overflow:hidden">
+
+  <header style="flex:none;display:flex;align-items:center;gap:16px;padding:0 18px;height:58px;border-bottom:1px solid #242424">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font-size:16px;font-weight:800;letter-spacing:-0.4px;text-transform:uppercase">Compressor</span>
+      <span style="width:6px;height:6px;border-radius:50%;background:#cf0000;display:inline-block"></span>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#7d7d7d;letter-spacing:0.06em;text-transform:uppercase">{{ crumb }}</div>
+    <div style="flex:1"></div>
+    <button onClick="{{ togglePanel }}" style="{{ optionsBtnStyle }}" style-hover="background:#e60505">Options ☰</button>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;position:relative">
+
+    <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #1c1c1c;flex-wrap:wrap">
+        <sc-if value="{{ isGallery }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:baseline;gap:10px;min-width:0">
+            <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.5px">Your Images</h1>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d7d7d">{{ galleryMeta }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notGallery }}">
+          <button onClick="{{ backToGallery }}" style="display:flex;align-items:center;gap:7px;padding:7px 12px;background:#121212;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="border-color:#4a4a4a">← Images</button>
+        </sc-if>
+        <sc-if value="{{ showStepper }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:2px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px">
+            <button onClick="{{ prevImage }}" style="width:28px;height:26px;background:transparent;border:none;border-radius:6px;color:#cfcfcf;font-size:13px;font-weight:700;cursor:pointer" style-hover="background:#1e1e1e;color:#fff">‹</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a8a;padding:0 6px;min-width:52px;text-align:center">{{ counter }}</span>
+            <button onClick="{{ nextImage }}" style="width:28px;height:26px;background:transparent;border:none;border-radius:6px;color:#cfcfcf;font-size:13px;font-weight:700;cursor:pointer" style-hover="background:#1e1e1e;color:#fff">›</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isCrop }}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:11.5px;font-weight:700;color:#a2a2a2;letter-spacing:0.045em;text-transform:uppercase">Output</span>
+            <input value="{{ outW }}" onChange="{{ onCropW }}" style="width:78px;padding:7px 9px;background:#111;border:1px solid #2c2c2c;border-radius:7px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12.5px;text-align:center">
+            <span style="color:#5c5c5c;font-size:12px">×</span>
+            <input value="{{ outH }}" onChange="{{ onCropH }}" style="width:78px;padding:7px 9px;background:#111;border:1px solid #2c2c2c;border-radius:7px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12.5px;text-align:center">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#7d7d7d">px</span>
+          </div>
+        </sc-if>
+        <div style="flex:1"></div>
+        <sc-if value="{{ isGallery }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px">
+            <button onClick="{{ addImage }}" style="padding:7px 12px;background:#121212;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="border-color:#4a4a4a">Add images</button>
+            <button onClick="{{ clearAll }}" style="padding:7px 12px;background:transparent;border:1px solid #232323;border-radius:8px;color:#8a8a8a;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="color:#cf0000;border-color:#3d1313">Clear</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isPreview }}">
+          <button onClick="{{ startCrop }}" style="padding:7px 12px;background:#121212;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="border-color:#4a4a4a">{{ cropBtnLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ isCrop }}">
+          <div style="display:flex;gap:8px">
+            <sc-if value="{{ hasCrop }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ resetCrop }}" style="padding:7px 12px;background:transparent;border:1px solid #232323;border-radius:8px;color:#8a8a8a;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="color:#cf0000;border-color:#3d1313">Remove crop</button>
+            </sc-if>
+            <button onClick="{{ cancelCrop }}" style="padding:7px 12px;background:#121212;border:1px solid #2c2c2c;border-radius:8px;color:#cfcfcf;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="border-color:#4a4a4a;color:#fff">Cancel</button>
+            <button onClick="{{ applyCrop }}" style="padding:7px 14px;background:#cf0000;border:1px solid #cf0000;border-radius:8px;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer" style-hover="background:#e60505">Apply crop</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="flex:1;min-height:0;overflow:auto;padding:18px">
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="height:100%;min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;border:1.5px dashed #303030;border-radius:14px;background:#070707;padding:40px 24px;text-align:center">
+            <div style="font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-1px;line-height:1.1;max-width:16ch">Drop images to compress</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e6e6e;letter-spacing:0.04em">JPEG · PNG · WEBP · AVIF · up to 200 files</div>
+            <button onClick="{{ addImage }}" style="margin-top:4px;padding:12px 22px;background:#cf0000;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer" style-hover="background:#e60505">Select images</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#909090">
+              <span style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#8a8a8a">↗</span>
+              Click an image to preview the result or crop it
+            </div>
+            <div style="{{ gridStyle }}">
+              <sc-for list="{{ images }}" as="img" hint-placeholder-count="6">
+                <div onClick="{{ img.open }}" style="position:relative;border:1px solid #232323;border-radius:12px;overflow:hidden;background:#0b0b0b;cursor:pointer" style-hover="border-color:#4a4a4a">
+                  <div style="height:118px;background:repeating-linear-gradient(135deg,#191919 0 9px,#212121 9px 18px);display:flex;align-items:center;justify-content:center">
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5e5e5e;letter-spacing:0.08em">{{ img.ratio }}</span>
+                  </div>
+                  <div style="padding:9px 10px 11px;display:flex;flex-direction:column;gap:3px">
+                    <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ img.name }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#7d7d7d">{{ img.meta }}</div>
+                  </div>
+                  <sc-if value="{{ img.cropped }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:7px;left:7px;padding:3px 6px;border-radius:5px;background:#2a0505;border:1px solid #cf0000;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.08em;color:#fff">CROPPED</div>
+                  </sc-if>
+                  <button onClick="{{ img.remove }}" style="position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,.7);border:1px solid #333;color:#c9c9c9;font-size:12px;line-height:1;cursor:pointer" style-hover="background:#cf0000;border-color:#cf0000;color:#fff">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ notGallery }}" hint-placeholder-val="{{ false }}">
+          <div style="height:100%;display:flex;flex-direction:column;align-items:center;gap:14px">
+
+            <sc-if value="{{ isPreview }}">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#8a8a8a">{{ origSize }}</span>
+                  <div onClick="{{ toggleTab }}" title="Click to toggle" style="display:flex;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:9px;gap:3px;cursor:pointer;user-select:none" style-hover="border-color:#4a4a4a">
+                    <span style="{{ tabOrigStyle }}">Original</span>
+                    <span style="{{ tabCompStyle }}">Compressed</span>
+                  </div>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#fff">{{ compSize }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#cf0000">{{ reduction }}</span>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e6e6e;letter-spacing:0.02em;text-align:center">{{ transformLine }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isCrop }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:center">
+                <span style="font-size:11.5px;font-weight:700;color:#a2a2a2;letter-spacing:0.045em;text-transform:uppercase">Ratio</span>
+                <div style="display:flex;gap:5px;flex-wrap:wrap">
+                  <sc-for list="{{ ratioChips }}" as="c" hint-placeholder-count="5">
+                    <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <div ref="{{ stageRef }}" style="flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <div ref="{{ frameRef }}" style="{{ frameStyle }}">
+                <div style="{{ imgStyle }}">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5e5e5e;letter-spacing:0.1em;text-transform:uppercase">{{ frameLabel }}</span>
+                </div>
+                <sc-if value="{{ isCrop }}">
+                  <div onPointerDown="{{ dragMove }}" style="{{ cropRectStyle }}">
+                    <div onPointerDown="{{ dragNW }}" style="position:absolute;top:-6px;left:-6px;width:14px;height:14px;border-top:2.5px solid #fff;border-left:2.5px solid #fff;cursor:nwse-resize"></div>
+                    <div onPointerDown="{{ dragNE }}" style="position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-top:2.5px solid #fff;border-right:2.5px solid #fff;cursor:nesw-resize"></div>
+                    <div onPointerDown="{{ dragSW }}" style="position:absolute;bottom:-6px;left:-6px;width:14px;height:14px;border-bottom:2.5px solid #fff;border-left:2.5px solid #fff;cursor:nesw-resize"></div>
+                    <div onPointerDown="{{ dragSE }}" style="position:absolute;bottom:-6px;right:-6px;width:14px;height:14px;border-bottom:2.5px solid #fff;border-right:2.5px solid #fff;cursor:nwse-resize"></div>
+                    <div style="position:absolute;top:6px;left:8px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000">{{ cropBadge }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+
+            <sc-if value="{{ isCrop }}">
+              <div style="flex:none;display:flex;align-items:center;gap:12px;width:min(420px,100%);padding:10px 14px;background:#0b0b0b;border:1px solid #242424;border-radius:10px">
+                <span style="font-size:11.5px;font-weight:700;color:#a2a2a2;letter-spacing:0.045em;text-transform:uppercase">Zoom</span>
+                <input type="range" min="0.1" max="2" step="0.05" value="{{ zoom }}" onChange="{{ onZoom }}" style="flex:1">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#fff;min-width:44px;text-align:right">{{ zoomLabel }}</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showBg }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:none;display:flex;flex-direction:column;gap:9px;width:min(420px,100%);padding:11px 14px;background:#0b0b0b;border:1px solid #242424;border-radius:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:11.5px;font-weight:700;color:#a2a2a2;letter-spacing:0.045em;text-transform:uppercase">Background</span>
+                  <span style="flex:1;font-size:11px;color:#6e6e6e">{{ bgHint }}</span>
+                  <span style="{{ bgPreviewStyle }}"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div style="display:flex;gap:6px">
+                    <sc-for list="{{ bgSwatches }}" as="sw" hint-placeholder-count="3">
+                      <button onClick="{{ sw.onClick }}" title="{{ sw.label }}" style="{{ sw.style }}"></button>
+                    </sc-for>
+                  </div>
+                  <div style="width:1px;height:22px;background:#242424"></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <sc-for list="{{ bgFields }}" as="f" hint-placeholder-count="4">
+                      <label style="display:flex;align-items:center;gap:5px">
+                        <span style="font-size:12px;font-weight:700;color:#a2a2a2">{{ f.label }}</span>
+                        <input value="{{ f.value }}" onChange="{{ f.onChange }}" style="width:46px;padding:6px 7px;background:#111;border:1px solid #2c2c2c;border-radius:6px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:11.5px;text-align:center">
+                      </label>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+
+    <sc-if value="{{ scrimOn }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ togglePanel }}" style="position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:8"></div>
+    </sc-if>
+
+    <aside style="{{ panelStyle }}">
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;padding:10px 14px;background:#060606;border-bottom:1px solid #242424">
+          <button onClick="{{ togglePanel }}" style="padding:7px 12px;background:#141414;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">Hide →</button>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;min-height:0;overflow:auto">
+
+        <section style="padding:18px 16px;border-bottom:1px solid #242424;display:flex;flex-direction:column;gap:13px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <h2 style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#fff">Quality</h2>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e">TARGET</span>
+          </div>
+          <div style="display:flex;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:9px;gap:3px">
+            <button onClick="{{ targetQualityBtn }}" style="{{ segQualStyle }}">Quality</button>
+            <button onClick="{{ targetSizeBtn }}" style="{{ segSizeStyle }}">Size</button>
+          </div>
+
+          <sc-if value="{{ isQualityTarget }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;line-height:0.9;letter-spacing:-1px">{{ quality }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e">10 — 100</span>
+              </div>
+              <input type="range" min="10" max="100" value="{{ quality }}" onChange="{{ onQuality }}" style="width:100%">
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ qualityChips }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isSizeTarget }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input value="{{ sizeVal }}" onChange="{{ onSizeVal }}" style="flex:1;min-width:0;padding:10px 12px;background:#111;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:14px">
+              <div style="display:flex;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px;gap:3px">
+                <button onClick="{{ unitKB }}" style="{{ unitKBStyle }}">KB</button>
+                <button onClick="{{ unitMB }}" style="{{ unitMBStyle }}">MB</button>
+              </div>
+            </div>
+          </sc-if>
+        </section>
+
+        <section style="padding:18px 16px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <h2 style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase">Dimension</h2>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e">PICK ONE</span>
+          </div>
+
+          <sc-if value="{{ hasDimNote }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:9px;padding:10px 11px;background:#0d0505;border:1px solid #3d1313;border-radius:9px">
+              <span style="color:#cf0000;font-weight:800;font-size:12px;line-height:1.45">!</span>
+              <span style="font-size:12px;line-height:1.45;color:#b9b9b9">{{ dimNote }}</span>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <sc-for list="{{ dimRows }}" as="r" hint-placeholder-count="4">
+              <div style="{{ r.rowStyle }}">
+                <div onClick="{{ r.onSelect }}" style="{{ r.headStyle }}">
+                  <span style="{{ r.dotStyle }}"><span style="{{ r.dotInner }}"></span></span>
+                  <span style="flex:1">{{ r.label }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e">{{ r.hint }}</span>
+                </div>
+                <sc-if value="{{ r.showChild }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:0 12px 13px 34px">
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <input value="{{ r.value }}" onChange="{{ r.onValue }}" style="flex:1;min-width:0;padding:9px 11px;background:#111;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px">
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e6e6e">px</span>
+                    </div>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap">
+                      <sc-for list="{{ r.chips }}" as="c" hint-placeholder-count="4">
+                        <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="padding:18px 16px;border-top:1px solid #242424;display:flex;flex-direction:column;gap:11px">
+          <h2 style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase">Format</h2>
+          <select value="{{ format }}" onChange="{{ onFormat }}" style="width:100%;padding:11px 12px;background:#111;border:1px solid #2c2c2c;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:linear-gradient(#111,#111)">
+            <option value="JPEG">JPEG</option>
+            <option value="PNG">PNG</option>
+            <option value="WebP">WebP</option>
+            <option value="AVIF">AVIF</option>
+          </select>
+        </section>
+      </div>
+
+      <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;padding:14px 16px 18px;border-top:1px solid #242424;background:#060606;display:flex;flex-direction:column;gap:8px">
+          <button onClick="{{ download }}" style="width:100%;padding:15px 16px;background:#cf0000;border:none;border-radius:11px;color:#fff;font-size:15.5px;font-weight:800;letter-spacing:-0.2px;cursor:pointer" style-hover="background:#e60505">{{ downloadLabel }}</button>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e;text-align:center">{{ downloadMeta }}</div>
+        </div>
+      </sc-if>
+    </aside>
+  </div>
+
+  <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;z-index:20;padding:12px 14px 16px;border-top:1px solid #242424;background:#060606;display:flex;flex-direction:column;gap:7px">
+      <button onClick="{{ download }}" style="width:100%;padding:15px 16px;background:#cf0000;border:none;border-radius:11px;color:#fff;font-size:15.5px;font-weight:800;letter-spacing:-0.2px;cursor:pointer" style-hover="background:#e60505">{{ downloadLabel }}</button>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e6e6e;text-align:center">{{ downloadMeta }}</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:40;padding:11px 18px;background:#111;border:1px solid #333;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:12px;animation:toastIn .18s ease">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultFormat&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;JPEG&quot;,&quot;PNG&quot;,&quot;WebP&quot;,&quot;AVIF&quot;],&quot;default&quot;:&quot;WebP&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;demoImageCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;thumbSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:168,&quot;min&quot;:120,&quot;max&quot;:260,&quot;step&quot;:4,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Gallery&quot;},&quot;showThumbMeta&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Gallery&quot;}}">
+class Component extends DCLogic {
+  static DEMO = [
+    { name: 'harbour-dawn.jpg', w: 4032, h: 3024, bytes: 5.2e6 },
+    { name: 'studio-portrait.jpg', w: 3000, h: 4500, bytes: 7.8e6 },
+    { name: 'roof-lines.png', w: 2560, h: 1440, bytes: 3.1e6 },
+    { name: 'market-01.jpg', w: 1920, h: 1920, bytes: 2.4e6 },
+    { name: 'ferns.jpg', w: 6000, h: 4000, bytes: 11.4e6 },
+    { name: 'signage.png', w: 1600, h: 900, bytes: 1.2e6 },
+    { name: 'coastline.jpg', w: 5472, h: 3648, bytes: 9.1e6 },
+    { name: 'desk-flatlay.jpg', w: 2048, h: 1365, bytes: 1.9e6 }
+  ];
+
+  state = {
+    mode: 'gallery', active: 0, panelOpen: true, vw: 1400,
+    target: 'quality', quality: 72, sizeVal: '250', sizeUnit: 'KB',
+    dimMode: 'fit', fitVal: '1920', wVal: '1080', hVal: '1080',
+    format: 'WebP', tab: 'compressed',
+    crop: { x: 0.14, y: 0.12, w: 0.58, h: 0.58 }, zoom: 1, ratio: null,
+    images: Component.DEMO.slice(0, 6), toast: '', stageW: 0, stageH: 0,
+    bg: { r: 0, g: 0, b: 0, a: 1 }
+  };
+
+  frameRef = React.createRef();
+
+  stageRef = (el) => {
+    if (this._stageEl === el) return;
+    if (this._ro) { this._ro.disconnect(); this._ro = null; }
+    this._stageEl = el;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      if (Math.abs(r.width - this.state.stageW) > 0.5 || Math.abs(r.height - this.state.stageH) > 0.5) {
+        this.setState({ stageW: r.width, stageH: r.height });
+      }
+    };
+    if (typeof ResizeObserver !== 'undefined') { this._ro = new ResizeObserver(measure); this._ro.observe(el); }
+    measure();
+  };
+
+  componentDidMount() {
+    const sync = () => this.setState({ vw: window.innerWidth });
+    sync();
+    window.addEventListener('resize', sync);
+    this._sync = sync;
+    const n = this.props.demoImageCount, f = this.props.defaultFormat;
+    const patch = {};
+    if (typeof n === 'number') patch.images = Component.DEMO.slice(0, Math.min(n, 8));
+    if (f) patch.format = f;
+    if (Object.keys(patch).length) this.setState(patch);
+  }
+  componentWillUnmount() {
+    if (this._sync) window.removeEventListener('resize', this._sync);
+    if (this._ro) this._ro.disconnect();
+  }
+
+  fmt(b) {
+    if (b >= 1048576) return (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + ' MB';
+    return Math.max(1, Math.round(b / 1024)) + ' KB';
+  }
+  gcdRatio(w, h) {
+    const g = (a, b) => b ? g(b, a % b) : a, d = g(w, h);
+    const rw = w / d, rh = h / d;
+    return (rw > 40 || rh > 40) ? (w / h).toFixed(2) + ':1' : rw + ':' + rh;
+  }
+  active() { return this.state.images[this.state.active] || Component.DEMO[0]; }
+
+  outDims(img) {
+    const s = this.state;
+    const live = s.mode === 'crop' && img === this.active();
+    if (live) {
+      return {
+        w: Math.max(1, Math.round(img.w * s.crop.w / s.zoom)),
+        h: Math.max(1, Math.round(img.h * s.crop.h / s.zoom))
+      };
+    }
+    if (img.cropped) {
+      return {
+        w: Math.max(1, Math.round(img.w * img.cropped.w)),
+        h: Math.max(1, Math.round(img.h * img.cropped.h))
+      };
+    }
+    let w = img.w, h = img.h;
+    if (s.dimMode === 'width') { const nw = +s.wVal || w; h = Math.round(h * nw / w); w = nw; }
+    else if (s.dimMode === 'height') { const nh = +s.hVal || h; w = Math.round(w * nh / h); h = nh; }
+    else if (s.dimMode === 'fit') {
+      const lim = +s.fitVal || 0, long = Math.max(w, h);
+      if (lim && long > lim) { const k = lim / long; w = Math.round(w * k); h = Math.round(h * k); }
+    }
+    return { w: Math.max(1, w), h: Math.max(1, h) };
+  }
+
+  estBytes(img) {
+    const s = this.state;
+    const o = this.outDims(img);
+    const pxScale = Math.min(1, (o.w * o.h) / (img.w * img.h));
+    if (s.target === 'size') {
+      const t = (+s.sizeVal || 0) * (s.sizeUnit === 'MB' ? 1048576 : 1024);
+      return Math.min(img.bytes, t || img.bytes);
+    }
+    const q = s.quality / 100;
+    const fmtK = { JPEG: 1, PNG: 1.7, WebP: 0.68, AVIF: 0.48 }[s.format] || 1;
+    return Math.max(4096, img.bytes * pxScale * (0.1 + 0.8 * q * q) * fmtK);
+  }
+
+  ext() { return { JPEG: 'jpg', PNG: 'png', WebP: 'webp', AVIF: 'avif' }[this.state.format] || 'jpg'; }
+
+  chip(label, active, onClick) {
+    return {
+      label, onClick,
+      style: 'flex:none;padding:6px 11px;border-radius:7px;font-size:12.5px;font-weight:600;letter-spacing:-0.05px;cursor:pointer;'
+        + (active ? 'background:#2a0505;border:1px solid #cf0000;color:#fff' : 'background:#121212;border:1px solid #2c2c2c;color:#c2c2c2')
+    };
+  }
+  seg(active) {
+    return 'flex:1;padding:9px 10px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;'
+      + (active ? 'background:#cf0000;color:#fff' : 'background:transparent;color:#8a8a8a');
+  }
+  tab(active) {
+    return 'padding:7px 15px;border-radius:7px;font-size:12.5px;font-weight:700;'
+      + (active ? 'background:#cf0000;color:#fff' : 'background:transparent;color:#8a8a8a');
+  }
+
+  dimRow(key, label, hint, valueKey, chipDefs, locked) {
+    const s = this.state;
+    const on = s.dimMode === key && !locked;
+    return {
+      label, hint: locked ? '' : hint,
+      rowStyle: 'border-radius:10px;overflow:hidden;'
+        + (on ? 'background:#0d0d0d;border:1px solid #2c2c2c' : 'border:1px solid transparent'),
+      headStyle: 'display:flex;align-items:center;gap:11px;padding:11px 12px;font-size:13.5px;font-weight:600;'
+        + (locked ? 'color:#4d4d4d;cursor:not-allowed' : 'color:#fff;cursor:pointer'),
+      dotStyle: 'flex:none;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;'
+        + (on ? 'border:1.5px solid #cf0000' : 'border:1.5px solid ' + (locked ? '#2a2a2a' : '#3d3d3d')),
+      dotInner: on ? 'width:8px;height:8px;border-radius:50%;background:#cf0000;display:block' : 'display:none',
+      showChild: on && !!valueKey,
+      value: valueKey ? s[valueKey] : '',
+      onValue: valueKey ? (e) => this.setState({ [valueKey]: e.target.value.replace(/[^\d]/g, '') }) : null,
+      chips: (chipDefs || []).map(([l, v]) => this.chip(l + ' ' + v, s[valueKey] === v, () => this.setState({ [valueKey]: v }))),
+      onSelect: locked ? null : () => this.setState({ dimMode: key })
+    };
+  }
+
+  fitRatio(c, r, img) {
+    let w = c.w, h = w * img.w / (r * img.h);
+    if (h > 1) { h = 1; w = r * img.h / img.w; }
+    if (w > 1) { w = 1; h = img.w / (r * img.h); }
+    return { x: Math.max(0, Math.min(c.x, 1 - w)), y: Math.max(0, Math.min(c.y, 1 - h)), w, h };
+  }
+
+  drag(handle) {
+    return (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const el = this.frameRef.current; if (!el) return;
+      const r = el.getBoundingClientRect(), st = { ...this.state.crop }, mx = e.clientX, my = e.clientY;
+      const cl = (v, a, b) => Math.min(b, Math.max(a, v));
+      const move = (ev) => {
+        const dx = (ev.clientX - mx) / r.width, dy = (ev.clientY - my) / r.height;
+        let { x, y, w, h } = st;
+        if (handle === 'move') { x = cl(x + dx, 0, 1 - w); y = cl(y + dy, 0, 1 - h); }
+        else {
+          if (handle.indexOf('w') > -1) { const nx = cl(x + dx, 0, x + w - 0.08); w = w + (x - nx); x = nx; }
+          if (handle.indexOf('n') > -1) { const ny = cl(y + dy, 0, y + h - 0.08); h = h + (y - ny); y = ny; }
+          if (handle.indexOf('e') > -1) w = cl(w + dx, 0.08, 1 - x);
+          if (handle.indexOf('s') > -1) h = cl(h + dy, 0.08, 1 - y);
+          const r = this.state.ratio;
+          if (r) {
+            const im = this.active();
+            h = w * im.w / (r * im.h);
+            if (handle.indexOf('n') > -1) y = st.y + st.h - h;
+            if (handle.indexOf('w') > -1) x = st.x + st.w - w;
+            if (x < 0 || y < 0 || x + w > 1 || y + h > 1 || h < 0.06) return;
+          }
+        }
+        this.setState({ crop: { x, y, w, h } });
+      };
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    };
+  }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2200);
+  }
+
+  goTo(i) {
+    const s = this.state, next = s.images[i];
+    const patch = { active: i };
+    if (s.ratio && next) patch.crop = this.fitRatio(s.crop, s.ratio, next);
+    this.setState(patch);
+  }
+
+  patchActive(patch) {
+    const s = this.state;
+    this.setState({ images: s.images.map((im, i) => i === s.active ? { ...im, ...patch } : im) });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const isMobile = s.vw < 900;
+    const panelOpen = isMobile ? s.panelOpen : true;
+    const img = this.active();
+    const o = this.outDims(img);
+    const comp = this.estBytes(img);
+    const totalIn = s.images.reduce((a, i) => a + i.bytes, 0);
+    const totalOut = s.images.reduce((a, i) => a + this.estBytes(i), 0);
+    const croppedCount = s.images.filter((i) => i.cropped).length;
+    const single = s.images.length === 1;
+    const dimLocked = single && !!s.images[0] && !!s.images[0].cropped;
+    const thumb = this.props.thumbSize || 168;
+    const showMeta = this.props.showThumbMeta !== false;
+    const ar = img.w / img.h;
+    const alphaOK = s.format !== 'JPEG';
+    const bgA = alphaOK ? s.bg.a : 1;
+    const bgCss = 'rgba(' + s.bg.r + ',' + s.bg.g + ',' + s.bg.b + ',' + bgA + ')';
+    const setBg = (k, v) => this.setState({ bg: { ...s.bg, [k]: v } });
+    const swatch = (label, v) => ({
+      label,
+      onClick: () => this.setState({ bg: { ...v } }),
+      style: 'width:26px;height:26px;flex:none;border-radius:7px;cursor:pointer;'
+        + (s.bg.r === v.r && s.bg.g === v.g && s.bg.b === v.b && s.bg.a === v.a ? 'border:2px solid #cf0000;' : 'border:1px solid #3a3a3a;')
+        + (v.a === 0
+          ? 'background-image:repeating-conic-gradient(#3a3a3a 0% 25%,#141414 0% 50%);background-size:9px 9px'
+          : 'background:rgba(' + v.r + ',' + v.g + ',' + v.b + ',' + v.a + ')')
+    });
+    const bgField = (label, key, max, step) => ({
+      label, value: key === 'a' ? s.bg.a : s.bg[key],
+      onChange: (e) => {
+        const n = parseFloat(e.target.value);
+        setBg(key, isNaN(n) ? 0 : Math.max(0, Math.min(max, n)));
+      }
+    });
+
+    return {
+      isMobile, notMobile: !isMobile, isGallery: s.mode === 'gallery', notGallery: s.mode !== 'gallery',
+      isPreview: s.mode === 'preview', isCrop: s.mode === 'crop',
+      isEmpty: s.images.length === 0, showGrid: s.mode === 'gallery' && s.images.length > 0,
+      showStepper: s.mode !== 'gallery' && s.images.length > 1,
+      counter: (s.active + 1) + ' / ' + s.images.length,
+      prevImage: () => this.goTo((s.active - 1 + s.images.length) % s.images.length),
+      nextImage: () => this.goTo((s.active + 1) % s.images.length),
+      scrimOn: isMobile && s.panelOpen,
+      crumb: s.mode === 'gallery' ? (s.images.length + ' selected') : (s.mode === 'crop' ? 'Crop · ' + img.name : 'Preview · ' + img.name),
+      galleryMeta: s.images.length + ' images · ' + this.fmt(totalIn),
+      gridStyle: 'display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(' + thumb + 'px,1fr))',
+      images: s.images.map((im, i) => ({
+        name: im.name, ratio: this.gcdRatio(im.w, im.h), cropped: !!im.cropped,
+        meta: showMeta ? (im.w + '×' + im.h + '  ·  ' + this.fmt(im.bytes)) : '',
+        open: () => this.setState({ mode: 'preview', active: i, tab: 'compressed' }),
+        remove: (e) => { e.stopPropagation(); this.setState({ images: s.images.filter((_, k) => k !== i), active: 0 }); }
+      })),
+
+      origSize: this.fmt(img.bytes), compSize: this.fmt(comp),
+      reduction: Math.max(0, Math.round((1 - comp / img.bytes) * 100)) + '% ↓',
+      transformLine: img.name + '  ' + img.w + '×' + img.h + '  →  ' + img.name.replace(/\.[^.]+$/, '') + '.' + this.ext() + '  ' + o.w + '×' + o.h,
+      tabOrigStyle: this.tab(s.tab === 'original'), tabCompStyle: this.tab(s.tab === 'compressed'),
+      toggleTab: () => this.setState({ tab: s.tab === 'original' ? 'compressed' : 'original' }),
+
+      frameRef: this.frameRef, stageRef: this.stageRef,
+      frameStyle: 'position:relative;flex:none;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;'
+        + (s.mode === 'crop'
+          ? 'background-color:#0b0b0b;background-image:linear-gradient(' + bgCss + ',' + bgCss + '),repeating-conic-gradient(#1d1d1d 0% 25%,#121212 0% 50%);background-size:auto,18px 18px;'
+          : 'background:#0b0b0b;')
+        + (function () {
+        const sw = s.stageW, sh = s.stageH;
+        if (sw > 20 && sh > 20) {
+          const k = Math.min(sw / img.w, sh / img.h);
+          return 'width:' + Math.max(60, Math.round(img.w * k)) + 'px;height:' + Math.max(60, Math.round(img.h * k)) + 'px';
+        }
+        return 'aspect-ratio:' + ar.toFixed(4) + ';max-width:100%;max-height:100%;'
+          + (ar >= 1 ? 'width:100%;height:auto' : 'height:100%;width:auto');
+      })(),
+      imgStyle: 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;'
+        + 'background:repeating-linear-gradient(135deg,#191919 0 12px,#222 12px 24px);'
+        + 'transform:scale(' + (s.mode === 'crop' ? s.zoom : 1) + ');transform-origin:center;'
+        + (s.mode === 'preview' && s.tab === 'compressed' ? 'filter:contrast(1.02) saturate(.97);' : ''),
+      frameLabel: s.mode === 'preview' ? (s.tab === 'original' ? 'original — image placeholder' : 'compressed — image placeholder') : 'image placeholder',
+
+      cropRectStyle: 'position:absolute;cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.74);outline:1.5px solid #cf0000;'
+        + 'left:' + (s.crop.x * 100).toFixed(2) + '%;top:' + (s.crop.y * 100).toFixed(2) + '%;'
+        + 'width:' + (s.crop.w * 100).toFixed(2) + '%;height:' + (s.crop.h * 100).toFixed(2) + '%',
+      cropBadge: o.w + '×' + o.h,
+      dragMove: this.drag('move'), dragNW: this.drag('nw'), dragNE: this.drag('ne'), dragSW: this.drag('sw'), dragSE: this.drag('se'),
+      showBg: s.mode === 'crop' && (s.zoom < 0.999 || s.crop.w / s.zoom > 1 || s.crop.h / s.zoom > 1),
+      bgCss, bgPreviewStyle: 'width:20px;height:20px;border-radius:6px;border:1px solid #3a3a3a;background:' + bgCss,
+      bgSwatches: [swatch('Black', { r: 0, g: 0, b: 0, a: 1 }), swatch('White', { r: 255, g: 255, b: 255, a: 1 })]
+        .concat(alphaOK ? [swatch('Transparent', { r: 0, g: 0, b: 0, a: 0 })] : []),
+      bgFields: [bgField('R', 'r', 255, 1), bgField('G', 'g', 255, 1), bgField('B', 'b', 255, 1)]
+        .concat(alphaOK ? [bgField('A', 'a', 1, 0.05)] : []),
+      bgHint: alphaOK ? 'Fills area outside the image' : 'JPEG has no transparency — pick a fill colour',
+      zoom: s.zoom, zoomLabel: s.zoom.toFixed(2) + '×',
+      onZoom: (e) => this.setState({ zoom: +e.target.value }),
+      outW: o.w, outH: o.h,
+      onCropW: (e) => {
+        const v = +e.target.value; if (!(v > 0)) return;
+        const f = Math.max(0.02, Math.min(1, v * s.zoom / img.w));
+        const c = { ...s.crop, w: f, x: Math.min(s.crop.x, 1 - f) };
+        this.setState({ crop: s.ratio ? this.fitRatio(c, s.ratio, img) : c });
+      },
+      onCropH: (e) => {
+        const v = +e.target.value; if (!(v > 0)) return;
+        const f = Math.max(0.02, Math.min(1, v * s.zoom / img.h));
+        if (s.ratio) {
+          const w = Math.min(1, s.ratio * img.h * f / img.w);
+          this.setState({ crop: this.fitRatio({ ...s.crop, w }, s.ratio, img) });
+        } else this.setState({ crop: { ...s.crop, h: f, y: Math.min(s.crop.y, 1 - f) } });
+      },
+
+      backToGallery: () => this.setState({ mode: 'gallery' }),
+      hasCrop: !!img.cropped,
+      cropBtnLabel: img.cropped ? 'Edit crop' : 'Crop',
+      startCrop: () => { this._snap = { crop: s.crop, zoom: s.zoom, ratio: s.ratio }; this.setState({ mode: 'crop' }); },
+      cancelCrop: () => this.setState({ mode: 'preview', ...(this._snap || {}) }),
+      ratioChips: [['Free', null], ['1:1', 1], ['4:5', 0.8], ['16:9', 16 / 9], ['9:16', 9 / 16]].map(function (d) {
+        return this.chip(d[0], s.ratio === d[1], () => this.setState(d[1] === null ? { ratio: null } : { ratio: d[1], crop: this.fitRatio(s.crop, d[1], img) }));
+      }, this),
+      applyCrop: () => {
+        this.patchActive({ cropped: { w: s.crop.w / s.zoom, h: s.crop.h / s.zoom } });
+        this.flash('Crop applied · ' + o.w + '×' + o.h);
+        this.setState({ mode: 'preview' });
+      },
+      resetCrop: () => { this.patchActive({ cropped: null }); this.flash('Crop removed'); this.setState({ mode: 'preview' }); },
+
+      addImage: () => {
+        const next = Component.DEMO[s.images.length % Component.DEMO.length];
+        this.setState({ images: s.images.concat([{ ...next, name: s.images.length >= 8 ? next.name.replace('.', '-' + s.images.length + '.') : next.name }]) });
+      },
+      clearAll: () => this.setState({ images: [], mode: 'gallery' }),
+      togglePanel: () => this.setState({ panelOpen: !s.panelOpen }),
+      optionsBtnStyle: 'display:flex;align-items:center;gap:7px;padding:9px 15px;background:#cf0000;border:1px solid #cf0000;border-radius:9px;color:#fff;font-size:13.5px;font-weight:800;letter-spacing:-0.1px;cursor:pointer;box-shadow:0 2px 14px rgba(207,0,0,.35);'
+        + (isMobile ? '' : 'display:none'),
+      panelStyle: (isMobile
+        ? 'position:absolute;top:0;right:0;bottom:0;z-index:10;width:min(340px,88vw);transform:translateX(' + (panelOpen ? '0' : '105%') + ');transition:transform .22s ease;box-shadow:-18px 0 40px rgba(0,0,0,.6);'
+        : 'position:relative;flex:none;width:344px;')
+        + 'display:flex;flex-direction:column;background:#060606;border-left:1px solid #242424;min-height:0',
+
+      isQualityTarget: s.target === 'quality', isSizeTarget: s.target === 'size',
+      segQualStyle: this.seg(s.target === 'quality'), segSizeStyle: this.seg(s.target === 'size'),
+      targetQualityBtn: () => this.setState({ target: 'quality' }), targetSizeBtn: () => this.setState({ target: 'size' }),
+      quality: s.quality, onQuality: (e) => this.setState({ quality: +e.target.value }),
+      qualityChips: [
+        this.chip('LOW 40', s.quality === 40, () => this.setState({ quality: 40 })),
+        this.chip('MED 70', s.quality === 70, () => this.setState({ quality: 70 })),
+        this.chip('HIGH 90', s.quality === 90, () => this.setState({ quality: 90 }))
+      ],
+      sizeVal: s.sizeVal, onSizeVal: (e) => this.setState({ sizeVal: e.target.value.replace(/[^\d.]/g, '') }),
+      unitKB: () => this.setState({ sizeUnit: 'KB' }), unitMB: () => this.setState({ sizeUnit: 'MB' }),
+      unitKBStyle: 'padding:7px 11px;border-radius:6px;border:none;font-family:\'JetBrains Mono\',monospace;font-size:11.5px;font-weight:700;cursor:pointer;' + (s.sizeUnit === 'KB' ? 'background:#cf0000;color:#fff' : 'background:transparent;color:#8a8a8a'),
+      unitMBStyle: 'padding:7px 11px;border-radius:6px;border:none;font-family:\'JetBrains Mono\',monospace;font-size:11.5px;font-weight:700;cursor:pointer;' + (s.sizeUnit === 'MB' ? 'background:#cf0000;color:#fff' : 'background:transparent;color:#8a8a8a'),
+
+      hasDimNote: (croppedCount > 0 && s.images.length > 1) || dimLocked,
+      dimNote: dimLocked
+        ? 'This image is cropped — the crop sets its output size, so dimension options are off.'
+        : 'Crop applied to ' + croppedCount + (croppedCount === 1 ? ' image' : ' images') + '. Their crop overrides the setting below; the rest follow it.',
+      dimRows: [
+        this.dimRow('none', 'Original size', '', null, null, dimLocked),
+        this.dimRow('fit', 'Fit within long edge', s.dimMode === 'fit' && !dimLocked ? s.fitVal + 'px' : '', 'fitVal',
+          [['HD', '1280'], ['FHD', '1920'], ['2K', '2560'], ['4K', '3840'], ['IG', '1080']], dimLocked),
+        this.dimRow('width', 'Fixed width', s.dimMode === 'width' && !dimLocked ? s.wVal + 'px' : '', 'wVal',
+          [['IG', '1080'], ['WEB', '1200'], ['MAIL', '800'], ['PRINT', '3000']], dimLocked),
+        this.dimRow('height', 'Fixed height', s.dimMode === 'height' && !dimLocked ? s.hVal + 'px' : '', 'hVal',
+          [['IG', '1350'], ['HD', '720'], ['FHD', '1080']], dimLocked)
+      ],
+
+      format: s.format, onFormat: (e) => this.setState({ format: e.target.value }),
+      download: () => this.flash(s.images.length > 1 ? 'Compressing ' + s.images.length + ' images → ZIP · ' + this.fmt(totalOut) : 'Compressing ' + img.name.replace(/\.[^.]+$/, '') + '.' + this.ext()),
+      downloadLabel: s.images.length > 1 ? 'Compress & Download (' + s.images.length + ')' : 'Compress & Download',
+      downloadMeta: s.images.length > 1
+        ? s.images.length + ' images · ' + s.format.toUpperCase() + ' · ZIP'
+        : s.format.toUpperCase() + ' · ' + o.w + '×' + o.h,
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
