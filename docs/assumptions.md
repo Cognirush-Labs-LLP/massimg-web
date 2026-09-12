@@ -1,0 +1,560 @@
+# Mass Image Compressor Web: Assumptions Register
+
+Every claim the design rests on, its confidence, the evidence behind it, and the test that would settle what is still open.
+
+The purpose is to stop design decisions resting on plausible-sounding but unchecked statements. Several claims early in this project were stated confidently and later refuted by a short test. Those are recorded in §7 rather than quietly deleted, because the pattern of error is itself useful.
+
+## How to use this document
+
+**Confidence** is a judgement about how likely the claim is to hold, given what is known now. It is not the same as status. A claim can be `UNVERIFIED` at 85% because the indirect evidence is strong, or `VERIFIED-TEST` at 90% because the test was run on synthetic data rather than real files.
+
+| Band | Meaning |
+| --- | --- |
+| 95 to 100 | Directly tested in this project, or true by specification |
+| 75 to 94 | Strong indirect evidence. Would be surprising to be wrong |
+| 50 to 74 | Plausible with real doubt. Do not build on it without a test |
+| Below 50 | A guess. Treat any design resting on it as provisional |
+
+**Status** records where the evidence came from.
+
+| Status | Meaning |
+| --- | --- |
+| `TESTED` | Confirmed by running code in this project |
+| `BINARY` | Confirmed by inspecting the shipped WASM binary |
+| `DOC` | Confirmed from primary documentation or specification |
+| `OPEN` | Not yet established |
+| `REFUTED` | Tested and found false |
+
+**Priority.** `P1` blocks architecture. `P2` blocks a requirement or a limit value. `P3` affects quality or polish.
+
+When an entry is settled, update it in place. Do not delete refuted entries. Test measurements in this document come from a Node 22 container on server hardware, single-threaded. Browser and phone figures will differ, and where that matters it is said.
+
+---
+
+## 1. Summary
+
+| ID | Claim | Conf | Status | Pri |
+| --- | --- | --- | --- | --- |
+| A1 | Build is ImageMagick 7.1.2-30 Q8 wasm32 | 100 | TESTED | — |
+| A2 | Delegate list as recorded | 100 | TESTED | — |
+| A3 | Animated WebP and GIF encoding work | 100 | TESTED | — |
+| A4 | APNG unavailable from ImageMagick, ffmpeg delegate | 100 | TESTED | — |
+| A5 | UPNG.js produces valid APNG | 100 | TESTED | — |
+| A6 | apng-optimizer is an optimizer, not an encoder | 100 | TESTED | — |
+| A7 | gifsicle-wasm-browser scope and licence | 95 | DOC | — |
+| A8 | HEIC decoding works | 100 | TESTED | — |
+| A9 | libimagequant is **not** linked into the build | 95 | BINARY | P2 |
+| A10 | UPNG `cnum` quantization is effective | 100 | TESTED | P3 |
+| A11 | HEIC encoding is impossible in this build | 95 | BINARY | — |
+| A12 | Gifsicle's alternative licence permits AGPL v3 use | 90 | DOC | P2 |
+| A13 | Colour often signalled by CICP, not ICC | 95 | TESTED | P2 |
+| B1 | OPFS available across target browsers | 97 | DOC | P1 |
+| B2 | OPFS quota differs sharply by platform | 90 | DOC | P2 |
+| B3 | OPFS unavailable in private browsing | 90 | DOC | P2 |
+| B4 | OPFS download does not materialise in RAM | 60 | OPEN | P1 |
+| B5 | Folder input works across browsers | 75 | OPEN | P2 |
+| B6 | Cross-origin isolation needed for threads | 85 | OPEN | P2 |
+| B7 | x64 build requires memory64 | 80 | TESTED | P2 |
+| B9 | Host can set custom response headers | 70 | OPEN | P2 |
+| C1 | File handles are not backed by memory | 90 | DOC | P1 |
+| C2 | WASM memory is reclaimed after large images | 75 | TESTED | P1 |
+| C3 | Practical per-image and per-batch limits | 30 | OPEN | P2 |
+| C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
+| C5 | Thumbnail generation throughput | 55 | OPEN | P2 |
+| C7 | Animated sources processed incrementally | 45 | OPEN | P2 |
+| C8 | Three WASM modules coexist acceptably | 60 | OPEN | P2 |
+| D1 | Size-target search is affordable | 95 | TESTED | P2 |
+| D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
+| D3 | ICC profiles survive every encoder path | 55 | OPEN | P2 |
+| D4 | EXIF auto-orientation correct for all eight values | 60 | OPEN | P2 |
+| D5 | Transparency detection is cheap | 70 | OPEN | P3 |
+| D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
+| D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
+| D8 | PNG quantization quality via ImageMagick alone | 40 | OPEN | P2 |
+| E1 | Streaming ZIP holds bounded memory | 70 | OPEN | P2 |
+| E2 | `predictLength` is exact | 100 | TESTED | P3 |
+| E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
+
+---
+
+## 2. Toolchain capability
+
+### A1 `TESTED` `100%` Build identity
+
+`@imagemagick/magick-wasm` 0.0.43 is ImageMagick 7.1.2-30, Q8, wasm32. The binary is 14.8 MB uncompressed. Q8 means 8 bits per channel, so decoded pixel cost is width by height by 4 bytes rather than double that.
+
+**Affects.** §9 memory policy, all limit calculations in §5.7.
+
+**Evidence.** `Magick.imageMagickVersion`.
+
+---
+
+### A2 `TESTED` `100%` Delegate list
+
+`bzlib freetype heic jng jp2 jpeg jxl lcms lqr openexr png raw tiff webp xml zlib`.
+
+**Affects.** §5.1 accepted formats, §5.5 colour management via `lcms`, A8, A9.
+
+---
+
+### A3 `TESTED` `100%` Animated WebP and GIF encoding
+
+Six frames at 400×400 written and read back as six. WebP 279 ms, GIF 439 ms, AVIF 1267 ms.
+
+**Affects.** R-F5, R-F6.
+
+**Method.** Build a `MagickImageCollection`, set `format` on each frame, `write(format, cb)`, read back, assert frame count.
+
+**Note.** Animated AVIF was dropped by decision (R-F7), not capability. It encodes correctly. Given D7, the cost argument against it is weaker than it was when the decision was made, and it is reasonable to revisit.
+
+---
+
+### A4 `TESTED` `100%` APNG cannot be written by ImageMagick in WASM
+
+ImageMagick's APNG writer shells out to `ffmpeg`. WASM cannot spawn processes. Every format ImageMagick implements through an external delegate is unavailable for the same reason.
+
+**Evidence.** `FailedToExecuteCommand 'ffmpeg' -nostdin -loglevel error -i '/tmp/magick-...%d.webp' -plays 0 -filter:v`.
+
+---
+
+### A5 `TESTED` `100%` UPNG.js produces valid APNG
+
+**Evidence.** Chunk inventory: `IHDR:1 sRGB:1 acTL:1 fcTL:6 IDAT:1 fdAT:5 IEND:1`. Round-tripped as six frames with correct delays.
+
+---
+
+### A6 `TESTED` `100%` apng-optimizer is an optimizer, not an encoder
+
+Exports only `createOptimizer` and `optAPNG`. APNG in, APNG out. Cannot assemble frames.
+
+**Consequence.** The animated PNG path is ImageMagick for frames, UPNG to assemble, apng-optimizer to shrink.
+
+---
+
+### A7 `DOC` `95%` gifsicle-wasm-browser scope
+
+Gifsicle 1.92 complete, MIT, no dependencies, 368 KB unpacked. GIF in, GIF out only. Exposes `--lossy`, `-O1/-O2/-O3`, `--resize`, `--crop`, `--rotate`.
+
+**Why not 100.** Package metadata and README read, but not executed, since it is browser-only.
+
+**Method to close.** Run it in a Playwright-driven page against a real animated GIF and compare output size against ImageMagick's own GIF writer.
+
+---
+
+### A8 `TESTED` `100%` `P1` HEIC decoding works
+
+**Settled.** A real Apple-produced HEIC (`ftypheic`, brands `mif1 MiHE miaf MiHB heic`, 943,756 bytes) decoded correctly.
+
+| Measure | Result |
+| --- | --- |
+| Decode time | 410 ms for 1500×1000 |
+| Dimensions | 1500×1000, depth 8 |
+| Pixel data | mean 150.51, stddev 31.81, visually confirmed correct |
+| Re-encode to JPEG q80 | 288,841 bytes in 143 ms |
+
+**Consequence.** HEIC is ordinary input on every browser. R-I6, the browser capability check, and the Safari-only fallback are all deleted from Functional Design §5.2. HEIC remains impossible as output (A11).
+
+**Not covered by this test.** A Live Photo or portrait-mode file carrying depth and auxiliary images. Worth testing before release, since those are common on iPhones and are where a decoder is most likely to pick the wrong image item.
+
+---
+
+### A13 `TESTED` `95%` `P2` Colour is often signalled by CICP, not an ICC profile
+
+**Claim.** HEIC and AVIF frequently carry colour information as an `nclx` box (CICP: primaries, transfer function, matrix coefficients) instead of an embedded ICC profile. The colour management requirements are written entirely around ICC profiles and do not cover this.
+
+**Evidence.** The test HEIC contains a `colr` box with `nclx` signalling at offset 533. No `prof` or `rICC` box exists anywhere in the file. ImageMagick correctly reported no ICC profile, which is accurate rather than a failure. The build also exposes a `heic:preserve-cicp` define, confirming this is a handled concern upstream.
+
+**Affects.** R-I12 through R-I16. Preserving "the ICC profile" of such a file preserves nothing. Converting it correctly requires reading the CICP values and either translating them to a profile or carrying them to an output format that can express them.
+
+**Why it matters.** A wide-gamut HEIC signalled through CICP, converted without interpreting it, produces visibly wrong colour. This is the failure mode R-I12 exists to prevent, arriving through a path the requirement does not describe.
+
+**Method to close.** Take a Display P3 HEIC and an sRGB HEIC. Decode both, convert to JPEG and to WebP, and compare rendered colour against the source. Determine whether ImageMagick applies CICP automatically on decode or whether it must be read and applied explicitly.
+
+---
+
+### A9 `BINARY` `95%` `P2` libimagequant is not linked
+
+**Claim.** The build does not contain libimagequant. The single `imagequant` hit is `GetImageQuantizeError`, which is ImageMagick's own function.
+
+**Affects.** R-Q11 and R-Q14. PNG quantization must come from ImageMagick's internal quantizer, or from a second WASM module, and the two differ in quality.
+
+**Method to close.** See D8, which is the decision this feeds.
+
+---
+
+### A10 `TESTED` `100%` `P3` UPNG `cnum` quantization is effective
+
+**Measured**, 8 frames at 400×300 of photographic content:
+
+| cnum | Size | Time |
+| --- | --- | --- |
+| 0 (lossless) | 346.1 KB | 566 ms |
+| 256 | 110.3 KB | 499 ms |
+| 128 | 94.6 KB | 375 ms |
+| 64 | 80.4 KB | 260 ms |
+| 32 | 66.9 KB | 166 ms |
+
+Quantization is both smaller and faster. An earlier test showed no effect, but used flat-colour frames with almost no unique colours, which is why that result was recorded as inconclusive rather than negative.
+
+**Open question this raises.** UPNG quantizes adequately on its own. Whether apng-optimizer earns its place in the bundle is now a measurement, not an assumption.
+
+---
+
+### A12 `DOC` `90%` `P2` Gifsicle's alternative licence permits use in an AGPL v3 project
+
+**Claim.** Gifsicle is GPL v2-only, which conflicts with the project's AGPL v3 licence, but its alternative grant permits use because the project publishes its source.
+
+**Affects.** Whether gifsicle can be shipped at all. Without it, GIF compression falls back to ImageMagick's own writer, which is substantially worse.
+
+**Evidence.** Gifsicle's README states GPL version 2 and only version 2, and separately offers an alternative grant conditioned on source availability.
+
+**Why not higher.** Licence interpretation is not an engineering judgement, and there is a second unresolved question about whether separately compiled WASM modules form one combined work.
+
+**Method to close.** A lawyer reads both licences and the dependency graph. Record the answer in Technical Design §7.2.
+
+---
+
+### A11 `BINARY` `95%` HEIC encoding is impossible
+
+No `x265` or `kvazaar` in the binary. `Encoder_HEVC` exists only as libheif's plugin interface with nothing behind it.
+
+**Affects.** Confirms R-I8. HEIC is never an output format, and this is a capability limit rather than a product choice.
+
+---
+
+## 3. Browser platform
+
+### B1 `DOC` `97%` `P1` OPFS is available across target browsers
+
+Baseline Widely available since March 2023. Chrome 108, Firefox 111, Safari 16.4, Safari on iOS 16.4. Available in Web Workers. Requires a secure context.
+
+**Method to close.** Feature-detect and round-trip a file on each target browser, including iOS Safari.
+
+---
+
+### B2 `DOC` `90%` `P2` OPFS quota differs sharply by platform
+
+Chromium allows an origin up to 60% of total disk. On iOS every browser uses WebKit and is limited to roughly 20% of total disk per origin. Quota-managed storage can be evicted.
+
+**Method to close.** `navigator.storage.estimate()` on each platform, compare against documented figures.
+
+---
+
+### B3 `DOC` `90%` `P2` OPFS unavailable in private browsing
+
+Safari private windows do not provide OPFS. Firefox disables it in private mode.
+
+**Affects.** R-X41 fallback.
+
+---
+
+### B4 `OPEN` `60%` `P1` Downloading an OPFS file does not materialise it in RAM
+
+**Claim.** A `File` from an OPFS handle, passed to `URL.createObjectURL` and an anchor click, streams from disk rather than loading into memory.
+
+**Affects.** Everything about large batches. If false, the memory ceiling on output is the same as in-memory assembly and the OPFS path buys nothing at the download step.
+
+**Why only 60.** It is the behaviour the API implies and the one implementers would want, but it is an implementation detail rather than a specified guarantee, and it may differ between engines. This is the largest single unknown in the project.
+
+**Method.** Write 1 GB, then 3 GB, into OPFS in chunks. Trigger a download. Watch tab memory in the browser task manager. Pass condition: peak stays far below file size. Test Chrome, Firefox, Safari desktop and iOS Safari separately.
+
+**Fallback if false.** Chrome uses `showSaveFilePicker` with `createWritable`. Other browsers get a hard batch cap from measured in-memory assembly.
+
+---
+
+### B5 `OPEN` `75%` `P2` Folder input works across browsers
+
+`<input webkitdirectory>` supported in Chrome, Firefox and Safari, each file carrying a usable `webkitRelativePath`. Dropped folders traversable with `DataTransferItem.webkitGetAsEntry`.
+
+**Why not higher.** Widely used, but the prefix signals a non-standard path, and iOS Safari's behaviour with folders is doubtful. R-I31 exists precisely because this may not hold everywhere.
+
+**Method.** On each browser, select a nested folder and log every `webkitRelativePath`. Drop the same folder and traverse, comparing the two file lists. Record iOS Safari explicitly.
+
+---
+
+### B6 `OPEN` `85%` `P2` Cross-origin isolation required for threads
+
+A threaded WASM build needs `SharedArrayBuffer`, which needs COOP and COEP.
+
+**Method.** Determine whether the chosen build is threaded. If it is, deploy with and without the headers and record what breaks.
+
+---
+
+### B7 `TESTED` `80%` `P2` The x64 build requires memory64
+
+The x64 build failed to instantiate under Node 22 in this container, consistent with a memory64 requirement. The x86 build is wasm32 with a roughly 4 GB linear memory ceiling.
+
+**Why not higher.** The failure is consistent with memory64 but the error was not conclusive on its own.
+
+**Method.** Attempt instantiation of the x64 build in each target browser and record support and the ceiling reached.
+
+---
+
+### B9 `OPEN` `70%` `P2` The host can set custom response headers
+
+Hostinger allows response headers on a static site via `.htaccess` or equivalent.
+
+**Affects.** B6 directly, and cache-control on the large WASM payloads.
+
+**Why only 70.** Shared hosting varies, and some plans ignore directives silently, which is worse than refusing them.
+
+**Method.** Deploy with `.htaccess` setting COOP and COEP. Fetch and inspect response headers, then check `crossOriginIsolated` in the page. Repeat for long `Cache-Control` on a `.wasm`.
+
+---
+
+## 4. Memory and scale
+
+### C1 `DOC` `90%` `P1` File handles are not backed by memory
+
+Holding hundreds or thousands of `File` objects costs kilobytes. They are lazy references to bytes on disk; memory is consumed only on an explicit read.
+
+**Method.** Select 1000 files, hold the array, measure tab memory before and after, then read one and measure again.
+
+---
+
+### C2 `TESTED` `75%` `P1` WASM memory is reclaimed after large images
+
+**Measured.** Five consecutive encodes of a 1600×1200 image, disposing between each. Resident memory held flat at 286 MB and external memory did not grow.
+
+**Why only 75.** Node's resident memory is a poor proxy for the browser's WASM heap, and 1600×1200 is modest. The important case is a 50 megapixel image on a phone, which this does not touch.
+
+**Method to close.** In a browser, process images of increasing size, disposing between each, reading `WebAssembly.Memory.prototype.buffer.byteLength` and tab memory. Pass condition: the figure returns near its starting level. If not, measure how many large images can be processed before failure and use that as the worker recycle interval.
+
+---
+
+### C3 `OPEN` `30%` `P2` Practical per-image and per-batch limits
+
+The values in §5.7 are placeholders. The 200-file limit is inherited from the original design draft and was never measured.
+
+**Method.** On each platform, process images of increasing megapixel count until failure. Repeat varying animated frame count and frame size independently, since the two multiply. Repeat for batch size. Derive caps with a margin, lower on iOS.
+
+---
+
+### C4 `OPEN` `25%` `P1` iOS Safari termination threshold
+
+iOS Safari kills tabs on memory pressure without a catchable error, so rejection must be preventive.
+
+**Why so low.** No figure exists yet, and it varies by device and iOS version.
+
+**Method.** On a real iPhone, process progressively larger batches until the tab reloads. Record the threshold and whether any error surfaces first. Repeat on an older low-memory device, not only a current model.
+
+---
+
+### C5 `OPEN` `55%` `P2` Thumbnail generation throughput
+
+`createImageBitmap` with `resizeWidth` decodes and downscales natively, fast enough for lazy per-tile generation and much faster than the WASM path.
+
+**Affects.** R-G8's threshold, and whether the grid view is viable at all for large batches.
+
+**Method.** Time both paths over 50 photographs of mixed size, on desktop and a mid-range phone. Derive the tile count at which eager generation becomes unacceptable.
+
+---
+
+### C7 `OPEN` `45%` `P2` Animated sources can be processed without holding every frame
+
+**Why low.** ImageMagick's collection model reads all frames into a collection, which suggests the opposite. If peak memory scales with frame count, the animated frame budget in §5.7 must be strict.
+
+**Method.** Process animations of increasing frame count and measure peak memory against frames.
+
+---
+
+### C8 `OPEN` `60%` `P2` Three WASM modules coexist acceptably
+
+ImageMagick is 14.8 MB uncompressed on its own, before gifsicle and the APNG path.
+
+**Affects.** Load strategy, which matters because the landing page has an SEO job.
+
+**Method.** Measure total bundle and peak memory with all three initialised, against lazy initialisation where gifsicle loads only for GIF output and UPNG only for animated PNG. Pass condition for lazy loading: first paint is not delayed by codecs the user may never invoke.
+
+---
+
+## 5. Encoder behaviour
+
+### D1 `TESTED` `95%` `P2` Size-target search cost
+
+**Measured**, binary search to a 150 KB target on a 1600×1200 photographic image:
+
+| Format | Iterations | Total | Result |
+| --- | --- | --- | --- |
+| JPEG | 6 | 1260 ms | q=37, 148.7 KB |
+| WebP | 6 | 3770 ms | q=17, 142.4 KB |
+| AVIF, default speed | 7 | 29317 ms | q=44, 113.3 KB |
+
+Six to seven iterations converges. AVIF at default speed is prohibitive, but see D7: at speed 9 the same search would be roughly 3 seconds, which changes the conclusion. R-Q4 should be decided after re-measuring with the speed define applied.
+
+**Why not 100.** One image, one target, synthetic content. Iteration count is stable; wall time is content-dependent.
+
+---
+
+### D2 `TESTED` `98%` `P2` WebP lossless wins on graphics and loses on photographs
+
+**Measured**, 1600×1200:
+
+| Content | Lossy q70 | Lossless | Winner |
+| --- | --- | --- | --- |
+| Photographic | 518,150 B in 1155 ms | 1,357,564 B in 2862 ms | Lossy, by 2.6x |
+| Flat graphic | 16,586 B in 224 ms | 522 B in 64 ms | Lossless, by 32x |
+
+R-Q6 is strongly justified. On graphics lossless is both 32 times smaller and four times faster. On photographs the lossless attempt wastes 2.9 seconds and is discarded.
+
+**Consequence.** The content gate in R-Q6 is worth building, not just permitted. Unique colour count separates these two cases cleanly.
+
+---
+
+### D3 `OPEN` `55%` `P2` ICC profiles survive every encoder path
+
+**Why only 55.** `lcms` is present so the machinery exists, but survival through the APNG path is doubtful: it leaves ImageMagick entirely and passes through UPNG, which writes its own chunks. A silent profile drop produces visibly wrong colour, which users report as a bug.
+
+**Method.** Take a Display P3 source. Encode to each format. Read back and assert the profile is present and identical. Render each in a browser beside the original.
+
+---
+
+### D4 `OPEN` `60%` `P2` EXIF auto-orientation is correct for all eight values
+
+**Why only 60.** Rotation is easy; the mirrored orientations are rare and are exactly where implementations break.
+
+**Method.** Use a standard eight-image orientation test set. Assert each output is upright with no orientation tag. Confirm user rotation composes correctly on top.
+
+---
+
+### D5 `OPEN` `70%` `P3` Transparency detection is cheap
+
+**Supporting evidence for the design.** The test HEIC, an ordinary photograph with no transparency, reported `hasAlpha: true`. This is concrete confirmation that channel presence is not evidence of transparency, which is why R-C13 requires a pixel-level test rather than a channel check.
+
+**Method.** Time a minimum-alpha scan against ImageMagick's opacity test on large images. If neither is cheap, sample first and scan fully only on ambiguity.
+
+---
+
+### D6 `TESTED` `90%` `P3` APNG input detection via `acTL`
+
+Chunk-level detection works, confirmed in A5. ImageMagick's PNG reader returned one frame from a six-frame APNG, confirming the silent-truncation risk behind R-I4.
+
+**Why not 100.** Detection was confirmed on generated APNGs, not on files from varied encoders.
+
+---
+
+### D7 `TESTED` `95%` `P1` AVIF encode speed is controllable and the default is badly chosen
+
+**Measured**, 1600×1200 photographic, quality 70:
+
+| `heic:speed` | Size | Time |
+| --- | --- | --- |
+| default | 652.7 KB | 7611 ms |
+| 2 | 697.8 KB | 182,964 ms |
+| 5 | 693.4 KB | 41,552 ms |
+| 8 | 651.8 KB | 875 ms |
+| 9 | 649.4 KB | 452 ms |
+
+Speed 9 is 17 times faster than the default and produced a marginally smaller file. The spread across the range is 400x in time and under 8% in size.
+
+**Affects.** Whether AVIF is usable at all. At the default, a 20-image AVIF batch takes over two minutes on server hardware and far longer on a phone. At speed 9 it is comparable to WebP. It also revisits D1 and the animated AVIF decision in R-F7.
+
+**Why not 100.** The test content is synthetic noise, which is unusually hostile to AVIF and may flatten the quality difference between speed settings. On real photographs, higher speed normally costs some compression efficiency. The direction is certain; the magnitude is not.
+
+**Method to close.** Repeat on twenty real photographs, comparing size and a perceptual metric at speeds 6 through 9. Choose the setting from that data. Do not ship the default.
+
+---
+
+### D8 `OPEN` `40%` `P2` ImageMagick's own quantizer is good enough for PNG
+
+**Claim.** With libimagequant absent (A9), ImageMagick's internal quantizer can serve R-Q11 without adding a second WASM module.
+
+**Why only 40.** libimagequant exists because naive quantizers produce visibly worse results at the same colour count. ImageMagick's is older and generally rated below it.
+
+**Affects.** R-Q11, R-Q14, bundle size, and whether the 70 floor is set at the right place. A weaker quantizer argues for a higher floor.
+
+**Method.** Ten representative PNGs: screenshots, logos with alpha, flat illustrations, a photograph saved as PNG. Quantize with ImageMagick, with a standalone libimagequant WASM build, and with the copy inside apng-optimizer. Compare size and a perceptual difference metric, and record the bundle cost of each.
+
+---
+
+## 6. Output
+
+### E1 `OPEN` `70%` `P2` Streaming ZIP assembly holds bounded memory
+
+A ZIP written incrementally into OPFS should hold memory proportional to one entry rather than the archive.
+
+**Method.** Assemble a multi-gigabyte archive from many entries while watching tab memory. Pass condition: peak stays near the largest single entry.
+
+---
+
+### E2 `TESTED` `100%` `P3` `predictLength` is exact
+
+**Measured.** 50 entries, nested paths, non-ASCII filenames containing `é`. Predicted 552,169 bytes, actual 552,169 bytes.
+
+**Affects.** The quota preflight in R-X40 can use a real number rather than an estimate.
+
+---
+
+### E3 `OPEN` `80%` `P3` ZIP compression level is not worth paying for
+
+JPEG, WebP and AVIF are already compressed, so storing rather than deflating costs little and saves time. PNG and GIF outputs may still deflate usefully.
+
+**Method.** Assemble a representative batch both ways and compare size and time.
+
+---
+
+## 7. Refuted
+
+Kept deliberately. Each was stated with more confidence than the evidence supported, and each was refuted by a short test.
+
+### X1 `REFUTED` ImageMagick depends on FFmpeg
+
+**Claimed.** That an observed FFmpeg dependency on desktop indicated a library-level dependency.
+
+**True.** FFmpeg is a delegate, invoked as an external process for formats ImageMagick does not handle natively. Core ImageMagick has no FFmpeg linkage. In WASM the distinction matters because process spawning is unavailable, so every delegate-based format is absent regardless of configuration.
+
+**Settled by.** A4.
+
+---
+
+### X2 `REFUTED` HEIC is excluded from WASM builds for licensing reasons
+
+**Claimed.** That HEVC patent exposure keeps libheif out of distributed WASM builds, so HEIC decoding must go through Safari's native decoder.
+
+**True.** Both libheif and libde265 are in the binary. See A8.
+
+**Lesson.** Reasoning about why a build probably lacks something is not a substitute for reading its delegate list. The reasoning was sound and the conclusion was wrong, which is the most dangerous combination.
+
+---
+
+### X3 `REFUTED` Animated WebP and AVIF encoding are unavailable
+
+**Claimed.** That animated output should be restricted to GIF.
+
+**True.** Both encode correctly and round-trip with frames intact. See A3.
+
+---
+
+### X4 `REFUTED` Compressed size can be projected without encoding
+
+**Claimed.** Inherited from the original design draft, which described the Preview figure as a projection.
+
+**True.** Producing a compressed preview requires the encode. Once it has run, the size is measured and projection is pointless.
+
+---
+
+### X5 `REFUTED` UPNG `cnum` has no useful effect
+
+**Claimed.** Recorded as a doubt after a test showed identical output size at every `cnum` value.
+
+**True.** The test content was flat colour with almost no unique colours. On photographic frames, `cnum` reduces size by more than 5x and encodes faster. See A10.
+
+**Lesson.** A negative result on synthetic data is not a negative result.
+
+---
+
+## 8. Verification order
+
+By dependency and cost, not document order.
+
+1. **B4**, OPFS download memory. The largest unknown in the project.
+2. **D7**, AVIF speed on real photographs. Decides whether AVIF is a first-class output and revisits two other decisions.
+3. **C2**, WASM memory reclaim in a browser at realistic image sizes. Decides the worker architecture.
+4. **C4**, iOS termination threshold. Decides whether protection can be preventive.
+5. **A13**, CICP colour handling. Newly discovered and affects correctness rather than performance.
+6. **D8**, PNG quantizer quality. Decides whether a second WASM module is needed.
+7. **C3** and **C5**, limits and thumbnail throughput. Fill in §5.7 and set the R-G8 threshold.
+8. **B5**, folder input. Decides whether the feature ships everywhere or degrades on iOS.
+9. **B9** and **B6**, headers and isolation. Decide the build variant.
+10. **E1**, streaming ZIP memory. Confirms the output path end to end.
+11. Everything else in priority order.
