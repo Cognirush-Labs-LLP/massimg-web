@@ -1,0 +1,17 @@
+# Mass Image Compressor License Summary
+
+**Software:** Mass Image Compressor (Web version)
+**Copyright:** © 2026 Cognirush Labs LLP
+**License:** GNU Affero General Public License v3.0 (AGPL-3.0)
+
+**Key Provisions:**
+
+The license permits redistribution and modification under AGPL v3.0 terms. However, redistributors must "clearly state all modifications made to the original, including new features or changes."
+
+Usage of Cognirush Labs LLP's branding requires prior written permission. Redistributed versions cannot be linked to the company's support resources, though "credit Cognirush Labs LLP as the original author" is required without implying official endorsement.
+
+**Notable Restriction:**
+
+The company reserves "the exclusive right to distribute this software or its derivatives under alternative licensing terms," prohibiting third-party relicensing without authorization from Cognirush Labs LLP.
+
+This notice supplements rather than modifies the underlying AGPL-3.0 license terms.
