@@ -62,7 +62,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
 | C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
 | C7 | Animated sources processed incrementally | 45 | OPEN | P2 |
-| C8 | Three WASM modules coexist acceptably | 60 | OPEN | P2 |
+| C8 | Six WASM modules coexist acceptably, loaded lazily | 80 | TESTED | P2 |
 | D1 | Size-target search is affordable | 95 | TESTED | P2 |
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
 | D3 | ICC profiles survive every encoder path | 55 | OPEN | P2 |
@@ -400,6 +400,19 @@ lazy per-tile generation needs. Peak process-tree RSS over a full pass stayed 0�
 baseline, driven by the largest source decodes rather than by the retained thumbnails, which never
 exceeded 12.7 MB for a whole 100-thumbnail batch.
 
+**Caveat added by T22, on the RSS figures only.** `memory-sampler.mjs`'s process-tree walk (used here
+via `launchPersistentContext`) sums RSS by following `ppid` from the launched browser's PID. On macOS,
+WebKit's own WebContent, GPU and Networking processes are reparented to PID 1 rather than staying
+children of that PID, so this walk never sees them — T22 confirmed it directly with a live WebKit
+launch (212 MB on those three processes, invisible to the walk, against 104 MB actually counted from
+the wrapper and `Playwright` processes it does see). **Every WebKit RSS number in this entry —
+including the `0` in "0–737 MB above an idle baseline" above and the "unchanged at 109" figure in
+"Cancellation works" below — was produced with this un-fixed sampler and should be treated as an
+undercount pending re-measurement.** Chromium and Firefox are not affected (their child processes stay
+correctly parented), and this does not touch decode/encode timings or retained-byte figures, which
+come from in-page measurement, not `ps`. Not re-measured here — out of T22's scope, since C5 is not
+T22's assumption to re-open — see `docs/task-notes/T22.md` for the fix itself (`verification/t22-codecs/memory-sampler.mjs`).
+
 **Choices this settles.**
 
 - **Encoded format: WebP**, at quality 0.75. It is 25–30% smaller than JPEG on Chromium and Firefox,
@@ -414,9 +427,12 @@ exceeded 12.7 MB for a whole 100-thumbnail batch.
   is exactly the case list mode serves better. Tying the threshold to the limit rather than to an
   independent constant means T46's measurement moves both together.
 - **Cancellation works.** A worker generating continuously was terminated mid-flight on all three
-  engines: zero further completions afterwards, and peak RSS in the 4 s after termination was at or
-  below the peak during (Chromium 982 MB after vs 1114 MB during; Firefox 1217 vs 1513; WebKit
-  unchanged at 109). Growth stops, rather than a late result merely being hidden.
+  engines: **zero further completions afterwards** — proof that growth stops, rather than a late
+  result merely being hidden, and true regardless of the RSS caveat above since it counts worker
+  completions, not memory. Peak RSS in the 4 s after termination was at or below the peak during for
+  Chromium and Firefox (982 MB after vs 1114 MB during; 1217 vs 1513); the WebKit figure ("unchanged at
+  109") is one of the undercounted numbers described above and is not independent evidence either way.
+  Confidence stands on the completion-count proof, which holds on all three engines including WebKit.
 
 **Surprising, and recorded rather than smoothed over.**
 
@@ -454,13 +470,110 @@ T46.)*
 
 ---
 
-### C8 `OPEN` `60%` `P2` Three WASM modules coexist acceptably
+### C8 `TESTED` `80%` `P2` Six WASM modules coexist acceptably, loaded lazily
 
-ImageMagick is 14.8 MB uncompressed on its own, before gifsicle and the APNG path.
+ImageMagick is 14.8 MB uncompressed on its own, before gifsicle and the APNG path. (§5.2's table
+actually names six modules, not three — ImageMagick, gifsicle, oxipng, the quantizer, UPNG and
+apng-optimizer — so this entry now covers all six; the title said "three" before any of them had a
+chosen npm package.)
 
 **Affects.** Load strategy, which matters because the landing page has an SEO job.
 
-**Method.** Measure total bundle and peak memory with all three initialised, against lazy initialisation where gifsicle loads only for GIF output and UPNG only for animated PNG. Pass condition for lazy loading: first paint is not delayed by codecs the user may never invoke.
+**Measured** (T22, `verification/t22-codecs/`, raw numbers in its `results.json`). Two independent
+measurements: a real production `vite build` of a probe that reaches all six packages for bundle
+size, and a live-browser harness (Chromium, Firefox, desktop WebKit, each `launchPersistentContext`
+— T01's precedent) for peak process-tree RSS, comparing three scenarios per engine: **eager** (all
+six loaded concurrently, immediately — the "lazy strategy not applied at all" baseline), **lazy**
+(the shipped per-format strategy, exercised as a GIF job then a still-PNG job then an animated-PNG
+job would trigger it in sequence), and **jpeg-only** (ImageMagick alone — the common case, since most
+sessions never touch a GIF or PNG at all).
+
+**Bundle, production build** (`build-sizes.mjs`, real `vite build` output, not `package.json`
+`unpackedSize`):
+
+| Module | Bytes | Notes |
+| --- | --- | --- |
+| ImageMagick (x86/wasm32) | 14.8 MB | Matches A1 exactly — confirms the build identity assumption from a second angle |
+| oxipng (`@jsquash/oxipng`) | 399 KB | |
+| quantizer (`imagequant`) | 347 KB | |
+| apng-optimizer | 218 KB | |
+| gifsicle + UPNG (JS-only chunk, see Surprises) | 719 KB | Neither emits a separate `.wasm` asset |
+| **All six together** | **15.8 MB** | |
+
+**Peak process-tree RSS over idle baseline, desktop** (each scenario in its own fresh browser
+profile, to avoid one scenario's HTTP cache warming the next — see Surprises):
+
+| Engine | Idle baseline | jpeg-only (+) | All six, eager (+) | All six, lazy-sequential (+) |
+| --- | --- | --- | --- | --- |
+| Chromium | 268 MB | 102 MB | 116 MB | 114 MB |
+| Firefox | 1007 MB | 116 MB | 112 MB | 134 MB |
+| WebKit | 332 MB | 126 MB | 152 MB | 144 MB |
+
+**First paint, and the GIF/JPEG differentiation** — proven directly in a real browser rather than
+inferred from bundle/memory numbers: `tests/e2e/codecs.spec.ts`, 21 assertions across all three
+engines, no skips. No request naming ImageMagick fires before `domcontentloaded`; the idle-scheduled
+preload (`app/main.ts` → `scheduleImageMagickPreload()`) fires within 10 s of `load` on every engine; a
+job whose `settings.format` is `'gif'` causes a `gifsicle`-matching request and a `'jpeg'` job never
+does (checked against the job's own settled outcome, not a timeout); a still-PNG job loads oxipng and
+the quantizer but not UPNG/apng-optimizer, and vice versa for animated PNG; `ensureImageMagick()` is
+memoised (a second call issues no further request).
+
+**The core claim holds, with one genuine gap.** "Eager" and "lazy-sequential" converge to roughly the
+same *peak* (114–152 MB across engines) because the lazy scenario, by design, still ends up loading
+every module within the measured window — that is the right test for "does spreading the loads out
+over time cost more peak memory than doing them all at once" (answer: no, not measurably). It is
+**not** a test of the real saving, which is **jpeg-only being 12–30 MB lower** than loading all six —
+the actual benefit for the common case, since most sessions never touch GIF or PNG output at all. The
+genuine gap: this harness measured one page/context loading codecs **sequentially**, not §5.1's real
+worst case of **up to three pipeline workers loading codecs concurrently** (a mixed batch with GIF,
+PNG and JPEG jobs dispatched to different workers at once). Desktop's cap is 3 workers; if each
+independently pays the full ~100–150 MB shown above at the same moment, peak could be 2–3× a single
+page's figure, still likely comfortable against §8.1's ~48 MB-per-decode budget headroom but not
+directly measured here. **That gap, plus desktop-only coverage (matching C3/C4's own caveat), is why
+this is 80% and not higher.**
+
+**Surprising, and recorded rather than smoothed over.**
+
+- **Comparing scenarios in the same browser profile silently invalidated the first run.** The first
+  pass ran "eager" then "lazy" in one `launchPersistentContext`, and Vite dev server's cacheable
+  responses (ETag/304) meant "lazy" — running second — paid almost nothing (1 MB peak, 3 MB
+  transferred) because "eager" had already warmed the HTTP cache. Each scenario now gets its own
+  fresh profile. Worth remembering for any future measurement that compares "before" and "after" cache
+  states on the same page.
+- **A real bug in the `memory-sampler.mjs` technique T20 established, found and fixed here: WebKit's
+  own child processes (WebContent, GPU, Networking — the processes that actually run page JS and hold
+  the WASM heap) are reparented to PID 1 on macOS, not left as children of the launched browser
+  process.** A pure ppid-tree walk from the found root PID therefore silently sees none of them.
+  Confirmed directly via `ps -A -o pid=,ppid=,command=` during a live WebKit launch: the WebContent
+  XPC service carried 100+ MB RSS with `ppid=1`. The fix (this project's `memory-sampler.mjs`, not
+  T20's) unions the ppid-tree walk with every orphaned process sharing the same
+  `ms-playwright/<engine>-<build>/` install directory as the root. Before the fix, WebKit's measured
+  peak was indistinguishable from its idle baseline (+0–1 MB) for every scenario — a result that would
+  have read as "WebKit is free," which is wrong. **T20's own C5 WebKit cancellation figures
+  ("peak RSS... at or below the peak during... WebKit unchanged at 109 [MB]") were produced with the
+  un-fixed technique and were not re-measured here; C5's WebKit numbers may be similarly affected.**
+  Not fixed in T20's harness — out of this task's scope — but flagged here since a later task
+  relying on C5's WebKit figures specifically should know.
+- **`gifsicle-wasm-browser` and `upng-js` emit no separate `.wasm` file in a production build** — the
+  former bundles its own worker source (WASM included) as a JS string, the latter is pure JS (§7.1
+  already says so). Both show up as ordinary JS chunk weight, not a `.wasm` asset, which is why the
+  bundle table above has no separate gifsicle/UPNG row.
+- `imagequant` (the libimagequant wrapper, wasm-bindgen's "bundler" target — a historically
+  bundler-unfriendly shape) built and ran correctly under this project's Vite 8.3 with no plugin,
+  verified with a scratch build before it was adopted (docs/task-notes/T22.md, Decisions made).
+
+**Choices this settles.**
+
+- **No worker-heterogeneity split.** §5.2's contingency — "if three modules in one worker prove too
+  heavy, they split across workers by codec" — does not trigger. One worker loading every module it
+  might need stays within 116–152 MB of idle baseline on desktop, nowhere near a level that forces a
+  heterogeneous pool. The concurrent-worker gap above means this is not the final word for the
+  3-worker case, but nothing measured here points toward needing the split.
+- **The lazy strategy as shipped (§5.2's table) is worth keeping as designed**, not simplified to
+  "load everything after idle regardless of format" — the per-format gate is what gives a
+  JPEG-only session its 12–30 MB saving, and the browser test proves the gate is real, not aspirational.
+
+**Method.** Measure total bundle and peak memory with all three initialised, against lazy initialisation where gifsicle loads only for GIF output and UPNG only for animated PNG. Pass condition for lazy loading: first paint is not delayed by codecs the user may never invoke. *(T22 measured all six named modules in §5.2's table, not three — the "three" in the original method predates the six being individually named. The 3-concurrent-worker case remains open; see "The core claim holds, with one genuine gap" above.)*
 
 ---
 

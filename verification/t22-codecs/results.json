@@ -1,0 +1,250 @@
+{
+  "bundleSizes": {
+    "imagemagick": 14828458,
+    "oxipng": 408433,
+    "quantizer": 355450,
+    "apngOptimizer": 223356,
+    "total": 16553239,
+    "entryChunkBytes": 1148,
+    "otherChunkBytes": 736394
+  },
+  "engines": [
+    {
+      "engine": "chromium",
+      "eager": {
+        "baselineBytes": 281214976,
+        "wallMs": 116.5,
+        "perModuleMs": {
+          "gifsicle": 22.399999976158142,
+          "upng": 37.59999990463257,
+          "apngOptimizer": 46,
+          "oxipng": 46.699999928474426,
+          "quantizer": 55.699999928474426,
+          "imagemagick": 116.5
+        },
+        "peakBytes": 402817024,
+        "overBaselineBytes": 121602048,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "lazy": {
+        "baselineBytes": 281198592,
+        "steps": [
+          {
+            "module": "imagemagick",
+            "ms": 81.40000009536743
+          },
+          {
+            "module": "gifsicle",
+            "ms": 5.199999928474426
+          },
+          {
+            "module": "oxipng",
+            "ms": 4.399999976158142
+          },
+          {
+            "module": "quantizer",
+            "ms": 10
+          },
+          {
+            "module": "upng",
+            "ms": 6.199999928474426
+          },
+          {
+            "module": "apngOptimizer",
+            "ms": 7
+          }
+        ],
+        "totalMs": 114.19999992847443,
+        "peakBytes": 400375808,
+        "overBaselineBytes": 119177216,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "jpegOnly": {
+        "baselineBytes": 281182208,
+        "ms": 78.89999997615814,
+        "peakBytes": 388317184,
+        "overBaselineBytes": 107134976,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 0,
+          "oxipng": 0,
+          "quantizer": 0,
+          "upng": 0,
+          "apngOptimizer": 0
+        }
+      }
+    },
+    {
+      "engine": "firefox",
+      "eager": {
+        "baselineBytes": 1056227328,
+        "wallMs": 254,
+        "perModuleMs": {
+          "gifsicle": 19,
+          "upng": 25,
+          "apngOptimizer": 32,
+          "oxipng": 36,
+          "quantizer": 43,
+          "imagemagick": 254
+        },
+        "peakBytes": 1173438464,
+        "overBaselineBytes": 117211136,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "lazy": {
+        "baselineBytes": 1060487168,
+        "steps": [
+          {
+            "module": "imagemagick",
+            "ms": 230
+          },
+          {
+            "module": "gifsicle",
+            "ms": 9
+          },
+          {
+            "module": "oxipng",
+            "ms": 9
+          },
+          {
+            "module": "quantizer",
+            "ms": 14
+          },
+          {
+            "module": "upng",
+            "ms": 10
+          },
+          {
+            "module": "apngOptimizer",
+            "ms": 8
+          }
+        ],
+        "totalMs": 280,
+        "peakBytes": 1200504832,
+        "overBaselineBytes": 140017664,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "jpegOnly": {
+        "baselineBytes": 1059897344,
+        "ms": 235,
+        "peakBytes": 1181974528,
+        "overBaselineBytes": 122077184,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 0,
+          "oxipng": 0,
+          "quantizer": 0,
+          "upng": 0,
+          "apngOptimizer": 0
+        }
+      }
+    },
+    {
+      "engine": "webkit",
+      "eager": {
+        "baselineBytes": 347652096,
+        "wallMs": 91,
+        "perModuleMs": {
+          "gifsicle": 9,
+          "upng": 26,
+          "apngOptimizer": 90,
+          "oxipng": 90,
+          "imagemagick": 91,
+          "quantizer": 90
+        },
+        "peakBytes": 507248640,
+        "overBaselineBytes": 159596544,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "lazy": {
+        "baselineBytes": 348012544,
+        "steps": [
+          {
+            "module": "imagemagick",
+            "ms": 73
+          },
+          {
+            "module": "gifsicle",
+            "ms": 5
+          },
+          {
+            "module": "oxipng",
+            "ms": 8
+          },
+          {
+            "module": "quantizer",
+            "ms": 12
+          },
+          {
+            "module": "upng",
+            "ms": 6
+          },
+          {
+            "module": "apngOptimizer",
+            "ms": 9
+          }
+        ],
+        "totalMs": 113,
+        "peakBytes": 499335168,
+        "overBaselineBytes": 151322624,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 804436,
+          "oxipng": 196932,
+          "quantizer": 430980,
+          "upng": 631441,
+          "apngOptimizer": 311812
+        }
+      },
+      "jpegOnly": {
+        "baselineBytes": 348241920,
+        "ms": 94,
+        "peakBytes": 480313344,
+        "overBaselineBytes": 132071424,
+        "transferredBytes": {
+          "imagemagick": 16344826,
+          "gifsicle": 0,
+          "oxipng": 0,
+          "quantizer": 0,
+          "upng": 0,
+          "apngOptimizer": 0
+        }
+      }
+    }
+  ]
+}

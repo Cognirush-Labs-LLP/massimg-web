@@ -195,7 +195,7 @@ ImageMagick's WASM is 14.8 MB uncompressed (A1), before gifsicle, oxipng and the
 | oxipng, quantizer | First job resolves to PNG output |
 | UPNG, apng-optimizer | First job resolves to animated PNG |
 
-A worker that needs a module it has not loaded loads it and then proceeds. **Contingent on C8**: if three modules in one worker prove too heavy, they split across workers by codec, and the pool becomes heterogeneous.
+A worker that needs a module it has not loaded loads it and then proceeds. **C8 (80%, T22):** measured — one worker loading every module it might need stays within 116–152 MB of idle baseline on desktop across all three engines, nowhere near a level that forces the heterogeneous-pool contingency below. Not yet measured: up to three pipeline workers (§5.1's desktop cap) loading codecs *concurrently*, which could plausibly be 2–3× that figure. If three modules in one worker prove too heavy after all, they split across workers by codec, and the pool becomes heterogeneous.
 
 ### 5.3 Cancellation
 
@@ -610,7 +610,7 @@ Which sections change if an entry fails.
 | **C4** | 25 | §8.3 | Mobile caps fall, possibly far |
 | **C3** | 30 | §8.3 | Every limit value changes; no structural change |
 | **D8** | 40 | §7.2 | Quantizer choice changes; the R-Q11 floor rises above 70 |
-| **C8** | 60 | §5.2 | Codecs split across workers; pool becomes heterogeneous |
+| **C8** | 80 | §5.2 | Codecs split across workers; pool becomes heterogeneous. Measured in T22 for one worker on desktop; the 3-concurrent-worker case is the residual risk |
 | **B5** | 75 | §10.1 | Folder input hidden on platforms that cannot do it |
 | **B9**, **B6** | 70, 85 | §12 | Threaded build unavailable; single-threaded baseline |
 | **C5** | 85 | §10.4 | List view becomes the default at a lower threshold. Measured in T20: the threshold is `maximumThumbnails`, and no fallback was needed |
