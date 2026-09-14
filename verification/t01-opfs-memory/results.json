@@ -1,0 +1,128 @@
+[
+  {
+    "engine": "chromium",
+    "size": "1 GB",
+    "sizeBytes": 1073741824,
+    "idleBaselineBytes": 268681216,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 1261,
+      "peakBytes": 368623616,
+      "path": "createWritable",
+      "confirmedFileSize": 1073741824
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 738,
+      "peakBytes": 345587712,
+      "confirmedBytes": 1073741824
+    }
+  },
+  {
+    "engine": "chromium",
+    "size": "3 GB",
+    "sizeBytes": 3221225472,
+    "idleBaselineBytes": 341524480,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 3501,
+      "peakBytes": 417103872,
+      "path": "createWritable",
+      "confirmedFileSize": 3221225472
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 2801,
+      "peakBytes": 418086912,
+      "confirmedBytes": 3221225472
+    }
+  },
+  {
+    "engine": "firefox",
+    "size": "1 GB",
+    "sizeBytes": 1073741824,
+    "idleBaselineBytes": 1052246016,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 412,
+      "peakBytes": 1123713024,
+      "path": "createWritable",
+      "confirmedFileSize": 1073741824
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 1057,
+      "peakBytes": 1096368128,
+      "confirmedBytes": 1073741824
+    }
+  },
+  {
+    "engine": "firefox",
+    "size": "3 GB",
+    "sizeBytes": 3221225472,
+    "idleBaselineBytes": 1095155712,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 1174,
+      "peakBytes": 1130659840,
+      "path": "createWritable",
+      "confirmedFileSize": 3221225472
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 3262,
+      "peakBytes": 1100693504,
+      "confirmedBytes": 3221225472
+    }
+  },
+  {
+    "engine": "webkit",
+    "size": "1 GB",
+    "sizeBytes": 1073741824,
+    "idleBaselineBytes": 114540544,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 453,
+      "peakBytes": 114573312,
+      "path": "createWritable",
+      "confirmedFileSize": 1073741824
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 705,
+      "peakBytes": 114704384,
+      "confirmedBytes": 1073741824
+    }
+  },
+  {
+    "engine": "webkit",
+    "size": "3 GB",
+    "sizeBytes": 3221225472,
+    "idleBaselineBytes": 114720768,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 1338,
+      "peakBytes": 114737152,
+      "path": "createWritable",
+      "confirmedFileSize": 3221225472
+    },
+    "download": {
+      "ok": true,
+      "error": null,
+      "durationMs": 2780,
+      "peakBytes": 101761024,
+      "confirmedBytes": 3221225472
+    }
+  }
+]

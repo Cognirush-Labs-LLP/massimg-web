@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@imagemagick/magick-wasm':
+        specifier: 0.0.43
+        version: 0.0.43
+
+packages:
+
+  '@imagemagick/magick-wasm@0.0.43':
+    resolution: {integrity: sha512-+Wlr3eEl4JlqLwrhAHBlf4VDzOWiFa8L2hYl7mOMXCgq896KghEnh3Go35nuZJMfmE6lX2waBZdr+u9FVluJLA==}
+
+snapshots:
+
+  '@imagemagick/magick-wasm@0.0.43': {}

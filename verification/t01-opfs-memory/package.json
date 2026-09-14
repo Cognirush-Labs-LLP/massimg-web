@@ -1,0 +1,13 @@
+{
+  "name": "t01-opfs-memory",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway Playwright harness for T01 — OPFS chunked write + download, peak tab memory per browser (see docs/task-notes/T01.md).",
+  "scripts": {
+    "install-browsers": "playwright install chromium firefox webkit",
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

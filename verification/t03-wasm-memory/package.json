@@ -1,0 +1,17 @@
+{
+  "name": "t03-wasm-memory",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway Playwright harness for T03 — WASM heap + tab memory across increasing image sizes through ImageMagick WASM, disposing between each (see docs/task-notes/T03.md).",
+  "scripts": {
+    "install-browsers": "playwright install chromium",
+    "pretest": "node scripts/copy-assets.mjs",
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "@imagemagick/magick-wasm": "0.0.43"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

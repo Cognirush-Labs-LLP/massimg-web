@@ -1,0 +1,12 @@
+{
+  "name": "t02-avif-speed",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway harness for T02 — AVIF heic:speed 6/7/8/9 on twenty real photographs: size, time, SSIM (see docs/task-notes/T02.md).",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "@imagemagick/magick-wasm": "0.0.43"
+  }
+}

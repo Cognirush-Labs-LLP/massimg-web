@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>T01 OPFS harness</title>
+  </head>
+  <body>
+    <p id="status">idle</p>
+    <script>
+      const CHUNK_BYTES = 32 * 1024 * 1024; // 32 MB chunks, per T01 spec (16-64 MB range)
+      const FILE_NAME = 't01-payload.bin';
+
+      // A fixed pattern buffer reused for every chunk write — content is irrelevant to
+      // the measurement (we only care about OPFS/memory behaviour), and reusing one
+      // buffer avoids the *test harness itself* being the source of any memory growth
+      // we observe.
+      let chunkBuffer = null;
+      function getChunk() {
+        if (!chunkBuffer) {
+          chunkBuffer = new Uint8Array(CHUNK_BYTES);
+          for (let i = 0; i < chunkBuffer.length; i += 4096) chunkBuffer[i] = 1;
+        }
+        return chunkBuffer;
+      }
+
+      function setStatus(s) {
+        document.getElementById('status').textContent = s;
+      }
+
+      // Writes `totalBytes` into an OPFS file, in CHUNK_BYTES pieces.
+      // Preferred path: FileSystemWritableFileStream (createWritable), usable from
+      // the main thread. If the engine doesn't support/allow it, fall back to a
+      // dedicated worker using createSyncAccessHandle (the spec restricts that API
+      // to workers, so it can't run here on the main thread directly). Which path
+      // ran is returned so the driver can record it — it's evidence in its own
+      // right about engine support, separate from the memory question.
+      window.opfsWrite = async function opfsWrite(totalBytes) {
+        setStatus('writing:start');
+        if (typeof FileSystemFileHandle !== 'undefined' && FileSystemFileHandle.prototype.createWritable) {
+          try {
+            const root = await navigator.storage.getDirectory();
+            const handle = await root.getFileHandle(FILE_NAME, { create: true });
+            const writable = await handle.createWritable({ keepExistingData: false });
+            let written = 0;
+            const chunk = getChunk();
+            while (written < totalBytes) {
+              const remaining = totalBytes - written;
+              const piece = remaining >= chunk.length ? chunk : chunk.subarray(0, remaining);
+              await writable.write(piece);
+              written += piece.length;
+            }
+            await writable.close();
+            setStatus('writing:done');
+            return { written, path: 'createWritable' };
+          } catch (err) {
+            setStatus('writing:createWritable-failed, falling back to worker');
+            // fall through to worker path below
+          }
+        }
+        const written = await new Promise((resolve, reject) => {
+          const worker = new Worker('opfs-worker.js');
+          worker.onmessage = (event) => {
+            worker.terminate();
+            if (event.data.ok) resolve(event.data.written);
+            else reject(new Error(event.data.error));
+          };
+          worker.onerror = (err) => {
+            worker.terminate();
+            reject(err);
+          };
+          worker.postMessage({ totalBytes });
+        });
+        setStatus('writing:done');
+        return { written, path: 'worker-sync-access-handle' };
+      };
+
+      // Confirms the written file's size (sanity check, not part of the timed phase).
+      window.opfsFileSize = async function opfsFileSize() {
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(FILE_NAME);
+        const file = await handle.getFile();
+        return file.size;
+      };
+
+      // Hands the finished OPFS file to a download via createObjectURL + a synthetic
+      // anchor click — the exact mechanism B4's claim is about.
+      window.opfsDownload = async function opfsDownload() {
+        setStatus('download:start');
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(FILE_NAME);
+        const file = await handle.getFile();
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = FILE_NAME;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        // Revoke on a delay so the browser has definitely started consuming the
+        // blob URL before we free it.
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        setStatus('download:triggered');
+      };
+
+      window.opfsCleanup = async function opfsCleanup() {
+        const root = await navigator.storage.getDirectory();
+        try {
+          await root.removeEntry(FILE_NAME);
+        } catch (e) {
+          // ignore if absent
+        }
+      };
+
+      setStatus('ready');
+    </script>
+  </body>
+</html>

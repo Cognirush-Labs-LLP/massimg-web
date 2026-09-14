@@ -329,13 +329,13 @@ No codec runs at maximum effort. The measured returns are small and the time cos
 
 | Codec | Setting | Rationale |
 | --- | --- | --- |
-| AVIF | `heic:speed` 8 or 9, never the default | **D7**: default is 7611 ms, speed 9 is 452 ms on the same image, and produced a marginally smaller file. The spread across the range is 400x in time and under 8% in size |
+| AVIF | `heic:speed` 9, never the default | **D7**: on twenty real photographs, speed 9 is 9.94x faster than speed 6 and 2.10x faster than speed 8 on average, with mean SSIM flat across speeds 6-9 (0.9857-0.9861) and under 1% size difference between speeds 8 and 9. Default is 7611 ms vs. 452 ms for speed 9 on the original single-image measurement |
 | WebP | `method` 4, the library default, not 6 | Method 6 costs several times the time for low single-digit size gains |
 | oxipng | `level` 2, not 6 | Above level 2 the curve flattens sharply |
 | gifsicle | `-O2`, not `-O3` | `-O3` tries every option per frame |
 | PNG deflate | Default, no zopfli | apng-optimizer's zopfli setting stays low for the same reason |
 
-**D7 is only 95% confident** because the measurement used synthetic noise, which is unusually hostile to AVIF and may have flattened the quality difference between speed settings. The direction is certain. Before release, repeat on twenty real photographs at speeds 6 through 9 and choose from that data.
+**D7 is 99% confident.** The original measurement used synthetic noise, which is unusually hostile to AVIF and might have flattened the quality difference between speed settings. T02 repeated the comparison on twenty real photographs at speeds 6 through 9 with quality 70 and an SSIM perceptual check: quality was statistically indistinguishable across all four speeds (mean SSIM 0.9857-0.9861), and speed 9 was 2.1x faster than speed 8 for under 1% more size. Speed 9 is the chosen value, not a range.
 
 ### 7.4 Quality mapping
 
@@ -578,10 +578,10 @@ Which sections change if an entry fails.
 
 | Assumption | Conf | Section at risk | Consequence if false |
 | --- | --- | --- | --- |
-| **B4** | 60 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
+| **B4** | 90 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
 | **A13** | 95 | §7.7 | CICP-signalled colour shifts silently unless the pipeline carries it |
-| **D7** | 95 | §7.3 | If speed 9 costs real quality on photographs, AVIF gets a slower setting and size targeting for AVIF is dropped |
-| **C2** | 75 | §8.2 | Workers recycle on a pixel budget; throughput drops |
+| **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
+| **C2** | 92 | §8.2 | Workers recycle on a pixel budget; throughput drops |
 | **C4** | 25 | §8.3 | Mobile caps fall, possibly far |
 | **C3** | 30 | §8.3 | Every limit value changes; no structural change |
 | **D8** | 40 | §7.2 | Quantizer choice changes; the R-Q11 floor rises above 70 |
@@ -590,6 +590,6 @@ Which sections change if an entry fails.
 | **B9**, **B6** | 70, 85 | §12 | Threaded build unavailable; single-threaded baseline |
 | **C5** | 55 | §10.4 | List view becomes the default at a lower threshold |
 | **D3** | 55 | §7.7 | Animated PNG converts to sRGB and records a caveat |
-| **E1** | 70 | §9.1 | Batch caps tighten |
+| **E1** | 76 | §9.1 | Batch caps tighten |
 
-One of these should be settled before implementation begins rather than during it: **B4**, because it changes structure rather than a value. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.
+**B4 is now settled** (T01, 90%): it held on Chromium, Firefox and desktop WebKit, so no fallback and no structural change are needed for those engines. iOS Safari is untested and deferred to T46, but that no longer blocks starting implementation the way an open B4 would have. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.

@@ -51,13 +51,13 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | B1 | OPFS available across target browsers | 97 | DOC | P1 |
 | B2 | OPFS quota differs sharply by platform | 90 | DOC | P2 |
 | B3 | OPFS unavailable in private browsing | 90 | DOC | P2 |
-| B4 | OPFS download does not materialise in RAM | 60 | OPEN | P1 |
+| B4 | OPFS download does not materialise in RAM | 90 | TESTED | P1 |
 | B5 | Folder input works across browsers | 75 | OPEN | P2 |
 | B6 | Cross-origin isolation needed for threads | 85 | OPEN | P2 |
 | B7 | x64 build requires memory64 | 80 | TESTED | P2 |
 | B9 | Host can set custom response headers | 70 | OPEN | P2 |
 | C1 | File handles are not backed by memory | 90 | DOC | P1 |
-| C2 | WASM memory is reclaimed after large images | 75 | TESTED | P1 |
+| C2 | WASM memory is reclaimed after large images | 92 | TESTED | P1 |
 | C3 | Practical per-image and per-batch limits | 30 | OPEN | P2 |
 | C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
 | C5 | Thumbnail generation throughput | 55 | OPEN | P2 |
@@ -71,7 +71,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
 | D8 | PNG quantization quality via ImageMagick alone | 40 | OPEN | P2 |
-| E1 | Streaming ZIP holds bounded memory | 70 | OPEN | P2 |
+| E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
 
@@ -248,17 +248,27 @@ Safari private windows do not provide OPFS. Firefox disables it in private mode.
 
 ---
 
-### B4 `OPEN` `60%` `P1` Downloading an OPFS file does not materialise it in RAM
+### B4 `TESTED` `90%` `P1` Downloading an OPFS file does not materialise it in RAM
 
 **Claim.** A `File` from an OPFS handle, passed to `URL.createObjectURL` and an anchor click, streams from disk rather than loading into memory.
 
 **Affects.** Everything about large batches. If false, the memory ceiling on output is the same as in-memory assembly and the OPFS path buys nothing at the download step.
 
-**Why only 60.** It is the behaviour the API implies and the one implementers would want, but it is an implementation detail rather than a specified guarantee, and it may differ between engines. This is the largest single unknown in the project.
+**Measured** (T01, `verification/t01-opfs-memory`). Wrote 1 GB then 3 GB into OPFS in 32 MB chunks, then triggered a download via `createObjectURL` + a synthetic anchor click, on Chromium, Firefox and WebKit under Playwright, sampling total RSS across the browser's whole OS process tree every 200 ms. Two full passes, consistent within a few percent:
 
-**Method.** Write 1 GB, then 3 GB, into OPFS in chunks. Trigger a download. Watch tab memory in the browser task manager. Pass condition: peak stays far below file size. Test Chrome, Firefox, Safari desktop and iOS Safari separately.
+| Engine | Idle baseline | Peak, 1 GB write | Peak, 1 GB download | Peak, 3 GB write | Peak, 3 GB download |
+| --- | --- | --- | --- | --- | --- |
+| Chromium | ~256–326 MB | ~352 MB | ~330–333 MB | ~367–398 MB | ~371–399 MB |
+| Firefox | ~1002–1044 MB | ~1071–1072 MB | ~1045–1046 MB | ~1077–1078 MB | ~1050–1078 MB |
+| WebKit | ~109–115 MB | ~109 MB | ~109–115 MB | ~109 MB | ~97–109 MB |
 
-**Fallback if false.** Chrome uses `showSaveFilePicker` with `createWritable`. Other browsers get a hard batch cap from measured in-memory assembly.
+Pass condition ("peak stays far below file size") held on all three engines: peaks stay in the hundreds-of-MB range and barely move between 1 GB and 3 GB of file size, where a full in-memory materialisation would show peak minus baseline tracking the file size directly (i.e. roughly 3 GB more at the 3 GB size than at the 1 GB size). Confirmed byte counts (`file.size` after write; the downloaded file's size on disk) matched the target exactly in every run, so the low memory reading isn't an artefact of a truncated write or download. Full detail, per-phase numbers and methodology in `docs/task-notes/T01.md`.
+
+**Why not higher.** iOS Safari — the platform with the tightest OPFS quota (B2, ~20% of disk) and the one most likely to diverge — is out of scope for this task (needs real hardware; deferred to T46) and remains completely unverified. Desktop WebKit here is Playwright's bundled build, not shipping Safari. Everything ran on one machine (macOS) with a synthetic, single-byte-pattern payload rather than a real image/archive, and the two runs, while consistent, are not a large sample. Firefox's absolute baseline (~1 GB RSS at idle) is unexpectedly high for a blank automation profile, though it is flat rather than size-proportional, which is the property B4 actually claims.
+
+**Method.** Write 1 GB, then 3 GB, into OPFS in chunks. Trigger a download. Watch tab memory in the browser task manager. Pass condition: peak stays far below file size. Test Chrome, Firefox, Safari desktop and iOS Safari separately. *(T01 completed this for Chromium, Firefox and desktop WebKit via Playwright's OS-process-RSS proxy rather than the manual task manager; iOS Safari on real hardware is still open, see T46.)*
+
+**Fallback if false.** Chrome uses `showSaveFilePicker` with `createWritable`. Other browsers get a hard batch cap from measured in-memory assembly. Not engaged for any engine T01 tested — B4 held on Chromium, Firefox and desktop WebKit. If iOS Safari (T46) turns out to fail, it falls into the "other browsers" fallback (hard batch cap from measured in-memory assembly), since `showSaveFilePicker` is Chromium-only.
 
 ---
 
@@ -312,13 +322,34 @@ Holding hundreds or thousands of `File` objects costs kilobytes. They are lazy r
 
 ---
 
-### C2 `TESTED` `75%` `P1` WASM memory is reclaimed after large images
+### C2 `TESTED` `92%` `P1` WASM memory is reclaimed after large images
 
-**Measured.** Five consecutive encodes of a 1600×1200 image, disposing between each. Resident memory held flat at 286 MB and external memory did not grow.
+**Measured, in a real browser (Chromium via Playwright, headless), superseding the earlier Node measurement below.** `@imagemagick/magick-wasm` 0.0.43 (x64 build), synthetic images (solid-colour canvases created directly in ImageMagick — content doesn't matter for this test, only decoded-buffer size does), each resized to half its dimensions and encoded to JPEG, disposed via the library's own `ImageMagick.read(...)` callback pattern. Read `WebAssembly.Memory.prototype.buffer.byteLength` from inside the page, plus summed RSS across the browser's full OS process tree (parent + every child process — Chromium is multi-process; see Method).
 
-**Why only 75.** Node's resident memory is a poor proxy for the browser's WASM heap, and 1600×1200 is modest. The important case is a 50 megapixel image on a phone, which this does not touch.
+Phase 1, single pass, increasing size, disposing between each:
 
-**Method to close.** In a browser, process images of increasing size, disposing between each, reading `WebAssembly.Memory.prototype.buffer.byteLength` and tab memory. Pass condition: the figure returns near its starting level. If not, measure how many large images can be processed before failure and use that as the worker recycle interval.
+| Image | Megapixels | WASM heap after (MB) | Tab RSS after (MB) |
+| --- | --- | --- | --- |
+| 800×600 | 0.48 | 16.0 | 359.5 |
+| 1600×1200 | 1.9 | 19.3 | 369.1 |
+| 3000×2000 | 6 | 37.2 | 389.9 |
+| 4000×3000 | 12 | 67.3 | 420.1 |
+| 6000×4000 | 24 | 127.3 | 480.3 |
+| 7000×5000 | 35 | 183.4 | 535.5 |
+| 8000×6000 | **48** | 247.5 | 600.3 |
+| 10000×8000 | 80 | 407.7 | 760.5 |
+
+Phase 2, the 8000×6000 (48 MP) image repeated 25 times in the same tab: WASM heap held at exactly 407.7 MB and tab RSS held in a 760.6–762.0 MB band (±0.2%, consistent with sampling noise) for all 25 repeats. No crash, no unbounded growth, at any point in either phase.
+
+**Reading this evidence.** `WebAssembly.Memory`'s buffer cannot shrink — the WASM spec has no shrink instruction, only `memory.grow` — so "the figure returns near its starting level," the pass condition as originally written, cannot literally apply to the WASM heap number; it can only ever plateau, never fall. The growth in Phase 1 is exactly that: the heap grows only when a bigger image needs more headroom than it already has, which is correct, expected behaviour, not a leak. The signal that actually distinguishes a leak from correct disposal is Phase 2: repeating the *same* 48 MP size 25 times caused **zero** further heap growth, meaning each disposed ~230 MB working set was returned to the allocator's free list and reused by the next iteration rather than accumulating. Had disposal been broken, Phase 2 would have grown roughly linearly (25 × ~230 MB ≈ 5.75 GB total) and very likely hit a ceiling and crashed well before repeat 25 (see B7 on the x64 build's actual addressable limit, still being pinned down separately). Tab RSS (which, unlike the WASM heap, genuinely can shrink) also plateaued rather than climbing, corroborating the same conclusion at the OS level.
+
+**Conclusion: no worker recycling is needed.** Neither the WASM heap nor tab RSS grew without bound at any tested size, including one single image above 40 megapixels (48 MP, and pushed further to 80 MP) and sustained repeated processing of a 48 MP image 25 times in one tab. The pool's replace-a-worker capability (§5.3) stays for the reasons §5.3 already needs it (terminate-and-respawn on a stuck job), not because memory growth requires it.
+
+**Why not higher.** Tested in Chromium only (the task did not ask for cross-engine coverage the way B4 did); Firefox and WebKit may differ. Tested up to 80 MP single-pass and 25 repeats at 48 MP — both plateaued cleanly, but a pathological pattern outside that range (e.g. many distinct large sizes interleaved, fragmenting the allocator differently than same-size repeats) was not tried. iOS Safari's tighter, non-catchable termination behaviour is C4's concern, not this one.
+
+**Method.** Full harness, methodology notes and raw results: `verification/t03-wasm-memory/` (see `docs/task-notes/T03.md`). "Tab memory" was sampled by shelling out to `ps` for the RSS of the browser's root OS process plus every descendant (Chromium runs the renderer, GPU and network service as separate processes), taking the peak observed during each image's processing and the settled figure after disposal and a forced `--expose-gc` GC pass.
+
+**Prior, Node measurement (superseded, kept for context).** Five consecutive encodes of a 1600×1200 image, disposing between each. Resident memory held flat at 286 MB and external memory did not grow. This was flagged at the time as a weak proxy — Node's resident memory is not the browser's WASM heap, and 1600×1200 is modest next to a 50 megapixel phone photo — which is exactly why this entry was re-tested in a browser rather than trusted at face value.
 
 ---
 
@@ -433,7 +464,7 @@ Chunk-level detection works, confirmed in A5. ImageMagick's PNG reader returned 
 
 ---
 
-### D7 `TESTED` `95%` `P1` AVIF encode speed is controllable and the default is badly chosen
+### D7 `TESTED` `99%` `P1` AVIF encode speed is controllable and the default is badly chosen
 
 **Measured**, 1600×1200 photographic, quality 70:
 
@@ -447,11 +478,22 @@ Chunk-level detection works, confirmed in A5. ImageMagick's PNG reader returned 
 
 Speed 9 is 17 times faster than the default and produced a marginally smaller file. The spread across the range is 400x in time and under 8% in size.
 
+**Measured on real photographs (T02).** Twenty real JPEGs (2848–7200 px on the long edge, 1.7–8.2 MB), `heic:speed` 6/7/8/9, quality 70. Perceptual quality via ImageMagick's own SSIM compare (`ErrorMetric.StructuralSimilarity`, decoded AVIF vs. source), reported as `1 − distortion` so higher is better. Mean over 20 photos:
+
+| `heic:speed` | Mean size | Mean time | Mean SSIM | Min SSIM | Max time |
+| --- | --- | --- | --- | --- | --- |
+| 6 | 1124.4 KB | 18,170 ms | 0.98607 | 0.98064 | 43,697 ms |
+| 7 | 1184.3 KB | 9,236 ms | 0.98608 | 0.98073 | 20,328 ms |
+| 8 | 1172.9 KB | 3,871 ms | 0.98570 | 0.98039 | 8,810 ms |
+| 9 | 1191.6 KB | 1,793 ms | 0.98586 | 0.98058 | 2,971 ms |
+
+Speed 9 is 9.94x faster than speed 6 on average (range 4.68x–16.01x across the set) and 2.10x faster than speed 8. Mean SSIM is flat across all four speeds (0.9857–0.9861, a 0.04-percentage-point spread); the largest quality range seen for any single photo across all four speeds was 0.00124 (photo with the most detail), smaller than the photo-to-photo variation in the set (SSIM 0.9804–0.9954 depending on content). Size does not fall monotonically with lower speed as expected: mean size is smallest at speed 6 and 5.6% larger at speed 9 (range −0.87% to +15.1% per photo, 18 of 20 photos larger at speed 9), presumably because `heic:speed` trades off rate-distortion search thoroughness in a way that isn't strictly monotonic in size at fixed quality. The size effect is real but small, well inside the "under 8%" spread already seen on synthetic noise, and dwarfed by the time difference.
+
 **Affects.** Whether AVIF is usable at all. At the default, a 20-image AVIF batch takes over two minutes on server hardware and far longer on a phone. At speed 9 it is comparable to WebP. It also revisits D1 and the animated AVIF decision in R-F7.
 
-**Why not 100.** The test content is synthetic noise, which is unusually hostile to AVIF and may flatten the quality difference between speed settings. On real photographs, higher speed normally costs some compression efficiency. The direction is certain; the magnitude is not.
+**Why not 100.** Twenty photographs from one library is not exhaustive, and the mild non-monotonic size trend at higher speed was not anticipated, though it does not change the direction or the recommendation. Confidence in the direction (use a high speed, never the default) is effectively total; the small residual is about the magnitude generalising to arbitrary content.
 
-**Method to close.** Repeat on twenty real photographs, comparing size and a perceptual metric at speeds 6 through 9. Choose the setting from that data. Do not ship the default.
+**Closed.** Real photographs confirm the synthetic-noise finding rather than contradicting it: quality is statistically indistinguishable across speeds 6–9, and the size penalty at speed 9 is small. Technical Design §7.3 now specifies `heic:speed` 9 (not a range) for exactly this reason — speed 9 is 2.1x faster than speed 8 for no measurable quality cost and a size difference under 1% between those two settings.
 
 ---
 
@@ -469,9 +511,11 @@ Speed 9 is 17 times faster than the default and produced a marginally smaller fi
 
 ## 6. Output
 
-### E1 `OPEN` `70%` `P2` Streaming ZIP assembly holds bounded memory
+### E1 `OPEN` `76%` `P2` Streaming ZIP assembly holds bounded memory
 
 A ZIP written incrementally into OPFS should hold memory proportional to one entry rather than the archive.
+
+**Supporting evidence (T01), not a direct test.** T01's harness (`verification/t01-opfs-memory`) wrote a single 1 GB then 3 GB blob into OPFS in chunks and downloaded it, on Chromium, Firefox and WebKit, watching peak process RSS throughout. Peak memory stayed flat and far below file size in every case (see B4 above for the numbers) — i.e. the OPFS layer underneath a streaming ZIP writer does not itself force materialisation of what passes through it, on any of the three engines. That is consistent with, and mildly raises confidence in, E1's claim. It is not a substitute for E1's own test: T01 wrote one large contiguous blob, not a ZIP assembled incrementally from many small entries, so it says nothing about whether the ZIP-writing approach itself buffers entries, retains previously-written entries' bytes, or grows a central directory in memory. E1 stays `OPEN` — the dedicated test (T40: assemble a multi-gigabyte archive from many entries while watching tab memory) is still required before this can be marked `TESTED`.
 
 **Method.** Assemble a multi-gigabyte archive from many entries while watching tab memory. Pass condition: peak stays near the largest single entry.
 

@@ -54,7 +54,8 @@ docs/
   sample_design/        imported Claude Design prototype — visual/interaction reference only, see its README
 3rd_party_licenses/    one directory per bundled component (populated by T06)
 src/                   application code — see docs/technical-design.md §2 for the module structure
-tests/                 throwaway/browser test harnesses that live outside src/ (e.g. T01's OPFS harness)
+verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
+tests/                 permanent browser/e2e test suite, added from T05 onward
 LICENSE                AGPL v3 (added by T06)
 ```
 
@@ -68,6 +69,12 @@ TypeScript (`strict`, `noUncheckedIndexedAccess`), Vue 3 (`<script setup>`), Vit
 Playwright (Chromium/Firefox/WebKit), Prettier, ESLint, `vue-tsc`. Full rationale in
 `docs/technical-design.md` §1.
 
+**Package manager: pnpm.** Not specified by the design docs (they only name npm-style script names like
+`npm run check` as the Done-when check, which any package manager satisfies) — this is a project
+convention, not a requirement. Use `pnpm` for the root project and for each `verification/*` throwaway
+project alike; keep script names generic (`check`, `test`) so the literal command works under either
+`pnpm <script>` or `npm run <script>`.
+
 Two rules specific to Vue, load-bearing throughout the codebase (technical-design.md §1.1):
 - Binary data (`File`, `Blob`, `ArrayBuffer`, `ImageBitmap`) never enters a reactive Pinia store — keep
   it in a plain module-scope `Map`, or wrap with `markRaw`.
@@ -79,6 +86,29 @@ Two rules specific to Vue, load-bearing throughout the codebase (technical-desig
 AGPL v3. Every bundled/statically-linked third-party component needs its own directory under
 `3rd_party_licenses/` with real upstream licence text (T06). Don't add a dependency that can't be
 licensed this way without flagging it first.
+
+## Test/verification photo fixtures
+
+Real photographs used for verification and testing (e.g. T02's twenty real photographs, other tasks'
+fixture sets) live **outside the repo**, on disk at a path given by the user. The path is read from a
+`.env` file at the repo root (gitignored, never committed) — see `.env.example` for the variable name.
+
+- **Never modify, move, rename or delete anything in that directory.** Treat it as strictly read-only
+  source material. Copy files out of it if a task needs to place a fixture somewhere in-repo; never
+  write into it or run tools against it in place with `--fix`/in-place-edit flags.
+  If a fixture set is being assembled into the repo (e.g. under a `verification/t02-.../fixtures/`
+  copy), copy from that directory rather than referencing it directly, so the verification project
+  doesn't depend on a path that only exists on one machine.
+- **Never commit the directory itself, its path, or its contents.** The `.env` file that holds the path
+  is gitignored. Don't hardcode the absolute path in committed source, scripts, or handover notes.
+
+## Version control — do not commit
+
+Agents working in this repo **do not run `git commit` (or `git push`)**, even at the end of a
+completed task. Stage or leave changes as working-tree edits and tell the user what's ready; the user
+reviews and commits manually. This holds regardless of general instructions elsewhere that assume
+committing is fine once approved — in this repo it isn't, unless the user explicitly says so for that
+specific commit in the moment.
 
 ## CLAUDE.md
 

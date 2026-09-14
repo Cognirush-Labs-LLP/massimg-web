@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>T03 WASM memory harness</title>
+</head>
+<body>
+<p id="status">loading…</p>
+<script type="module">
+  // --- Capture the Emscripten-exported WebAssembly.Memory before magick-wasm
+  // loads, by patching the two entry points Emscripten's glue code uses to
+  // stand up the module. The wasm binary defines its own internal memory
+  // (not an imported one), so it comes back as `instance.exports.memory`.
+  // We stash it globally so the harness can read
+  // `WebAssembly.Memory.prototype.buffer` (via this instance) after every
+  // image, exactly as the assumption asks.
+  window.__wasmMemory = null;
+  window.__stashLog = [];
+  const stash = (instance) => {
+    if (!instance || !instance.exports) {
+      window.__stashLog.push('no instance/exports');
+      return;
+    }
+    const keys = Object.keys(instance.exports);
+    let mem = instance.exports.memory;
+    if (!(mem instanceof WebAssembly.Memory)) {
+      mem = Object.values(instance.exports).find((v) => v instanceof WebAssembly.Memory);
+    }
+    window.__stashLog.push(`exports keys: ${keys.slice(0, 20).join(',')}${keys.length > 20 ? '…' : ''} | found memory: ${mem instanceof WebAssembly.Memory}`);
+    if (mem instanceof WebAssembly.Memory) window.__wasmMemory = mem;
+  };
+  const origInstantiate = WebAssembly.instantiate.bind(WebAssembly);
+  WebAssembly.instantiate = async (...args) => {
+    const result = await origInstantiate(...args);
+    stash(result && result.instance ? result.instance : result);
+    return result;
+  };
+  const origInstantiateStreaming = WebAssembly.instantiateStreaming
+    ? WebAssembly.instantiateStreaming.bind(WebAssembly)
+    : null;
+  if (origInstantiateStreaming) {
+    WebAssembly.instantiateStreaming = async (...args) => {
+      const result = await origInstantiateStreaming(...args);
+      stash(result && result.instance ? result.instance : result);
+      return result;
+    };
+  }
+
+  const statusEl = document.getElementById('status');
+  const setStatus = (s) => { statusEl.textContent = s; };
+
+  const { initializeImageMagickx64, ImageMagick, MagickColor, MagickFormat } =
+    await import('./vendor/magick-wasm/index.js');
+
+  window.__initError = null;
+  window.__ready = (async () => {
+    try {
+      setStatus('initializing magick-wasm…');
+      // The x64 build pairs with x64/magick.wasm (memory64 addressing — the
+      // build we want here, since it's the one able to address large heaps
+      // without the ~4GB wasm32 ceiling). The plain `initializeImageMagick`
+      // entry point is only valid with the x86 (wasm32) binary; pairing it
+      // with the x64 binary produces a LinkError at instantiate time.
+      await initializeImageMagickx64(
+        new URL('./vendor/magick-wasm/x64/magick.wasm', import.meta.url),
+      );
+      setStatus('ready');
+    } catch (err) {
+      window.__initError = String((err && err.stack) || err);
+      setStatus('init failed: ' + window.__initError);
+      throw err;
+    }
+  })();
+
+  // Reads the live WASM heap size. WebAssembly linear memory can only grow
+  // (there is no shrink instruction in the spec), so this figure is a
+  // monotonically non-decreasing "how big has the heap ever had to get" —
+  // what we're really watching for is whether it *stops* growing once the
+  // allocator has enough headroom to reuse freed blocks, versus growing on
+  // every single image even at a constant working-set size (a leak).
+  window.__wasmBytes = () => (window.__wasmMemory ? window.__wasmMemory.buffer.byteLength : -1);
+
+  // Processes one synthetic image end to end: build a WxH canvas directly in
+  // ImageMagick (exercises the same decoded-pixel-buffer allocation a real
+  // decode would), resize it (the representative "process" step), encode to
+  // JPEG (the representative "output" step), then let the `read()` wrapper's
+  // implicit dispose free the IMagickImage. Returns heap-size snapshots at
+  // each point in that lifecycle.
+  window.__runOne = async function runOne(width, height) {
+    if (!window.__wasmMemory) throw new Error('wasm memory not captured yet');
+    const before = window.__wasmBytes();
+    let peak = before;
+    let encodedLength = 0;
+    await ImageMagick.read(new MagickColor(90, 110, 165, 255), width, height, (image) => {
+      image.resize(Math.max(1, Math.round(width / 2)), Math.max(1, Math.round(height / 2)));
+      image.write(MagickFormat.Jpeg, (data) => {
+        encodedLength = data.length;
+      });
+      peak = window.__wasmBytes();
+    });
+    const afterDispose = window.__wasmBytes();
+    if (typeof window.gc === 'function') window.gc();
+    await new Promise((r) => setTimeout(r, 30));
+    const afterGc = window.__wasmBytes();
+    return { width, height, before, peak, afterDispose, afterGc, encodedLength };
+  };
+
+  window.__harnessLoaded = true;
+</script>
+</body>
+</html>
