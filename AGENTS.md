@@ -30,6 +30,11 @@ A task is finished only when its **Done when** conditions all hold *and* its han
 
 ### Rules (from `docs/tasks.md` — do not weaken these)
 
+- **The UI mockup is a reference, not a spec.** `docs/sample_design/` (see its README) is a click-through
+  prototype made early, with simulated compression, that predates and does not fully track
+  `docs/functional-design.md` / `docs/technical-design.md`. Use it for layout, colour, type, spacing and
+  interaction behaviour where the design docs are silent, but where it conflicts with them — including
+  changes made to the design docs after the mockup was created — the design docs win.
 - **Do not invent requirements.** If the design documents don't answer a question, that's not yours to
   decide silently. Small implementation choices go in the handover note under "Decisions made." Anything
   that changes user-visible behaviour is a blocker: stop, write the note with status `blocked`, and state
