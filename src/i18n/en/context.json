@@ -1,0 +1,17 @@
+{
+  "gallery.title": {
+    "situation": "Heading shown above the image grid/list once the batch is non-empty (Functional Design §3.2, 'Populated state'). Sits above the mono meta line (image count and total input size) and above the toolbar row (Add images / Add folder / Clear / view mode toggle).",
+    "control": "Static heading text, not an interactive control. Reads naturally as a possessive noun phrase in English ('Your Images'); translators are free to restructure into whatever phrasing a section title takes in the target language.",
+    "maxLength": null
+  },
+  "action.compressLabel": {
+    "situation": "Label on the single primary action button that starts a compression run (Functional Design R-A1). {count} is the number of images currently in the batch; the button is only ever shown with count >= 1, since it is disabled and unreachable when the batch is empty.",
+    "control": "The one primary call-to-action button in the app: solid tint-red, always visible (panel footer on desktop, fixed bottom bar on mobile). Must read as a verb followed by a parenthesised count, e.g. 'Compress (6)' — translators should keep the count in parentheses rather than folding it into a full sentence, because it sits inside a fixed-width button, not a paragraph.",
+    "maxLength": 24
+  },
+  "panel.section.quality": {
+    "situation": "Section heading above the Quality controls (target selector, slider, LOW/MED/HIGH shortcut chips) in the side panel (Functional Design §4.1). Sibling headings in the same visual family are Dimension and Format (§4.2, §4.3) — not yet added as keys, but translators should expect this word to read consistently with those when they arrive.",
+    "control": "Static section heading, rendered uppercase with wide letter-tracking (Functional Design §14.2, 'Section headings are uppercase with wide tracking'). Not a button — do not translate as a call to action.",
+    "maxLength": 12
+  }
+}

@@ -4,6 +4,7 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 import pluginVue from 'eslint-plugin-vue'
 import tseslint from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import noTranslatedStringConcat from './eslint-rules/no-translated-string-concat.js'
 
 export default tseslint.config(
   {
@@ -49,6 +50,24 @@ export default tseslint.config(
         console: 'readonly',
         process: 'readonly',
       },
+    },
+  },
+  {
+    // T08 (i18n scaffold), R-L5: fail the lint gate on runtime concatenation
+    // of translated t(...) fragments. Scoped to app source only — t() isn't
+    // called from scripts/, config files or tests-that-aren't-app-code.
+    // See eslint-rules/no-translated-string-concat.js for exactly what this
+    // does and does not catch.
+    files: ['src/**/*.{ts,vue}'],
+    plugins: {
+      local: {
+        rules: {
+          'no-translated-string-concat': noTranslatedStringConcat,
+        },
+      },
+    },
+    rules: {
+      'local/no-translated-string-concat': 'error',
     },
   },
   // Must be last: disables stylistic rules that would fight Prettier.
