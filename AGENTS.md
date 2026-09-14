@@ -104,11 +104,16 @@ fixture sets) live **outside the repo**, on disk at a path given by the user. Th
 
 ## Version control — do not commit
 
-Agents working in this repo **do not run `git commit` (or `git push`)**, even at the end of a
-completed task. Stage or leave changes as working-tree edits and tell the user what's ready; the user
-reviews and commits manually. This holds regardless of general instructions elsewhere that assume
-committing is fine once approved — in this repo it isn't, unless the user explicitly says so for that
-specific commit in the moment.
+Agents working in this repo **do not run `git commit`, `git add`/`git stage` (or `git push`)**, even
+at the end of a completed task. Leave changes as working-tree edits and tell the user what's ready;
+the user stages and commits manually. This holds regardless of general instructions elsewhere that
+assume staging/committing is fine once approved — in this repo it isn't, unless the user explicitly
+says so for that specific action in the moment.
+
+Instead, once a task's changes are ready for review, propose a short commit message (don't commit)
+following `docs/commit-guide.md`, so the user can verify the implementation and commit it themselves
+if it looks good. Keep it to the one-line `type: Short description` form unless the change genuinely
+needs the longer body format.
 
 ## CLAUDE.md
 
