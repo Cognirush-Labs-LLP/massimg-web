@@ -2,7 +2,8 @@ pnpm-lock.yaml
 docs/
 3rd_party_licenses/
 verification/
-tests/
+playwright-report/
+test-results/
 AGENTS.md
 CLAUDE.md
 NOTICE.txt

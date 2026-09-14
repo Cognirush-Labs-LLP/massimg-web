@@ -13,7 +13,6 @@ export default tseslint.config(
       'docs/**',
       '3rd_party_licenses/**',
       'verification/**',
-      'tests/**',
       'playwright-report/**',
       'test-results/**',
     ],
