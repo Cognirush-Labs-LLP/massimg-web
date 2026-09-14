@@ -52,7 +52,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | B2 | OPFS quota differs sharply by platform | 90 | DOC | P2 |
 | B3 | OPFS unavailable in private browsing | 90 | DOC | P2 |
 | B4 | OPFS download does not materialise in RAM | 90 | TESTED | P1 |
-| B5 | Folder input works across browsers | 75 | OPEN | P2 |
+| B5 | Folder input works across browsers | 90 | TESTED | P2 |
 | B6 | Cross-origin isolation needed for threads | 85 | OPEN | P2 |
 | B7 | x64 build requires memory64 | 80 | TESTED | P2 |
 | B9 | Host can set custom response headers | 70 | OPEN | P2 |
@@ -272,13 +272,15 @@ Pass condition ("peak stays far below file size") held on all three engines: pea
 
 ---
 
-### B5 `OPEN` `75%` `P2` Folder input works across browsers
+### B5 `TESTED` `90%` `P2` Folder input works across browsers
 
 `<input webkitdirectory>` supported in Chrome, Firefox and Safari, each file carrying a usable `webkitRelativePath`. Dropped folders traversable with `DataTransferItem.webkitGetAsEntry`.
 
-**Why not higher.** Widely used, but the prefix signals a non-standard path, and iOS Safari's behaviour with folders is doubtful. R-I31 exists precisely because this may not hold everywhere.
+**Measured** (T18, `tests/e2e/folder.spec.ts`). A nested fixture tree (three real files at three depths, a dot-prefixed file, `Thumbs.db`, `desktop.ini`, and a dot-prefixed directory whose contents must not appear at all) was selected via `page.setInputFiles()` against a real `<input webkitdirectory>` element on Chromium, Firefox and desktop WebKit. On every engine, `webkitRelativePath` came back exactly as expected — including the hidden dotfile, the two named system files and the entire hidden directory, all of which the browser *does* surface to script (nothing filters them out before JavaScript sees them; `platform/folder.ts` does that filtering). No divergence between engines: desktop WebKit's folder-picker behaviour was identical to Chromium's and Firefox's on every case tested, including the depth-cap and file-count-cap rejection paths. The drop path (`DataTransferItem.webkitGetAsEntry`) could not be exercised with a genuine OS-level drag on any engine — no browser-automation tool can synthesize one, since `webkitGetAsEntry()` only returns a real entry for browser-populated items, never for script-constructed ones (see `docs/task-notes/T18.md`) — so its traversal logic (identical code path to the picker's cap/filter logic, sharing the same relative-path convention) was proven instead by calling `readDroppedFolder()` directly with a structurally faithful mock `FileSystemDirectoryEntry`/`FileSystemFileEntry` graph, and cross-checked to produce an identical file list to the real picker-based traversal of the same tree.
 
-**Method.** On each browser, select a nested folder and log every `webkitRelativePath`. Drop the same folder and traverse, comparing the two file lists. Record iOS Safari explicitly.
+**Why not higher.** Everything above is desktop WebKit (Playwright's bundled build, run on macOS), not real iOS Safari, which is the platform this assumption was actually written to worry about. iOS Safari on real hardware is still completely unverified and remains T46's job, same caveat B4 carries for the same reason. The genuine OS-level drop path is untestable in *any* automation tool on *any* engine, not just unverified here — see Surprises in `docs/task-notes/T18.md`.
+
+**Method.** On each browser, select a nested folder and log every `webkitRelativePath`. Drop the same folder and traverse, comparing the two file lists. Record iOS Safari explicitly. *(T18 completed the picker half for Chromium, Firefox and desktop WebKit exactly as specified. The drop half was completed as a direct call to `readDroppedFolder()` with a structural mock rather than a real OS-level drag — no automation tool can produce a genuine one — and its result was compared against the picker's file list for the same tree, which is the comparison this method was actually after. iOS Safari on real hardware remains open, see T46.)*
 
 ---
 
