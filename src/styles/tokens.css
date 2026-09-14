@@ -1,0 +1,72 @@
+/**
+ * Design tokens (T07), sourced from docs/functional-design.md §14.1/§14.2.
+ *
+ * Dark theme only — the design docs specify no light theme, so none is
+ * defined here. Do not add colours beyond this list without updating
+ * §14.1/§14.2 first; see docs/task-notes/T07.md "Decisions made" for how the
+ * *ranges* given in §14.1 (surface, muted text) were turned into concrete,
+ * named values.
+ */
+
+:root {
+  /* --- Colour (§14.1) --- */
+
+  /* Primary action, active states, crop outline, reduction figure. Never decorative. */
+  --color-tint: #cf0000;
+
+  /* Text, icons. */
+  --color-primary: #ffffff;
+
+  /* App background. */
+  --color-background: #000000;
+
+  /*
+   * Surface: §14.1 gives a range (#060606 to #121212) for "panel, controls,
+   * tiles" without assigning concrete stops. Three tiers, evenly spaced
+   * across that range in rising elevation order — see docs/task-notes/T07.md.
+   */
+  --color-surface-panel: #060606; /* side panel / large containers, least elevated */
+  --color-surface-control: #0e0e0e; /* buttons, inputs, segmented controls */
+  --color-surface-tile: #121212; /* image tiles/cards, most elevated */
+
+  /* Border: §14.1 gives two exact values, not a range. */
+  --color-border-group: #242424; /* grey separators between groups */
+  --color-border-control: #2c2c2c; /* control outlines (buttons, inputs, chips) */
+
+  /*
+   * Muted text: §14.1 gives a range (#6e6e6e to #a2a2a2) for "secondary and
+   * label text". §14.2 pins the loud end of that range to functional
+   * micro-labels explicitly (#a2a2a2); the quiet end is used for passive
+   * metadata, which §14.2 describes only as "deliberately quiet" — see
+   * docs/task-notes/T07.md.
+   */
+  --color-text-muted: #a2a2a2; /* secondary/label text, functional micro-labels */
+  --color-text-muted-quiet: #6e6e6e; /* passive metadata (quietest) */
+
+  /* --- Typography (§14.2) --- */
+
+  /* Display/UI font, with a real system-sans fallback stack. */
+  --font-family-display:
+    'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Data font (file sizes, dimensions, counters, breadcrumb, stepper), with a real system-mono fallback stack. */
+  --font-family-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Archivo weights, named by their §14.2 use. */
+  --font-weight-wordmark: 800; /* wordmark, primary action */
+  --font-weight-heading: 700; /* section headings, small functional labels */
+  --font-weight-control: 600; /* controls, chips */
+
+  /* Functional micro-label type: Archivo 11.5-12px/700/#a2a2a2, uppercase, wide tracking. */
+  --font-size-micro-label: 11.5px;
+  --letter-spacing-micro-label: 0.045em;
+
+  /* Section headings: uppercase, wide tracking (exact size is not specified — set per heading). */
+  --letter-spacing-heading: 0.08em;
+
+  /* --- Radii (§14.2) --- */
+  --radius-sm: 7px; /* chips, small fields (range given: 6-7px) */
+  --radius-md: 9px; /* controls, rows (range given: 8-10px) */
+  --radius-lg: 12px; /* primary button, stage frame (range given: 11-12px) */
+}

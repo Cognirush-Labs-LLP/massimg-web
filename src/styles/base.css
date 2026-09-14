@@ -1,0 +1,42 @@
+/**
+ * Base styles (T07): box-sizing reset and global element defaults wired to
+ * the tokens in ./tokens.css. Layout rules anywhere in this codebase must
+ * use logical properties only (inline-start/inline-end/padding-inline/etc,
+ * not left/right) per Technical Design §11 and R-L4 — enforced by
+ * `pnpm lint:css` (see stylelint.config.mjs).
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-control);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  max-inline-size: 100%;
+  block-size: auto;
+}

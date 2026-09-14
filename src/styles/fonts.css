@@ -1,0 +1,16 @@
+/**
+ * Self-hosted font faces (T07), via @fontsource — no runtime Google Fonts
+ * fetch. This is a local-processing-only app (functional-design.md's privacy
+ * principles), so fonts ship from the same origin as everything else rather
+ * than a third-party CDN. See docs/task-notes/T07.md for the weight choices.
+ *
+ * Archivo: 600 (controls/chips), 700 (headings/micro-labels), 800 (wordmark/primary action).
+ * JetBrains Mono: 400 (data text), 700 (emphasised data, e.g. the reduction figure).
+ */
+
+@import '@fontsource/archivo/600.css';
+@import '@fontsource/archivo/700.css';
+@import '@fontsource/archivo/800.css';
+
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/700.css';
