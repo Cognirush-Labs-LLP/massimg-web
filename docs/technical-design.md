@@ -613,7 +613,7 @@ Which sections change if an entry fails.
 | **C8** | 60 | §5.2 | Codecs split across workers; pool becomes heterogeneous |
 | **B5** | 75 | §10.1 | Folder input hidden on platforms that cannot do it |
 | **B9**, **B6** | 70, 85 | §12 | Threaded build unavailable; single-threaded baseline |
-| **C5** | 55 | §10.4 | List view becomes the default at a lower threshold |
+| **C5** | 85 | §10.4 | List view becomes the default at a lower threshold. Measured in T20: the threshold is `maximumThumbnails`, and no fallback was needed |
 | **D3** | 55 | §7.7 | Animated PNG converts to sRGB and records a caveat |
 | **E1** | 76 | §9.1 | Batch caps tighten |
 

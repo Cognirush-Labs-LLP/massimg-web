@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>T20 — thumbnail measurement harness</title>
+  </head>
+  <body>
+    <p>T20 thumbnail harness. Driven by Playwright from run.mjs.</p>
+    <script>
+      // Everything the driver calls is exposed on window. The worker is the generation context,
+      // exactly as in src/platform/thumbnails.ts, so the cancellation probe can terminate it.
+      let worker = null
+      let retained = []
+      let ticks = 0
+
+      function startWorker() {
+        worker = new Worker('/thumb-worker.js')
+        worker.addEventListener('message', (event) => {
+          if (event.data.kind === 'tick') ticks++
+        })
+        return worker
+      }
+
+      window.t20Manifest = async function () {
+        const manifest = await fetch('/manifest.json').then((r) => r.json())
+        window.__manifest = manifest
+        return manifest
+      }
+
+      window.t20Run = async function (options) {
+        if (!worker) startWorker()
+        const results = []
+
+        for (const entry of window.__manifest) {
+          const result = await new Promise((resolve) => {
+            const onMessage = (event) => {
+              if (event.data.kind !== 'result') return
+              worker.removeEventListener('message', onMessage)
+              resolve(event.data.result)
+            }
+            worker.addEventListener('message', onMessage)
+            worker.postMessage({
+              kind: 'job',
+              index: entry.index,
+              width: entry.width,
+              height: entry.height,
+              maxEdge: options.maxEdge,
+              format: options.format,
+              quality: options.quality,
+            })
+          })
+
+          // Retained exactly as Gallery retains them: the encoded Blob, nothing else.
+          if (result.ok) retained.push(result.blob)
+          const { blob, ...withoutBlob } = result
+          results.push(withoutBlob)
+        }
+
+        return {
+          results,
+          retainedCount: retained.length,
+          retainedBytes: retained.reduce((sum, blob) => sum + blob.size, 0),
+        }
+      }
+
+      window.t20Release = function () {
+        retained = []
+      }
+
+      window.t20StartLoop = function (options) {
+        if (!worker) startWorker()
+        ticks = 0
+        worker.postMessage({
+          kind: 'loop',
+          jobs: window.__manifest.map((entry) => ({
+            index: entry.index,
+            width: entry.width,
+            height: entry.height,
+          })),
+          options,
+        })
+      }
+
+      window.t20Ticks = function () {
+        return ticks
+      }
+
+      window.t20Terminate = function () {
+        if (worker) worker.terminate()
+        worker = null
+      }
+    </script>
+  </body>
+</html>

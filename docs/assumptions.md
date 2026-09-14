@@ -60,7 +60,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C2 | WASM memory is reclaimed after large images | 92 | TESTED | P1 |
 | C3 | Practical per-image and per-batch limits | 30 | OPEN | P2 |
 | C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
-| C5 | Thumbnail generation throughput | 55 | OPEN | P2 |
+| C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
 | C7 | Animated sources processed incrementally | 45 | OPEN | P2 |
 | C8 | Three WASM modules coexist acceptably | 60 | OPEN | P2 |
 | D1 | Size-target search is affordable | 95 | TESTED | P2 |
@@ -373,11 +373,65 @@ iOS Safari kills tabs on memory pressure without a catchable error, so rejection
 
 ---
 
-### C5 `OPEN` `55%` `P2` Thumbnail generation cost and representation
+### C5 `TESTED` `85%` `P2` Thumbnail generation cost and representation
 
 `createImageBitmap` with `resizeWidth` decodes and downscales natively, fast enough for lazy per-tile generation and much faster than the WASM path.
 
 **Affects.** R-G8's threshold, the encoded thumbnail format and size bound, and whether the grid view is viable at all for large batches.
+
+**Measured** (T20, `verification/t20-thumbnails/`, raw numbers in its `results.json`). 50 real photographs
+of mixed formats (26 JPEG, 12 PNG, 5 WebP, 4 HEIC, 2 GIF, 1 TIFF) and mixed dimensions (0.007 MP to
+34.6 MP, median 2.5 MP), each generated in a worker via `createImageBitmap` with both axes bounded,
+then encoded from an `OffscreenCanvas`. Four configurations — 256 px and 384 px long edge, JPEG and
+WebP at quality 0.75 — on Chromium, Firefox and desktop WebKit, each a full 50-image pass.
+
+At the chosen 384 px bound, per thumbnail (decode + encode, medians; the mean is higher because the
+34.6 MP fixture costs 135–352 ms):
+
+| Engine | JPEG median | JPEG mean bytes | WebP median | WebP mean bytes | Retained per 100, WebP |
+| --- | --- | --- | --- | --- | --- |
+| Chromium | 12 ms | 13.4 KB | 20 ms | 9.8 KB | 0.96 MB |
+| Firefox | 15 ms | 14.5 KB | 24 ms | 10.2 KB | 0.99 MB |
+| WebKit | 20 ms | 27.4 KB | 24 ms | 130.3 KB | 12.72 MB |
+
+**The core claim holds.** Native bounded decoding ran at a 12–24 ms median against 141–491 ms for
+ImageMagick's `thumbnail` on the same HEIC fixtures — roughly 10–25× faster, comfortably inside what
+lazy per-tile generation needs. Peak process-tree RSS over a full pass stayed 0–737 MB above an idle
+baseline, driven by the largest source decodes rather than by the retained thumbnails, which never
+exceeded 12.7 MB for a whole 100-thumbnail batch.
+
+**Choices this settles.**
+
+- **Encoded format: WebP**, at quality 0.75. It is 25–30% smaller than JPEG on Chromium and Firefox,
+  and it preserves the alpha a JPEG thumbnail of a transparent PNG would flatten to black. WebKit's
+  WebP encoder is the outlier (see below) but even its worst case retains only 12.7 MB per batch,
+  which is not enough to decide the format against a budget where one 12 MP decode is 48 MB (§8.1).
+- **Dimension bound: 384 px on the long edge, applied to both axes.** Covers the mockup's 168 px
+  minimum tile at device pixel ratio 2. The 256 px bound halves the bytes but is short of a
+  retina tile.
+- **R-G8's automatic threshold: 100 files — the same number as `maximumThumbnails`.** Above the read
+  budget, grid mode cannot give every tile a thumbnail and the surplus renders as placeholders, which
+  is exactly the case list mode serves better. Tying the threshold to the limit rather than to an
+  independent constant means T46's measurement moves both together.
+- **Cancellation works.** A worker generating continuously was terminated mid-flight on all three
+  engines: zero further completions afterwards, and peak RSS in the 4 s after termination was at or
+  below the peak during (Chromium 982 MB after vs 1114 MB during; Firefox 1217 vs 1513; WebKit
+  unchanged at 109). Growth stops, rather than a late result merely being hidden.
+
+**Surprising, and recorded rather than smoothed over.**
+
+- **Desktop WebKit decodes HEIC and TIFF natively; Chromium and Firefox do not.** All 50 fixtures
+  generated on WebKit, 45 on the other two. The ImageMagick fallback in Technical Design §10.4 is
+  therefore a Chromium/Firefox path, not a universal one.
+- **WebKit's `convertToBlob` appears to ignore the quality argument for `image/webp`**, producing
+  files ~4.8× larger than its own JPEG at the same bound (130.3 KB vs 27.4 KB mean). Its JPEG output
+  is also about twice Chromium's. Worth re-checking on a later WebKit before treating the WebP
+  numbers above as fixed.
+
+**Why not higher.** Desktop only. C5's method also calls for a mid-range phone, and no device was
+available; phone throughput and the memory headroom behind it are unmeasured and belong with C4 and
+T46. The 50 fixtures come from one machine's photo library, so the format mix is representative of
+that library rather than of every batch a user might bring.
 
 **Method.** Over 50 photographs of mixed dimensions and formats, on desktop and a mid-range phone, time
 native reduced-size decoding and the ImageMagick path where native decoding is unavailable. Compare JPEG
@@ -386,7 +440,9 @@ are bounded, then derive the file-count threshold at which Gallery should defaul
 that cancelling the Gallery generation owner stops CPU and memory growth rather than merely hiding a late
 result. The product ceiling for source-read attempts and retained Blobs comes from the single runtime
 `maximumThumbnails` limit in R-G3/R-G10, initially 100; measurement chooses representation and the lower
-automatic-mode threshold, not a hidden hard-coded ceiling.
+automatic-mode threshold, not a hidden hard-coded ceiling. *(T20 completed every part of this on
+desktop across all three engines. The mid-range phone was not available and remains open, with C4 and
+T46.)*
 
 ---
 

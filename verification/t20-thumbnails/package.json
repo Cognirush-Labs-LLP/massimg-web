@@ -1,0 +1,16 @@
+{
+  "name": "t20-thumbnails",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway Playwright harness for T20 — thumbnail generation time, retained Blob bytes and peak memory over 50 mixed photographs, JPEG against WebP, plus the ImageMagick fallback path (see docs/task-notes/T20.md and docs/assumptions.md C5).",
+  "scripts": {
+    "install-browsers": "playwright install chromium firefox webkit",
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "@imagemagick/magick-wasm": "0.0.43"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

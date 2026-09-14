@@ -1,0 +1,5483 @@
+{
+  "fixtures": [
+    {
+      "format": "jpeg",
+      "bytes": 168603,
+      "index": 0,
+      "width": 1200,
+      "height": 1799
+    },
+    {
+      "format": "jpeg",
+      "bytes": 285738,
+      "index": 1,
+      "width": 1920,
+      "height": 1282
+    },
+    {
+      "format": "jpeg",
+      "bytes": 420119,
+      "index": 2,
+      "width": 1280,
+      "height": 1920
+    },
+    {
+      "format": "jpeg",
+      "bytes": 477287,
+      "index": 3,
+      "width": 1281,
+      "height": 1920
+    },
+    {
+      "format": "jpeg",
+      "bytes": 568982,
+      "index": 4,
+      "width": 1920,
+      "height": 1278
+    },
+    {
+      "format": "jpeg",
+      "bytes": 672149,
+      "index": 5,
+      "width": 1920,
+      "height": 1280
+    },
+    {
+      "format": "jpeg",
+      "bytes": 746997,
+      "index": 6,
+      "width": 1280,
+      "height": 1920
+    },
+    {
+      "format": "jpeg",
+      "bytes": 848338,
+      "index": 7,
+      "width": 1920,
+      "height": 1280
+    },
+    {
+      "format": "jpeg",
+      "bytes": 959897,
+      "index": 8,
+      "width": 1920,
+      "height": 1280
+    },
+    {
+      "format": "jpeg",
+      "bytes": 1725063,
+      "index": 9,
+      "width": 4000,
+      "height": 6000
+    },
+    {
+      "format": "jpeg",
+      "bytes": 2687281,
+      "index": 10,
+      "width": 4288,
+      "height": 2848
+    },
+    {
+      "format": "jpeg",
+      "bytes": 3101556,
+      "index": 11,
+      "width": 4272,
+      "height": 2848
+    },
+    {
+      "format": "jpeg",
+      "bytes": 3406469,
+      "index": 12,
+      "width": 4000,
+      "height": 6000
+    },
+    {
+      "format": "jpeg",
+      "bytes": 3647824,
+      "index": 13,
+      "width": 4672,
+      "height": 7008
+    },
+    {
+      "format": "jpeg",
+      "bytes": 3875787,
+      "index": 14,
+      "width": 3770,
+      "height": 4713
+    },
+    {
+      "format": "jpeg",
+      "bytes": 4068596,
+      "index": 15,
+      "width": 4000,
+      "height": 2250
+    },
+    {
+      "format": "jpeg",
+      "bytes": 4307150,
+      "index": 16,
+      "width": 6016,
+      "height": 4016
+    },
+    {
+      "format": "jpeg",
+      "bytes": 4551711,
+      "index": 17,
+      "width": 4802,
+      "height": 7200
+    },
+    {
+      "format": "jpeg",
+      "bytes": 4742136,
+      "index": 18,
+      "width": 3648,
+      "height": 5472
+    },
+    {
+      "format": "jpeg",
+      "bytes": 5034195,
+      "index": 19,
+      "width": 4000,
+      "height": 6000
+    },
+    {
+      "format": "jpeg",
+      "bytes": 5173297,
+      "index": 20,
+      "width": 5760,
+      "height": 3840
+    },
+    {
+      "format": "jpeg",
+      "bytes": 5378162,
+      "index": 21,
+      "width": 4000,
+      "height": 6000
+    },
+    {
+      "format": "jpeg",
+      "bytes": 5594077,
+      "index": 22,
+      "width": 4480,
+      "height": 6720
+    },
+    {
+      "format": "jpeg",
+      "bytes": 5965921,
+      "index": 23,
+      "width": 4000,
+      "height": 6000
+    },
+    {
+      "format": "jpeg",
+      "bytes": 6743821,
+      "index": 24,
+      "width": 4800,
+      "height": 7200
+    },
+    {
+      "format": "jpeg",
+      "bytes": 7226618,
+      "index": 25,
+      "width": 4800,
+      "height": 7200
+    },
+    {
+      "format": "png",
+      "bytes": 1723,
+      "index": 26,
+      "width": 113,
+      "height": 142
+    },
+    {
+      "format": "png",
+      "bytes": 1916,
+      "index": 27,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "png",
+      "bytes": 1923,
+      "index": 28,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "png",
+      "bytes": 1952,
+      "index": 29,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "png",
+      "bytes": 7697,
+      "index": 30,
+      "width": 453,
+      "height": 569
+    },
+    {
+      "format": "png",
+      "bytes": 13377,
+      "index": 31,
+      "width": 97,
+      "height": 327
+    },
+    {
+      "format": "png",
+      "bytes": 19376,
+      "index": 32,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "format": "png",
+      "bytes": 40692,
+      "index": 33,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "png",
+      "bytes": 60293,
+      "index": 34,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "png",
+      "bytes": 76239,
+      "index": 35,
+      "width": 2026,
+      "height": 1349
+    },
+    {
+      "format": "png",
+      "bytes": 91949,
+      "index": 36,
+      "width": 1434,
+      "height": 744
+    },
+    {
+      "format": "png",
+      "bytes": 151873,
+      "index": 37,
+      "width": 1824,
+      "height": 1480
+    },
+    {
+      "format": "webp",
+      "bytes": 23114,
+      "index": 38,
+      "width": 1024,
+      "height": 200
+    },
+    {
+      "format": "webp",
+      "bytes": 23114,
+      "index": 39,
+      "width": 1024,
+      "height": 200
+    },
+    {
+      "format": "webp",
+      "bytes": 37342,
+      "index": 40,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "format": "webp",
+      "bytes": 62418,
+      "index": 41,
+      "width": 75,
+      "height": 95
+    },
+    {
+      "format": "webp",
+      "bytes": 72478,
+      "index": 42,
+      "width": 175,
+      "height": 99
+    },
+    {
+      "format": "heic",
+      "bytes": 381368,
+      "index": 43,
+      "width": 256,
+      "height": 144
+    },
+    {
+      "format": "heic",
+      "bytes": 381368,
+      "index": 44,
+      "width": 256,
+      "height": 144
+    },
+    {
+      "format": "heic",
+      "bytes": 1190541,
+      "index": 45,
+      "width": 4032,
+      "height": 3024
+    },
+    {
+      "format": "heic",
+      "bytes": 1190541,
+      "index": 46,
+      "width": 4032,
+      "height": 3024
+    },
+    {
+      "format": "gif",
+      "bytes": 15860,
+      "index": 47,
+      "width": 150,
+      "height": 189
+    },
+    {
+      "format": "gif",
+      "bytes": 962901,
+      "index": 48,
+      "width": 350,
+      "height": 197
+    },
+    {
+      "format": "tiff",
+      "bytes": 6367232,
+      "index": 49,
+      "width": 192,
+      "height": 128
+    }
+  ],
+  "engines": [
+    {
+      "engine": "chromium",
+      "baselineBytes": 275283968,
+      "passes": [
+        {
+          "maxEdge": 256,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 1708,
+          "peakBytes": 889847808,
+          "overBaselineBytes": 614563840,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 343397,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 34.51111110846202,
+            "median": 11.5,
+            "min": 0.19999992847442627,
+            "max": 130
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 0.5399999989403619,
+            "median": 0.5,
+            "min": 0.19999992847442627,
+            "max": 1.899999976158142
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 37.353333327505325,
+            "median": 14.200000047683716,
+            "min": 1.2000000476837158,
+            "max": 136.39999997615814
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 7631.044444444445,
+            "median": 6911,
+            "min": 2681,
+            "max": 19639
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 9.400000095367432,
+              "encodeMs": 1.899999976158142,
+              "thumbBytes": 4519,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 10.100000023841858,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 7276,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11.5,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 9337,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 12.200000047683716,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 4894,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12.100000023841858,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 9644,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 11.5,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 13587,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 11.199999928474426,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 11020,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 11.899999976158142,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 8098,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 12.700000047683716,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 10064,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 58,
+              "encodeMs": 0.5,
+              "thumbBytes": 3999,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 45.700000047683716,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 7939,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 48.39999997615814,
+              "encodeMs": 0.3999999761581421,
+              "thumbBytes": 10075,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 71.30000007152557,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 6068,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 94.69999992847443,
+              "encodeMs": 0.5,
+              "thumbBytes": 3213,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 67.20000004768372,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 8354,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 48.299999952316284,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 10490,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 83,
+              "encodeMs": 0.5,
+              "thumbBytes": 5558,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 104.70000004768372,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 6270,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 76.69999992847443,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 6581,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 85.19999992847443,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 9014,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 84.69999992847443,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 9552,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 90.5,
+              "encodeMs": 0.5,
+              "thumbBytes": 5552,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 112.89999997615814,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 5194,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 89.19999992847443,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 6726,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 130,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 7579,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 127.70000004768372,
+              "encodeMs": 0.5,
+              "thumbBytes": 7993,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0.2999999523162842,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 2704,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1.2000000476837158,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 19639,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1.2000000476837158,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 18208,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1.2999999523162842,
+              "encodeMs": 0.5,
+              "thumbBytes": 17395,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 1.2999999523162842,
+              "encodeMs": 0.5,
+              "thumbBytes": 4925,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0.6000000238418579,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 4740,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 1.5,
+              "encodeMs": 0.3999999761581421,
+              "thumbBytes": 7003,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1.399999976158142,
+              "encodeMs": 0.5,
+              "thumbBytes": 10451,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 1.7000000476837158,
+              "encodeMs": 0.3999999761581421,
+              "thumbBytes": 4853,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 6.900000095367432,
+              "encodeMs": 0.5,
+              "thumbBytes": 6343,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 2.899999976158142,
+              "encodeMs": 0.3999999761581421,
+              "thumbBytes": 7432,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 5.5,
+              "encodeMs": 0.5,
+              "thumbBytes": 3770,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1.7999999523162842,
+              "encodeMs": 0.30000007152557373,
+              "thumbBytes": 4218,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1.5,
+              "encodeMs": 0.20000004768371582,
+              "thumbBytes": 4218,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1.5,
+              "encodeMs": 0.5,
+              "thumbBytes": 9273,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0.3999999761581421,
+              "encodeMs": 0.19999992847442627,
+              "thumbBytes": 2681,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0.2999999523162842,
+              "encodeMs": 0.20000004768371582,
+              "thumbBytes": 3787,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0.19999992847442627,
+              "encodeMs": 0.40000009536743164,
+              "thumbBytes": 6911,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0.7000000476837158,
+              "encodeMs": 0.3999999761581421,
+              "thumbBytes": 6250,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 256,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 1804,
+          "peakBytes": 986873856,
+          "overBaselineBytes": 711589888,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 259546,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 33.63333333068424,
+            "median": 9,
+            "min": 0.09999990463256836,
+            "max": 124.69999992847443
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 3.584444451332092,
+            "median": 3.600000023841858,
+            "min": 1.3000000715255737,
+            "max": 11
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 39.59333332909478,
+            "median": 14,
+            "min": 2.8000000715255737,
+            "max": 133.70000004768372
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 5767.688888888889,
+            "median": 4890,
+            "min": 1792,
+            "max": 14238
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 6.399999976158142,
+              "encodeMs": 2.8000000715255737,
+              "thumbBytes": 2582,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 7.399999976158142,
+              "encodeMs": 3.600000023841858,
+              "thumbBytes": 4942,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 8.599999904632568,
+              "encodeMs": 3.9000000953674316,
+              "thumbBytes": 7152,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 9,
+              "encodeMs": 2.899999976158142,
+              "thumbBytes": 2736,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 9.899999976158142,
+              "encodeMs": 4.100000023841858,
+              "thumbBytes": 7722,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 10.200000047683716,
+              "encodeMs": 4.700000047683716,
+              "thumbBytes": 12372,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 10.900000095367432,
+              "encodeMs": 4.199999928474426,
+              "thumbBytes": 9584,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 11.899999976158142,
+              "encodeMs": 3.700000047683716,
+              "thumbBytes": 5820,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 12.399999976158142,
+              "encodeMs": 4.100000023841858,
+              "thumbBytes": 8518,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 54.699999928474426,
+              "encodeMs": 2.700000047683716,
+              "thumbBytes": 2036,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 45.700000047683716,
+              "encodeMs": 3.5,
+              "thumbBytes": 5296,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 48.299999952316284,
+              "encodeMs": 3.700000047683716,
+              "thumbBytes": 7524,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 69.79999995231628,
+              "encodeMs": 3,
+              "thumbBytes": 3562,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 96.89999997615814,
+              "encodeMs": 2.600000023841858,
+              "thumbBytes": 1792,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 67.69999992847443,
+              "encodeMs": 3.899999976158142,
+              "thumbBytes": 4868,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 47.699999928474426,
+              "encodeMs": 3.8000000715255737,
+              "thumbBytes": 9402,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 81.89999997615814,
+              "encodeMs": 3.200000047683716,
+              "thumbBytes": 3618,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 108.39999997615814,
+              "encodeMs": 3.3000000715255737,
+              "thumbBytes": 3994,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 76.5,
+              "encodeMs": 3.3000000715255737,
+              "thumbBytes": 3922,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 83.60000002384186,
+              "encodeMs": 3.5,
+              "thumbBytes": 6672,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 81.60000002384186,
+              "encodeMs": 3.8000000715255737,
+              "thumbBytes": 6826,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 90.30000007152557,
+              "encodeMs": 3.299999952316284,
+              "thumbBytes": 3186,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 106.60000002384186,
+              "encodeMs": 2.899999976158142,
+              "thumbBytes": 3194,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 87.5,
+              "encodeMs": 3.1999999284744263,
+              "thumbBytes": 4934,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 124.69999992847443,
+              "encodeMs": 3.8000000715255737,
+              "thumbBytes": 5536,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 122.10000002384186,
+              "encodeMs": 3.6999999284744263,
+              "thumbBytes": 5842,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0.20000004768371582,
+              "encodeMs": 1.600000023841858,
+              "thumbBytes": 2424,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1.3000000715255737,
+              "encodeMs": 5.699999928474426,
+              "thumbBytes": 14238,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1.3000000715255737,
+              "encodeMs": 5.299999952316284,
+              "thumbBytes": 13440,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1.2000000476837158,
+              "encodeMs": 5.299999952316284,
+              "thumbBytes": 12798,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 1.3000000715255737,
+              "encodeMs": 11,
+              "thumbBytes": 4440,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0.5,
+              "encodeMs": 1.5,
+              "thumbBytes": 2670,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 4.799999952316284,
+              "thumbBytes": 9654,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1.399999976158142,
+              "encodeMs": 4,
+              "thumbBytes": 6542,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 1.6999999284744263,
+              "encodeMs": 3.700000047683716,
+              "thumbBytes": 2530,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7,
+              "encodeMs": 3.100000023841858,
+              "thumbBytes": 3900,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 3.3000000715255737,
+              "encodeMs": 4.199999928474426,
+              "thumbBytes": 6910,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 6.100000023841858,
+              "encodeMs": 3.799999952316284,
+              "thumbBytes": 4800,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 1.5999999046325684,
+              "thumbBytes": 4488,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1.2999999523162842,
+              "encodeMs": 1.8000000715255737,
+              "thumbBytes": 4488,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 3.799999952316284,
+              "thumbBytes": 6168,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0.2999999523162842,
+              "encodeMs": 1.3000000715255737,
+              "thumbBytes": 4204,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0.2999999523162842,
+              "encodeMs": 1.899999976158142,
+              "thumbBytes": 2620,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0.09999990463256836,
+              "encodeMs": 2.9000000953674316,
+              "thumbBytes": 4890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0.7000000476837158,
+              "encodeMs": 2.799999952316284,
+              "thumbBytes": 4710,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 1694,
+          "peakBytes": 1048281088,
+          "overBaselineBytes": 772997120,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 615902,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 34.253333332803514,
+            "median": 10,
+            "min": 0.10000002384185791,
+            "max": 128.70000004768372
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 0.715555559264289,
+            "median": 0.7999999523162842,
+            "min": 0.19999992847442627,
+            "max": 1
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 37.13333333598243,
+            "median": 12,
+            "min": 1.1999999284744263,
+            "max": 135
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 13686.711111111112,
+            "median": 11658,
+            "min": 2681,
+            "max": 35689
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 7.100000023841858,
+              "encodeMs": 0.6999999284744263,
+              "thumbBytes": 7594,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 8.100000023841858,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 12654,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 9.199999928474426,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 18041,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 10,
+              "encodeMs": 0.6999999284744263,
+              "thumbBytes": 8612,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 10.5,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 19663,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 11,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 27947,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 11.600000023841858,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 22475,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 12.799999952316284,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 16073,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 13.200000047683716,
+              "encodeMs": 1,
+              "thumbBytes": 20628,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 55.800000071525574,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 6593,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 45.39999997615814,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 13712,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 49.39999997615814,
+              "encodeMs": 0.8999999761581421,
+              "thumbBytes": 18759,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 75.70000004768372,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 10302,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 99.29999995231628,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 5122,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 67.5,
+              "encodeMs": 0.8999999761581421,
+              "thumbBytes": 15280,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 48.10000002384186,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 22066,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 81,
+              "encodeMs": 0.6999999284744263,
+              "thumbBytes": 10066,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 108.29999995231628,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 11347,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 75.20000004768372,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 11425,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 86.59999990463257,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 16240,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 82.19999992847443,
+              "encodeMs": 1,
+              "thumbBytes": 16398,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 89.19999992847443,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 9852,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 103.89999997615814,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 8929,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 87.89999997615814,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 13570,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 127.20000004768372,
+              "encodeMs": 0.6999999284744263,
+              "thumbBytes": 14538,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 128.70000004768372,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 15291,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0.30000007152557373,
+              "encodeMs": 0.19999992847442627,
+              "thumbBytes": 2704,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1.4000000953674316,
+              "encodeMs": 0.8999999761581421,
+              "thumbBytes": 35689,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1.2999999523162842,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 33734,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1.399999976158142,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 31718,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2.3000000715255737,
+              "encodeMs": 0.5999999046325684,
+              "thumbBytes": 8385,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0.3999999761581421,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 6197,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2.100000023841858,
+              "encodeMs": 0.8999999761581421,
+              "thumbBytes": 11376,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1.7999999523162842,
+              "encodeMs": 0.9000000953674316,
+              "thumbBytes": 18070,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 7935,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7.600000023841858,
+              "encodeMs": 0.6999999284744263,
+              "thumbBytes": 11037,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 3.399999976158142,
+              "encodeMs": 0.7000000476837158,
+              "thumbBytes": 16293,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 6.299999952316284,
+              "encodeMs": 0.7999999523162842,
+              "thumbBytes": 6547,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1.8000000715255737,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 6398,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 0.30000007152557373,
+              "thumbBytes": 6398,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1.5,
+              "encodeMs": 0.8000000715255737,
+              "thumbBytes": 15207,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0.3999999761581421,
+              "encodeMs": 0.20000004768371582,
+              "thumbBytes": 2681,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0.2999999523162842,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 3787,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0.10000002384185791,
+              "encodeMs": 0.2999999523162842,
+              "thumbBytes": 6911,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0.5,
+              "encodeMs": 0.6000000238418579,
+              "thumbBytes": 11658,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 2008,
+          "peakBytes": 1030422528,
+          "overBaselineBytes": 755138560,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 452380,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 34.71777777936723,
+            "median": 10,
+            "min": 0.19999992847442627,
+            "max": 124.60000002384186
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 7.088888883590698,
+            "median": 6.899999976158142,
+            "min": 1.100000023841858,
+            "max": 22.100000023841858
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 44.16222222381168,
+            "median": 20,
+            "min": 2.3000000715255737,
+            "max": 142.5
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 10052.888888888889,
+            "median": 8456,
+            "min": 2424,
+            "max": 25622
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 7.300000071525574,
+              "encodeMs": 5.399999976158142,
+              "thumbBytes": 3934,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 8.299999952316284,
+              "encodeMs": 6.899999976158142,
+              "thumbBytes": 7974,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 8.899999976158142,
+              "encodeMs": 7.700000047683716,
+              "thumbBytes": 13496,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 10,
+              "encodeMs": 5.5,
+              "thumbBytes": 4380,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 10.399999976158142,
+              "encodeMs": 8.199999928474426,
+              "thumbBytes": 16046,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 11.200000047683716,
+              "encodeMs": 9.5,
+              "thumbBytes": 25278,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 11.5,
+              "encodeMs": 8.399999976158142,
+              "thumbBytes": 19226,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 13.299999952316284,
+              "encodeMs": 7.5,
+              "thumbBytes": 11018,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 13.5,
+              "encodeMs": 8.399999976158142,
+              "thumbBytes": 17508,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 56,
+              "encodeMs": 4.800000071525574,
+              "thumbBytes": 3072,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 45.89999997615814,
+              "encodeMs": 6.899999976158142,
+              "thumbBytes": 8456,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 47.699999928474426,
+              "encodeMs": 7.5,
+              "thumbBytes": 12972,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 71.29999995231628,
+              "encodeMs": 6,
+              "thumbBytes": 5514,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 99.10000002384186,
+              "encodeMs": 5,
+              "thumbBytes": 2686,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 67.5,
+              "encodeMs": 8.299999952316284,
+              "thumbBytes": 8348,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 72.39999997615814,
+              "encodeMs": 12.800000071525574,
+              "thumbBytes": 19922,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 88,
+              "encodeMs": 6,
+              "thumbBytes": 6256,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 111,
+              "encodeMs": 6.5,
+              "thumbBytes": 6642,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 76.59999990463257,
+              "encodeMs": 6.300000071525574,
+              "thumbBytes": 6180,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 84.69999992847443,
+              "encodeMs": 7.100000023841858,
+              "thumbBytes": 11546,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 83.90000009536743,
+              "encodeMs": 7.299999952316284,
+              "thumbBytes": 10556,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 87.69999992847443,
+              "encodeMs": 6.300000071525574,
+              "thumbBytes": 5208,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 104.40000009536743,
+              "encodeMs": 5.699999928474426,
+              "thumbBytes": 5158,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 87.79999995231628,
+              "encodeMs": 6.700000047683716,
+              "thumbBytes": 10114,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 124.20000004768372,
+              "encodeMs": 7.200000047683716,
+              "thumbBytes": 9952,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 124.60000002384186,
+              "encodeMs": 7.699999928474426,
+              "thumbBytes": 10408,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0.19999992847442627,
+              "encodeMs": 1.600000023841858,
+              "thumbBytes": 2424,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1.399999976158142,
+              "encodeMs": 11,
+              "thumbBytes": 25622,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1.3000000715255737,
+              "encodeMs": 10.5,
+              "thumbBytes": 23832,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1.2999999523162842,
+              "encodeMs": 10.100000023841858,
+              "thumbBytes": 22286,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2.100000023841858,
+              "encodeMs": 16.799999952316284,
+              "thumbBytes": 7888,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0.3999999761581421,
+              "encodeMs": 2.5,
+              "thumbBytes": 3360,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 1.7000000476837158,
+              "encodeMs": 22.100000023841858,
+              "thumbBytes": 16930,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1.5,
+              "encodeMs": 7.899999976158142,
+              "thumbBytes": 10234,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 1.9000000953674316,
+              "encodeMs": 6.699999928474426,
+              "thumbBytes": 3636,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7.300000071525574,
+              "encodeMs": 5.799999952316284,
+              "thumbBytes": 6996,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 3.5,
+              "encodeMs": 6.899999976158142,
+              "thumbBytes": 12880,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 6.400000095367432,
+              "encodeMs": 7.5,
+              "thumbBytes": 9796,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1.6999999284744263,
+              "encodeMs": 2.700000047683716,
+              "thumbBytes": 6940,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 2.600000023841858,
+              "thumbBytes": 6940,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1.600000023841858,
+              "encodeMs": 7.199999928474426,
+              "thumbBytes": 9362,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0.30000007152557373,
+              "encodeMs": 1.100000023841858,
+              "thumbBytes": 4204,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0.19999992847442627,
+              "encodeMs": 2,
+              "thumbBytes": 2620,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0.20000004768371582,
+              "encodeMs": 2.799999952316284,
+              "thumbBytes": 4890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0.5,
+              "encodeMs": 5.599999904632568,
+              "thumbBytes": 9690,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        }
+      ],
+      "cancellation": {
+        "duringPeakBytes": 1167687680,
+        "afterPeakBytes": 1029455872,
+        "ticksBeforeStop": 105,
+        "ticksAfterStop": 105
+      }
+    },
+    {
+      "engine": "firefox",
+      "baselineBytes": 1055801344,
+      "passes": [
+        {
+          "maxEdge": 256,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 2883,
+          "peakBytes": 1338294272,
+          "overBaselineBytes": 282492928,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 362439,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 58.17777777777778,
+            "median": 14,
+            "min": 0,
+            "max": 340
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 0.5555555555555556,
+            "median": 1,
+            "min": 0,
+            "max": 2
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 63.111111111111114,
+            "median": 17,
+            "min": 1,
+            "max": 352
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 8054.2,
+            "median": 7027,
+            "min": 2554,
+            "max": 21481
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 13,
+              "encodeMs": 1,
+              "thumbBytes": 4683,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 14,
+              "encodeMs": 1,
+              "thumbBytes": 7508,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 16,
+              "encodeMs": 0,
+              "thumbBytes": 9859,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 14,
+              "encodeMs": 1,
+              "thumbBytes": 5003,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 14,
+              "encodeMs": 0,
+              "thumbBytes": 10474,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 14,
+              "encodeMs": 0,
+              "thumbBytes": 14435,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 14,
+              "encodeMs": 0,
+              "thumbBytes": 11760,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 15,
+              "encodeMs": 0,
+              "thumbBytes": 8603,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 16,
+              "encodeMs": 0,
+              "thumbBytes": 10809,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 104,
+              "encodeMs": 0,
+              "thumbBytes": 4170,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 70,
+              "encodeMs": 1,
+              "thumbBytes": 8268,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 73,
+              "encodeMs": 2,
+              "thumbBytes": 10617,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 120,
+              "encodeMs": 1,
+              "thumbBytes": 6181,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 178,
+              "encodeMs": 0,
+              "thumbBytes": 3405,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 102,
+              "encodeMs": 1,
+              "thumbBytes": 8885,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 68,
+              "encodeMs": 1,
+              "thumbBytes": 11471,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 135,
+              "encodeMs": 1,
+              "thumbBytes": 5747,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 191,
+              "encodeMs": 1,
+              "thumbBytes": 6566,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 121,
+              "encodeMs": 1,
+              "thumbBytes": 6759,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 137,
+              "encodeMs": 1,
+              "thumbBytes": 9458,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 128,
+              "encodeMs": 1,
+              "thumbBytes": 9895,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 143,
+              "encodeMs": 1,
+              "thumbBytes": 5739,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 177,
+              "encodeMs": 1,
+              "thumbBytes": 5287,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 142,
+              "encodeMs": 0,
+              "thumbBytes": 7193,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 340,
+              "encodeMs": 1,
+              "thumbBytes": 8118,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 209,
+              "encodeMs": 1,
+              "thumbBytes": 8624,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 4,
+              "encodeMs": 0,
+              "thumbBytes": 2652,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 21481,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 19957,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 19043,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2,
+              "encodeMs": 0,
+              "thumbBytes": 5146,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 5039,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 7027,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 10878,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 0,
+              "thumbBytes": 5013,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 14,
+              "encodeMs": 0,
+              "thumbBytes": 6599,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 5,
+              "encodeMs": 0,
+              "thumbBytes": 8110,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 11,
+              "encodeMs": 0,
+              "thumbBytes": 4378,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 4,
+              "encodeMs": 0,
+              "thumbBytes": 4275,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 4275,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 9657,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 2554,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 3671,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0,
+              "encodeMs": 0,
+              "thumbBytes": 6890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 6277,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 256,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 2871,
+          "peakBytes": 1442840576,
+          "overBaselineBytes": 387039232,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 256436,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 54.91111111111111,
+            "median": 12,
+            "min": 0,
+            "max": 206
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 3.8444444444444446,
+            "median": 3,
+            "min": 1,
+            "max": 13
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 63.08888888888889,
+            "median": 19,
+            "min": 4,
+            "max": 224
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 5698.577777777778,
+            "median": 4728,
+            "min": 1390,
+            "max": 14432
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 8,
+              "encodeMs": 3,
+              "thumbBytes": 2300,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 11,
+              "encodeMs": 3,
+              "thumbBytes": 4728,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 12,
+              "encodeMs": 3,
+              "thumbBytes": 7412,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 12,
+              "encodeMs": 3,
+              "thumbBytes": 2520,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 4,
+              "thumbBytes": 8544,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 14,
+              "encodeMs": 4,
+              "thumbBytes": 13190,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 14,
+              "encodeMs": 4,
+              "thumbBytes": 10106,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 15,
+              "encodeMs": 5,
+              "thumbBytes": 6168,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 16,
+              "encodeMs": 4,
+              "thumbBytes": 9464,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 108,
+              "encodeMs": 2,
+              "thumbBytes": 1742,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 72,
+              "encodeMs": 4,
+              "thumbBytes": 5274,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 74,
+              "encodeMs": 4,
+              "thumbBytes": 7708,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 124,
+              "encodeMs": 3,
+              "thumbBytes": 3296,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 178,
+              "encodeMs": 2,
+              "thumbBytes": 1390,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 102,
+              "encodeMs": 5,
+              "thumbBytes": 4938,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 69,
+              "encodeMs": 5,
+              "thumbBytes": 10290,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 135,
+              "encodeMs": 3,
+              "thumbBytes": 3328,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 194,
+              "encodeMs": 4,
+              "thumbBytes": 3974,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 120,
+              "encodeMs": 3,
+              "thumbBytes": 3806,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 139,
+              "encodeMs": 5,
+              "thumbBytes": 6732,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 131,
+              "encodeMs": 5,
+              "thumbBytes": 6906,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 138,
+              "encodeMs": 3,
+              "thumbBytes": 2942,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 174,
+              "encodeMs": 3,
+              "thumbBytes": 2872,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 143,
+              "encodeMs": 4,
+              "thumbBytes": 5162,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 205,
+              "encodeMs": 3,
+              "thumbBytes": 5754,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 206,
+              "encodeMs": 5,
+              "thumbBytes": 6200,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 1872,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1,
+              "encodeMs": 6,
+              "thumbBytes": 14432,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1,
+              "encodeMs": 5,
+              "thumbBytes": 13582,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1,
+              "encodeMs": 5,
+              "thumbBytes": 13146,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 1,
+              "encodeMs": 6,
+              "thumbBytes": 4366,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 2322,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 13,
+              "thumbBytes": 9552,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 6478,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 2124,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 14,
+              "encodeMs": 2,
+              "thumbBytes": 3718,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 4,
+              "encodeMs": 4,
+              "thumbBytes": 5866,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 12,
+              "encodeMs": 9,
+              "thumbBytes": 3132,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 4456,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 4456,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 5990,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 3252,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 2148,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 4362,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 4436,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 2770,
+          "peakBytes": 1640890368,
+          "overBaselineBytes": 585089024,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 666889,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 53.93333333333333,
+            "median": 13,
+            "min": 0,
+            "max": 204
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 0.6,
+            "median": 1,
+            "min": 0,
+            "max": 2
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 60.84444444444444,
+            "median": 15,
+            "min": 2,
+            "max": 238
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 14819.755555555555,
+            "median": 12569,
+            "min": 2554,
+            "max": 41059
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 8,
+              "encodeMs": 1,
+              "thumbBytes": 8113,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 10,
+              "encodeMs": 1,
+              "thumbBytes": 13157,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11,
+              "encodeMs": 1,
+              "thumbBytes": 19235,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 13,
+              "encodeMs": 1,
+              "thumbBytes": 9094,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 1,
+              "thumbBytes": 21530,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 13,
+              "encodeMs": 0,
+              "thumbBytes": 30212,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 14,
+              "encodeMs": 0,
+              "thumbBytes": 24147,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 15,
+              "encodeMs": 0,
+              "thumbBytes": 17256,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 15,
+              "encodeMs": 1,
+              "thumbBytes": 22452,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 104,
+              "encodeMs": 1,
+              "thumbBytes": 7127,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 67,
+              "encodeMs": 0,
+              "thumbBytes": 14143,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 71,
+              "encodeMs": 1,
+              "thumbBytes": 19592,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 126,
+              "encodeMs": 1,
+              "thumbBytes": 10800,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 171,
+              "encodeMs": 1,
+              "thumbBytes": 5715,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 103,
+              "encodeMs": 1,
+              "thumbBytes": 16078,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 69,
+              "encodeMs": 1,
+              "thumbBytes": 23844,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 141,
+              "encodeMs": 1,
+              "thumbBytes": 10788,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 186,
+              "encodeMs": 1,
+              "thumbBytes": 12030,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 117,
+              "encodeMs": 0,
+              "thumbBytes": 11897,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 135,
+              "encodeMs": 0,
+              "thumbBytes": 17295,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 129,
+              "encodeMs": 1,
+              "thumbBytes": 17162,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 142,
+              "encodeMs": 0,
+              "thumbBytes": 10489,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 170,
+              "encodeMs": 2,
+              "thumbBytes": 9376,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 144,
+              "encodeMs": 1,
+              "thumbBytes": 14894,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 193,
+              "encodeMs": 2,
+              "thumbBytes": 15716,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 204,
+              "encodeMs": 1,
+              "thumbBytes": 16563,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0,
+              "encodeMs": 0,
+              "thumbBytes": 2652,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 41059,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 38358,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 36337,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 8400,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 6485,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 11715,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 2,
+              "encodeMs": 0,
+              "thumbBytes": 20504,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 8826,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 13,
+              "encodeMs": 0,
+              "thumbBytes": 12569,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 4,
+              "encodeMs": 0,
+              "thumbBytes": 17841,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 11,
+              "encodeMs": 0,
+              "thumbBytes": 8020,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 6955,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 2,
+              "encodeMs": 0,
+              "thumbBytes": 6955,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 16740,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 2554,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 3671,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 1,
+              "encodeMs": 0,
+              "thumbBytes": 6890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 11653,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 2934,
+          "peakBytes": 1608794112,
+          "overBaselineBytes": 552992768,
+          "generated": 45,
+          "unsupported": [
+            43,
+            44,
+            45,
+            46,
+            49
+          ],
+          "failed": [],
+          "retainedBytes": 468314,
+          "retainedCount": 45,
+          "decodeMs": {
+            "count": 45,
+            "mean": 52.77777777777778,
+            "median": 12,
+            "min": 0,
+            "max": 197
+          },
+          "encodeMs": {
+            "count": 45,
+            "mean": 7.466666666666667,
+            "median": 7,
+            "min": 1,
+            "max": 31
+          },
+          "totalMs": {
+            "count": 45,
+            "mean": 64.5111111111111,
+            "median": 24,
+            "min": 3,
+            "max": 215
+          },
+          "thumbBytes": {
+            "count": 45,
+            "mean": 10406.977777777778,
+            "median": 8494,
+            "min": 1872,
+            "max": 27498
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 8,
+              "encodeMs": 6,
+              "thumbBytes": 3958,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 10,
+              "encodeMs": 7,
+              "thumbBytes": 7988,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11,
+              "encodeMs": 8,
+              "thumbBytes": 14512,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 12,
+              "encodeMs": 6,
+              "thumbBytes": 4380,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 13,
+              "encodeMs": 8,
+              "thumbBytes": 18060,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 12,
+              "encodeMs": 10,
+              "thumbBytes": 27498,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 14,
+              "encodeMs": 8,
+              "thumbBytes": 21150,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 15,
+              "encodeMs": 7,
+              "thumbBytes": 12576,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 16,
+              "encodeMs": 9,
+              "thumbBytes": 19966,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 102,
+              "encodeMs": 5,
+              "thumbBytes": 2892,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 69,
+              "encodeMs": 7,
+              "thumbBytes": 8494,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 71,
+              "encodeMs": 7,
+              "thumbBytes": 13372,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 128,
+              "encodeMs": 6,
+              "thumbBytes": 5600,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 165,
+              "encodeMs": 5,
+              "thumbBytes": 2372,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 97,
+              "encodeMs": 9,
+              "thumbBytes": 8564,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 64,
+              "encodeMs": 8,
+              "thumbBytes": 21872,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 130,
+              "encodeMs": 7,
+              "thumbBytes": 6366,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 178,
+              "encodeMs": 7,
+              "thumbBytes": 7102,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 116,
+              "encodeMs": 6,
+              "thumbBytes": 6364,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 136,
+              "encodeMs": 7,
+              "thumbBytes": 12112,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 130,
+              "encodeMs": 7,
+              "thumbBytes": 10792,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 139,
+              "encodeMs": 6,
+              "thumbBytes": 5208,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 166,
+              "encodeMs": 6,
+              "thumbBytes": 5158,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 138,
+              "encodeMs": 7,
+              "thumbBytes": 11400,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 197,
+              "encodeMs": 8,
+              "thumbBytes": 10654,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 197,
+              "encodeMs": 7,
+              "thumbBytes": 11662,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 1872,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 1,
+              "encodeMs": 10,
+              "thumbBytes": 26364,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 1,
+              "encodeMs": 10,
+              "thumbBytes": 24768,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 1,
+              "encodeMs": 10,
+              "thumbBytes": 23506,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 1,
+              "encodeMs": 11,
+              "thumbBytes": 6928,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 2890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 31,
+              "thumbBytes": 17978,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1,
+              "encodeMs": 8,
+              "thumbBytes": 10890,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 7,
+              "thumbBytes": 3554,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 13,
+              "encodeMs": 6,
+              "thumbBytes": 8268,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 5,
+              "encodeMs": 7,
+              "thumbBytes": 12090,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 10,
+              "encodeMs": 21,
+              "thumbBytes": 6480,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 7166,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1,
+              "encodeMs": 4,
+              "thumbBytes": 7166,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 0,
+              "encodeMs": 7,
+              "thumbBytes": 9344,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 3252,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 2148,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 0,
+              "encodeMs": 3,
+              "thumbBytes": 4362,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 0,
+              "encodeMs": 6,
+              "thumbBytes": 9216,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        }
+      ],
+      "cancellation": {
+        "duringPeakBytes": 1586806784,
+        "afterPeakBytes": 1275904000,
+        "ticksBeforeStop": 66,
+        "ticksAfterStop": 66
+      }
+    },
+    {
+      "engine": "webkit",
+      "baselineBytes": 113999872,
+      "passes": [
+        {
+          "maxEdge": 256,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 3195,
+          "peakBytes": 114442240,
+          "overBaselineBytes": 442368,
+          "generated": 50,
+          "unsupported": [],
+          "failed": [],
+          "retainedBytes": 773532,
+          "retainedCount": 50,
+          "decodeMs": {
+            "count": 50,
+            "mean": 45.9,
+            "median": 13,
+            "min": 0,
+            "max": 173
+          },
+          "encodeMs": {
+            "count": 50,
+            "mean": 13.7,
+            "median": 5,
+            "min": 1,
+            "max": 73
+          },
+          "totalMs": {
+            "count": 50,
+            "mean": 63.2,
+            "median": 21,
+            "min": 3,
+            "max": 219
+          },
+          "thumbBytes": {
+            "count": 50,
+            "mean": 15470.64,
+            "median": 15551,
+            "min": 3874,
+            "max": 34654
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 18,
+              "encodeMs": 73,
+              "thumbBytes": 8853,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 9,
+              "encodeMs": 5,
+              "thumbBytes": 13746,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11,
+              "encodeMs": 4,
+              "thumbBytes": 20765,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 11,
+              "encodeMs": 5,
+              "thumbBytes": 11903,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 4,
+              "thumbBytes": 23305,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 12,
+              "encodeMs": 4,
+              "thumbBytes": 29430,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 13,
+              "encodeMs": 4,
+              "thumbBytes": 25744,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 14,
+              "encodeMs": 5,
+              "thumbBytes": 21032,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 14,
+              "encodeMs": 4,
+              "thumbBytes": 24535,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 76,
+              "encodeMs": 27,
+              "thumbBytes": 7730,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 59,
+              "encodeMs": 16,
+              "thumbBytes": 16999,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 65,
+              "encodeMs": 14,
+              "thumbBytes": 20492,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 99,
+              "encodeMs": 26,
+              "thumbBytes": 12737,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 120,
+              "encodeMs": 36,
+              "thumbBytes": 6860,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 90,
+              "encodeMs": 29,
+              "thumbBytes": 16906,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 70,
+              "encodeMs": 11,
+              "thumbBytes": 24635,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 108,
+              "encodeMs": 27,
+              "thumbBytes": 11959,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 139,
+              "encodeMs": 56,
+              "thumbBytes": 13007,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 109,
+              "encodeMs": 25,
+              "thumbBytes": 15551,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 122,
+              "encodeMs": 27,
+              "thumbBytes": 19187,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 116,
+              "encodeMs": 26,
+              "thumbBytes": 19572,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 123,
+              "encodeMs": 27,
+              "thumbBytes": 13547,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 142,
+              "encodeMs": 33,
+              "thumbBytes": 12349,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 135,
+              "encodeMs": 26,
+              "thumbBytes": 17975,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 166,
+              "encodeMs": 37,
+              "thumbBytes": 17046,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 173,
+              "encodeMs": 38,
+              "thumbBytes": 17875,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 4484,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 34654,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 33250,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 32520,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 8690,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 7992,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 12183,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 18213,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 3,
+              "encodeMs": 1,
+              "thumbBytes": 9289,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7,
+              "encodeMs": 14,
+              "thumbBytes": 10912,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 8,
+              "encodeMs": 6,
+              "thumbBytes": 13249,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 18,
+              "encodeMs": 13,
+              "thumbBytes": 6866,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 5,
+              "encodeMs": 3,
+              "thumbBytes": 6434,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 6434,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 16053,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 3874,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 6307,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 43,
+              "decodeMs": 35,
+              "encodeMs": 1,
+              "thumbBytes": 17696,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 44,
+              "decodeMs": 3,
+              "encodeMs": 1,
+              "thumbBytes": 17696,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 45,
+              "decodeMs": 78,
+              "encodeMs": 16,
+              "thumbBytes": 15656,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 46,
+              "decodeMs": 76,
+              "encodeMs": 14,
+              "thumbBytes": 15656,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 10459,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 4,
+              "encodeMs": 1,
+              "thumbBytes": 11987,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 49,
+              "decodeMs": 10,
+              "encodeMs": 2,
+              "thumbBytes": 9238,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 256,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 3121,
+          "peakBytes": 114507776,
+          "overBaselineBytes": 507904,
+          "generated": 50,
+          "unsupported": [],
+          "failed": [],
+          "retainedBytes": 3464067,
+          "retainedCount": 50,
+          "decodeMs": {
+            "count": 50,
+            "mean": 44.68,
+            "median": 12,
+            "min": 0,
+            "max": 176
+          },
+          "encodeMs": {
+            "count": 50,
+            "mean": 13.7,
+            "median": 6,
+            "min": 1,
+            "max": 55
+          },
+          "totalMs": {
+            "count": 50,
+            "mean": 62,
+            "median": 20,
+            "min": 4,
+            "max": 227
+          },
+          "thumbBytes": {
+            "count": 50,
+            "mean": 69281.34,
+            "median": 76098,
+            "min": 4799,
+            "max": 122989
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 7,
+              "encodeMs": 5,
+              "thumbBytes": 54039,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 8,
+              "encodeMs": 6,
+              "thumbBytes": 88306,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11,
+              "encodeMs": 5,
+              "thumbBytes": 103718,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 11,
+              "encodeMs": 6,
+              "thumbBytes": 80736,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 5,
+              "thumbBytes": 109156,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 12,
+              "encodeMs": 6,
+              "thumbBytes": 122989,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 13,
+              "encodeMs": 6,
+              "thumbBytes": 110003,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 14,
+              "encodeMs": 6,
+              "thumbBytes": 106806,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 15,
+              "encodeMs": 5,
+              "thumbBytes": 115748,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 76,
+              "encodeMs": 28,
+              "thumbBytes": 47139,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 60,
+              "encodeMs": 16,
+              "thumbBytes": 96533,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 65,
+              "encodeMs": 17,
+              "thumbBytes": 109574,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 101,
+              "encodeMs": 28,
+              "thumbBytes": 90110,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 122,
+              "encodeMs": 42,
+              "thumbBytes": 63796,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 90,
+              "encodeMs": 33,
+              "thumbBytes": 113682,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 68,
+              "encodeMs": 13,
+              "thumbBytes": 109295,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 110,
+              "encodeMs": 30,
+              "thumbBytes": 75248,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 136,
+              "encodeMs": 55,
+              "thumbBytes": 74604,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 107,
+              "encodeMs": 24,
+              "thumbBytes": 100679,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 120,
+              "encodeMs": 28,
+              "thumbBytes": 96491,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 114,
+              "encodeMs": 28,
+              "thumbBytes": 106628,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 123,
+              "encodeMs": 29,
+              "thumbBytes": 81309,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 141,
+              "encodeMs": 34,
+              "thumbBytes": 89262,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 133,
+              "encodeMs": 28,
+              "thumbBytes": 92965,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 170,
+              "encodeMs": 39,
+              "thumbBytes": 88659,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 176,
+              "encodeMs": 43,
+              "thumbBytes": 92122,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 0,
+              "encodeMs": 2,
+              "thumbBytes": 4799,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 3,
+              "encodeMs": 4,
+              "thumbBytes": 76049,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 75910,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 78569,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 3,
+              "encodeMs": 3,
+              "thumbBytes": 21778,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 10877,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 56949,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 30833,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 43914,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 6,
+              "encodeMs": 15,
+              "thumbBytes": 47261,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 8,
+              "encodeMs": 8,
+              "thumbBytes": 46756,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 17,
+              "encodeMs": 14,
+              "thumbBytes": 16748,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 13276,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 13276,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1,
+              "encodeMs": 4,
+              "thumbBytes": 34356,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 8048,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 28896,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 43,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 58232,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 44,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 58232,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 45,
+              "decodeMs": 76,
+              "encodeMs": 16,
+              "thumbBytes": 92397,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 46,
+              "decodeMs": 76,
+              "encodeMs": 16,
+              "thumbBytes": 92397,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 10546,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 3,
+              "encodeMs": 3,
+              "thumbBytes": 76098,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 49,
+              "decodeMs": 4,
+              "encodeMs": 2,
+              "thumbBytes": 48273,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/jpeg",
+          "quality": 0.75,
+          "wallMs": 3085,
+          "peakBytes": 114311168,
+          "overBaselineBytes": 311296,
+          "generated": 50,
+          "unsupported": [],
+          "failed": [],
+          "retainedBytes": 1401032,
+          "retainedCount": 50,
+          "decodeMs": {
+            "count": 50,
+            "mean": 44.92,
+            "median": 12,
+            "min": 0,
+            "max": 173
+          },
+          "encodeMs": {
+            "count": 50,
+            "mean": 12.42,
+            "median": 5,
+            "min": 1,
+            "max": 55
+          },
+          "totalMs": {
+            "count": 50,
+            "mean": 61.06,
+            "median": 20,
+            "min": 3,
+            "max": 219
+          },
+          "thumbBytes": {
+            "count": 50,
+            "mean": 28020.64,
+            "median": 25619,
+            "min": 3874,
+            "max": 62212
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 8,
+              "encodeMs": 4,
+              "thumbBytes": 15445,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 9,
+              "encodeMs": 5,
+              "thumbBytes": 24169,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 10,
+              "encodeMs": 5,
+              "thumbBytes": 41418,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 11,
+              "encodeMs": 6,
+              "thumbBytes": 23275,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 4,
+              "thumbBytes": 47450,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 12,
+              "encodeMs": 5,
+              "thumbBytes": 62212,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 13,
+              "encodeMs": 4,
+              "thumbBytes": 54509,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 14,
+              "encodeMs": 4,
+              "thumbBytes": 44114,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 15,
+              "encodeMs": 5,
+              "thumbBytes": 52089,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 78,
+              "encodeMs": 26,
+              "thumbBytes": 13325,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 61,
+              "encodeMs": 15,
+              "thumbBytes": 30120,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 64,
+              "encodeMs": 16,
+              "thumbBytes": 38360,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 101,
+              "encodeMs": 27,
+              "thumbBytes": 23071,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 124,
+              "encodeMs": 39,
+              "thumbBytes": 12046,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 89,
+              "encodeMs": 30,
+              "thumbBytes": 31557,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 70,
+              "encodeMs": 11,
+              "thumbBytes": 51971,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 107,
+              "encodeMs": 29,
+              "thumbBytes": 22465,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 140,
+              "encodeMs": 55,
+              "thumbBytes": 23563,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 107,
+              "encodeMs": 23,
+              "thumbBytes": 29852,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 121,
+              "encodeMs": 27,
+              "thumbBytes": 35738,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 115,
+              "encodeMs": 26,
+              "thumbBytes": 35567,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 121,
+              "encodeMs": 27,
+              "thumbBytes": 25908,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 143,
+              "encodeMs": 33,
+              "thumbBytes": 23455,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 133,
+              "encodeMs": 27,
+              "thumbBytes": 36964,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 169,
+              "encodeMs": 38,
+              "thumbBytes": 32469,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 173,
+              "encodeMs": 38,
+              "thumbBytes": 34250,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 4484,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 61296,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 58708,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 56528,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 14543,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 10583,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 22642,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 31321,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 15959,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7,
+              "encodeMs": 14,
+              "thumbBytes": 21538,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 8,
+              "encodeMs": 7,
+              "thumbBytes": 28202,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 17,
+              "encodeMs": 13,
+              "thumbBytes": 11651,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 10477,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 2,
+              "encodeMs": 2,
+              "thumbBytes": 10477,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 25619,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 0,
+              "encodeMs": 1,
+              "thumbBytes": 3874,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 6307,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 43,
+              "decodeMs": 3,
+              "encodeMs": 1,
+              "thumbBytes": 17696,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 44,
+              "decodeMs": 3,
+              "encodeMs": 1,
+              "thumbBytes": 17696,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 45,
+              "decodeMs": 76,
+              "encodeMs": 14,
+              "thumbBytes": 30903,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 46,
+              "decodeMs": 77,
+              "encodeMs": 15,
+              "thumbBytes": 30903,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 2,
+              "encodeMs": 1,
+              "thumbBytes": 10459,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 24564,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 49,
+              "decodeMs": 5,
+              "encodeMs": 1,
+              "thumbBytes": 9240,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        {
+          "maxEdge": 384,
+          "format": "image/webp",
+          "quality": 0.75,
+          "wallMs": 3206,
+          "peakBytes": 114376704,
+          "overBaselineBytes": 376832,
+          "generated": 50,
+          "unsupported": [],
+          "failed": [],
+          "retainedBytes": 6669369,
+          "retainedCount": 50,
+          "decodeMs": {
+            "count": 50,
+            "mean": 44.94,
+            "median": 12,
+            "min": 1,
+            "max": 178
+          },
+          "encodeMs": {
+            "count": 50,
+            "mean": 15.14,
+            "median": 9,
+            "min": 1,
+            "max": 58
+          },
+          "totalMs": {
+            "count": 50,
+            "mean": 63.78,
+            "median": 24,
+            "min": 3,
+            "max": 228
+          },
+          "thumbBytes": {
+            "count": 50,
+            "mean": 133387.38,
+            "median": 153987,
+            "min": 4799,
+            "max": 264400
+          },
+          "perImage": [
+            {
+              "index": 0,
+              "decodeMs": 8,
+              "encodeMs": 6,
+              "thumbBytes": 108184,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 1,
+              "decodeMs": 9,
+              "encodeMs": 8,
+              "thumbBytes": 177184,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 2,
+              "decodeMs": 11,
+              "encodeMs": 8,
+              "thumbBytes": 217098,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 3,
+              "decodeMs": 11,
+              "encodeMs": 9,
+              "thumbBytes": 169974,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 4,
+              "decodeMs": 12,
+              "encodeMs": 9,
+              "thumbBytes": 234411,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 5,
+              "decodeMs": 12,
+              "encodeMs": 9,
+              "thumbBytes": 264400,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 6,
+              "decodeMs": 13,
+              "encodeMs": 10,
+              "thumbBytes": 240657,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 7,
+              "decodeMs": 14,
+              "encodeMs": 9,
+              "thumbBytes": 234463,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 8,
+              "decodeMs": 15,
+              "encodeMs": 9,
+              "thumbBytes": 254687,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 9,
+              "decodeMs": 77,
+              "encodeMs": 29,
+              "thumbBytes": 95068,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 10,
+              "decodeMs": 60,
+              "encodeMs": 18,
+              "thumbBytes": 202654,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 11,
+              "decodeMs": 65,
+              "encodeMs": 20,
+              "thumbBytes": 233241,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 12,
+              "decodeMs": 100,
+              "encodeMs": 30,
+              "thumbBytes": 192149,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 13,
+              "decodeMs": 122,
+              "encodeMs": 41,
+              "thumbBytes": 134550,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 14,
+              "decodeMs": 90,
+              "encodeMs": 34,
+              "thumbBytes": 244267,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 15,
+              "decodeMs": 70,
+              "encodeMs": 15,
+              "thumbBytes": 236785,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 16,
+              "decodeMs": 110,
+              "encodeMs": 31,
+              "thumbBytes": 157631,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 17,
+              "decodeMs": 139,
+              "encodeMs": 58,
+              "thumbBytes": 153987,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 18,
+              "decodeMs": 105,
+              "encodeMs": 28,
+              "thumbBytes": 218611,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 19,
+              "decodeMs": 120,
+              "encodeMs": 31,
+              "thumbBytes": 204661,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 20,
+              "decodeMs": 114,
+              "encodeMs": 29,
+              "thumbBytes": 223203,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 21,
+              "decodeMs": 123,
+              "encodeMs": 31,
+              "thumbBytes": 171334,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 22,
+              "decodeMs": 143,
+              "encodeMs": 38,
+              "thumbBytes": 192407,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 23,
+              "decodeMs": 133,
+              "encodeMs": 32,
+              "thumbBytes": 202260,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 24,
+              "decodeMs": 167,
+              "encodeMs": 42,
+              "thumbBytes": 187075,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 25,
+              "decodeMs": 178,
+              "encodeMs": 41,
+              "thumbBytes": 195901,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 26,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 4799,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 27,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 78625,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 28,
+              "decodeMs": 3,
+              "encodeMs": 3,
+              "thumbBytes": 78767,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 29,
+              "decodeMs": 3,
+              "encodeMs": 4,
+              "thumbBytes": 81269,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 30,
+              "decodeMs": 3,
+              "encodeMs": 5,
+              "thumbBytes": 47306,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 31,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 12878,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 32,
+              "decodeMs": 2,
+              "encodeMs": 5,
+              "thumbBytes": 82943,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 33,
+              "decodeMs": 1,
+              "encodeMs": 4,
+              "thumbBytes": 58734,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 34,
+              "decodeMs": 2,
+              "encodeMs": 4,
+              "thumbBytes": 84171,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 35,
+              "decodeMs": 7,
+              "encodeMs": 16,
+              "thumbBytes": 107553,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 36,
+              "decodeMs": 8,
+              "encodeMs": 8,
+              "thumbBytes": 91909,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 37,
+              "decodeMs": 17,
+              "encodeMs": 15,
+              "thumbBytes": 32263,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 38,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 25862,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 39,
+              "decodeMs": 2,
+              "encodeMs": 3,
+              "thumbBytes": 25862,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 40,
+              "decodeMs": 1,
+              "encodeMs": 3,
+              "thumbBytes": 31707,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 41,
+              "decodeMs": 1,
+              "encodeMs": 1,
+              "thumbBytes": 8048,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 42,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 28896,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 43,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 58232,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 44,
+              "decodeMs": 3,
+              "encodeMs": 2,
+              "thumbBytes": 58232,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 45,
+              "decodeMs": 77,
+              "encodeMs": 19,
+              "thumbBytes": 190990,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 46,
+              "decodeMs": 76,
+              "encodeMs": 19,
+              "thumbBytes": 190990,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 47,
+              "decodeMs": 1,
+              "encodeMs": 2,
+              "thumbBytes": 10546,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 48,
+              "decodeMs": 4,
+              "encodeMs": 3,
+              "thumbBytes": 83672,
+              "width": 0,
+              "height": 0
+            },
+            {
+              "index": 49,
+              "decodeMs": 5,
+              "encodeMs": 2,
+              "thumbBytes": 48273,
+              "width": 0,
+              "height": 0
+            }
+          ]
+        }
+      ],
+      "cancellation": {
+        "duringPeakBytes": 114393088,
+        "afterPeakBytes": 114393088,
+        "ticksBeforeStop": 63,
+        "ticksAfterStop": 63
+      }
+    }
+  ],
+  "magick": [
+    {
+      "index": 43,
+      "format": "heic",
+      "totalMs": 170.38312499999302,
+      "sourceBytes": 381368,
+      "thumbBytes": 9768,
+      "width": 384,
+      "height": 216
+    },
+    {
+      "index": 44,
+      "format": "heic",
+      "totalMs": 141.40591600000334,
+      "sourceBytes": 381368,
+      "thumbBytes": 9768,
+      "width": 384,
+      "height": 216
+    },
+    {
+      "index": 45,
+      "format": "heic",
+      "totalMs": 490.80408300001,
+      "sourceBytes": 1190541,
+      "thumbBytes": 8874,
+      "width": 384,
+      "height": 288
+    },
+    {
+      "index": 46,
+      "format": "heic",
+      "totalMs": 472.1160419999942,
+      "sourceBytes": 1190541,
+      "thumbBytes": 8874,
+      "width": 384,
+      "height": 288
+    },
+    {
+      "index": 49,
+      "format": "tiff",
+      "totalMs": 18.852415999994264,
+      "sourceBytes": 6367232,
+      "thumbBytes": 7560,
+      "width": 384,
+      "height": 256
+    }
+  ]
+}
