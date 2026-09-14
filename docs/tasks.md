@@ -262,7 +262,7 @@ Pure logic. No DOM, no Vue, no browser APIs. Every task here is fully unit-testa
 
 `domain/report.ts`. The model, and YAML serialisation to the shape in §9.3.
 
-- The caveat set is fixed and closed. Implement exactly the eight conditions in R-X46, no more and no fewer.
+- The caveat set is fixed and closed. Implement exactly the nine conditions in R-X46, no more and no fewer.
 - Ordinary successes counted, not listed. Non-image files never mentioned. Relative paths throughout.
 - Exact bytes on summary totals only.
 

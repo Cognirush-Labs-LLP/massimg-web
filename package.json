@@ -38,6 +38,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.11.0",
+    "js-yaml": "4.3.2",
     "jsdom": "^30.0.1",
     "postcss-html": "2.0.0",
     "prettier": "^3.9.6",

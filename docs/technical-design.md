@@ -441,7 +441,7 @@ Private browsing has no OPFS (**B3**), so the in-memory path is needed regardles
 `domain/report.ts` builds a model; serialisation is separate and produces YAML with a `.txt` extension.
 
 ```yaml
-Mass Image Compressor
+# Mass Image Compressor
 Run: 2026-09-13 14:22:05
 
 Summary:
