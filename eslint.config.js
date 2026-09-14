@@ -40,6 +40,17 @@ export default tseslint.config(
       },
     },
   },
+  {
+    // Standalone Node CLI scripts (e.g. scripts/check-licenses.mjs) run under
+    // Node, not the browser — they need Node globals, not app-code globals.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+  },
   // Must be last: disables stylistic rules that would fight Prettier.
   eslintConfigPrettier,
 )

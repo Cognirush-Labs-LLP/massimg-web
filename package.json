@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "vue-tsc -b --force && eslint . && prettier --check .",
+    "check:licenses": "node scripts/check-licenses.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
