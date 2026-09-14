@@ -111,7 +111,10 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
 - R-M1 When the batch reaches exactly one image by any route (initial add, or removal), the app shows Preview for that image rather than a one-tile gallery.
 - R-M2 When the batch grows beyond one image while Preview is open, the app returns to Gallery.
 - R-M3 Preview offers an **Add more images** action, which opens the file picker. Adding from here follows R-M2.
-- R-M4 Mode changes release all decoded and encoded image data for the outgoing mode (see §9).
+- R-M4 Mode changes release all full-resolution decoded data and all preview or run encoded data for
+  the outgoing mode (see §9). The bounded, batch-scoped thumbnail cache in R-G3 may remain so returning
+  to Gallery does not reread large source files; R-G12 still stops all thumbnail generation outside
+  Gallery.
 - R-M5 Leaving Processing with undownloaded results is governed by R-X18.
 
 ### 3.2 Gallery view
@@ -128,8 +131,18 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
 - R-G7 The view mode is a user-visible toggle in the toolbar.
 - R-G8 The app selects the initial mode automatically: grid below a threshold file count, list at or above it, and list always for folder input. The user can override, and the override persists for the session.
 - R-G9 In list mode no thumbnails are generated at all. Nothing is decoded until the user opens Preview.
-- R-G10 In grid mode thumbnails are generated only for tiles that are visible or close to visible, and the grid is virtualized. Scrolling quickly through a large batch must not queue work for every tile it passes.
+- R-G10 In grid mode thumbnails are generated only for tiles that are visible or close to visible, and
+  the grid is virtualized. Scrolling quickly through a large batch must not queue work for every tile it
+  passes. The batch permits at most the runtime-configured thumbnail limit of source-read attempts; its
+  initial default is 100. An attempt is charged when reading starts and is not refunded after failure or
+  cancellation. Once the budget is exhausted, uncached tiles show a neutral placeholder; this is not an
+  error. Cached thumbnails are not evicted merely to generate thumbnails for other tiles, because that
+  would cause repeated source reads while scrolling.
 - R-G11 List mode groups by directory when the batch came from a folder, preserving the tree. Grid mode does not group.
+- R-G12 Thumbnail generation runs only while Gallery is active in grid mode. Leaving Gallery or switching
+  to list mode immediately clears queued work and stops every in-flight thumbnail job. A completion that
+  races with cancellation is discarded and its decoded data is released; no thumbnail work continues in
+  the background.
 
 **Populated state.**
 
@@ -152,7 +165,11 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
 
 - R-G1 Clicking a tile or row opens Preview mode for that image.
 - R-G2 Removing an image does not change any other image's settings.
-- R-G3 Thumbnails, where generated, are bounded in size (§9) and are the only per-image pixel data retained in Gallery.
+- R-G3 Thumbnails, where generated, are bounded in dimensions and encoded size (§9), and no more than the
+  runtime-configured thumbnail limit of encoded thumbnail Blobs are retained for a batch. The initial
+  default is 100. They are the only per-image pixel data retained for Gallery. Removing an image,
+  invalidating its thumbnail after an edit, or clearing the batch releases its Blob and revokes its object
+  URL.
 - R-G4 Thumbnails reflect stored rotation and crop.
 - R-G5 The batch preserves insertion order. Adding appends; it does not re-sort. Folder input inserts in traversal order.
 - R-G6 **Clear** removes all images and returns to the empty state. It requires no confirmation, because re-selecting files is cheap and a confirmation dialog on a touch device costs more than the mistake.
@@ -588,7 +605,10 @@ Two kinds of data are distinguished:
 
 - R-B1 No encoded results are retained beyond the moment they are used. Previews are discarded on leaving Preview or on any settings change. Run outputs are held only as described in R-X25.
 - R-B2 Full-resolution decoded pixels are held for the minimum time necessary and released immediately after use. The number of images decoded at full resolution at any one time is bounded and small.
-- R-B3 Gallery retains only a bounded thumbnail per image, plus its file handle and metadata. It never holds full-resolution pixels.
+- R-B3 The batch-scoped Gallery cache retains no more than the runtime-configured thumbnail limit of
+  bounded, encoded thumbnail Blobs, plus file handles and metadata. It never retains full-resolution
+  pixels. The cache may survive a mode change to avoid rereading source files, but generation is forbidden
+  outside Gallery by R-G12 and the cache is released when the batch is cleared.
 - R-B4 Preview holds a working set for the image on screen only: the decoded source needed to draw the Original tab, and the encoded result needed for the Compressed tab and its size figure. Both are released on leaving Preview, stepping to another image, or any settings change.
 - R-B5 Stepping through a batch releases the outgoing image's working set before decoding the incoming one.
 - R-B6 Animated sources are the highest-risk input, because decoded cost is frames multiplied by frame size. They are processed in a way that avoids holding every decoded frame simultaneously wherever the format allows it.
@@ -747,6 +767,8 @@ Recorded so they are not relitigated.
 | Compression starts on the primary action, not on Download | Streaming to storage removes the reason to defer it. |
 | Cancel stops after the current image | A WASM encode cannot be interrupted. The alternative is a lie in the interface. |
 | List view without thumbnails for large batches | Thumbnails require decoding every image. Filenames do not. |
+| Thumbnail generation obeys one runtime-configured per-batch limit, initially 100 | Keeps CPU, decoded-memory pressure and retained thumbnail memory independent of batch size while allowing the limit to be tuned without changing thumbnail logic; later tiles use placeholders rather than causing rereads. |
+| Thumbnail work exists only in Gallery grid mode | Preview, Edit and Processing must not compete with invisible background thumbnail decoding. |
 | APNG is not a format choice; animated PNG output is just PNG | The user picked PNG. Whether it animates is a property of their source, not a decision to put in front of them. |
 | Animated AVIF dropped, still AVIF kept | Still AVIF is why people want the format. Animated AVIF is slow, often larger, and rejecting it honestly beats supporting it badly. |
 | PNG quality rescaled to a 70 to 95 floor | PNG means lossless to most people. A slider at 10 would produce banding they did not ask for. |

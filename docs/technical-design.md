@@ -37,7 +37,7 @@ const thumbnails = new Map<ImageId, Blob>()
 
 This is enforced by a lint rule and by a unit test that asserts no store contains a value failing `isProxy` checks against the known binary types.
 
-**Component boundaries follow the stage modes.** Gallery, Preview, Edit and Processing are separate components mounted exclusively, so leaving a mode unmounts its state and its listeners. R-M4 requires releasing image data on mode change, and tying that to the component lifecycle makes the release automatic rather than remembered.
+**Component boundaries follow the stage modes.** Gallery, Preview, Edit and Processing are separate components mounted exclusively, so leaving a mode unmounts its state and its listeners. R-M4 requires releasing mode-specific image data on mode change, and tying that to the component lifecycle makes the release automatic rather than remembered. The one deliberate exception is the bounded, batch-scoped thumbnail Blob cache: its generation owner is Gallery-scoped, but completed entries may survive mode changes to prevent source rereads.
 
 ---
 
@@ -395,7 +395,10 @@ Decoded pixels dominate: width × height × 4 bytes per frame, at Q8 (A1). A 12 
 The rules from Functional Design §9, as implementation constraints:
 
 - One full-resolution decode in flight per worker, released before the next.
-- Gallery holds a bounded thumbnail per image and nothing else. In list mode, not even that (R-G9).
+- Gallery's batch-scoped cache holds at most the configured thumbnail limit of bounded encoded thumbnail
+  Blobs and nothing else. It may retain completed entries while another mode is active, but performs no
+  generation there. List mode performs no generation (R-G9), and uncached entries remain placeholders
+  after the read budget is spent.
 - Preview holds one working set: decoded source for the Original tab, encoded result for the Compressed tab. Released on mode change, step, or settings change.
 - Run outputs stream to storage as they are produced (§9), so the archive never accumulates in memory.
 
@@ -507,7 +510,29 @@ Live Photo and portrait-mode files carry auxiliary and depth images. Only the pr
 
 ### 10.4 Thumbnails
 
-`createImageBitmap` with `resizeWidth`, not the WASM pipeline. Generated lazily for visible tiles only, with virtualization (R-G10). In list mode, none at all (R-G9).
+`createImageBitmap` with bounded resize dimensions is the primary path. For a supported input that the
+browser cannot decode natively, use ImageMagick's thumbnail operation as a fallback, not the full
+processing pipeline. Both paths are generated lazily for visible and near-visible tiles only, with
+virtualization (R-G10). In list mode, none at all (R-G9).
+
+The thumbnail service owns two batch-scoped, non-reactive structures: the encoded Blob cache and a count
+of source-read attempts. Both ceilings read the same `maximumThumbnails` value from the runtime limits
+configuration; neither the service, UI nor tests hard-code the number. The shipped default is 100.
+Starting a read consumes one attempt, including a read that later fails or is cancelled. There is no LRU
+replacement: after either ceiling is reached, uncached tiles render a neutral placeholder instead of
+evicting an entry and rereading sources as the user scrolls. Completed entries persist across
+Gallery/Preview/Edit mode changes and are released on image removal, edit invalidation, or batch clear;
+every release also revokes the corresponding object URL.
+
+The generation queue and its execution context belong to the mounted Gallery grid. Unmounting Gallery or
+switching to list mode clears the queue and stops the active job. Where the decoding primitive cannot be
+cancelled directly, generation runs in an isolated worker that can be terminated. A generation token
+prevents a raced completion from entering the cache after cancellation. No thumbnail decoding or encoding
+may continue while Preview, Edit, Processing, or Gallery list mode is active (R-G12).
+
+T20 measures JPEG and WebP thumbnail encoding time, retained size and peak memory rather than selecting a
+format by assumption. Thumbnail dimensions bound both axes; a width-only bound is not sufficient for a
+pathologically tall image.
 
 **C5 is 55% confident** about throughput. It sets the threshold in R-G8, so until measured the app defaults to list mode at a conservative file count.
 

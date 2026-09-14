@@ -371,13 +371,20 @@ iOS Safari kills tabs on memory pressure without a catchable error, so rejection
 
 ---
 
-### C5 `OPEN` `55%` `P2` Thumbnail generation throughput
+### C5 `OPEN` `55%` `P2` Thumbnail generation cost and representation
 
 `createImageBitmap` with `resizeWidth` decodes and downscales natively, fast enough for lazy per-tile generation and much faster than the WASM path.
 
-**Affects.** R-G8's threshold, and whether the grid view is viable at all for large batches.
+**Affects.** R-G8's threshold, the encoded thumbnail format and size bound, and whether the grid view is viable at all for large batches.
 
-**Method.** Time both paths over 50 photographs of mixed size, on desktop and a mid-range phone. Derive the tile count at which eager generation becomes unacceptable.
+**Method.** Over 50 photographs of mixed dimensions and formats, on desktop and a mid-range phone, time
+native reduced-size decoding and the ImageMagick path where native decoding is unavailable. Compare JPEG
+and WebP thumbnail encoding for elapsed time, retained Blob bytes and peak memory. Verify both dimensions
+are bounded, then derive the file-count threshold at which Gallery should default to list mode. Also verify
+that cancelling the Gallery generation owner stops CPU and memory growth rather than merely hiding a late
+result. The product ceiling for source-read attempts and retained Blobs comes from the single runtime
+`maximumThumbnails` limit in R-G3/R-G10, initially 100; measurement chooses representation and the lower
+automatic-mode threshold, not a hidden hard-coded ceiling.
 
 ---
 

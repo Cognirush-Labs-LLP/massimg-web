@@ -330,16 +330,32 @@ Thin wrappers over browser APIs, each independently testable in Playwright.
 
 ### T20 — Thumbnails
 
-**Functional Design:** R-G3, R-G4, R-G9, R-G10
+**Functional Design:** R-G3, R-G4, R-G9, R-G10, R-G12
 **Technical Design:** §10.4
 **Assumption:** C5
 
-`platform/thumbnails.ts` using `createImageBitmap` with `resizeWidth`, not the WASM pipeline.
+`platform/thumbnails.ts` using `createImageBitmap` with both dimensions bounded as the primary path. Use
+ImageMagick's thumbnail operation only as a fallback for supported inputs the browser cannot decode
+natively, not the full processing pipeline.
 
-- Lazy, for visible tiles only. Cancellable when a tile scrolls away.
+- Lazy, for visible and near-visible tiles only. A batch may start at most `maximumThumbnails` source reads
+  and retain at most that many thumbnail Blobs. Read this value from the shared runtime limits
+  configuration, with a shipped default of 100; do not hard-code it in the service, UI or tests. Once
+  spent, the budget is not replenished by eviction; uncached tiles use placeholders without reporting an
+  error.
+- The generation owner is Gallery grid mode. Leaving Gallery or switching to list mode clears queued work,
+  stops the active job, and rejects raced completions. Use worker termination where the underlying decode
+  cannot be cancelled directly.
 - Thumbnails stored as encoded blobs in a non-reactive map, never in a store.
+- Measure JPEG against WebP for generation time, retained bytes and peak memory; do not choose the encoded
+  thumbnail format from intuition. Bound both axes, not only width.
 
-**Done when:** generation time is measured over 50 mixed-size photographs, C5 is updated, and the note recommends the file-count threshold for R-G8.
+**Done when:** time, retained Blob bytes and peak memory are measured over 50 mixed-size photographs; C5
+is updated; and the note recommends the file-count threshold for R-G8 and the encoded thumbnail format. A
+browser test injects a small limit and proves that scrolling starts no more than that many reads, uncached
+tiles become placeholders without an error, revisiting cached tiles causes no reread, changing the runtime
+limit requires no thumbnail-service change, and leaving Gallery during an active job leaves no thumbnail
+worker or continuing CPU/memory growth.
 
 ---
 
@@ -494,20 +510,24 @@ The four Pinia stores.
 
 ### T33 — Gallery, grid view
 
-**Functional Design:** R-G1 to R-G6, R-G10
+**Functional Design:** R-G1 to R-G6, R-G10, R-G12
 **Technical Design:** §10.4
 
 Empty state with both Select buttons and drop zone. Virtualized thumbnail grid. Tiles with badges and remove.
 
-**Done when:** 500 fixture images scroll smoothly, thumbnails generate only for visible tiles, and removing one leaves others untouched.
+**Done when:** 500 fixture images scroll smoothly, thumbnails generate only for visible or near-visible
+tiles, the source-read and retained-Blob counts never exceed the injected runtime limit, tiles outside the
+spent budget show placeholders, leaving the grid stops thumbnail work, and removing one leaves others
+untouched.
 
 ### T34 — Gallery, list view
 
-**Functional Design:** R-G7 to R-G11
+**Functional Design:** R-G7 to R-G12
 
 List view with relative paths, directory grouping for folder input, and the mode toggle with automatic selection by file count.
 
-**Done when:** list mode decodes nothing at all, grouping reflects the source tree, and the automatic threshold uses the value T20 recommended.
+**Done when:** list mode decodes nothing at all and stops any grid thumbnail work when entered, grouping
+reflects the source tree, and the automatic threshold uses the value T20 recommended.
 
 ### T35 — Side panel settings
 
@@ -640,7 +660,9 @@ The local-processing line, the credits page listing every bundled component with
 **Technical Design:** §8.3
 **Assumptions:** C3, C4
 
-One configuration module holding every limit. Enforcement at selection time.
+One runtime configuration module holding every limit, including `maximumThumbnails`. Selection limits are
+enforced at selection time; operational limits such as the thumbnail budget are injected into their
+owning service.
 
 - Derive values by measurement on desktop and on a real phone. The 200-file figure inherited from the original design draft is not defended by anything.
 - C4 needs a physical iPhone, including an older low-memory model.
