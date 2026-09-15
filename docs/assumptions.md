@@ -65,8 +65,8 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C8 | Six WASM modules coexist acceptably, loaded lazily | 80 | TESTED | P2 |
 | D1 | Size-target search is affordable | 95 | TESTED | P2 |
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
-| D3 | ICC profiles survive every encoder path | 55 | OPEN | P2 |
-| D4 | EXIF auto-orientation correct for all eight values | 60 | OPEN | P2 |
+| D3 | ICC profiles survive every encoder path | 90 | TESTED | P2 |
+| D4 | EXIF auto-orientation correct for all eight values | 95 | TESTED | P2 |
 | D5 | Transparency detection is cheap | 70 | OPEN | P3 |
 | D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
@@ -162,13 +162,50 @@ Gifsicle 1.92 complete, MIT, no dependencies, 368 KB unpacked. GIF in, GIF out o
 
 **Claim.** HEIC and AVIF frequently carry colour information as an `nclx` box (CICP: primaries, transfer function, matrix coefficients) instead of an embedded ICC profile. The colour management requirements are written entirely around ICC profiles and do not cover this.
 
-**Evidence.** The test HEIC contains a `colr` box with `nclx` signalling at offset 533. No `prof` or `rICC` box exists anywhere in the file. ImageMagick correctly reported no ICC profile, which is accurate rather than a failure. The build also exposes a `heic:preserve-cicp` define, confirming this is a handled concern upstream.
+The claim has two halves, and T23 settled them to different degrees. Read them separately — the mechanism half is what the code depends on.
 
-**Affects.** R-I12 through R-I16. Preserving "the ICC profile" of such a file preserves nothing. Converting it correctly requires reading the CICP values and either translating them to a profile or carrying them to an output format that can express them.
+#### The mechanism half: settled, and worse than assumed
 
-**Why it matters.** A wide-gamut HEIC signalled through CICP, converted without interpreting it, produces visibly wrong colour. This is the failure mode R-I12 exists to prevent, arriving through a path the requirement does not describe.
+**ImageMagick does not surface CICP at all.** Measured on the real HEIC and AVIF files in the local test set and on a real HEIC rewritten to signal its colour only with CICP (`verification/t23-decode/`):
 
-**Method to close.** Take a Display P3 HEIC and an sRGB HEIC. Decode both, convert to JPEG and to WebP, and compare rendered colour against the source. Determine whether ImageMagick applies CICP automatically on decode or whether it must be read and applied explicitly.
+| What was asked of ImageMagick | Answer for a CICP-only HEIC |
+| --- | --- |
+| `getColorProfile()` | `null` |
+| `profileNames` | `["exif"]` — no `icc` |
+| `attributeNames` | nothing carrying primaries, transfer or matrix |
+| `image.chromaticity` | BT.709 primaries (0.64, 0.33) — **its own default, returned for every file including a Display P3 one** |
+
+So chromaticity is not a fallback source of evidence, and a pipeline that asks ImageMagick alone sees an untagged image. The `heic:preserve-cicp` define exists, but it governs *writing*; nothing applies or reports CICP on decode. This half is as close to certain as a measurement gets.
+
+**Consequence, implemented.** `pipeline/stages/colour.ts` parses the `colr` box out of the source bytes itself, resolving the **primary item's** property through `pitm` → `ipma` → `ipco` rather than taking the first `nclx` in the file. `FrameColour` is a three-way union — `icc`, `cicp`, `untagged` — so "signalled by CICP" can never arrive at the encoder as "untagged sRGB".
+
+**Measured, on a real HEIC** (`verification/t23-decode/results.json`, `a13.cicpOnlyHeic`). A 1.19 MB, 4032×3024 Apple HEIC carrying a Display P3 ICC profile was copied in memory and its 560-byte `colr` box overwritten in place, same size, with an `nclx` payload of 12/13/6:
+
+| | Original | Rewritten to CICP-only |
+| --- | --- | --- |
+| ICC profile reported | Display P3 | none |
+| CICP found by the shipped reader | none | 12 / 13 / 6, full range |
+| Decoded pixels | — | **byte-identical to the original** |
+
+Identical pixels, no profile, and the colour recoverable only through the box ImageMagick ignores.
+
+#### The frequency half: not confirmed by this sample
+
+**The local sample contains no naturally CICP-only file.** Of **three distinct** HEIF-family images (five paths; the directory holds duplicates, and `heifCandidates` now deduplicates by content hash so the count cannot be inflated again):
+
+| File | `colr` boxes | ImageMagick sees | Frame resolves to |
+| --- | --- | --- | --- |
+| HEIC, 1.19 MB | `prof` only | Display P3 ICC | `icc` |
+| HEIC, 381 KB (`msf1` sequence) | none | nothing | `untagged` |
+| AVIF, 7.6 KB | `prof` **and** `nclx` 2/2/2 | sRGB ICC | `icc` |
+
+Zero files signal colour by CICP *instead of* a profile. The one CICP-only file in evidence is the one this task manufactured. On this sample the frequency clause is mildly counter-indicated, not supported — it rests on the prevalence of the format's use in the wild (Apple's own `heic:preserve-cicp` define exists for a reason, and the AVIF here does carry an `nclx`), not on anything measured here.
+
+**Why 95 and not 100.** The mechanism is settled and the handling is implemented and tested on all three engines; that alone would justify a higher figure. The claim as written is about *frequency*, and three files — one of them an image sequence — cannot establish it. Raising the entry to certainty on the strength of the neighbouring proposition would be the substitution this register exists to avoid.
+
+**How the evidence is held.** The real-HEIC half is a **recorded measurement, not a regression guard**: it runs only from `verification/t23-decode/` and only when `PHOTO_FIXTURES_DIR` is set, never in CI. If HEIC handling broke tomorrow, nothing committed would fail. The committed cross-engine tests use a generated AVIF — the same ISO/IEC 23008-12 container and the same `colr`/`nclx` box, exercising the identical code path, since `readCicp` never inspects the brand and `decode.ts` has no format switch.
+
+**What would close the frequency half.** A HEIC straight off a recent iPhone in a wide-gamut capture mode, or an AVIF from a camera or encoder that writes `nclx` without a profile, examined for a `colr nclx` and no `prof`.
 
 ---
 
@@ -610,19 +647,47 @@ R-Q6 is strongly justified. On graphics lossless is both 32 times smaller and fo
 
 ---
 
-### D3 `OPEN` `55%` `P2` ICC profiles survive every encoder path
+### D3 `TESTED` `90%` `P2` ICC profiles survive every encoder path
 
-**Why only 55.** `lcms` is present so the machinery exists, but survival through the APNG path is doubtful: it leaves ImageMagick entirely and passes through UPNG, which writes its own chunks. A silent profile drop produces visibly wrong colour, which users report as a bug.
+**Measured in T23** (`verification/t23-decode/results.json`), a 6,668-byte ICC v2 Display P3 profile embedded and read back through every encoder in §4.2's stage table, in Chromium, Firefox and WebKit. **All three engines gave identical results** — the table below is one column because there was nothing to split.
 
-**Method.** Take a Display P3 source. Encode to each format. Read back and assert the profile is present and identical. Render each in a browser beside the original.
+| Path | Profile after | Identical bytes |
+| --- | --- | --- |
+| ImageMagick → JPEG | present | yes |
+| ImageMagick → PNG | present | yes |
+| ImageMagick → WebP | present | yes |
+| ImageMagick → AVIF | present | yes |
+| ImageMagick → GIF | present | yes |
+| ImageMagick → PNG → oxipng | present | yes |
+| ImageMagick → GIF → gifsicle | present | yes |
+| UPNG (animated PNG) | **gone** | — |
+| UPNG + spliced `iCCP` | present | yes |
+| UPNG + `iCCP` → apng-optimizer | **gone** | — |
+| UPNG → apng-optimizer → spliced `iCCP` | present | yes |
+
+**The weak point was correctly identified but is in the wrong component, and it is avoidable.** §7.7 predicted the animated PNG path would lose the profile because it leaves ImageMagick and passes through UPNG. UPNG does indeed write no `iCCP` — it takes raw RGBA and emits `IHDR sRGB PLTE tRNS IDAT IEND`, and that `sRGB` chunk actively declares the output sRGB. But an `iCCP` chunk spliced into its output is read back byte-identically, so UPNG is not the obstacle. **apng-optimizer is**: given an APNG that carries a valid `iCCP`, it strips it. Attaching the profile *after* the optimiser has run preserves it exactly.
+
+**Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It can be avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk*. Whichever task builds animated PNG output (T27) should take this ordering as measured rather than re-deriving it, and must drop the `sRGB` chunk when it attaches the profile: `sRGB` and `iCCP` are mutually exclusive in the PNG specification, and leaving both produces a file libpng warns about and whose colour two readers may disagree about.
+
+**Not measured.** §4.2's "quantize" step (libimagequant) transforms pixels and produces no file, so it is not a profile-carrying step; whatever writes the PNG after it is what was measured. R-I13's GIF conversion — converting to sRGB *using* the embedded profile before encoding — is an encode-stage behaviour and is not exercised here; what this measures is that the GIF path does not silently drop the profile, which is the risk D3 names. Surprisingly, both ImageMagick's GIF writer and gifsicle preserve the profile, so R-I13's conversion is a deliberate choice rather than a forced one.
+
+**Why 90 and not higher.** Every path is measured on all three engines with identical results, and the one failing path has a demonstrated fix — but the fix is not yet *built* (T27 owns it), and the measurement uses one profile rather than a range of profile sizes and versions. A very large profile could plausibly meet a size limit in one of these writers that a 6.6 KB one does not.
 
 ---
 
-### D4 `OPEN` `60%` `P2` EXIF auto-orientation is correct for all eight values
+### D4 `TESTED` `95%` `P2` EXIF auto-orientation is correct for all eight values
 
-**Why only 60.** Rotation is easy; the mirrored orientations are rare and are exactly where implementations break.
+**Settled in T23.** ImageMagick's `autoOrient()` is correct for all eight values, **including all four mirrored ones**, on Chromium, Firefox and WebKit with no engine divergence.
 
-**Method.** Use a standard eight-image orientation test set. Assert each output is upright with no orientation tag. Confirm user rotation composes correctly on top.
+**Method.** A canonical upright 60×40 image — a 3×2 grid of six distinct saturated colours, non-square so an axis swap shows in the dimensions and asymmetric so a reflection shows in the pixels — was transformed by the *inverse* of each orientation value's display transform, encoded as JPEG, and given a hand-built APP1 EXIF segment containing exactly one tag (0x0112). The transforms and the EXIF were written independently of ImageMagick, so a shared bug could not cancel itself out. `scripts/build-test-fixtures.mjs` regenerates the set byte-identically; the eight files live in `tests/fixtures/decode/`.
+
+**Result.** All eight decode to 60×40 with the canonical colours at the canonical cell positions. Values 5–8 arrive stored as 40×60 and come out 60×40. Uprightness is asserted by **pixel content, not dimensions** — 2 and 4 share their output dimensions with 1 and 3, and 5 and 7 with 6 and 8, so a transform that handled the rotations and mishandled every flip would pass a dimensions-only check on all eight. `tests/e2e/decode.spec.ts` runs one test per value per engine, 24 in all.
+
+**The three states are distinguished.** A file with no EXIF orientation tag reports `Orientation.Undefined` (0); a file whose tag says 1 reports 1. `classifySourceOrientation` maps 0 to `{ kind: 'absent' }` and 1–8 to `{ kind: 'present', value }`, so "no tag" and "tag says upright" are never conflated. `autoOrient()` is a no-op on pixels in both cases.
+
+**R-I10 holds structurally**, not by convention: `Frame` has no orientation field, so no later stage can copy a tag forward. Re-encoding a decoded frame produces a file with no `exif` profile and an orientation of 0 or 1, never the source's.
+
+**Why 95 and not 100.** Two things are not covered. No file in the local photo set — 642 images — has an orientation above 1, so every value from 2 to 8 is evidenced by generated fixtures rather than by output from a real camera. And a HEIC carrying both the `irot`/`imir` transformative properties (which libheif applies itself) *and* an EXIF orientation tag would be at risk of a double rotation; no such file was obtainable, so that interaction is untested. R-I11's composition of user rotation on top of the corrected image is T24's to confirm.
 
 ---
 

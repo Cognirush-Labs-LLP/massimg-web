@@ -57,10 +57,19 @@ export interface ThumbnailStats {
 }
 
 /**
- * The seam for ImageMagick's thumbnail operation (Technical Design §10.4), for supported inputs the
- * browser cannot decode natively. Unwired in T20 — `pipeline/codecs/loader.ts` and its lazy-load
- * strategy are T22's. Until one is injected, such a tile stays uncached and renders a placeholder,
- * which R-G10 already declares is not an error.
+ * ImageMagick's thumbnail operation (Technical Design §10.4), for supported inputs the browser
+ * cannot decode natively.
+ *
+ * T20 left this as an unwired seam because no codec loader existed; T22 built the loader and handed
+ * the body to T23 as decode logic. It is now wired — but **in the generation worker**, not here:
+ * the fallback is a synchronous WASM decode with no abort, so running it on the main thread would
+ * break R-G12's "generation stops" exactly as an un-abortable `createImageBitmap` would. See
+ * `thumbnail-worker.ts`.
+ *
+ * This option therefore exists only to *replace* that default with a caller's own decoder, or to
+ * switch it off with `null`. A decoder passed here runs on the main thread and cannot be
+ * terminated, so its caller owns that consequence; omitting the option gets the worker's
+ * cancellable ImageMagick path.
  */
 export type FallbackDecoder = (request: {
   blob: Blob
@@ -76,6 +85,7 @@ export interface ThumbnailServiceOptions {
   maxEdge?: number
   format?: ThumbnailFormat
   quality?: number
+  /** Omit for the ImageMagick fallback; pass `null` to disable it. */
   fallbackDecoder?: FallbackDecoder | null
   onReady?: (id: ImageId) => void
 }
@@ -110,7 +120,12 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
   const maxEdge = options.maxEdge ?? DEFAULT_MAX_EDGE
   const format = options.format ?? DEFAULT_FORMAT
   const quality = options.quality ?? DEFAULT_QUALITY
-  const fallbackDecoder = options.fallbackDecoder ?? null
+  // `??` would be wrong for the second of these: it cannot tell an explicit `null` ("no fallback")
+  // from an omitted option ("the default"), and those are different requests. Omitting the option
+  // leaves `customFallback` null and lets the worker do the work; passing `null` switches the
+  // fallback off in both places.
+  const customFallback = options.fallbackDecoder ?? null
+  const allowWorkerFallback = options.fallbackDecoder === undefined
   const onReady = options.onReady
 
   // Plain Map, never a reactive store: binary data must not enter Pinia (Technical Design §1.1).
@@ -171,8 +186,10 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
 
     if (!stale && response.ok) {
       store(job.id, response.blob)
-    } else if (!stale && !response.ok && response.reason === 'unsupported' && fallbackDecoder) {
-      const decoded = await fallbackDecoder({
+    } else if (!stale && !response.ok && response.reason === 'unsupported' && customFallback) {
+      // Only a caller-supplied decoder reaches here. The default ImageMagick fallback has already
+      // run inside the worker by this point, and arrives as an ordinary `ok: true` response above.
+      const decoded = await customFallback({
         blob: job.blob,
         source: job.source,
         edit: job.edit,
@@ -230,6 +247,7 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
         maxEdge,
         format,
         quality,
+        allowFallback: allowWorkerFallback,
       }
       context.postMessage(request)
       return

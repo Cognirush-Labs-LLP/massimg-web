@@ -19,6 +19,15 @@ export interface ThumbnailJobRequest {
   maxEdge: number
   format: ThumbnailFormat
   quality: number
+  /**
+   * Whether the generation context should fall back to ImageMagick when the engine cannot decode
+   * the source natively (Technical Design §10.4).
+   *
+   * Carried in the request rather than read from configuration inside the worker so that the
+   * service's `fallbackDecoder: null` ("no fallback") is honoured by the context that would do the
+   * work, not just by the one that receives the answer.
+   */
+  allowFallback: boolean
 }
 
 export type ThumbnailJobResponse =

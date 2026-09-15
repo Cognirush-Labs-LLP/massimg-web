@@ -1,0 +1,389 @@
+{
+  "task": "T23",
+  "measuredAt": "2026-09-15T05:03:45.985Z",
+  "profileBytes": 6668,
+  "a13": {
+    "status": "measured",
+    "survey": [
+      {
+        "extension": ".heic",
+        "sizeBytes": 1190541,
+        "colrBoxes": [
+          {
+            "kind": "prof",
+            "payloadBytes": 548
+          }
+        ],
+        "imageMagickReportsIcc": true,
+        "shippedReaderFindsCicp": null,
+        "shippedResolvesTo": "icc"
+      },
+      {
+        "extension": ".avif",
+        "sizeBytes": 7571,
+        "colrBoxes": [
+          {
+            "kind": "prof",
+            "payloadBytes": 3144
+          },
+          {
+            "kind": "nclx",
+            "primaries": 2,
+            "transfer": 2,
+            "matrix": 2
+          }
+        ],
+        "imageMagickReportsIcc": true,
+        "shippedReaderFindsCicp": {
+          "primaries": 2,
+          "transfer": 2,
+          "matrix": 2,
+          "fullRange": true
+        },
+        "shippedResolvesTo": "icc"
+      },
+      {
+        "extension": ".heic",
+        "sizeBytes": 381368,
+        "colrBoxes": [],
+        "imageMagickReportsIcc": false,
+        "shippedReaderFindsCicp": null,
+        "shippedResolvesTo": "untagged"
+      }
+    ],
+    "cicpOnlyHeic": {
+      "sourceSizeBytes": 1190541,
+      "dimensions": "4032x3024",
+      "original": {
+        "iccDescription": "Display P3",
+        "profileNames": [
+          "exif",
+          "icc"
+        ],
+        "shippedReaderFindsCicp": null
+      },
+      "cicpOnly": {
+        "iccDescription": null,
+        "profileNames": [
+          "exif"
+        ],
+        "imageMagickChromaticityRed": [
+          0.64,
+          0.33
+        ],
+        "shippedReaderFindsCicp": {
+          "primaries": 12,
+          "transfer": 13,
+          "matrix": 6,
+          "fullRange": true
+        }
+      },
+      "pixelsIdentical": true,
+      "cicpRoundTripped": true
+    }
+  },
+  "d3": {
+    "engines": {
+      "chromium": {
+        "imagemagick-jpeg": {
+          "bytes": 7409,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-png": {
+          "bytes": 6200,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-webp": {
+          "bytes": 6992,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-avif": {
+          "bytes": 7322,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-gif": {
+          "bytes": 9246,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "oxipng": {
+          "bytes": 6179,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "gifsicle": {
+          "bytes": 9238,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "upng": {
+          "bytes": 151,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "sRGB",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "upng-with-spliced-iccp": {
+          "bytes": 2539,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer": {
+          "bytes": 1675,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer-then-splice": {
+          "bytes": 4076,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        }
+      },
+      "firefox": {
+        "imagemagick-jpeg": {
+          "bytes": 7409,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-png": {
+          "bytes": 6200,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-webp": {
+          "bytes": 6992,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-avif": {
+          "bytes": 7322,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-gif": {
+          "bytes": 9246,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "oxipng": {
+          "bytes": 6179,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "gifsicle": {
+          "bytes": 9238,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "upng": {
+          "bytes": 151,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "sRGB",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "upng-with-spliced-iccp": {
+          "bytes": 2541,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer": {
+          "bytes": 1675,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer-then-splice": {
+          "bytes": 4078,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        }
+      },
+      "webkit": {
+        "imagemagick-jpeg": {
+          "bytes": 7409,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-png": {
+          "bytes": 6200,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-webp": {
+          "bytes": 6992,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-avif": {
+          "bytes": 7322,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "imagemagick-gif": {
+          "bytes": 9246,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "oxipng": {
+          "bytes": 6179,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "gifsicle": {
+          "bytes": 9238,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture"
+        },
+        "upng": {
+          "bytes": 151,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "sRGB",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "upng-with-spliced-iccp": {
+          "bytes": 2537,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer": {
+          "bytes": 1675,
+          "profile": "absent",
+          "identical": false,
+          "chunks": [
+            "IHDR",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        },
+        "apng-optimizer-then-splice": {
+          "bytes": 4074,
+          "profile": "present",
+          "profileBytes": 6668,
+          "identical": true,
+          "description": "Display P3 test fixture",
+          "chunks": [
+            "IHDR",
+            "iCCP",
+            "PLTE",
+            "IDAT",
+            "IEND"
+          ]
+        }
+      }
+    }
+  }
+}

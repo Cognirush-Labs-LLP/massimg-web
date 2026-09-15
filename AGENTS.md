@@ -120,6 +120,9 @@ following `docs/commit-guide.md`, so the user can verify the implementation and 
 if it looks good. Keep it to the one-line `type: Short description` form unless the change genuinely
 needs the longer body format.
 
+## English variant to use in documentation and code
+Use US English in code and documentation.
+
 ## CLAUDE.md
 
 `CLAUDE.md` just points here — this file is the single source of truth for agent instructions.
