@@ -67,7 +67,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
 | D3 | ICC profiles survive every encoder path | 90 | TESTED | P2 |
 | D4 | EXIF auto-orientation correct for all eight values | 95 | TESTED | P2 |
-| D5 | Transparency detection is cheap | 70 | OPEN | P3 |
+| D5 | Transparency detection is cheap | 85 | TESTED | P3 |
 | D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
 | D8 | PNG quantization quality via ImageMagick alone | 40 | OPEN | P2 |
@@ -687,15 +687,25 @@ R-Q6 is strongly justified. On graphics lossless is both 32 times smaller and fo
 
 **R-I10 holds structurally**, not by convention: `Frame` has no orientation field, so no later stage can copy a tag forward. Re-encoding a decoded frame produces a file with no `exif` profile and an orientation of 0 or 1, never the source's.
 
-**Why 95 and not 100.** Two things are not covered. No file in the local photo set — 642 images — has an orientation above 1, so every value from 2 to 8 is evidenced by generated fixtures rather than by output from a real camera. And a HEIC carrying both the `irot`/`imir` transformative properties (which libheif applies itself) *and* an EXIF orientation tag would be at risk of a double rotation; no such file was obtainable, so that interaction is untested. R-I11's composition of user rotation on top of the corrected image is T24's to confirm.
+**Why 95 and not 100.** Two things are not covered. No file in the local photo set — 642 images — has an orientation above 1, so every value from 2 to 8 is evidenced by generated fixtures rather than by output from a real camera. And a HEIC carrying both the `irot`/`imir` transformative properties (which libheif applies itself) *and* an EXIF orientation tag would be at risk of a double rotation; no such file was obtainable, so that interaction is untested. R-I11's composition of user rotation on top of the corrected image is confirmed in T24 (`tests/e2e/edit.spec.ts`: an orientation 6 source decoded, turned and cropped, on all three engines).
 
 ---
 
-### D5 `OPEN` `70%` `P3` Transparency detection is cheap
+### D5 `TESTED` `85%` `P3` Transparency detection is cheap
 
 **Supporting evidence for the design.** The test HEIC, an ordinary photograph with no transparency, reported `hasAlpha: true`. This is concrete confirmation that channel presence is not evidence of transparency, which is why R-C13 requires a pixel-level test rather than a channel check.
 
-**Method.** Time a minimum-alpha scan against ImageMagick's opacity test on large images. If neither is cheap, sample first and scan fully only on ambiguity.
+**Measured in T24** (`tests/e2e/edit.spec.ts`, the D5 test, desktop, Apple M1). The edit stage's pixel-level test is a plain JavaScript loop over the alpha bytes of an already-decoded RGBA frame (`pipeline/stages/edit.ts`, `flatten`). On an 8000×6000 (48 MP) frame, JIT warmed:
+
+| Engine | Full scan, fully opaque | Scan and blend, every pixel translucent |
+| --- | --- | --- |
+| Chromium | 46 ms | 256 ms |
+| Firefox | 92 ms | 456 ms |
+| WebKit | 45 ms | 192 ms |
+
+The opaque case is the worst case for detection, since there is no early exit, and it is under 100 ms on every engine. A frame that size must be decoded before it can be scanned, and A8 measured 410 ms to decode a 1.5 MP HEIC, so the scan is small next to the decode that has to precede it (48 MP decode time itself was not measured here). **No sampling strategy is needed**, and the ImageMagick opacity test was not timed, because a full scan is already cheap enough that there is nothing to choose between.
+
+**Why 85 and not higher.** It was measured on a desktop only, one run per engine, with a synthetic frame. A low-end phone could plausibly run it 5–10× slower, which would still be well under a second but has not been measured (C4's device work is the place to confirm it). It measures the in-pipeline scan on a decoded frame. It does not measure `ImageRecord.hasTransparency`'s lazy detection outside the pipeline (§3.1), whose cost is dominated by the decode it needs, not by the scan.
 
 ---
 
