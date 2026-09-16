@@ -71,6 +71,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
 | D8 | PNG quantization quality via ImageMagick alone | 40 | OPEN | P2 |
+| D9 | Lossless AVIF is unusable in this build | 95 | TESTED | P2 |
 | E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
@@ -644,6 +645,55 @@ Six to seven iterations converges. AVIF at default speed is prohibitive, but see
 R-Q6 is strongly justified. On graphics lossless is both 32 times smaller and four times faster. On photographs the lossless attempt wastes 2.9 seconds and is discarded.
 
 **Consequence.** The content gate in R-Q6 is worth building, not just permitted. Unique colour count separates these two cases cleanly.
+
+**Reproduced in T26, in browsers, with the shipped encode stage** (`verification/t26-encode/results.json`; Apple M1; WebP q70 method 4 lossy against `webp:lossless` method 4 — §7.3's recipe, not the defaults the figures above used). The direction reproduces on all three engines, and the bytes are identical across engines for the same pixels. The magnitudes do not reproduce, because the original content is not recoverable and content decides the ratio:
+
+| Content, 1600×1200 unless stated | Unique colours | Lossy | Lossless | Winner |
+| --- | --- | --- | --- | --- |
+| Generated photographic stand-in (gradient + noise) | 1,264,694 | 69,288 B, 315–361 ms | 3,651,426 B, 5.9–8.0 s | Lossy, 53x |
+| Generated flat graphic | 13 | 5,484 B, 157–185 ms | 460 B, 49–68 ms | Lossless, 12x |
+| Canvas-drawn screenshot (text, gradient header) | 1,558–1,633 | ~63,500 B | 23,040–54,204 B | Lossless |
+| Five real photographs, fitted to 1600 px | 42,275–831,312 | 41,564–179,102 B, 216–326 ms | 1.24–2.20 MB, 784–1,125 ms | Lossy, 12.3x–29.7x |
+
+The screenshot row is a graphic that a classifier would be tempted by and the comparison handles correctly: lossless wins by 1.2x on Chromium and 2.8x on Firefox, on the same drawing, because the two engines rasterise the text differently.
+
+**WebKit's screenshot row is excluded, as a harness artifact rather than a finding.** WebKit's `getImageData` returned alpha 254 on 23,360 pixels of a fully opaque canvas drawing, so the frame was not opaque, the lossless attempt carried a noisy alpha plane, and the output jumped to 129,402 B and lost. It says nothing about WebP, and the run records it as `opaque: false` for anyone re-reading the raw file. The pipeline never builds a frame this way — frames come from `decodeFrame` — but a future canvas-sourced frame would hit it, which is worth knowing.
+
+**Gate calibration**, Chromium, 311 decodable images from the local set (60 JPEGs stride-sampled, 265 PNGs of which 14 would not decode), each fitted to 1600 px and encoded both ways:
+
+- Lossless won 134 times, **never above 2,034 unique colours** (a 256×256 graphic). No JPEG photograph ever won lossless.
+- Lossy won 177 times, including many low-colour images: lossless winning implies few colours, but few colours do not imply lossless winning.
+- Scored by candidate limit, over the same set — no limit from 4,096 to 1,048,576 would have skipped a single lossless win; the difference is only time spent on losing attempts: 93 attempts / 6.5 s at 4,096, 107 / 9.9 s at 16,384, **122 / 19.4 s at 65,536**, 177 / 73 s at 1,048,576.
+- Real photographs vary more than expected: 8 of the 60 sampled JPEGs had fewer than 65,536 colours at 1600 px (minimum 15,808), and each of those spends about 1 s on a losing lossless attempt.
+
+**The shipped limit is 65,536** (`LOSSLESS_GATE_MAX_COLORS`): 32 times the largest observed lossless win. The corpus is thin exactly where the gate could hurt — only 43 of the PNGs are 0.25 MP or larger, and real UI screenshots with gradients and anti-aliased text can plausibly reach tens of thousands of colours — and a wrongly skipped attempt costs the user bytes while a wrongly run one costs only time. Lowering it to 16,384 would save roughly a second on about one photograph in eight, and is the obvious tuning if run time matters more; the data does not argue for going lower.
+
+**The gate itself is cheap:** a 48 MP photographic frame exceeds the limit within 5–12 ms; a 48 MP flat frame is scanned in full in 157–189 ms.
+
+---
+
+### D9 `TESTED` `95%` `P2` Lossless AVIF is unusable in this build
+
+**Measured in T26**, `@imagemagick/magick-wasm` 0.0.43, on Chromium, Firefox and WebKit.
+
+AOM reads quality 100 as lossless. This build then refuses to encode — *"Only --enable_chroma_deltaq=0 can be used with --lossless=1"* — unless the file is labelled with the identity matrix (`heic:cicp p,t,0`). There is no define for chroma-delta-q: `heic:enable-chroma-deltaq` is rejected the same way, and the option is not in the binary's string table.
+
+The identity-matrix file encodes, and ImageMagick reads it back within one unit. **Every browser renders it wrong**, because the `nclx` box that carries the matrix also carries a `full_range_flag` of 0, and no define can set it:
+
+| Decoder | Maximum error at flat block centres |
+| --- | --- |
+| ImageMagick (the library that wrote it) | 1 |
+| Chromium | 5 |
+| Firefox | 16 |
+| WebKit | 240 — the image is black |
+
+A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all three, so this is not WebKit's 4:4:4 support: it is the identity-matrix, limited-range file.
+
+**Consequence.** R-Q5's "lossless wherever the format supports it" cannot be honoured for AVIF with this build. **Decided by the user:** AVIF at 96–100 encodes as highest-quality lossy with 4:4:4 chroma — the slider value, capped at 99 so the encoder never enters AOM's lossless mode, so 96 encodes at 96 and 100 at 99. All three engines decode the result within 1. This is a documented deviation from R-Q5, not a silent one: Functional Design §7.1's AVIF row still says "Lossless mode", and whoever owns that text should decide whether to amend it or keep it as an aspiration for a future build.
+
+**Related, same measurement.** The writer converts RGB to YUV with BT.601 whatever matrix it labels the file with. Writing the *source's* matrix coefficients therefore tells decoders to invert a conversion that never happened: a file labelled BT.709 decoded 10 units out in Chromium and Firefox, one labelled BT.2020 12 units out, against 3 for BT.601 from identical pixels. `encode-plan.ts` writes the source's primaries and transfer — the two that describe the colour — with matrix 6.
+
+**Why 95 and not higher.** Three engines, several recipes, one build. A later magick-wasm that exposes the full-range flag or the AOM parameter directly would change the conclusion, and the test in `tests/e2e/encode.spec.ts` that decodes output through the browser's own decoder is what would show it.
 
 ---
 

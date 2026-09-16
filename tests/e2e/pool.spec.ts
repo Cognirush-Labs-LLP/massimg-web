@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
 
 // T21 — pipeline/pool.ts, pipeline/worker.ts and the message protocol between them. Same
@@ -6,15 +8,23 @@ import { expect, test, type Page } from '@playwright/test'
 // the modules under test are loaded inside the page via a dynamic import of their served paths and
 // every browser-side result is mapped to a plain, serializable shape before it crosses back to Node.
 //
-// The pool's invariants are about timing and ordering, and `pipeline/worker.ts` has no stage to run
-// until T23-T29 build them. So the cancellation, supersession, concurrency and termination tests
+// The pool's invariants are about timing and ordering, which a real encode would make slow and
+// variable. So the cancellation, supersession, concurrency and termination tests
 // inject a probe worker through the pool's `workerFactory` seam: the queue, the tokens, the
 // `postMessage` boundary, `terminate()` and the respawn are all the real ones, and only the work
-// inside the worker is substituted for a controllable delay. Two further tests drive the shipped
-// `pipeline/worker.ts` itself, so the module that ships is proven to speak the protocol.
+// inside the worker is substituted for a controllable delay. The remaining tests drive the shipped
+// `pipeline/worker.ts` itself, so the module that ships is proven to speak the protocol and, since
+// T26, to run the still stage chain end to end.
 const POOL_MODULE_PATH = '/src/pipeline/pool.ts'
 const LIMITS_MODULE_PATH = '/src/config/limits.ts'
 const WORKER_MODULE_PATH = '/src/pipeline/worker.ts'
+const LOADER_MODULE_PATH = '/src/pipeline/codecs/loader.ts'
+
+function fixture(name: string): number[] {
+  return Array.from(
+    readFileSync(fileURLToPath(new URL(`../fixtures/decode/${name}`, import.meta.url))),
+  )
+}
 
 interface Stats {
   size: number
@@ -542,39 +552,204 @@ test('resume lets the same pool run again without replacing its workers (R-X17)'
   expect(result.settled.workersAlive).toBe(1)
 })
 
-test('the shipped pipeline worker speaks the protocol', async ({ page }) => {
-  await page.goto('/')
+interface ShippedOutcome {
+  outcome: string
+  token: number
+  imageId: string
+  reason?: { kind: string; detail?: string }
+  result?: { format: string; caveats: { kind: string }[]; head: number[]; byteLength: number }
+}
 
-  const result = await page.evaluate(
-    async ({ poolPath }) => {
-      // The default factory — the real module worker, no probe.
+/**
+ * Runs jobs through the real pool and the shipped `pipeline/worker.ts`, and maps each outcome to a
+ * serializable shape. `source: 'fixture'` sends the canonical decode fixture; `'garbage'` sends bytes
+ * no decoder accepts; `'transparent-png'` builds a PNG with a transparent half in the page.
+ */
+function runShipped(
+  page: Page,
+  jobs: {
+    imageId: string
+    source: 'fixture' | 'garbage' | 'transparent-png' | 'cicp-avif'
+    settings?: Record<string, unknown>
+    intent?: 'preview' | 'run'
+  }[],
+): Promise<{ tokens: number[]; outcomes: ShippedOutcome[]; settled: Stats }> {
+  return page.evaluate(
+    async ({ poolPath, loaderPath, fixture, cicpFixture, jobs }) => {
       const mod = await import(/* @vite-ignore */ poolPath)
+      // The default factory — the real module worker, no probe.
       const instance = mod.createWorkerPool({ size: 1 })
 
-      const handle = instance.run(makeJob('img-real'))
-      const outcome = (await handle.done) as {
-        outcome: string
-        token: number
-        imageId: string
-        reason?: { kind: string; detail?: string }
+      const transparentPng = async () => {
+        const magick = await (await import(/* @vite-ignore */ loaderPath)).ensureImageMagick()
+        const { ImageMagick, MagickFormat, MagickReadSettings } = magick
+        const pixels = new Uint8Array(40 * 20 * 4)
+        for (let i = 0; i < 40 * 20; i += 1) {
+          pixels.set([200, 30, 30, i % 40 < 20 ? 255 : 0], i * 4)
+        }
+        return ImageMagick.read(
+          pixels,
+          new MagickReadSettings({ format: MagickFormat.Rgba, width: 40, height: 20, depth: 8 }),
+          (image: { write<T>(format: string, cb: (data: Uint8Array) => T): T }) =>
+            image.write(MagickFormat.Png, (data) => data.slice()),
+        ) as Uint8Array
       }
+
+      const handles = []
+      for (const spec of jobs) {
+        const source =
+          spec.source === 'fixture'
+            ? new Uint8Array(fixture)
+            : spec.source === 'cicp-avif'
+              ? new Uint8Array(cicpFixture)
+              : spec.source === 'garbage'
+                ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+                : await transparentPng()
+
+        handles.push(
+          instance.run({
+            imageId: spec.imageId,
+            source,
+            edit: null,
+            settings: {
+              quality: { kind: 'quality', value: 80, lossless: false },
+              dimension: { kind: 'original' },
+              format: 'jpeg',
+              isAnimated: false,
+              alpha: { kind: 'preserve' },
+              ...spec.settings,
+            },
+            intent: spec.intent ?? 'preview',
+          }),
+        )
+      }
+
+      const outcomes = []
+      for (const handle of handles) {
+        const done = (await handle.done) as ShippedOutcome & {
+          result?: { bytes: Uint8Array; format: string; caveats: { kind: string }[] }
+        }
+        outcomes.push({
+          outcome: done.outcome,
+          token: done.token,
+          imageId: done.imageId,
+          reason: done.reason,
+          result: done.result && {
+            format: done.result.format,
+            caveats: done.result.caveats,
+            head: Array.from(done.result.bytes.subarray(0, 12)),
+            byteLength: done.result.bytes.byteLength,
+          },
+        })
+      }
+
       const settled = instance.stats() as Stats
       instance.destroy()
 
-      return { token: handle.token as number, outcome, settled }
+      return { tokens: handles.map((handle) => handle.token as number), outcomes, settled }
     },
-    { poolPath: POOL_MODULE_PATH },
+    {
+      poolPath: POOL_MODULE_PATH,
+      loaderPath: LOADER_MODULE_PATH,
+      fixture: fixture('orientation-1.jpg'),
+      cicpFixture: fixture('cicp-p3.avif'),
+      jobs,
+    },
   )
+}
 
-  // The module worker constructs, receives a Job and answers on the token it was given. The reason
-  // is `unimplemented` because T23-T29 have not built the stages yet — when they do, this becomes a
-  // completed outcome and nothing else about the protocol changes.
-  expect(result.outcome.token).toBe(result.token)
-  expect(result.outcome.imageId).toBe('img-real')
-  expect(result.outcome.outcome).toBe('failed')
-  expect(result.outcome.reason?.kind).toBe('unimplemented')
-  expect(result.settled.workersAlive).toBe(1)
-  expect(result.settled.completed).toBe(1)
+test('the shipped pipeline worker encodes a real image and answers on its token', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const { tokens, outcomes, settled } = await runShipped(page, [
+    { imageId: 'img-real', source: 'fixture' },
+  ])
+  const outcome = outcomes[0]!
+
+  // Decode, edit, resize and encode ran inside the module worker (T26), and the bytes came back
+  // through the protocol's transfer list.
+  expect(outcome.token).toBe(tokens[0])
+  expect(outcome.imageId).toBe('img-real')
+  expect(outcome.outcome).toBe('completed')
+  expect(outcome.result?.format).toBe('jpeg')
+  expect(outcome.result?.head.slice(0, 3)).toEqual([0xff, 0xd8, 0xff])
+  expect(outcome.result?.byteLength).toBeGreaterThan(100)
+  expect(settled.workersAlive).toBe(1)
+  expect(settled.completed).toBe(1)
+})
+
+test('the shipped worker encodes WebP and AVIF through the same chain', async ({ page }) => {
+  await page.goto('/')
+
+  const { outcomes } = await runShipped(page, [
+    { imageId: 'webp', source: 'fixture', settings: { format: 'webp' } },
+    { imageId: 'avif', source: 'fixture', settings: { format: 'avif' } },
+  ])
+
+  expect(outcomes.map((o) => [o.outcome, o.result?.format])).toEqual([
+    ['completed', 'webp'],
+    ['completed', 'avif'],
+  ])
+  expect(String.fromCharCode(...outcomes[0]!.result!.head.slice(8, 12))).toBe('WEBP')
+  expect(String.fromCharCode(...outcomes[1]!.result!.head.slice(4, 12))).toBe('ftypavif')
+})
+
+test('a run carries the edit stage caveats; a preview of the same job carries none', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const flatten = {
+    format: 'jpeg',
+    alpha: { kind: 'flatten', background: { r: 255, g: 255, b: 255, a: 1 } },
+  }
+  const { outcomes } = await runShipped(page, [
+    { imageId: 'run', source: 'transparent-png', settings: flatten, intent: 'run' },
+    { imageId: 'preview', source: 'transparent-png', settings: flatten, intent: 'preview' },
+  ])
+
+  expect(outcomes[0]?.outcome).toBe('completed')
+  expect(outcomes[0]?.result?.caveats.map((c) => c.kind)).toEqual(['transparency-flattened'])
+  expect(outcomes[1]?.outcome).toBe('completed')
+  expect(outcomes[1]?.result?.caveats).toEqual([])
+})
+
+test('the shipped worker reports undecodable bytes as decode-failed and unbuilt paths as unimplemented', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const { outcomes, settled } = await runShipped(page, [
+    { imageId: 'garbage', source: 'garbage' },
+    { imageId: 'png', source: 'fixture', settings: { format: 'png' } },
+    { imageId: 'gif', source: 'fixture', settings: { format: 'gif' } },
+    { imageId: 'animated', source: 'fixture', settings: { format: 'webp', isAnimated: true } },
+    {
+      imageId: 'size',
+      source: 'fixture',
+      settings: { quality: { kind: 'size', targetBytes: 5000 } },
+    },
+    // A Display P3 CICP source going to JPEG: the colour has nowhere to go and converting it is a
+    // deferred follow-up, so the worker says `unimplemented` rather than inventing an encode failure.
+    { imageId: 'cicp-jpeg', source: 'cicp-avif', settings: { format: 'jpeg' } },
+    // The same source to AVIF, which can carry the signal, completes.
+    { imageId: 'cicp-avif', source: 'cicp-avif', settings: { format: 'avif' } },
+  ])
+
+  expect(outcomes.map((o) => [o.imageId, o.outcome, o.reason?.kind])).toEqual([
+    ['garbage', 'failed', 'decode-failed'],
+    ['png', 'failed', 'unimplemented'],
+    ['gif', 'failed', 'unimplemented'],
+    ['animated', 'failed', 'unimplemented'],
+    ['size', 'failed', 'unimplemented'],
+    ['cicp-jpeg', 'failed', 'unimplemented'],
+    ['cicp-avif', 'completed', undefined],
+  ])
+  // A failed job does not cost the worker.
+  expect(settled.workersAlive).toBe(1)
+  expect(settled.terminations).toBe(0)
 })
 
 test('the shipped worker checks the between-jobs flag before starting a job', async ({ page }) => {
@@ -597,7 +772,12 @@ test('the shipped worker checks the between-jobs flag before starting a job', as
       await waitFor(() => received.length >= 2)
       worker.terminate()
 
-      return received as { kind: string; token: number; imageId: string }[]
+      return received as {
+        kind: string
+        token: number
+        imageId: string
+        reason?: { kind: string }
+      }[]
     },
     { workerPath: WORKER_MODULE_PATH },
   )
@@ -607,6 +787,8 @@ test('the shipped worker checks the between-jobs flag before starting a job', as
   expect(result[0]?.token).toBe(400)
   expect(result[0]?.imageId).toBe('img-refused')
   // The later token was not refused: it reached executeJob and came back as an error, not a skip.
+  // Its source is a probe delay, not an image, so the error is a decode failure.
   expect(result[1]?.kind).toBe('error')
   expect(result[1]?.token).toBe(600)
+  expect(result[1]?.reason?.kind).toBe('decode-failed')
 })

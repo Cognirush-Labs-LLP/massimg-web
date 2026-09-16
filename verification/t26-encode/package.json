@@ -1,0 +1,9 @@
+{
+  "name": "t26-encode",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway harness for T26 — reproduces D2 (WebP lossy vs lossless) in three browsers with the shipped encode stage, and calibrates R-Q6's unique-colour gate against real images. See docs/task-notes/T26.md and docs/assumptions.md D2.",
+  "scripts": {
+    "test": "node run.mjs"
+  }
+}

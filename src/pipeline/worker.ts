@@ -2,12 +2,14 @@
 // awaits `executeJob` before it looks at the next message, which is §8.1's "one full-resolution
 // decode in flight per worker, released before the next".
 //
-// Nothing but the message loop lives here. The work is `execute.ts` (T23-T29 fill it) and the
+// Nothing but the message loop lives here. The work is `execute.ts` (the §4.2 stage chain) and the
 // protocol is `protocol.ts`, so the pool can speak the protocol without importing this module and
 // the stages can be unit-tested without a worker.
 
 import { JobExecutionError, executeJob } from './execute'
 import type { JobFailure, WorkerRequest, WorkerResponse } from './protocol'
+import { DecodeError } from './stages/decode'
+import { UnsupportedColourError } from './stages/encode'
 
 interface WorkerScope {
   addEventListener(type: 'message', listener: (event: MessageEvent<WorkerRequest>) => void): void
@@ -22,8 +24,12 @@ const scope = self as unknown as WorkerScope
 let cancelledThrough = 0
 
 function reasonFor(error: unknown): JobFailure {
-  if (error instanceof JobExecutionError) {
+  if (error instanceof JobExecutionError || error instanceof UnsupportedColourError) {
     return { kind: 'unimplemented', detail: error.detail }
+  }
+
+  if (error instanceof DecodeError) {
+    return { kind: 'decode-failed' }
   }
 
   // A `RangeError` from an allocation the WASM heap could not satisfy is the out-of-memory shape

@@ -329,7 +329,7 @@ No codec runs at maximum effort. The measured returns are small and the time cos
 
 | Codec | Setting | Rationale |
 | --- | --- | --- |
-| AVIF | `heic:speed` 9, never the default | **D7**: on twenty real photographs, speed 9 is 9.94x faster than speed 6 and 2.10x faster than speed 8 on average, with mean SSIM flat across speeds 6-9 (0.9857-0.9861) and under 1% size difference between speeds 8 and 9. Default is 7611 ms vs. 452 ms for speed 9 on the original single-image measurement |
+| AVIF | `heic:speed` 9, never the default; `heic:chroma` 444 above slider 95 | **D7**: on twenty real photographs, speed 9 is 9.94x faster than speed 6 and 2.10x faster than speed 8 on average, with mean SSIM flat across speeds 6-9 (0.9857-0.9861) and under 1% size difference between speeds 8 and 9. Default is 7611 ms vs. 452 ms for speed 9 on the original single-image measurement |
 | WebP | `method` 4, the library default, not 6 | Method 6 costs several times the time for low single-digit size gains |
 | oxipng | `level` 2, not 6 | Above level 2 the curve flattens sharply |
 | gifsicle | `-O2`, not `-O3` | `-O3` tries every option per frame |
@@ -346,7 +346,7 @@ Implements Functional Design §7.1. The mapping is pure and lives in `domain/job
 | JPEG | quality as given | quality as given |
 | PNG | lossless from 85 (R-Q12) | `70 + (q - 10) × 30 / 90`, then quantize |
 | WebP | `lossless=true` | lossy, plus lossless comparison (R-Q6) |
-| AVIF | lossless mode | quality as given |
+| AVIF | **not lossless in this build** — the slider value capped at 99, chroma 4:4:4 (D9) | quality as given |
 | GIF | no `--lossy` | `--lossy` derived from quality |
 
 ### 7.5 Size targeting
@@ -375,6 +375,8 @@ R-Q6 (WebP) and R-Q14 (PNG) both encode twice and keep the smaller. **D2 measure
 | Flat graphic | 16,586 B, 224 ms | 522 B, 64 ms | Lossless by 32x |
 
 Both halves earn their place. The gate permitted by R-Q6 is worth building: unique colour count separates these cases cleanly, and skipping the lossless attempt on photographs saves 2.9 seconds per image.
+
+**T26 reproduced this in browsers** with the shipped stage (D2): the direction holds on all three engines, but the saving on real photographs fitted to 1600 px is about 1 second per image in this build, not 2.9. The gate skips the lossless attempt when a frame has more than 65,536 distinct RGBA values; across 311 real images no lossless win had more than 2,034, so the limit is set well above that and errs toward attempting.
 
 ### 7.7 Colour management
 
