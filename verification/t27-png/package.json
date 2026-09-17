@@ -1,0 +1,9 @@
+{
+  "name": "t27-png",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway harness for T27 — measures D8 (libimagequant against ImageMagick's own quantizer) on ten representative PNGs in three browsers with the shipped PNG stage, settles R-Q13's 70 floor and R-Q14's value, and sweeps §7.3's quantizer speed and target. See docs/task-notes/T27.md and docs/assumptions.md D8.",
+  "scripts": {
+    "test": "node run.mjs"
+  }
+}

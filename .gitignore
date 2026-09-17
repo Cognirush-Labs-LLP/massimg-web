@@ -28,3 +28,7 @@ yarn-error.log*
 coverage/
 playwright-report/
 test-results/
+
+# images a verification harness renders for a human to look at (T27's render.mjs). The measurement
+# lives in its results.json; these are working files and are regenerated on demand.
+verification/*/rendered/

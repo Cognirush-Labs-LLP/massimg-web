@@ -11,4 +11,19 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    // `imagequant` is a wasm-bindgen "bundler" target: `imagequant.js` imports the `.wasm`, hands the
+    // instance's exports to `imagequant_bg.js` through `__wbg_set_wasm`, and re-exports it. The dev
+    // dep-optimizer inlines a *copy* of `imagequant_bg.js` into `node_modules/.vite/deps`, while the
+    // `.wasm` module's own imports still resolve to the original file — so two copies of the glue
+    // exist, only one of them holding the instance. Measured (T27): every error the quantizer raises
+    // then arrives as `TypeError: Cannot read properties of undefined (reading 'memory')` from the
+    // copy that never received the instance, because `__wbindgen_throw` cannot reach the heap to
+    // read its own message. libimagequant's `QUALITY_TOO_LOW` abort is a *normal* outcome for this
+    // pipeline (Functional Design R-Q11: the floor is enforced by aborting, and the job falls back to
+    // a lossless PNG), so losing the message means losing the difference between that and a real
+    // failure. Excluding the package from pre-bundling serves the single original module and makes
+    // the dev server behave like the production build, where Rollup emits exactly one copy.
+    exclude: ['imagequant'],
+  },
 })

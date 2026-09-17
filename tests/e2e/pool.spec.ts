@@ -563,13 +563,14 @@ interface ShippedOutcome {
 /**
  * Runs jobs through the real pool and the shipped `pipeline/worker.ts`, and maps each outcome to a
  * serializable shape. `source: 'fixture'` sends the canonical decode fixture; `'garbage'` sends bytes
- * no decoder accepts; `'transparent-png'` builds a PNG with a transparent half in the page.
+ * no decoder accepts; `'transparent-png'` builds a PNG with a transparent half in the page, and
+ * `'shaded-png'` one whose smooth shading a palette holds in a fraction of the bytes (T27).
  */
 function runShipped(
   page: Page,
   jobs: {
     imageId: string
-    source: 'fixture' | 'garbage' | 'transparent-png' | 'cicp-avif'
+    source: 'fixture' | 'garbage' | 'transparent-png' | 'shaded-png' | 'cicp-avif'
     settings?: Record<string, unknown>
     intent?: 'preview' | 'run'
   }[],
@@ -580,20 +581,38 @@ function runShipped(
       // The default factory — the real module worker, no probe.
       const instance = mod.createWorkerPool({ size: 1 })
 
-      const transparentPng = async () => {
+      const buildPng = async (
+        width: number,
+        height: number,
+        colour: (x: number, y: number) => number[],
+      ) => {
         const magick = await (await import(/* @vite-ignore */ loaderPath)).ensureImageMagick()
         const { ImageMagick, MagickFormat, MagickReadSettings } = magick
-        const pixels = new Uint8Array(40 * 20 * 4)
-        for (let i = 0; i < 40 * 20; i += 1) {
-          pixels.set([200, 30, 30, i % 40 < 20 ? 255 : 0], i * 4)
+        const pixels = new Uint8Array(width * height * 4)
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            pixels.set(colour(x, y), (y * width + x) * 4)
+          }
         }
         return ImageMagick.read(
           pixels,
-          new MagickReadSettings({ format: MagickFormat.Rgba, width: 40, height: 20, depth: 8 }),
+          new MagickReadSettings({ format: MagickFormat.Rgba, width, height, depth: 8 }),
           (image: { write<T>(format: string, cb: (data: Uint8Array) => T): T }) =>
             image.write(MagickFormat.Png, (data) => data.slice()),
         ) as Uint8Array
       }
+
+      const transparentPng = () => buildPng(40, 20, (x) => [200, 30, 30, x < 20 ? 255 : 0])
+
+      const shadedPng = () =>
+        buildPng(400, 300, (x, y) => {
+          const u = x / 400
+          const v = y / 300
+          const shade = 0.55 + 0.45 * Math.sin(u * 3.1) * Math.cos(v * 2.3)
+          const base = v > 0.55 + 0.1 * Math.sin(u * 7) ? [76, 122, 84] : [140, 196, 230]
+          const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)))
+          return [clamp(base[0]! * shade), clamp(base[1]! * shade), clamp(base[2]! * shade), 255]
+        })
 
       const handles = []
       for (const spec of jobs) {
@@ -604,7 +623,9 @@ function runShipped(
               ? new Uint8Array(cicpFixture)
               : spec.source === 'garbage'
                 ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
-                : await transparentPng()
+                : spec.source === 'shaded-png'
+                  ? await shadedPng()
+                  : await transparentPng()
 
         handles.push(
           instance.run({
@@ -696,6 +717,57 @@ test('the shipped worker encodes WebP and AVIF through the same chain', async ({
   expect(String.fromCharCode(...outcomes[1]!.result!.head.slice(4, 12))).toBe('ftypavif')
 })
 
+test('the shipped worker encodes PNG through both branches of the T27 chain', async ({ page }) => {
+  await page.goto('/')
+
+  // The quality values are what `domain/job.ts` produces for slider 85 and slider 10 (R-Q11).
+  const lossless95 = { kind: 'quality', value: 95, lossless: true }
+  const mapped70 = { kind: 'quality', value: 70, lossless: false }
+
+  const { outcomes } = await runShipped(page, [
+    // Above R-Q12's point: one candidate, and the file is lossless.
+    {
+      imageId: 'png-lossless',
+      source: 'shaded-png',
+      settings: { format: 'png', quality: lossless95 },
+    },
+    // Below it: both candidates run and the quantized one wins on this content (R-Q14).
+    {
+      imageId: 'png-quantized',
+      source: 'shaded-png',
+      settings: { format: 'png', quality: mapped70 },
+      intent: 'run',
+    },
+    // R-Q14's own case: a source that already has few colours gains nothing from quantization, so
+    // the lossless candidate is kept and the report says nothing about quantization.
+    {
+      imageId: 'png-few-colours',
+      source: 'transparent-png',
+      settings: { format: 'png', quality: mapped70 },
+      intent: 'run',
+    },
+  ])
+
+  for (const outcome of outcomes) {
+    expect(outcome.outcome, outcome.imageId).toBe('completed')
+    expect(outcome.result?.format, outcome.imageId).toBe('png')
+    // The PNG signature, through the protocol's transfer list.
+    expect(outcome.result?.head.slice(0, 8), outcome.imageId).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ])
+  }
+
+  const [lossless, quantized, fewColours] = outcomes
+
+  // The quantized candidate is kept and is materially smaller than the lossless one.
+  expect(quantized!.result!.byteLength).toBeLessThan(lossless!.result!.byteLength)
+
+  // R-X46: the report says the PNG was not written losslessly, and only when that is true.
+  expect(quantized!.result?.caveats.map((c) => c.kind)).toEqual(['png-quantized'])
+  expect(lossless!.result?.caveats).toEqual([])
+  expect(fewColours!.result?.caveats).toEqual([])
+})
+
 test('a run carries the edit stage caveats; a preview of the same job carries none', async ({
   page,
 }) => {
@@ -723,7 +795,6 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
 
   const { outcomes, settled } = await runShipped(page, [
     { imageId: 'garbage', source: 'garbage' },
-    { imageId: 'png', source: 'fixture', settings: { format: 'png' } },
     { imageId: 'gif', source: 'fixture', settings: { format: 'gif' } },
     { imageId: 'animated', source: 'fixture', settings: { format: 'webp', isAnimated: true } },
     {
@@ -734,17 +805,19 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
     // A Display P3 CICP source going to JPEG: the colour has nowhere to go and converting it is a
     // deferred follow-up, so the worker says `unimplemented` rather than inventing an encode failure.
     { imageId: 'cicp-jpeg', source: 'cicp-avif', settings: { format: 'jpeg' } },
+    // The same to PNG, which cannot carry it either — this build writes no `cICP` chunk (T27).
+    { imageId: 'cicp-png', source: 'cicp-avif', settings: { format: 'png' } },
     // The same source to AVIF, which can carry the signal, completes.
     { imageId: 'cicp-avif', source: 'cicp-avif', settings: { format: 'avif' } },
   ])
 
   expect(outcomes.map((o) => [o.imageId, o.outcome, o.reason?.kind])).toEqual([
     ['garbage', 'failed', 'decode-failed'],
-    ['png', 'failed', 'unimplemented'],
     ['gif', 'failed', 'unimplemented'],
     ['animated', 'failed', 'unimplemented'],
     ['size', 'failed', 'unimplemented'],
     ['cicp-jpeg', 'failed', 'unimplemented'],
+    ['cicp-png', 'failed', 'unimplemented'],
     ['cicp-avif', 'completed', undefined],
   ])
   // A failed job does not cost the worker.

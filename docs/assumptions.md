@@ -53,7 +53,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | B3 | OPFS unavailable in private browsing | 90 | DOC | P2 |
 | B4 | OPFS download does not materialise in RAM | 90 | TESTED | P1 |
 | B5 | Folder input works across browsers | 90 | TESTED | P2 |
-| B6 | Cross-origin isolation needed for threads | 85 | OPEN | P2 |
+| B6 | Cross-origin isolation needed for threads | 90 | OPEN | P2 |
 | B7 | x64 build requires memory64 | 80 | TESTED | P2 |
 | B9 | Host can set custom response headers | 70 | OPEN | P2 |
 | C1 | File handles are not backed by memory | 90 | DOC | P1 |
@@ -70,7 +70,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | D5 | Transparency detection is cheap | 85 | TESTED | P3 |
 | D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
-| D8 | PNG quantization quality via ImageMagick alone | 40 | OPEN | P2 |
+| D8 | PNG quantization quality via ImageMagick alone | 95 | REFUTED | P2 |
 | D9 | Lossless AVIF is unusable in this build | 95 | TESTED | P2 |
 | E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
@@ -216,7 +216,7 @@ Zero files signal colour by CICP *instead of* a profile. The one CICP-only file 
 
 **Affects.** R-Q11 and R-Q14. PNG quantization must come from ImageMagick's internal quantizer, or from a second WASM module, and the two differ in quality.
 
-**Method to close.** See D8, which is the decision this feeds.
+**Settled, by taking the second module.** T22 added the `imagequant` package (347 KB wasm, 153 KB gzipped) and T27 built the PNG path on it. **D8 is refuted**: ImageMagick's own quantizer is both worse at the same colour count and, decisively, has no quality floor to refuse an image it cannot quantize well — which is the mechanism R-Q11's floor is made of. A9 itself is unchanged and stays a binary finding; what it fed is now decided.
 
 ---
 
@@ -322,11 +322,25 @@ Pass condition ("peak stays far below file size") held on all three engines: pea
 
 ---
 
-### B6 `OPEN` `85%` `P2` Cross-origin isolation required for threads
+### B6 `OPEN` `90%` `P2` Cross-origin isolation required for threads
 
 A threaded WASM build needs `SharedArrayBuffer`, which needs COOP and COEP.
 
-**Method.** Determine whether the chosen build is threaded. If it is, deploy with and without the headers and record what breaks.
+**Half of this is now measured (T27), on the one shipped module that has a threaded build.** `@jsquash/oxipng` carries both builds and chooses between them at `init()`: it takes the multi-threaded one only inside a Worker, with `hardwareConcurrency > 1`, and when `wasm-feature-detect`'s `threads()` passes — and `threads()` is `new MessageChannel().port1.postMessage(new SharedArrayBuffer(1))` inside a `try`. Reproduced inside a real Worker on all three engines with no COOP/COEP headers set (`verification/t27-png/results.json`, and asserted in `tests/e2e/png.spec.ts`):
+
+| Engine | In a Worker | Cores | `new SharedArrayBuffer(1)` | postMessage of it | Threaded wasm validates | Build chosen |
+| --- | --- | --- | --- | --- | --- | --- |
+| Chromium | yes | 8 | throws | throws | yes | single-threaded |
+| Firefox | yes | 8 | throws | throws | yes | single-threaded |
+| WebKit | yes | 8 | throws | throws | yes | single-threaded |
+
+The "build chosen" column is **observed, not inferred**: the two builds are served from distinct URLs, and `tests/e2e/png.spec.ts` dispatches a real PNG job through the pipeline worker and asserts that the wasm it fetches is `@jsquash/oxipng`'s `codec/pkg/squoosh_oxipng_bg.wasm` and never `codec/pkg-parallel/`. The predicate reproduction above explains *why* that is the one chosen; the request is what shows that it is. (The distinction matters because a reimplemented predicate would keep passing if the library changed its own.)
+
+So the claim's direction holds exactly: the engines all support threaded WebAssembly and all refuse `SharedArrayBuffer` without isolation, and the shipped code silently takes the single-threaded path. **A consequence for §8.1:** oxipng spawns no thread pool, so a pool of *N* pipeline workers costs *N* oxipng heaps rather than *N* × cores.
+
+**Why not higher, and what is still open.** The second half of the Method — deploy with and without the headers and record what breaks — is untested, and so is whether the threaded build is worth having. oxipng at level 2 is 31–138 ms on the images measured, which is not where the time goes, so nothing in this project currently wants the headers.
+
+**Method for the rest.** Serve the built app with COOP/COEP set and confirm the multi-threaded build initialises, that cross-origin resources still load, and what it costs in memory.
 
 ---
 
@@ -717,11 +731,15 @@ A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all t
 
 **The weak point was correctly identified but is in the wrong component, and it is avoidable.** §7.7 predicted the animated PNG path would lose the profile because it leaves ImageMagick and passes through UPNG. UPNG does indeed write no `iCCP` — it takes raw RGBA and emits `IHDR sRGB PLTE tRNS IDAT IEND`, and that `sRGB` chunk actively declares the output sRGB. But an `iCCP` chunk spliced into its output is read back byte-identically, so UPNG is not the obstacle. **apng-optimizer is**: given an APNG that carries a valid `iCCP`, it strips it. Attaching the profile *after* the optimiser has run preserves it exactly.
 
-**Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It can be avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk*. Whichever task builds animated PNG output (T27) should take this ordering as measured rather than re-deriving it, and must drop the `sRGB` chunk when it attaches the profile: `sRGB` and `iCCP` are mutually exclusive in the PNG specification, and leaving both produces a file libpng warns about and whose colour two readers may disagree about.
+**Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It can be avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk*. Whichever task builds animated PNG output (T29) should take this ordering as measured rather than re-deriving it, and must drop the `sRGB` chunk when it attaches the profile: `sRGB` and `iCCP` are mutually exclusive in the PNG specification, and leaving both produces a file libpng warns about and whose colour two readers may disagree about.
 
-**Not measured.** §4.2's "quantize" step (libimagequant) transforms pixels and produces no file, so it is not a profile-carrying step; whatever writes the PNG after it is what was measured. R-I13's GIF conversion — converting to sRGB *using* the embedded profile before encoding — is an encode-stage behaviour and is not exercised here; what this measures is that the GIF path does not silently drop the profile, which is the risk D3 names. Surprisingly, both ImageMagick's GIF writer and gifsicle preserve the profile, so R-I13's conversion is a deliberate choice rather than a forced one.
+**Extended by T27, for the still PNG path, and one sentence of the paragraph below was wrong.** §4.2's "quantize" step does *not* merely transform pixels: `Imagequant.process()` returns a **finished PNG**, and that PNG carries `IHDR PLTE tRNS IDAT IEND` and no `iCCP` at all — so the still PNG path has the same profile problem the animated one has, and the same fix. Measured on all three engines (`verification/t27-png/`, `tests/e2e/png.spec.ts`): ImageMagick's own `iCCP` chunk, moved whole into libimagequant's output, reads back byte-identical to the profile embedded in the source, before or after oxipng — the two orderings produce byte-identical files. Two things beyond T23's table came out of it: libimagequant writes no `sRGB` or `gAMA` either, so there is nothing to contradict the spliced profile; and **ImageMagick's PNG writer adds chunks of its own** — `cHRM`, `tIME`, three `tEXt` timestamps, and, for a profiled image, a second copy of the profile as a `zTXt` "Raw profile type icc" (3,441 bytes against the 2,381-byte `iCCP` on an image whose pixel data was 95 bytes). Neither `png:exclude-chunk` nor `image.strip()` removes them without removing the `iCCP` too, so the pipeline rewrites the chunk list itself. These byte figures are a one-off observation on a small test image rather than part of `results.json`; what the committed evidence asserts is the *presence* of the chunks — `tests/e2e/png.spec.ts` writes the same frame through ImageMagick with nothing stripped and checks `tEXt` and `tIME` are there, and that neither reaches the shipped file.
 
-**Why 90 and not higher.** Every path is measured on all three engines with identical results, and the one failing path has a demonstrated fix — but the fix is not yet *built* (T27 owns it), and the measurement uses one profile rather than a range of profile sizes and versions. A very large profile could plausibly meet a size limit in one of these writers that a 6.6 KB one does not.
+**Also measured by T27: Chromium and WebKit apply the resulting profile**, drawing a P3-tagged PNG differently from an untagged one with the same pixels. Firefox draws both identically — its 2D canvas does not colour-manage in this build — so on Firefox the profile is proven present and byte-identical but not proven honoured.
+
+**Not measured.** R-I13's GIF conversion — converting to sRGB *using* the embedded profile before encoding — is an encode-stage behaviour and is not exercised here; what this measures is that the GIF path does not silently drop the profile, which is the risk D3 names. Surprisingly, both ImageMagick's GIF writer and gifsicle preserve the profile, so R-I13's conversion is a deliberate choice rather than a forced one.
+
+**Why 90 and not higher.** Every path is measured on all three engines with identical results, and the still PNG path is now built and asserted (T27) — but the animated one is not (T29 owns it), and the measurement uses one profile rather than a range of profile sizes and versions. A very large profile could plausibly meet a size limit in one of these writers that a 6.6 KB one does not.
 
 ---
 
@@ -800,15 +818,71 @@ Speed 9 is 9.94x faster than speed 6 on average (range 4.68x–16.01x across the
 
 ---
 
-### D8 `OPEN` `40%` `P2` ImageMagick's own quantizer is good enough for PNG
+### D8 `REFUTED` `95%` `P2` ImageMagick's own quantizer is good enough for PNG
 
-**Claim.** With libimagequant absent (A9), ImageMagick's internal quantizer can serve R-Q11 without adding a second WASM module.
+**Claim, as originally written.** With libimagequant absent (A9), ImageMagick's internal quantizer can serve R-Q11 without adding a second WASM module.
 
-**Why only 40.** libimagequant exists because naive quantizers produce visibly worse results at the same colour count. ImageMagick's is older and generally rated below it.
+**The premise was already stale when it was measured, and the question changed with it.** T22 chose the `imagequant` package and put it in the bundle; T27 built the PNG path on it. So the live question was not "can a second module be avoided" but "does the 347 KB (153 KB gzipped) earn its place". It does, and for a reason the original entry did not anticipate.
 
-**Affects.** R-Q11, R-Q14, bundle size, and whether the 70 floor is set at the right place. A weaker quantizer argues for a higher floor.
+**Measured (T27, `verification/t27-png/`, Chromium, Firefox and WebKit; the table below is Chromium at slider 10 — R-Q11's mapped 70, the lowest setting any user can reach).** Ten generated PNGs in D8's own categories, plus six real photographs and eight real PNGs from the local set fitted to 1600 px. Both quantizers are given the **same colour count** — libimagequant's palette size — and both outputs are finished the same way, through the shipped chunk rewrite and oxipng level 2. Sizes are bytes, SSIM is `1 − ImageMagick's StructuralSimilarity` distortion, RMSE is its `RootMeanSquared`, and *banding* is the largest step introduced between two horizontally adjacent pixels whose source step was at most one unit — on a smooth ramp, exactly the height of a band edge.
 
-**Method.** Ten representative PNGs: screenshots, logos with alpha, flat illustrations, a photograph saved as PNG. Quantize with ImageMagick, with a standalone libimagequant WASM build, and with the copy inside apng-optimizer. Compare size and a perceptual difference metric, and record the bundle cost of each.
+| Generated, 1000×750 | lossless | libimagequant B / colours / SSIM / RMSE / banding | ImageMagick B / colours / SSIM / RMSE / banding |
+| --- | --- | --- | --- |
+| Screenshot, light | 72,638 | 37,765 / 256 / 1.0000 / 0.00085 / **5** | 56,714 / 177 / 0.9966 / 0.00352 / **54** |
+| Screenshot, dark | 87,742 | 35,620 / 253 / 1.0000 / 0.00048 / **4** | 37,060 / 110 / 0.9997 / 0.00326 / **33** |
+| Logo, hard alpha | 2,111 | 2,111 / 2 / — / 0.00000 / 0 | 2,111 / 2 / — / 0.00000 / 0 |
+| Logo, soft alpha | 48,928 | 28,888 / 122 / 0.9004 / 0.00048 / 212† | 25,878 / 55 / 0.9367 / 0.00731 / 224† |
+| Illustration, flat | 2,447 | 2,447 / 6 / 1.0000 / 0.00000 / 0 | 2,447 / 6 / 1.0000 / 0.00000 / 0 |
+| Illustration, shaded | 60,472 | **32,123** / 195 / 0.9995 / 0.00127 / **2** | 112,822 / 70 / 0.9424 / 0.01299 / **93** |
+| Gradient, sky | 28,444 | **27,147** / 256 / 0.9969 / 0.00329 / **8** | 119,777 / 130 / 0.9193 / 0.01695 / **47** |
+| Gradient, grey ramp | 2,231 | 2,231 / — / 1.0000 / 0.00000 / 1 | 6,250 / — / 0.9804 / 0.00616 / 4 |
+| Diagram | 9,831 | 4,216 / 47 / 1.0000 / 0.00032 / 1 | 4,390 / 21 / 1.0000 / 0.00191 / 15 |
+| Photograph (synthetic) | 590,049 | **aborted — cannot reach quality 70** | 314,546 / 256 / 0.8275 / 0.03221 / **110** |
+
+† Both figures are colour error under near-transparent pixels, where a quantizer is free to put anything. The largest error on a *fully opaque* pixel is 0 for libimagequant and 1 for ImageMagick.
+
+Aggregated, at the same colour count:
+
+| Set | Comparable images | Mean size, libimagequant ÷ ImageMagick | Mean RMSE ratio | libimagequant smaller | libimagequant higher SSIM |
+| --- | --- | --- | --- | --- | --- |
+| Ten generated | 9 | **0.730** | **0.102** | 6 | 6 |
+| Six real photographs | 6 | 0.947 | 0.646 | 4 | 6 |
+| Seven real PNGs | 7 | 1.087 | 0.058 | 2 | 3 |
+| All fourteen real files | 13 | 1.022 | 0.329 | 6 | 9 |
+| All 22 | 22 | 0.903 | 0.236 | 12 | 15 |
+
+Photographs are split out because they are the row the rest of this entry is weakest on and the source a user is most likely to bring. On them libimagequant is **only 5% smaller on average and its error is 0.65 of ImageMagick's** — still ahead on both, but by a fraction of the margin the generated set shows, and on two of the six it is the larger file. The 1.022 and 0.329 in the "all real files" row are pulled by the seven real PNGs, most of which are 32×32 icons where neither quantizer has anything to do.
+
+**Verdict: refuted, on two grounds, the second decisive.**
+
+1. **Quality at equal colour count is not close on the content PNG is used for.** On the four smooth or shaded subjects — where banding is the failure R-Q11 names — libimagequant is 2.8x to 4.4x smaller *and* an order of magnitude closer to the source. ImageMagick reaches the same colour count by dithering harder, which both costs bytes and is what the grain looks like. On real photographs the margin narrows sharply — mean size ratio 0.947 and mean RMSE ratio 0.646 — and two of the six are smaller from ImageMagick. libimagequant is still ahead on both measures there, but by 5% and by a third rather than by the multiples the generated set shows.
+2. **ImageMagick's quantizer has no quality floor, and R-Q11's floor is not expressible without one.** `image.quantize({ colors })` always produces a file; there is no "refuse if you cannot reach quality *q*". libimagequant's `set_quality(minimum, target)` aborts instead, which is what makes the 70 floor a guarantee by construction rather than a judgement (§7.4). The photograph in the table is the whole argument: libimagequant refuses it and the job keeps its lossless PNG, while ImageMagick quantizes it to SSIM 0.8275 with a banding step of 110 and no way to say no. A 32×32 real PNG behaves the same way — libimagequant aborts, ImageMagick turns a 166-byte lossless file into 1,510 bytes at SSIM 0.8638 with a banding step of 255.
+
+**Bundle cost.** `imagequant` 0.1.2's wasm is 347 KB, 153 KB gzipped (T22's build measurement, reproduced by T27's production build). Against ImageMagick's own 14.8 MB that is 2.3%, and it buys both the output quality above and the only floor mechanism in the build.
+
+**Where ImageMagick wins — all of it, including the row that matters most.** ImageMagick produced the smaller file on **7 of the 22 comparable images**:
+
+| Image | libimagequant | ImageMagick | ImageMagick smaller by | Error |
+| --- | --- | --- | --- | --- |
+| Soft-alpha logo, 1000×750 | 28,888 B, 122 colours, RMSE 0.00048 | 25,878 B, 55 colours, RMSE 0.00731 | 10.4% | 15x worse |
+| **Real photograph, 1067×1600** | 880,858 B, 256 colours, RMSE 0.00727, SSIM 0.9882 | 790,887 B, 256 colours, RMSE 0.01105, SSIM 0.9615 | **10.2%** | 1.5x worse |
+| **Real photograph, 1067×1600** | 800,098 B, 256 colours, RMSE 0.00729, SSIM 0.9896 | 745,049 B, 256 colours, RMSE 0.01169, SSIM 0.9614 | **6.9%** | 1.6x worse |
+| Real PNG, 32×32 | 284 B, RMSE 0.00000 | 244 B, RMSE 0.00000 | 14.1% | **none — both exact** |
+| Real PNG, 32×32 | 426 B, RMSE 0.00000 | 385 B, RMSE 0.00000 | 9.6% | **none — both exact** |
+| Real PNG, 32×32 | 1,452 B, RMSE 0.00000 | 1,247 B, RMSE 0.00394 | 14.1% | worse |
+| Real PNG, 32×32 | 1,476 B, RMSE 0.00263 | 1,164 B, RMSE 0.00651 | 21.1% | 2.5x worse |
+
+**Two of the seven are real photographs at full working size, 10.2% and 6.9% smaller**, and photographs are the most common PNG source a user will bring. They are the strongest counter-evidence in this entry and are named here rather than aggregated away. They cost 1.5x and 1.6x the error to get there, which is why the verdict does not turn on them — but "libimagequant produces smaller files" is not true of photographs, and nothing in this entry should be read as saying so.
+
+**Two of the seven cost nothing at all**: both quantizers reproduce those 32×32 files exactly (RMSE 0.00000 either way) and ImageMagick's encoding of the same pixels is simply smaller. So the "smaller only by spending fewer colours and paying in error" reading is wrong on two counts — only 3 of the 7 spent fewer colours, and 2 of the 7 pay nothing.
+
+**Time is mixed and never large.** On the nine generated images where both quantizers ran, libimagequant is faster on every one: 45–116 ms against 64–343 ms. The tenth aborted, so it has no libimagequant time to compare at all; ImageMagick spent 519 ms quantizing it, outside the range above. On the six 1600 px photographs libimagequant is faster on five (647–735 ms against 802–1,013 ms) and slower on the sixth (1,404 against 980).
+
+**Where ImageMagick was not measured.** The copy of libimagequant inside `apng-optimizer` is not compared. The original Method named it as a way to avoid a second module; that avenue closed when T22 adopted the standalone package, and `apng-optimizer` takes an APNG in and gives an APNG out (A6) rather than exposing a quantizer, so using it here would mean assembling a single-frame APNG to quantize a still PNG.
+
+**Why 95 and not 100.** The direction is not in doubt and the floor argument is structural. The residual is about the sample: twenty-four images, fourteen of them from one person's library, measured on one machine. The one number a larger corpus could move is the mean size ratio on real **photographs**, 0.947 over six files with two of them above parity — close enough that content could push it either way. That would not change the verdict, which rests on the floor and on the smooth and shaded content, but it would change how the size claim should be phrased.
+
+**A metric caveat worth carrying.** ImageMagick's SSIM reads the colour *under* fully transparent pixels: the hard-alpha logo scores 0.6919 for an output whose visible pixels are identical to the source, and that single row is enough to pull a mean SSIM negative. On images with large transparent regions, RMSE and a peak error restricted to opaque pixels are the usable metrics; SSIM is not. The table above leaves SSIM out for that row rather than quoting it.
 
 ---
 

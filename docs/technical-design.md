@@ -265,7 +265,7 @@ All of this is pure arithmetic in `domain/edit.ts`, so the table above is litera
 | `@imagemagick/magick-wasm` 0.0.43 | Decode, orient, edit, resize, colour, most encoding | Apache-2.0 | 14.8 MB |
 | `gifsicle-wasm-browser` | GIF compression | MIT wrapper, **GPL v2-only** inside, see §7.2 | ~368 KB |
 | `@jsquash/oxipng` 2.3.0 | PNG lossless optimisation | Apache-2.0 | 164 KB |
-| libimagequant | PNG quantization | GPL v3, compatible with AGPL v3 | see §7.2 |
+| libimagequant, as `imagequant` 0.1.2 | PNG quantization | GPL v3, compatible with AGPL v3 | 347 KB, 153 KB gzipped (T22, T27) |
 | `upng-js` | Animated PNG assembly | MIT | small, pure JS |
 | `apng-optimizer` | Animated PNG optimisation | ISC | 276 KB |
 | `client-zip` | ZIP streaming | MIT | small |
@@ -331,9 +331,14 @@ No codec runs at maximum effort. The measured returns are small and the time cos
 | --- | --- | --- |
 | AVIF | `heic:speed` 9, never the default; `heic:chroma` 444 above slider 95 | **D7**: on twenty real photographs, speed 9 is 9.94x faster than speed 6 and 2.10x faster than speed 8 on average, with mean SSIM flat across speeds 6-9 (0.9857-0.9861) and under 1% size difference between speeds 8 and 9. Default is 7611 ms vs. 452 ms for speed 9 on the original single-image measurement |
 | WebP | `method` 4, the library default, not 6 | Method 6 costs several times the time for low single-digit size gains |
-| oxipng | `level` 2, not 6 | Above level 2 the curve flattens sharply |
+| oxipng | `level` 2, not 6 | **T27** (`verification/t27-png/results.json`, `effort.oxipngLevels`), on a 1000×750 photographic PNG of 631,590 B with its metadata already stripped: level 0 is 631,362 B in 120 ms, level 1 590,281 in 455, **level 2 590,049 in 802**, and levels 3, 4 and 6 return the *identical* 590,049 B in 2,118, 2,231 and 5,173 ms. Nothing above level 2 paid for itself; one subject, so the flatness is not established in general |
+| libimagequant | `speed` 3 — not 1, which is maximum effort here, and not the library default 4 | **T27**, ten generated PNGs and fourteen real files. One generated image aborts at every speed; of the other nine, **six produce the same output size across speeds 1 to 6** and three differ by at most 168 B. Time across speeds 2 to 6 varies by at most 25 ms per image, with speed 1 up to 87 ms slower on one. Speeds 8 and 10 are 1.25x to 2.26x faster and change the output on seven of the nine — a grey ramp went 2,231 B at SSIM 1.0000 to 2,356 at 0.9980, while a gradient got *smaller*, 27,147 to 22,423, for 0.0005 of SSIM. What separates 3 from the default is the *achievable* quality: the highest `minimum` the quantizer can meet is identical at speeds 1 and 3 on all 24 images and one point lower at speed 4 on three of them — the same three real photographs on all three engines — and never higher. That number is what R-Q11's floor is compared against |
 | gifsicle | `-O2`, not `-O3` | `-O3` tries every option per frame |
 | PNG deflate | Default, no zopfli | apng-optimizer's zopfli setting stays low for the same reason |
+
+**oxipng runs single-threaded, and that is not a choice.** `@jsquash/oxipng` ships both builds and picks the multi-threaded one only inside a Worker with `hardwareConcurrency > 1` and `wasm-feature-detect`'s `threads()` passing — which needs `SharedArrayBuffer`, which needs COOP and COEP. Measured in a real Worker on all three engines with no such headers (T27, B6): the single-threaded build initialises everywhere. So oxipng spawns no thread pool, and a pool of *N* pipeline workers costs *N* oxipng heaps rather than *N* × cores (§8.1).
+
+**`optimiseAlpha` stays off on both PNG branches** (`results.json`, `effort.optimiseAlpha`). It rewrites the colour beneath fully transparent pixels so the rows compress better, and it is worth real bytes — **28,330 down to 1,488** on a 1000×750 frame whose fully transparent field held noise, a 19x saving for a change nobody can see. It stays off on the lossless branch because that branch exists to be lossless and R-Q12 makes PNG lossless early precisely for that reputation: measured on the same frame, with the option off the decoded pixels match the source exactly, visible and hidden alike, and with it on they differ by up to 255 under the transparent field. It stays off on the quantized branch because it buys nothing there — libimagequant has already collapsed every fully transparent pixel onto one palette entry, and oxipng measured the same 1,488 bytes either way. **This is a size win being declined on principle, and the numbers are here so it can be overruled.**
 
 **D7 is 99% confident.** The original measurement used synthetic noise, which is unusually hostile to AVIF and might have flattened the quality difference between speed settings. T02 repeated the comparison on twenty real photographs at speeds 6 through 9 with quality 70 and an SSIM perceptual check: quality was statistically indistinguishable across all four speeds (mean SSIM 0.9857-0.9861), and speed 9 was 2.1x faster than speed 8 for under 1% more size. Speed 9 is the chosen value, not a range.
 
@@ -344,10 +349,19 @@ Implements Functional Design §7.1. The mapping is pure and lives in `domain/job
 | Format | Slider 96 to 100 | Slider 10 to 95 |
 | --- | --- | --- |
 | JPEG | quality as given | quality as given |
-| PNG | lossless from 85 (R-Q12) | `70 + (q - 10) × 30 / 90`, then quantize |
+| PNG | lossless from 85 (R-Q12) | `70 + (q - 10) × 30 / 90`, rounded to the nearest whole number and used as libimagequant's **minimum** (T27) |
 | WebP | `lossless=true` | lossy, plus lossless comparison (R-Q6) |
 | AVIF | **not lossless in this build** — the slider value capped at 99, chroma 4:4:4 (D9) | quality as given |
 | GIF | no `--lossy` | `--lossy` derived from quality |
+
+**The PNG rounding happens after the lossless decision, not before it.** `domain/job.ts` keeps the exact mapped value — slider 20 is 73.333… — because R-Q12 pins the lossless point to slider 85, where the mapping reaches 95 exactly. Rounding first would make slider 84 (94.666… → 95) lossless one step early. `pipeline/stages/png-plan.ts` rounds at the quantizer boundary instead, to the nearest whole number, which leaves R-Q11's three named values (10 → 70, 85 → 95, 100 → 100) untouched. The rounding is not cosmetic: the value crosses into WebAssembly, where a fraction is truncated silently rather than rejected.
+
+**The mapped value is libimagequant's `minimum`, which makes R-Q11's floor a guarantee rather than a judgement** (T27, D8). libimagequant aborts rather than producing a file it cannot bring up to `minimum`, and the job then keeps its lossless PNG. Nothing below the floor can therefore be written, whatever the content.
+
+**So below slider 85 the PNG slider changes *which* images are quantized, not how hard.** libimagequant's `target` is 100 (§7.3), so an image it can quantize gets the same file at every slider value it can meet; what the slider moves is `minimum`, and therefore the point at which an image stops being quantizable and falls back to lossless. Measured over 24 images (T27): 14 kept a quantized file at slider 10 and 10 at slider 84, with the mean saving falling from 45.8% to 39.0%. This satisfies R-Q1 — the panel does not expose the difference — and is the behaviour R-Q11 asks for read literally, since the requirement remaps the slider onto "a quantization quality with a floor of 70" and says nothing about colour counts. It is a consequence two later pieces of work depend on:
+
+- **Size targeting (§7.5, T30)** cannot binary-search PNG on `minimum`, because most of that axis produces one of two outcomes rather than a size curve. A PNG size search wants `target` as its variable, and D8 records what that costs in quality.
+- **Any UI that explains the quality control** should not describe the PNG slider as trading size against fidelity in the way it does for JPEG. On PNG it trades *how many images stay lossless* against size, which is the conservative direction R-Q11 and P1 intend.
 
 ### 7.5 Size targeting
 
@@ -378,9 +392,25 @@ Both halves earn their place. The gate permitted by R-Q6 is worth building: uniq
 
 **T26 reproduced this in browsers** with the shipped stage (D2): the direction holds on all three engines, but the saving on real photographs fitted to 1600 px is about 1 second per image in this build, not 2.9. The gate skips the lossless attempt when a frame has more than 65,536 distinct RGBA values; across 311 real images no lossless win had more than 2,034, so the limit is set well above that and errs toward attempting.
 
+**R-Q14's own value, measured in T27** across ten generated PNGs and fourteen real files, at slider 10:
+
+| Outcome | Images |
+| --- | --- |
+| Quantized candidate kept | 14 of 24 |
+| Quantizer aborted at R-Q11's floor, lossless stands | 2 of 24 |
+| Both candidates ran, lossless kept | 8 of 24 |
+
+Where the quantized file is kept it is 45.8% smaller than the lossless one on average. Where lossless is kept, it is kept by a small margin or by none: four of the eight are exact ties (few-colour images that libimagequant reproduces perfectly, which oxipng then encodes identically) and the other four win by 12, 40, 41 and 84 bytes. **So R-Q14's value is almost never bytes — it is that ten of twenty-four images keep a genuinely lossless PNG and no `png-quantized` caveat, which the slider alone would not have given them.** It is cheap to have: the quantized attempt is 47–116 ms on a 1000×750 image and 0.7–1.4 s on a 1600 px photograph, and PNG has no equivalent of R-Q6's content gate because the abort *is* the gate.
+
+**Unlike R-Q6, PNG's comparison runs unconditionally below the lossless point.** The two rules also differ in who enforces the floor: WebP's lossless attempt is skipped by a content gate this codebase computes, while PNG's quantized attempt is refused by libimagequant itself when it cannot reach R-Q11's mapped quality (§7.4, D8).
+
 ### 7.7 Colour management
 
-`lcms` is in the build (A2). The rule is preserve, not convert (R-I12 to R-I16). The ICC profile travels through the pipeline as part of the frame representation and is written by the encoder.
+`lcms` is in the build (A2). The rule is preserve, not convert (R-I12 to R-I16). The ICC profile travels through the pipeline as part of the frame representation and is written by the encoder — **except where the encoder is not ImageMagick, which is now two paths rather than one.**
+
+**Still PNG (T27) has the same problem animated PNG has, and the same fix.** §4.2's "quantize" step is not a pixel transform: `Imagequant.process()` returns a *finished PNG*, and that PNG carries `IHDR PLTE tRNS IDAT IEND` and no `iCCP`. So `pipeline/stages/png.ts` lifts the `iCCP` chunk out of ImageMagick's own lossless write — whole, header and CRC together, never re-encoded — and splices it into libimagequant's output. Measured on all three engines: the profile reads back byte-identical to the source's, and the splice may go before or after oxipng with byte-identical results. It goes before, so oxipng emits the final chunk set. Chromium and WebKit apply the resulting profile when they draw the file; Firefox's 2D canvas does not colour-manage in this build, so there the profile is proven present and byte-identical but not proven honoured.
+
+**A second finding from the same work: ImageMagick's PNG writer adds colour and metadata chunks of its own** — `cHRM` on every file, plus `tIME`, three `tEXt` timestamps, and for a profiled image a *duplicate* of the profile as a `zTXt` "Raw profile type icc". `cHRM` beside an `iCCP` is a second, disagreeing description of the same colour, which is the class of mistake this section exists to prevent. Neither `png:exclude-chunk` nor `image.strip()` removes them without removing the `iCCP` too, so `png-plan.ts`'s `rewritePngChunks` keeps a whitelist instead — which is also what makes R-I17 structural for PNG rather than a define's promise.
 
 **D3 is now 90% and measured** (T23, all three engines, `verification/t23-decode/`). The profile survives ImageMagick's JPEG, PNG, WebP, AVIF and GIF writers byte-identically, and survives oxipng and gifsicle too. The weak point was correctly predicted to be animated PNG but sits in a different component than expected, and it is avoidable:
 
@@ -621,10 +651,10 @@ Which sections change if an entry fails.
 | **C2** | 92 | §8.2 | Workers recycle on a pixel budget; throughput drops |
 | **C4** | 25 | §8.3 | Mobile caps fall, possibly far |
 | **C3** | 30 | §8.3 | Every limit value changes; no structural change |
-| **D8** | 40 | §7.2 | Quantizer choice changes; the R-Q11 floor rises above 70 |
+| **D8** | 95 | §7.2 | **Refuted in T27.** ImageMagick's own quantizer is worse at equal colour count and has no quality floor at all, which is the mechanism R-Q11's floor is made of. libimagequant stays, at 347 KB. The floor stays at 70 |
 | **C8** | 80 | §5.2 | Codecs split across workers; pool becomes heterogeneous. Measured in T22 for one worker on desktop; the 3-concurrent-worker case is the residual risk |
 | **B5** | 75 | §10.1 | Folder input hidden on platforms that cannot do it |
-| **B9**, **B6** | 70, 85 | §12 | Threaded build unavailable; single-threaded baseline |
+| **B9**, **B6** | 70, 90 | §12 | Threaded build unavailable; single-threaded baseline. **Measured in T27**: with no COOP/COEP, all three engines refuse `SharedArrayBuffer` and oxipng takes its single-threaded build, which is the baseline this design already assumes |
 | **C5** | 85 | §10.4 | List view becomes the default at a lower threshold. Measured in T20: the threshold is `maximumThumbnails`, and no fallback was needed |
 | **D3** | 90 | §7.7 | Measured in T23: every path preserves the profile except apng-optimizer, which is avoided by attaching `iCCP` after it runs. The sRGB-conversion contingency is no longer needed |
 | **E1** | 76 | §9.1 | Batch caps tighten |

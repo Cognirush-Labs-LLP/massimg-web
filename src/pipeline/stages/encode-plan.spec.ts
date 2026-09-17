@@ -12,8 +12,8 @@ import {
   plannedModes,
   shouldTryLossless,
   unsupportedColour,
+  type ColourFormat,
   type QualitySettings,
-  type StillFormat,
 } from './encode-plan'
 import type { FrameColour } from './frame'
 
@@ -154,7 +154,9 @@ describe('colourPlan and unsupportedColour', () => {
     kind: 'cicp',
     cicp: { primaries, transfer, matrix, fullRange: true },
   })
-  const ALL_FORMATS = ['jpeg', 'webp', 'avif'] as const
+  // PNG joins the three ImageMagick writes here even though its encoder lives in `png-plan.ts`:
+  // the colour question is the same one, answered in one place (T27).
+  const ALL_FORMATS = ['jpeg', 'webp', 'avif', 'png'] as const
 
   it('writes an ICC profile verbatim to every format (R-I12)', () => {
     for (const format of ALL_FORMATS) {
@@ -192,9 +194,9 @@ describe('colourPlan and unsupportedColour', () => {
     }
   })
 
-  it.each(['jpeg', 'webp'] as const)(
+  it.each(['jpeg', 'webp', 'png'] as const)(
     'writes an sRGB-equivalent CICP to %s as untagged, not as a conversion',
-    (format: StillFormat) => {
+    (format: ColourFormat) => {
       for (const [p, t, m] of [
         [2, 2, 2],
         [1, 13, 6],
@@ -206,9 +208,9 @@ describe('colourPlan and unsupportedColour', () => {
     },
   )
 
-  it.each(['jpeg', 'webp'] as const)(
+  it.each(['jpeg', 'webp', 'png'] as const)(
     'refuses any other CICP to %s rather than writing it as sRGB',
-    (format: StillFormat) => {
+    (format: ColourFormat) => {
       for (const [p, t, m] of [
         [12, 13, 6], // Display P3
         [9, 16, 9], // BT.2100 PQ

@@ -7,8 +7,9 @@ import { expect, test, type Page } from '@playwright/test'
 //
 // Every job in this file is dispatched through the real `createWorkerPool()` with its default
 // `workerFactory` — the shipped `pipeline/worker.ts` → `execute.ts` → `codecs/loader.ts` path, not a
-// probe. Every job carries a one-byte source, so it settles `failed` — `decode-failed` for JPEG since
-// T26, `unimplemented` for the formats not built yet — which is irrelevant here: what this file
+// probe. Every job carries a one-byte source, so it settles `failed` — `decode-failed` for the
+// formats whose stage chain exists (JPEG since T26, still PNG since T27), `unimplemented` for the
+// ones that are still unbuilt — which is irrelevant here: what this file
 // proves is which network requests `executeJob`'s `ensureCodecsForJob(job.settings)` call causes
 // before any stage runs, not what the job returns. Awaiting a job's own `done` promise is therefore a deterministic checkpoint — by the time
 // it settles, every codec load that job was going to trigger has either happened or never will.

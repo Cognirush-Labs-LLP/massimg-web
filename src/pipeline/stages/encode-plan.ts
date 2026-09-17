@@ -31,6 +31,16 @@ import type { ResolvedQuality } from '@/domain/types'
 
 export type StillFormat = 'jpeg' | 'webp' | 'avif'
 
+/**
+ * The still formats whose colour question this module answers.
+ *
+ * PNG's encoder lives in `png-plan.ts` / `png.ts`, because it is two candidates through two
+ * libraries rather than one ImageMagick write — but "can this container carry this frame's colour"
+ * is the same question with the same answer table, and answering it in two places is how the two
+ * come to disagree. `executeJob` calls `unsupportedColour` for every still format, PNG included.
+ */
+export type ColourFormat = StillFormat | 'png'
+
 export type EncodeMode = 'lossy' | 'lossless'
 
 /** A `MagickFormat` *key*. Keys and values differ (`WebP` → `"WEBP"`), and indexing by value writes
@@ -188,14 +198,21 @@ function cicpDefines(primaries: number, transfer: number): EncoderDefine[] {
 /**
  * Whether a frame's colour has nowhere to go in this format, and why. `null` means it can be written.
  *
- * Only CICP into JPEG or WebP can fail: neither container can express it, and converting the pixels
- * into sRGB — R-I35's other half, with the `colour-converted` caveat — is a deferred follow-up. Two
- * signals are not a failure, because they say no more than an untagged output already says:
- * all-unspecified, and BT.709 primaries with the sRGB transfer.
+ * Only CICP into JPEG, WebP or PNG can fail: none of those containers can express it here, and
+ * converting the pixels into sRGB — R-I35's other half, with the `colour-converted` caveat — is a
+ * deferred follow-up. Two signals are not a failure, because they say no more than an untagged
+ * output already says: all-unspecified, and BT.709 primaries with the sRGB transfer.
+ *
+ * PNG's third edition does define a `cICP` chunk, so "cannot" is about this build rather than the
+ * format. Verified rather than assumed (T27): ImageMagick's PNG coder's own chunk vocabulary in the
+ * shipped binary lists `bKGD,caNv,cHRM,eXIf,gAMA,iCCP,iTXt,pHYs,sRGB,tEXt,zCCP,zTXt,date` and no
+ * `cICP` — libpng's chunk table has one, ImageMagick's coder does not — and a PNG written with
+ * `png:cicp`, `png:cICP`, `png:preserve-cICP` and the `heic:` spellings set is byte-identical to one
+ * written with no define at all.
  *
  * The matrix is not consulted: it describes how the source stored YUV, which decode has undone.
  */
-export function unsupportedColour(colour: FrameColour, format: StillFormat): string | null {
+export function unsupportedColour(colour: FrameColour, format: ColourFormat): string | null {
   if (colour.kind !== 'cicp' || format === 'avif') {
     return null
   }
@@ -213,13 +230,14 @@ export function unsupportedColour(colour: FrameColour, format: StillFormat): str
 /**
  * Decides how colour is written (R-I12, R-I14, R-I35; §7.7). Pixels are never converted here (R-I15).
  *
- * - `icc` is written verbatim; JPEG, WebP and AVIF can all carry a profile.
+ * - `icc` is written verbatim; JPEG, WebP, AVIF and PNG can all carry a profile.
  * - `untagged` adds nothing.
  * - `cicp` is written back into AVIF, keeping the primaries and transfer that describe the colour and
- *   stating the matrix this build's writer really used (see `CICP_MATRIX_BT601`). For JPEG and WebP
- *   see `unsupportedColour`.
+ *   stating the matrix this build's writer really used (see `CICP_MATRIX_BT601`). For JPEG, WebP and
+ *   PNG see `unsupportedColour` — what reaches here for those three says no more than an untagged
+ *   output does, so nothing is written.
  */
-export function colourPlan(colour: FrameColour, format: StillFormat): ColourPlan {
+export function colourPlan(colour: FrameColour, format: ColourFormat): ColourPlan {
   const unsupported = unsupportedColour(colour, format)
 
   if (unsupported !== null) {

@@ -32,9 +32,9 @@ export function nextToken(): JobToken {
  * decode/encode/out-of-memory set) is reused rather than restated.
  *
  * `unimplemented` is what the worker returns for a job it has no stage chain for (§4.2). Still JPEG,
- * WebP and AVIF run (T26); PNG, GIF, animated output and size targeting do not yet (T27-T30), nor does
- * a CICP-signalled frame going to JPEG or WebP. It is deliberately a distinct reason rather than a
- * fabricated `encode-failed`, and it disappears when those paths land.
+ * WebP and AVIF run (T26) and still PNG runs (T27); GIF, animated output and size targeting do not
+ * yet (T28-T30), nor does a CICP-signalled frame going to JPEG, WebP or PNG. It is deliberately a
+ * distinct reason rather than a fabricated `encode-failed`, and it disappears when those paths land.
  */
 export type JobFailure = FailureReason | { kind: 'unimplemented'; detail: string }
 

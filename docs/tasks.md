@@ -448,6 +448,12 @@ libimagequant, then oxipng at level 2.
 
 ### T28 — GIF path
 
+**Run this after T29.** Its Done-when needs animated fixtures, but only single-frame decode existed
+when this list was written, so whichever of the two goes first has to build the multi-frame
+representation and pay C7's memory measurement. That work belongs in T29, whose Done-when is already
+written about frames, delays and loop count; this task then consumes it. Execution order is
+T27 → T29 → T28 → T30. Decided in T27, with the user.
+
 **Functional Design:** R-Q8
 **Technical Design:** §7.3
 **Assumption:** A7
@@ -457,6 +463,10 @@ ImageMagick produces the GIF, gifsicle compresses it at `-O2` with `--lossy` der
 **Done when:** output is measurably smaller than ImageMagick's GIF writer alone on animated fixtures, and A7 is updated with executed evidence.
 
 ### T29 — Animated paths
+
+**Run this before T28**, and see the note there for why. This task owns the multi-frame
+representation — §4.2's `decode-frames`, `edit-frames`, `resize-frames` — which the GIF path then
+reuses.
 
 **Functional Design:** R-F5, R-Q9, R-Q10, R-B6
 **Technical Design:** §4.2
