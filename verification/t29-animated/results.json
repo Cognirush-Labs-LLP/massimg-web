@@ -1,0 +1,780 @@
+{
+  "measuredAt": "2026-09-18T14:32:06.224Z",
+  "quick": false,
+  "machine": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpus": 8,
+    "totalMemoryBytes": 17179869184
+  },
+  "plan": {
+    "frameCountSweep": {
+      "frames": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "size": 400
+    },
+    "frameSizeSweep": {
+      "sizes": [
+        200,
+        400,
+        800,
+        1200
+      ],
+      "frames": 16
+    },
+    "apngPoints": [
+      {
+        "frames": 16,
+        "size": 400
+      },
+      {
+        "frames": 64,
+        "size": 400
+      }
+    ]
+  },
+  "points": [
+    {
+      "sweep": "frameCount",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 8,
+      "size": 400,
+      "sourceBytes": 664,
+      "arithmeticBytes": 5120000
+    },
+    {
+      "sweep": "frameCount",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 16,
+      "size": 400,
+      "sourceBytes": 1274,
+      "arithmeticBytes": 10240000
+    },
+    {
+      "sweep": "frameCount",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 32,
+      "size": 400,
+      "sourceBytes": 2470,
+      "arithmeticBytes": 20480000
+    },
+    {
+      "sweep": "frameCount",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 64,
+      "size": 400,
+      "sourceBytes": 4834,
+      "arithmeticBytes": 40960000
+    },
+    {
+      "sweep": "frameCount",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 128,
+      "size": 400,
+      "sourceBytes": 9544,
+      "arithmeticBytes": 81920000
+    },
+    {
+      "sweep": "frameSize",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 16,
+      "size": 200,
+      "sourceBytes": 1176,
+      "arithmeticBytes": 2560000
+    },
+    {
+      "sweep": "frameSize",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 16,
+      "size": 400,
+      "sourceBytes": 1274,
+      "arithmeticBytes": 10240000
+    },
+    {
+      "sweep": "frameSize",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 16,
+      "size": 800,
+      "sourceBytes": 1696,
+      "arithmeticBytes": 40960000
+    },
+    {
+      "sweep": "frameSize",
+      "decoder": "collection",
+      "container": "webp",
+      "frames": 16,
+      "size": 1200,
+      "sourceBytes": 2244,
+      "arithmeticBytes": 92160000
+    },
+    {
+      "sweep": "apng",
+      "decoder": "upng",
+      "container": "png",
+      "frames": 16,
+      "size": 400,
+      "sourceBytes": 86925,
+      "arithmeticBytes": 10240000
+    },
+    {
+      "sweep": "apng",
+      "decoder": "upng",
+      "container": "png",
+      "frames": 64,
+      "size": 400,
+      "sourceBytes": 338163,
+      "arithmeticBytes": 40960000
+    }
+  ],
+  "engines": [
+    {
+      "engine": "chromium",
+      "measurements": [
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 8,
+          "size": 400,
+          "arithmeticBytes": 5120000,
+          "baselineRssBytes": 432537600,
+          "peakRssBytes": 455507968,
+          "rssOverBaselineBytes": 22970368,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 41
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 429834240,
+          "peakRssBytes": 466829312,
+          "rssOverBaselineBytes": 36995072,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 68
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 32,
+          "size": 400,
+          "arithmeticBytes": 20480000,
+          "baselineRssBytes": 431882240,
+          "peakRssBytes": 492486656,
+          "rssOverBaselineBytes": 60604416,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 41943040,
+          "wasmGrowthBytes": 25165824,
+          "decodeMs": 116
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 432619520,
+          "peakRssBytes": 527958016,
+          "rssOverBaselineBytes": 95338496,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 210
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 128,
+          "size": 400,
+          "arithmeticBytes": 81920000,
+          "baselineRssBytes": 431374336,
+          "peakRssBytes": 633782272,
+          "rssOverBaselineBytes": 202407936,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 150536192,
+          "wasmGrowthBytes": 133758976,
+          "decodeMs": 395
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 200,
+          "arithmeticBytes": 2560000,
+          "baselineRssBytes": 414777344,
+          "peakRssBytes": 433176576,
+          "rssOverBaselineBytes": 18399232,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 26
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 430374912,
+          "peakRssBytes": 467337216,
+          "rssOverBaselineBytes": 36962304,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 69
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 800,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 431259648,
+          "peakRssBytes": 536592384,
+          "rssOverBaselineBytes": 105332736,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 218
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 1200,
+          "arithmeticBytes": 92160000,
+          "baselineRssBytes": 430538752,
+          "peakRssBytes": 646070272,
+          "rssOverBaselineBytes": 215531520,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 151519232,
+          "wasmGrowthBytes": 134742016,
+          "decodeMs": 471
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 429965312,
+          "peakRssBytes": 458964992,
+          "rssOverBaselineBytes": 28999680,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 67
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 430882816,
+          "peakRssBytes": 577077248,
+          "rssOverBaselineBytes": 146194432,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 213
+        }
+      ],
+      "fits": {
+        "rssPerFrameAt400": {
+          "slope": 1467617.7204301073,
+          "intercept": 10869418.666666672,
+          "r2": 0.9942884243111296
+        },
+        "wasmPerFrameAt400": {
+          "slope": 1112636.5591397847,
+          "intercept": -10753365.33333332,
+          "r2": 0.9974585059277726
+        },
+        "rssPerPixelAt16Frames": {
+          "slope": 2.1935339279815,
+          "intercept": 14036330.307234883,
+          "r2": 0.9998189362924688
+        },
+        "wasmPerPixelAt16Frames": {
+          "slope": 1.523610175090849,
+          "intercept": -6085235.187314175,
+          "r2": 0.9991816175459733
+        }
+      },
+      "disposeComparison": [
+        {
+          "disposePerFrame": true,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 94535680,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 211
+        },
+        {
+          "disposePerFrame": false,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 95289344,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 212
+        }
+      ]
+    },
+    {
+      "engine": "firefox",
+      "measurements": [
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 8,
+          "size": 400,
+          "arithmeticBytes": 5120000,
+          "baselineRssBytes": 1212792832,
+          "peakRssBytes": 1218560000,
+          "rssOverBaselineBytes": 5767168,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 45
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 1218019328,
+          "peakRssBytes": 1248280576,
+          "rssOverBaselineBytes": 30261248,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 75
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 32,
+          "size": 400,
+          "arithmeticBytes": 20480000,
+          "baselineRssBytes": 1217658880,
+          "peakRssBytes": 1274281984,
+          "rssOverBaselineBytes": 56623104,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 41943040,
+          "wasmGrowthBytes": 25165824,
+          "decodeMs": 149
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 1216495616,
+          "peakRssBytes": 1328185344,
+          "rssOverBaselineBytes": 111689728,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 271
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 128,
+          "size": 400,
+          "arithmeticBytes": 81920000,
+          "baselineRssBytes": 1217052672,
+          "peakRssBytes": 1437761536,
+          "rssOverBaselineBytes": 220708864,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 150536192,
+          "wasmGrowthBytes": 133758976,
+          "decodeMs": 563
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 200,
+          "arithmeticBytes": 2560000,
+          "baselineRssBytes": 1220132864,
+          "peakRssBytes": 1230979072,
+          "rssOverBaselineBytes": 10846208,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 25
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 1219330048,
+          "peakRssBytes": 1249181696,
+          "rssOverBaselineBytes": 29851648,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 76
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 800,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 1216872448,
+          "peakRssBytes": 1323188224,
+          "rssOverBaselineBytes": 106315776,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 276
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 1200,
+          "arithmeticBytes": 92160000,
+          "baselineRssBytes": 1219051520,
+          "peakRssBytes": 1465729024,
+          "rssOverBaselineBytes": 246677504,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 151519232,
+          "wasmGrowthBytes": 134742016,
+          "decodeMs": 664
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 1216135168,
+          "peakRssBytes": 1252016128,
+          "rssOverBaselineBytes": 35880960,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 96
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 1219067904,
+          "peakRssBytes": 1342308352,
+          "rssOverBaselineBytes": 123240448,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 332
+        }
+      ],
+      "fits": {
+        "rssPerFrameAt400": {
+          "slope": 1749270.021505376,
+          "intercept": -1753770.6666666567,
+          "r2": 0.9976656340816462
+        },
+        "wasmPerFrameAt400": {
+          "slope": 1112636.5591397847,
+          "intercept": -10753365.33333332,
+          "r2": 0.9974585059277726
+        },
+        "rssPerPixelAt16Frames": {
+          "slope": 2.6333811694747276,
+          "intercept": 2357038.937561944,
+          "r2": 0.9993830825401545
+        },
+        "wasmPerPixelAt16Frames": {
+          "slope": 1.523610175090849,
+          "intercept": -6085235.187314175,
+          "r2": 0.9991816175459733
+        }
+      },
+      "disposeComparison": [
+        {
+          "disposePerFrame": true,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 109314048,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 272
+        },
+        {
+          "disposePerFrame": false,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 109199360,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 262
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "measurements": [
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 8,
+          "size": 400,
+          "arithmeticBytes": 5120000,
+          "baselineRssBytes": 530874368,
+          "peakRssBytes": 559153152,
+          "rssOverBaselineBytes": 28278784,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 46
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 527384576,
+          "peakRssBytes": 567721984,
+          "rssOverBaselineBytes": 40337408,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 75
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 32,
+          "size": 400,
+          "arithmeticBytes": 20480000,
+          "baselineRssBytes": 531038208,
+          "peakRssBytes": 596639744,
+          "rssOverBaselineBytes": 65601536,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 41943040,
+          "wasmGrowthBytes": 25165824,
+          "decodeMs": 121
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 528744448,
+          "peakRssBytes": 652443648,
+          "rssOverBaselineBytes": 123699200,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 227
+        },
+        {
+          "sweep": "frameCount",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 128,
+          "size": 400,
+          "arithmeticBytes": 81920000,
+          "baselineRssBytes": 531775488,
+          "peakRssBytes": 761053184,
+          "rssOverBaselineBytes": 229277696,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 150536192,
+          "wasmGrowthBytes": 133758976,
+          "decodeMs": 419
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 200,
+          "arithmeticBytes": 2560000,
+          "baselineRssBytes": 529514496,
+          "peakRssBytes": 553762816,
+          "rssOverBaselineBytes": 24248320,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 33
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 527630336,
+          "peakRssBytes": 566050816,
+          "rssOverBaselineBytes": 38420480,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 24248320,
+          "wasmGrowthBytes": 7471104,
+          "decodeMs": 74
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 800,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 531775488,
+          "peakRssBytes": 643792896,
+          "rssOverBaselineBytes": 112017408,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 72548352,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 222
+        },
+        {
+          "sweep": "frameSize",
+          "decoder": "collection",
+          "container": "webp",
+          "frames": 16,
+          "size": 1200,
+          "arithmeticBytes": 92160000,
+          "baselineRssBytes": 530710528,
+          "peakRssBytes": 773324800,
+          "rssOverBaselineBytes": 242614272,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 151519232,
+          "wasmGrowthBytes": 134742016,
+          "decodeMs": 446
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 16,
+          "size": 400,
+          "arithmeticBytes": 10240000,
+          "baselineRssBytes": 528908288,
+          "peakRssBytes": 590102528,
+          "rssOverBaselineBytes": 61194240,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 87
+        },
+        {
+          "sweep": "apng",
+          "decoder": "upng",
+          "container": "png",
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "baselineRssBytes": 524451840,
+          "peakRssBytes": 708313088,
+          "rssOverBaselineBytes": 183861248,
+          "baselineWasmBytes": 16777216,
+          "wasmAfterBytes": 16777216,
+          "wasmGrowthBytes": 0,
+          "decodeMs": 357
+        }
+      ],
+      "fits": {
+        "rssPerFrameAt400": {
+          "slope": 1687491.4408602149,
+          "intercept": 13739349.333333343,
+          "r2": 0.9996363085503385
+        },
+        "wasmPerFrameAt400": {
+          "slope": 1112636.5591397847,
+          "intercept": -10753365.33333332,
+          "r2": 0.9974585059277726
+        },
+        "rssPerPixelAt16Frames": {
+          "slope": 2.4559127849355797,
+          "intercept": 14733421.60555005,
+          "r2": 0.9991350501315373
+        },
+        "wasmPerPixelAt16Frames": {
+          "slope": 1.523610175090849,
+          "intercept": -6085235.187314175,
+          "r2": 0.9991816175459733
+        }
+      },
+      "disposeComparison": [
+        {
+          "disposePerFrame": true,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 120668160,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 211
+        },
+        {
+          "disposePerFrame": false,
+          "frames": 64,
+          "size": 400,
+          "arithmeticBytes": 40960000,
+          "rssOverBaselineBytes": 116211712,
+          "wasmGrowthBytes": 55771136,
+          "decodeMs": 220
+        }
+      ]
+    }
+  ]
+}

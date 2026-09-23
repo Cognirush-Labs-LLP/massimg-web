@@ -55,6 +55,7 @@ export const resolvedSettingsFixture = {
   quality: { kind: 'quality', value: 70, lossless: false },
   dimension: { kind: 'fit-long-edge', pixels: 1920 },
   format: 'webp',
+  sourceFormat: formatFixture,
   isAnimated: false,
   alpha: { kind: 'preserve' },
 } satisfies ResolvedSettings

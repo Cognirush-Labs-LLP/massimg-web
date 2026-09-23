@@ -99,6 +99,7 @@ export function resolveSettings(image: SettingsImage, batch: BatchSettings): Set
       quality: resolveQuality(batch.quality, format.format),
       dimension: resolveDimension(batch.dimension, image.edit),
       format: format.format,
+      sourceFormat: image.sourceFormat,
       isAnimated: format.isAnimated,
       alpha: supportsAlpha(format.format)
         ? { kind: 'preserve' }

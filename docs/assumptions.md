@@ -61,14 +61,14 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C3 | Practical per-image and per-batch limits | 30 | OPEN | P2 |
 | C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
 | C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
-| C7 | Animated sources processed incrementally | 45 | OPEN | P2 |
+| C7 | Animated sources processed incrementally | 95 | REFUTED | P2 |
 | C8 | Six WASM modules coexist acceptably, loaded lazily | 80 | TESTED | P2 |
 | D1 | Size-target search is affordable | 95 | TESTED | P2 |
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
-| D3 | ICC profiles survive every encoder path | 90 | TESTED | P2 |
+| D3 | ICC profiles survive every encoder path | 92 | TESTED | P2 |
 | D4 | EXIF auto-orientation correct for all eight values | 95 | TESTED | P2 |
 | D5 | Transparency detection is cheap | 85 | TESTED | P3 |
-| D6 | APNG input detection via `acTL` | 90 | TESTED | P3 |
+| D6 | APNG input detection via `acTL` | 95 | TESTED | P3 |
 | D7 | AVIF encode speed is controllable and default is bad | 95 | TESTED | P1 |
 | D8 | PNG quantization quality via ImageMagick alone | 95 | REFUTED | P2 |
 | D9 | Lossless AVIF is unusable in this build | 95 | TESTED | P2 |
@@ -235,6 +235,10 @@ Zero files signal colour by CICP *instead of* a profile. The one CICP-only file 
 Quantization is both smaller and faster. An earlier test showed no effect, but used flat-colour frames with almost no unique colours, which is why that result was recorded as inconclusive rather than negative.
 
 **Open question this raises.** UPNG quantizes adequately on its own. Whether apng-optimizer earns its place in the bundle is now a measurement, not an assumption.
+
+**Measured in T29, and the answer is "sometimes, and not the way this entry assumed".** The pipeline uses UPNG at `cnum: 0` — lossless — and leaves quantization to apng-optimizer, per §7.1's role split (A6). On an 8-frame 200x200 photographic APNG the optimiser's lossless branch took UPNG's 51,108 bytes down to **42,411**, a 17% saving that earns its place. On a 16-frame 400x400 flat animation it went the other way: UPNG wrote **8,915** bytes and every optimiser setting came back *larger* — 10,459 at `deflateMethod` 0, 11,038 at 1, 9,927 at 2. Its quantizer is worse still on photographic frames, returning 101,349 bytes at `minQuality` 50 and above and 236,609 at 10, against the lossless 42,411, with no way to report that it had not met the request — which is why **R-Q15 removed the quantized candidate from this path altogether** rather than relying on a size comparison to hide it.
+
+**One follow-up, unowned.** With the quantizer gone the path now writes exactly one candidate: UPNG assembles, apng-optimizer optimises, and that output ships whether or not it is smaller than what UPNG produced. On the flat animation above it is *larger* — 11,038 bytes against UPNG's 8,915. Comparing the two and keeping the smaller would be nearly free, since both already exist in memory, and would make this path's guarantee "no worse than the assembler" rather than "whatever the optimiser returned". Nobody owns that yet.
 
 ---
 
@@ -514,11 +518,144 @@ T46.)*
 
 ---
 
-### C7 `OPEN` `45%` `P2` Animated sources can be processed without holding every frame
+### C7 `REFUTED` `95%` `P2` Animated sources can be processed without holding every frame
 
-**Why low.** ImageMagick's collection model reads all frames into a collection, which suggests the opposite. If peak memory scales with frame count, the animated frame budget in §5.7 must be strict.
+**Why it was low, and it was right to be.** ImageMagick's collection model reads all frames into a
+collection, which suggested the opposite. It does the opposite. The conditional this entry ended on
+— "if peak memory scales with frame count, the animated frame budget in §5.7 must be strict" — is
+now an instruction rather than a hypothesis.
 
-**Method.** Process animations of increasing frame count and measure peak memory against frames.
+**Measured** (T29, `verification/t29-animated/results.json`; Chromium, Firefox and desktop WebKit,
+each sweep point in its own fresh `launchPersistentContext` profile, peak process-tree RSS by the
+`ps` sampler T01 established). The baseline for every point is taken **after** ImageMagick has
+initialised, so A1's 14.8 MB of WASM is not counted against the frame count. *Arithmetic* is
+`frames x width x height x 4`: the size of the coalesced representation itself, which is what every
+figure has to be read against. The WASM column is the growth of ImageMagick's own
+`WebAssembly.Memory`, captured by patching `WebAssembly.instantiate` (T03's technique).
+
+**Frame count at a fixed 400x400 frame** (arithmetic 0.61 MB per frame), animated WebP through
+`ImageMagick.readCollection` + `coalesce()`:
+
+| Frames | Arithmetic | Chromium RSS | Firefox RSS | WebKit RSS | WASM heap growth |
+| --- | --- | --- | --- | --- | --- |
+| 8 | 4.9 MB | +21.9 MB | +5.5 MB | +27.0 MB | +0.0 MB |
+| 16 | 9.8 MB | +35.3 MB | +28.9 MB | +38.5 MB | +7.1 MB |
+| 32 | 19.5 MB | +57.8 MB | +54.0 MB | +62.6 MB | +24.0 MB |
+| 64 | 39.1 MB | +90.9 MB | +106.5 MB | +118.0 MB | +53.2 MB |
+| 128 | 78.1 MB | +193.0 MB | +210.5 MB | +218.7 MB | +127.6 MB |
+
+**Frame size at a fixed 16 frames**, same decoder:
+
+| Frame | Arithmetic | Chromium RSS | Firefox RSS | WebKit RSS | WASM heap growth |
+| --- | --- | --- | --- | --- | --- |
+| 200x200 | 2.4 MB | +17.5 MB | +10.3 MB | +23.1 MB | +0.0 MB |
+| 400x400 | 9.8 MB | +35.3 MB | +28.5 MB | +36.6 MB | +7.1 MB |
+| 800x800 | 39.1 MB | +100.5 MB | +101.4 MB | +106.8 MB | +53.2 MB |
+| 1200x1200 | 87.9 MB | +205.5 MB | +235.3 MB | +231.4 MB | +128.5 MB |
+
+**Fitted slopes, least squares:**
+
+| Engine | RSS per frame at 400px | R² | RSS per decoded byte at 16 frames | R² |
+| --- | --- | --- | --- | --- |
+| Chromium | 1.40 MB | 0.994 | 2.194 | 1.000 |
+| Firefox | 1.67 MB | 0.998 | 2.633 | 0.999 |
+| WebKit | 1.61 MB | 1.000 | 2.456 | 0.999 |
+
+The WASM growth is identical on all three engines to the byte, because it is ImageMagick's own
+allocator rather than the browser's: **1.06 MB per frame at 400px (R² 0.997), 1.524 bytes per
+decoded byte.**
+
+**Verdict: refuted.** Peak memory is linear in frame count, linear in frame area, and the constant
+is not one. The two factors were swept separately, as this entry's Method asked, and neither is
+free: 128 frames at 400x400 cost 193–219 MB above baseline for 78.1 MB of pixels, and 16 frames at
+1200x1200 cost 205–235 MB for 87.9 MB.
+
+**The multiplier is 2.2x to 2.7x, and there are two of them.** The *marginal* cost is the fitted
+slope divided by the arithmetic — what one more frame, or one more megapixel, adds:
+
+| Engine | Marginal, per frame | Marginal, per decoded byte |
+| --- | --- | --- |
+| Chromium | 2.293x | 2.194x |
+| Firefox | **2.733x** | 2.633x |
+| WebKit | 2.637x | 2.456x |
+
+**The figure a frame budget has to use is the other one**: total peak divided by total arithmetic at
+the top of each sweep, which includes the fixed overhead the slope excludes.
+
+| Engine | 128 frames at 400x400 | 16 frames at 1200x1200 |
+| --- | --- | --- |
+| Chromium | 2.47x | 2.34x |
+| Firefox | 2.69x | 2.68x |
+| WebKit | **2.80x** | 2.63x |
+
+So: **plan on 2.8x**, not on the 2.2x the friendliest fit suggests.
+
+Where the 2.2x–2.6x goes: the frames exist **twice at once**, once inside ImageMagick's heap after
+`coalesce()` and once in the JS heap as the owned `Uint8Array`s the worker will transfer (that
+second copy is not optional — a view onto the codec heap would detach the whole heap when
+transferred). The remainder is the decoder's own working set and the browser's allocator slack.
+
+**The per-frame release does not help, and that is measured rather than assumed.**
+`stages/animation.ts` disposes each `MagickImage` as it lifts that frame's pixels, which is R-B6's
+"avoids holding every decoded frame simultaneously wherever the format allows it". At 64 frames of
+400x400, with and without that dispose, in fresh profiles:
+
+**ImageMagick's heap growth is byte-identical — 55,771,136 bytes with the dispose and without, on
+all three engines.** That is the evidence, and it is exact.
+
+| Engine | RSS with dispose | RSS without | WASM growth, either way |
+| --- | --- | --- | --- |
+| Chromium | +90.16 MB | +90.88 MB | 55,771,136 B |
+| Firefox | +104.25 MB | +104.14 MB | 55,771,136 B |
+| WebKit | **+115.08 MB** | **+110.83 MB** | 55,771,136 B |
+
+The RSS column settles nothing either way and is reported so that it cannot be quoted as though it
+did: WebKit's dispose run is **4.25 MB higher** than its no-dispose run, against the ±1.9 MB
+repeat spread this entry establishes below, at one run per cell. What the RSS figures support is
+"no engine shows a saving", not "the two are identical"; a difference of a few megabytes in either
+direction is beyond what this measurement can resolve.
+
+The reason the heap figure comes out exact is structural: `coalesce()` materialises every frame
+inside ImageMagick **before** the first pixel is extracted, so by the time there is anything to
+dispose the peak has already been paid. **R-B6's "wherever the format allows it" is, for this
+decoder, nowhere.** The dispose stays — it is free and it shortens the window in which both copies
+are live — but it must not be quoted as a mitigation.
+
+Both arms of this comparison run a decode loop written **inside the harness**, not the shipped
+`decodeAnimation`, because the stage has no switch for turning its own dispose off. The loop is
+otherwise the same sequence — `readCollection`, `coalesce()`, `getPixels` per frame — and it is the
+only measurement in this entry that is not the shipped module.
+
+**The APNG path is not a way out, though it is not uniformly worse either.** UPNG is pure
+JavaScript, so ImageMagick's heap does not grow at all (+0.0 MB at every APNG point), but the frames
+land in the JS heap instead. At **64 frames** of 400x400 it is comparable or worse — +139.4 MB on
+Chromium, +117.5 on Firefox, +175.3 on WebKit, against +90.9, +106.5 and +118.0 through ImageMagick.
+At **16 frames** it is mixed: Chromium is +27.66 against +35.28, which is **21% cheaper**, while
+Firefox is 1.19x and WebKit 1.52x the collection path. Only two APNG points were measured, so the
+shape of that curve is not established; what is established is that it is linear in the same way and
+of the same order.
+
+**Consequences.**
+
+- **§5.7's animated frame budget must be set from this, and it is the binding limit, not the pixel
+  cap.** A 12 megapixel still is 48 MB decoded; 128 modest animated frames are 200 MB of peak RSS.
+  T33 owns the number; this entry is the evidence it should use.
+- **Concurrency multiplies it.** §5.1's desktop cap of three workers means three of these at once.
+- The architecture is not being reshaped to avoid it. Coalescing is forced — the three formats'
+  disposal models differ, so a disposal *code* cannot cross a format change, and resizing a stored
+  sub-rectangle in isolation is wrong. R-Q9 asks for disposal *behaviour*, which coalescing is how
+  you preserve. The cost was accepted with the decision; this entry is it being counted.
+
+**Precision of the RSS figures.** The 16-frame 400x400 point is measured twice per engine, once in
+each sweep, and the two readings differ by 0.0 MB (Chromium), 0.4 MB (Firefox) and 1.9 MB (WebKit) —
+so a difference of a couple of megabytes between two RSS rows means nothing. The WASM figures are
+exact and repeat to the byte.
+
+**Not measured.** No phone, so the figures that would settle C4 are still missing. No frame larger
+than 1200x1200 and no animation longer than 128 frames; both sweeps are linear with R² ≥ 0.994
+across their whole range, so extrapolating a little is reasonable and extrapolating far is not. The
+source animations are flat-coloured, which is right for a memory measurement — decoded size does not
+depend on content — but their *decode times* are not representative of real footage.
 
 ---
 
@@ -711,7 +848,7 @@ A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all t
 
 ---
 
-### D3 `TESTED` `90%` `P2` ICC profiles survive every encoder path
+### D3 `TESTED` `92%` `P2` ICC profiles survive every encoder path
 
 **Measured in T23** (`verification/t23-decode/results.json`), a 6,668-byte ICC v2 Display P3 profile embedded and read back through every encoder in §4.2's stage table, in Chromium, Firefox and WebKit. **All three engines gave identical results** — the table below is one column because there was nothing to split.
 
@@ -730,6 +867,10 @@ A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all t
 | UPNG → apng-optimizer → spliced `iCCP` | present | yes |
 
 **The weak point was correctly identified but is in the wrong component, and it is avoidable.** §7.7 predicted the animated PNG path would lose the profile because it leaves ImageMagick and passes through UPNG. UPNG does indeed write no `iCCP` — it takes raw RGBA and emits `IHDR sRGB PLTE tRNS IDAT IEND`, and that `sRGB` chunk actively declares the output sRGB. But an `iCCP` chunk spliced into its output is read back byte-identically, so UPNG is not the obstacle. **apng-optimizer is**: given an APNG that carries a valid `iCCP`, it strips it. Attaching the profile *after* the optimiser has run preserves it exactly.
+
+**Confirmed in T29 on a real six-frame APNG, which is what T27's note asked for** — T23 measured this ordering on a *single-frame* file. An `iCCP` spliced into a six-frame APNG before `optAPNG` is absent from its output, along with UPNG's `sRGB`; attached afterwards it survives, and the optimiser changes none of the animation: 6 frames in and out, delays `[45, 33, 7, 101, 999, 1]` ms unchanged, `acTL.num_plays` of 3 unchanged. So the loop count is patched *before* the optimiser and the profile attached *after* it. **`png-plan.ts`'s `rewritePngChunks` is not what attaches it**: its whitelist has no `acTL`, `fcTL` or `fdAT`, so an APNG put through it comes out a still image (T27's note warned of exactly this). `animation-plan.ts`'s `attachApngIccp` keeps everything except a short drop list instead, which is the right default for a container whose chunk vocabulary is still growing.
+
+**The animated *WebP* half of this entry is weaker than the table suggests.** "ImageMagick → WebP: present, identical" was measured on a **still** WebP. T29 measured the animated case and ImageMagick's WebP coder does not report `ICCP` or `EXIF` for an animated file at all — through `readCollection` or `read` — so the decoder reads the profile out of the RIFF container itself. On the *writing* side the profile is set on every frame and libwebp writes one `ICCP` for the file, which `tests/e2e/animation.spec.ts` checks byte-for-byte against the source profile on all three engines.
 
 **Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It can be avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk*. Whichever task builds animated PNG output (T29) should take this ordering as measured rather than re-deriving it, and must drop the `sRGB` chunk when it attaches the profile: `sRGB` and `iCCP` are mutually exclusive in the PNG specification, and leaving both produces a file libpng warns about and whose colour two readers may disagree about.
 
@@ -777,11 +918,13 @@ The opaque case is the worst case for detection, since there is no early exit, a
 
 ---
 
-### D6 `TESTED` `90%` `P3` APNG input detection via `acTL`
+### D6 `TESTED` `95%` `P3` APNG input detection via `acTL`
 
 Chunk-level detection works, confirmed in A5. ImageMagick's PNG reader returned one frame from a six-frame APNG, confirming the silent-truncation risk behind R-I4.
 
-**Why not 100.** Detection was confirmed on generated APNGs, not on files from varied encoders.
+**Extended in T29, and the risk is worse than recorded.** The truncation is not a property of the *still* reader that a collection reader would avoid: `ImageMagick.readCollection` returns **one** frame from the same six-frame APNG, silently, and so does `MagickImageCollection.ping`. There is no way to decode an APNG's frames through this build at all, which is why `stages/animation.ts` decodes APNG through UPNG and §5.2's table gained a source-format row. `domain/classify.ts`'s `acTL` detection was confirmed against an APNG written by **ffmpeg** rather than by UPNG — a second encoder, which is what the "why not 100" below asked for — and `readApngAnimation` reads its six `fcTL` chunks and `acTL` correctly (`tests/e2e/animation.spec.ts`, three engines).
+
+**Why not 100.** Two encoders now, not one, but still not a broad survey — an APNG whose `fcTL` chunks follow `IDAT` (so the still image is not frame 0) is a legal layout that no fixture here exercises.
 
 ---
 

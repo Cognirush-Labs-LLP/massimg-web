@@ -67,6 +67,13 @@ export interface ResolvedSettings {
   quality: ResolvedQuality
   dimension: ResolvedDimension
   format: EncodableFormat
+  /**
+   * The source's own format, carried through because two pipeline decisions depend on it rather
+   * than on the output format: which codec modules a job needs (an animated PNG *source* needs
+   * UPNG whatever it is written as — see `pipeline/codecs/routing.ts`), and which decoder
+   * `stages/animation.ts` uses.
+   */
+  sourceFormat: Format
   isAnimated: boolean
   alpha: AlphaHandling
 }

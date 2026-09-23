@@ -135,3 +135,150 @@ export interface Frame {
 export function ownsWholeBuffer(pixels: Uint8Array): boolean {
   return pixels.byteOffset === 0 && pixels.byteLength === pixels.buffer.byteLength
 }
+
+/**
+ * One decoded animation: §4.2's `decode-frames` representation (T29).
+ *
+ * The frames are **coalesced** — each one is the full canvas, as it appears on screen at that
+ * moment, not the sub-rectangle the container happened to store. That is a decision with a cost and
+ * a reason. The cost is that peak memory is `frames x width x height x 4` (assumption C7). The
+ * reason is that the three animated formats' disposal models differ, so a disposal *code* cannot be
+ * carried across a format change and mean the same thing; R-Q9 asks for disposal *behaviour* to be
+ * preserved, and coalescing preserves exactly that by letting each encoder re-derive its own codes.
+ * Resizing a sub-rectangle in isolation would also be wrong, which forces coalescing anyway.
+ *
+ * `Frame` is reused rather than a leaner per-frame type so that `applyEdit` and `applyResize` work
+ * on an animation's frames unchanged, which is what stops the animated and still paths growing two
+ * copies of the same arithmetic (§4.2's closing paragraph).
+ *
+ * There is deliberately **no disposal field**: nothing preserves those codes, and a field nobody
+ * may rely on is worse than no field at all.
+ */
+export interface Animation {
+  /** Coalesced, full-canvas, upright RGBA. At least one, all the same size. */
+  frames: Frame[]
+  /** Milliseconds, one per frame, in frame order. The canonical unit for every animated path. */
+  delaysMs: number[]
+  /**
+   * **How many times the animation plays, with 0 meaning for ever.**
+   *
+   * Total plays, not "loop count", because the three containers do not agree on what a loop count
+   * is: GIF's NETSCAPE2.0 block stores the repeats that follow the first play, while WebP's
+   * `ANIM.loop_count` and APNG's `acTL.num_plays` store the total. A GIF storing 3 is seen four
+   * times; a WebP storing 3 is seen three. Carrying the stored number through unchanged would lose
+   * a play on every GIF that became a WebP, which is the drift R-Q9 forbids.
+   *
+   * `animation-plan.ts`'s readers report each container's raw stored value — they are the byte
+   * oracle — and `gifTotalPlays` is the single place the GIF convention is converted. libwebp's own
+   * `gif2webp` and ImageMagick's `animationIterations` both produce the numbers this field carries.
+   */
+  loops: number
+}
+
+/** Raised when an `Animation` does not hold together. Always a bug in a stage, never in a file. */
+export class AnimationShapeError extends Error {
+  constructor(readonly detail: string) {
+    super(detail)
+    this.name = 'AnimationShapeError'
+  }
+}
+
+/**
+ * Whether two frames describe their colour the same way.
+ *
+ * Structural rather than by identity: the stages spread frames (`{ ...frame, pixels }`) so identity
+ * would hold today by accident, and a check that passes by accident proves nothing.
+ */
+export function sameFrameColour(a: FrameColour, b: FrameColour): boolean {
+  if (a.kind !== b.kind) {
+    return false
+  }
+
+  if (a.kind === 'icc' && b.kind === 'icc') {
+    return (
+      a.description === b.description &&
+      a.profile.length === b.profile.length &&
+      a.profile.every((byte, index) => byte === b.profile[index])
+    )
+  }
+
+  if (a.kind === 'cicp' && b.kind === 'cicp') {
+    return (
+      a.cicp.primaries === b.cicp.primaries &&
+      a.cicp.transfer === b.cicp.transfer &&
+      a.cicp.matrix === b.cicp.matrix &&
+      a.cicp.fullRange === b.cicp.fullRange
+    )
+  }
+
+  return true
+}
+
+/**
+ * Checks everything an `Animation` promises, and is called after every stage that touches one.
+ *
+ * Each stage maps a per-frame function over the frames, so a bug that affects one frame and not the
+ * others — a resize that silently kept an odd frame at its old size, an edit that dropped a frame's
+ * profile — produces an animation that is still *plausible* and whose output is wrong in a way that
+ * only shows up as a flicker. That is precisely the class of fault a per-frame unit test cannot see,
+ * so it is checked on the whole.
+ */
+export function assertUniformAnimation(animation: Animation): void {
+  const { frames, delaysMs, loops } = animation
+  const first = frames[0]
+
+  if (first === undefined) {
+    throw new AnimationShapeError('animation has no frames')
+  }
+
+  if (frames.length !== delaysMs.length) {
+    throw new AnimationShapeError(
+      `animation has ${frames.length} frames and ${delaysMs.length} delays`,
+    )
+  }
+
+  if (!Number.isInteger(loops) || loops < 0) {
+    throw new AnimationShapeError(`animation loop count ${loops} is not a non-negative integer`)
+  }
+
+  for (const [index, delay] of delaysMs.entries()) {
+    if (!Number.isFinite(delay) || delay < 0) {
+      throw new AnimationShapeError(`frame ${index} has a delay of ${delay} ms`)
+    }
+  }
+
+  for (const [index, frame] of frames.entries()) {
+    if (frame.width !== first.width || frame.height !== first.height) {
+      throw new AnimationShapeError(
+        `frame ${index} is ${frame.width}x${frame.height}, not ${first.width}x${first.height}`,
+      )
+    }
+
+    if (frame.pixels.byteLength !== frame.width * frame.height * 4) {
+      throw new AnimationShapeError(
+        `frame ${index} holds ${frame.pixels.byteLength} bytes for ${frame.width}x${frame.height} RGBA`,
+      )
+    }
+
+    // The worker transfers result buffers; a frame that is a window onto a codec heap would detach
+    // that whole heap when transferred, the same hazard `decode.ts` guards against for one frame.
+    if (!ownsWholeBuffer(frame.pixels)) {
+      throw new AnimationShapeError(`frame ${index} does not own its buffer`)
+    }
+
+    if (!sameFrameColour(frame.colour, first.colour)) {
+      throw new AnimationShapeError(
+        `frame ${index} describes its colour as ${frame.colour.kind}, frame 0 as ${first.colour.kind}`,
+      )
+    }
+
+    if (
+      frame.sourceOrientation.kind !== first.sourceOrientation.kind ||
+      (frame.sourceOrientation.kind === 'present' &&
+        first.sourceOrientation.kind === 'present' &&
+        frame.sourceOrientation.value !== first.sourceOrientation.value)
+    ) {
+      throw new AnimationShapeError(`frame ${index} reports a different source orientation`)
+    }
+  }
+}

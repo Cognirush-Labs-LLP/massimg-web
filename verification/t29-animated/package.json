@@ -1,0 +1,9 @@
+{
+  "name": "t29-animated",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway harness for T29 — settles C7 by measuring peak process RSS and ImageMagick's WASM heap against frame count at a fixed frame size, and against frame size at a fixed frame count, for the shipped decodeAnimation stage in three browsers. See docs/task-notes/T29.md and docs/assumptions.md C7.",
+  "scripts": {
+    "test": "node run.mjs"
+  }
+}

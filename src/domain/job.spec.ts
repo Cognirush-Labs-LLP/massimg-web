@@ -197,6 +197,27 @@ describe('settings resolution', () => {
       expect(result.caveats).toEqual([{ kind: 'animation-substituted' }])
     })
 
+    // T29: the source format is carried into the resolved settings because two pipeline decisions
+    // key off it rather than off the output — which codecs a job loads, and which decoder the
+    // animated path uses. R-F6's substitution changes the output and must not touch the source.
+    it('carries the source format through, unchanged by an output substitution', () => {
+      const substituted = resolved(
+        { ...BASE_IMAGE, sourceFormat: 'png', isAnimated: true },
+        { ...BASE_BATCH, format: 'jpeg' },
+      )
+
+      expect(substituted.settings.format).toBe('webp')
+      expect(substituted.settings.sourceFormat).toBe('png')
+    })
+
+    it('carries the source format through for every input format it accepts', () => {
+      for (const sourceFormat of ['jpeg', 'png', 'webp', 'gif', 'heic'] as const) {
+        expect(resolved({ ...BASE_IMAGE, sourceFormat }, BASE_BATCH).settings.sourceFormat).toBe(
+          sourceFormat,
+        )
+      }
+    })
+
     it('passes through the format resolver rejection for animated AVIF input', () => {
       expect(
         resolveSettings(

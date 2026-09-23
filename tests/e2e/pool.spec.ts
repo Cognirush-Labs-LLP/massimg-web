@@ -26,6 +26,13 @@ function fixture(name: string): number[] {
   )
 }
 
+/** The T29 set: six frames, delays [40, 120, 40, 200, 80, 40] ms, loop record 3. */
+function animatedFixture(name: string): number[] {
+  return Array.from(
+    readFileSync(fileURLToPath(new URL(`../fixtures/animated/${name}`, import.meta.url))),
+  )
+}
+
 interface Stats {
   size: number
   queued: number
@@ -557,7 +564,14 @@ interface ShippedOutcome {
   token: number
   imageId: string
   reason?: { kind: string; detail?: string }
-  result?: { format: string; caveats: { kind: string }[]; head: number[]; byteLength: number }
+  result?: {
+    format: string
+    caveats: { kind: string }[]
+    head: number[]
+    byteLength: number
+    /** The whole output, only for jobs that asked — T29 reads animated output back in the page. */
+    bytes?: number[]
+  }
 }
 
 /**
@@ -570,13 +584,22 @@ function runShipped(
   page: Page,
   jobs: {
     imageId: string
-    source: 'fixture' | 'garbage' | 'transparent-png' | 'shaded-png' | 'cicp-avif'
+    source:
+      | 'fixture'
+      | 'garbage'
+      | 'transparent-png'
+      | 'shaded-png'
+      | 'cicp-avif'
+      | 'animated-gif'
+      | 'animated-webp'
     settings?: Record<string, unknown>
     intent?: 'preview' | 'run'
+    /** Bring the whole output back, not just its first twelve bytes. Small outputs only. */
+    keepBytes?: boolean
   }[],
 ): Promise<{ tokens: number[]; outcomes: ShippedOutcome[]; settled: Stats }> {
   return page.evaluate(
-    async ({ poolPath, loaderPath, fixture, cicpFixture, jobs }) => {
+    async ({ poolPath, loaderPath, fixture, cicpFixture, animatedGif, animatedWebp, jobs }) => {
       const mod = await import(/* @vite-ignore */ poolPath)
       // The default factory — the real module worker, no probe.
       const instance = mod.createWorkerPool({ size: 1 })
@@ -621,11 +644,15 @@ function runShipped(
             ? new Uint8Array(fixture)
             : spec.source === 'cicp-avif'
               ? new Uint8Array(cicpFixture)
-              : spec.source === 'garbage'
-                ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
-                : spec.source === 'shaded-png'
-                  ? await shadedPng()
-                  : await transparentPng()
+              : spec.source === 'animated-gif'
+                ? new Uint8Array(animatedGif)
+                : spec.source === 'animated-webp'
+                  ? new Uint8Array(animatedWebp)
+                  : spec.source === 'garbage'
+                    ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+                    : spec.source === 'shaded-png'
+                      ? await shadedPng()
+                      : await transparentPng()
 
         handles.push(
           instance.run({
@@ -660,6 +687,7 @@ function runShipped(
             caveats: done.result.caveats,
             head: Array.from(done.result.bytes.subarray(0, 12)),
             byteLength: done.result.bytes.byteLength,
+            ...(jobs[outcomes.length]?.keepBytes ? { bytes: Array.from(done.result.bytes) } : {}),
           },
         })
       }
@@ -674,6 +702,8 @@ function runShipped(
       loaderPath: LOADER_MODULE_PATH,
       fixture: fixture('orientation-1.jpg'),
       cicpFixture: fixture('cicp-p3.avif'),
+      animatedGif: animatedFixture('anim-6f.gif'),
+      animatedWebp: animatedFixture('anim-6f.webp'),
       jobs,
     },
   )
@@ -796,7 +826,19 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
   const { outcomes, settled } = await runShipped(page, [
     { imageId: 'garbage', source: 'garbage' },
     { imageId: 'gif', source: 'fixture', settings: { format: 'gif' } },
-    { imageId: 'animated', source: 'fixture', settings: { format: 'webp', isAnimated: true } },
+    // An animated GIF *output* is still T28's, whichever path would otherwise have claimed it.
+    {
+      imageId: 'animated-gif-out',
+      source: 'animated-gif',
+      settings: { format: 'gif', isAnimated: true, sourceFormat: 'gif' },
+    },
+    // A still source marked animated is a settings/source mismatch, not an unbuilt path: the
+    // decoder refuses a single-frame file rather than announcing an animation nobody asked for.
+    {
+      imageId: 'not-really-animated',
+      source: 'fixture',
+      settings: { format: 'webp', isAnimated: true, sourceFormat: 'jpeg' },
+    },
     {
       imageId: 'size',
       source: 'fixture',
@@ -814,7 +856,8 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
   expect(outcomes.map((o) => [o.imageId, o.outcome, o.reason?.kind])).toEqual([
     ['garbage', 'failed', 'decode-failed'],
     ['gif', 'failed', 'unimplemented'],
-    ['animated', 'failed', 'unimplemented'],
+    ['animated-gif-out', 'failed', 'unimplemented'],
+    ['not-really-animated', 'failed', 'decode-failed'],
     ['size', 'failed', 'unimplemented'],
     ['cicp-jpeg', 'failed', 'unimplemented'],
     ['cicp-png', 'failed', 'unimplemented'],
@@ -823,6 +866,73 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
   // A failed job does not cost the worker.
   expect(settled.workersAlive).toBe(1)
   expect(settled.terminations).toBe(0)
+})
+
+// T29: the animated chain through a real module worker, not through the stage modules in the page.
+// `decode-frames`, `edit-frames`, `resize-frames` and an animated encoder all run inside the worker,
+// and the bytes come back across `postMessage` having been transferred.
+test('the shipped worker runs the animated chain for both animated output formats', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const { outcomes } = await runShipped(page, [
+    {
+      imageId: 'gif-to-webp',
+      source: 'animated-gif',
+      settings: { format: 'webp', isAnimated: true, sourceFormat: 'gif' },
+      keepBytes: true,
+    },
+    {
+      imageId: 'webp-to-png',
+      source: 'animated-webp',
+      settings: { format: 'png', isAnimated: true, sourceFormat: 'webp' },
+      keepBytes: true,
+    },
+  ])
+
+  expect(outcomes.map((o) => [o.imageId, o.outcome, o.result?.format])).toEqual([
+    ['gif-to-webp', 'completed', 'webp'],
+    ['webp-to-png', 'completed', 'png'],
+  ])
+
+  // Real animated files, not a still frame with an animated label: read back with the pipeline's own
+  // container readers, in the page, on the bytes the worker actually returned.
+  const readBack = await page.evaluate(
+    async ({ planPath, webp, png }) => {
+      const plan = await import(/* @vite-ignore */ planPath)
+      const asWebp = plan.readWebpAnimation(new Uint8Array(webp))
+      const asPng = plan.readApngAnimation(new Uint8Array(png))
+
+      return {
+        webp: {
+          frames: asWebp.frameCount,
+          delays: asWebp.frames.map((f: { delayMs: number }) => f.delayMs),
+          loops: asWebp.loops,
+        },
+        png: {
+          frames: asPng.frameCount,
+          delays: asPng.frames.map((f: { delayMs: number }) => f.delayMs),
+          loops: asPng.loops,
+        },
+      }
+    },
+    {
+      planPath: '/src/pipeline/stages/animation-plan.ts',
+      webp: outcomes[0]?.result?.bytes ?? [],
+      png: outcomes[1]?.result?.bytes ?? [],
+    },
+  )
+
+  expect(readBack.webp.frames).toBe(6)
+  expect(readBack.webp.delays).toEqual([40, 120, 40, 200, 80, 40])
+  // The GIF source stores a NETSCAPE count of 3, which is four total plays.
+  expect(readBack.webp.loops).toBe(4)
+
+  expect(readBack.png.frames).toBe(6)
+  expect(readBack.png.delays).toEqual([40, 120, 40, 200, 80, 40])
+  // The WebP source stores 3, which is already total plays.
+  expect(readBack.png.loops).toBe(3)
 })
 
 test('the shipped worker checks the between-jobs flag before starting a job', async ({ page }) => {

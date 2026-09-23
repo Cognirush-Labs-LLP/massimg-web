@@ -28,6 +28,10 @@ function reasonFor(error: unknown): JobFailure {
     return { kind: 'unimplemented', detail: error.detail }
   }
 
+  // `AnimationDecodeError` extends `DecodeError` and lands here too, which is deliberate: a damaged
+  // or truncated animated container is the file failing, not a stage. `AnimationStageError` is
+  // deliberately *not* a `DecodeError` — it means this pipeline asked a stage for something it
+  // should not have, and telling the user their file is corrupt would be the wrong message (§10).
   if (error instanceof DecodeError) {
     return { kind: 'decode-failed' }
   }

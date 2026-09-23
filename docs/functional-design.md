@@ -314,7 +314,7 @@ Dropdown, in this order:
 | --- | --- |
 | **Don't change** | Default. Each image keeps its input format. |
 | JPEG | No alpha, no animation. |
-| PNG | Still or animated. Quantized below a slider value of 85, within the bound in R-Q11. |
+| PNG | Still or animated. A still PNG is quantized below a slider value of 85, within the bound in R-Q11; an animated one is always lossless, R-Q15. |
 | WebP | Still or animated. |
 | AVIF | Still only. |
 | GIF | For graphics and animation. Produces worse results than JPEG for photographs, stated inline in the dropdown. |
@@ -556,14 +556,15 @@ Verified against ImageMagick 7.1.2-30 Q8 wasm32 (`@imagemagick/magick-wasm` 0.0.
 | Format | Quality 96 to 100 | Quality 10 to 95 |
 | --- | --- | --- |
 | JPEG | Highest quality. No lossless mode exists for JPEG. | Encoder quality parameter |
-| PNG, still or animated | Lossless from a slider value of 85 upward, R-Q12 | Quantization via libimagequant, rescaled per R-Q11 |
-| WebP | Lossless mode | Lossy, plus the check in R-Q6 |
+| PNG, still | Lossless from a slider value of 85 upward, R-Q12 | Quantization via libimagequant, rescaled per R-Q11 |
+| PNG, animated | Lossless | Lossless. See R-Q15 |
+| WebP, still or animated | Lossless mode | Lossy, plus the check in R-Q6 |
 | AVIF | Lossless mode | Encoder quality parameter |
 | GIF | Palette preserved, no lossy pass | Lossy pass via gifsicle |
 
 - R-Q6 For WebP below quality 96, the app also attempts a lossless encode and keeps whichever result is smaller. This wins on screenshots, logos and flat graphics and loses on photographs, so the Technical Design may gate the second attempt behind a cheap content check, provided the smaller output is still the one kept.
 - R-Q7 Lossless AVIF frequently produces output larger than the input. R-X24 handles that case; the behaviour is not suppressed.
-- R-Q11 PNG never uses the raw slider value. People pick PNG expecting losslessness, so quantizing to a slider value of 10 would produce banding they did not ask for and would not understand (P1, P3). The slider is remapped linearly onto a quantization quality with a floor of 70:
+- R-Q11 Still PNG never uses the raw slider value. People pick PNG expecting losslessness, so quantizing to a slider value of 10 would produce banding they did not ask for and would not understand (P1, P3). The slider is remapped linearly onto a quantization quality with a floor of 70. Animated PNG does not quantize at all, R-Q15:
 
   `mapped = 70 + (q - 10) x 30 / 90`
 
@@ -571,7 +572,8 @@ Verified against ImageMagick 7.1.2-30 Q8 wasm32 (`@imagemagick/magick-wasm` 0.0.
 
 - R-Q12 PNG becomes lossless at a slider value of 85, where the mapped value reaches 95. This is earlier than the 96 threshold that applies to other formats, and it is a consequence of the rescale rather than a special case. It errs in the safe direction: PNG is a lossless format by reputation, and reaching losslessness sooner is the conservative failure.
 - R-Q13 The 70 floor is a starting value, not a measured one, and is subject to verification against real images.
-- R-Q14 For PNG below the lossless point, the app compares the quantized result against a lossless encode and keeps whichever is smaller. An image that already has few colours gains nothing from quantization and can lose a little. This mirrors R-Q6 for WebP and costs one extra encode of a format that is cheap to encode.
+- R-Q14 For still PNG below the lossless point, the app compares the quantized result against a lossless encode and keeps whichever is smaller. An image that already has few colours gains nothing from quantization and can lose a little. This mirrors R-Q6 for WebP and costs one extra encode of a format that is cheap to encode.
+- R-Q15 Animated PNG is always written losslessly, at every slider value, and R-Q11, R-Q12 and R-Q14 do not apply to it. R-Q11's floor is only a guarantee because the still path's quantizer refuses to produce anything it cannot reach; the animated PNG optimiser wraps the same library but exposes no such refusal, so a quantized animation would be quantized to an unknown quality at every setting, with no way to detect that the floor had been missed. Writing losslessly keeps R-Q11's intent — no banding the user did not ask for — by removing the only path that could violate it (P1). Measured in T29; the slider still governs animated WebP, which is where an animated source goes when the user asks for a smaller file.
 
 ### 7.2 Animated output
 

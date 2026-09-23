@@ -94,10 +94,20 @@ export function ensureQuantizer(): Promise<typeof import('imagequant')> {
   return quantizerPromise
 }
 
-let upngPromise: Promise<unknown> | null = null
+let upngPromise: Promise<typeof import('upng-js').default> | null = null
 
-/** Pure JS (§7.1) — no WASM, so "loading" is just the dynamic import resolving. */
-export function ensureUpng(): Promise<unknown> {
+/**
+ * Pure JS (§7.1) — no WASM, so "loading" is just the dynamic import resolving.
+ *
+ * Typed against `src/upng-js.d.ts` since T29, because UPNG is no longer only the APNG *writer*: it
+ * is the APNG **reader** too. ImageMagick's WASM build returns one frame from a six-frame APNG
+ * without raising anything (measured, T29; D6 predicted it of the still reader), so `decodeAnimation`
+ * takes the UPNG branch for an APNG source whatever the output format is.
+ *
+ * It bundles `pako` and reaches it through Vite's CommonJS interop rather than through `window.pako`;
+ * verified by decoding a real APNG in the browser build, not assumed from the import resolving.
+ */
+export function ensureUpng(): Promise<typeof import('upng-js').default> {
   if (!upngPromise) {
     upngPromise = import('upng-js').then((module) => module.default)
   }
@@ -131,7 +141,7 @@ const ENSURE_BY_NAME: Record<CodecName, () => Promise<unknown>> = {
  * whose main-thread preload has not finished yet) pays the cost here instead of failing.
  */
 export async function ensureCodecsForJob(
-  settings: Pick<ResolvedSettings, 'format' | 'isAnimated'>,
+  settings: Pick<ResolvedSettings, 'format' | 'isAnimated' | 'sourceFormat'>,
 ): Promise<void> {
   await Promise.all(codecsForSettings(settings).map((name) => ENSURE_BY_NAME[name]()))
 }

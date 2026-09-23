@@ -16,10 +16,17 @@ export type CodecName =
 /**
  * Technical Design §5.2's table, as code. Pure. ImageMagick decodes, orients, edits and resizes
  * almost every path in §4.2's stage table, so it is always required; the rest are additive per
- * output format.
+ * output format — with one exception, which is the source format rather than the output.
+ *
+ * **An animated PNG *source* needs UPNG whatever it is written as.** ImageMagick's WASM build
+ * returns one frame from a six-frame APNG and raises nothing (measured, T29; D6 predicted it of the
+ * still reader), so `stages/animation.ts` decodes APNG through UPNG — which makes UPNG a decoder on
+ * that path and not only the assembler §5.2's table describes. Without this row an APNG going to
+ * animated WebP would reach `decodeAnimation` with UPNG unloaded; the stage's own `ensureUpng()`
+ * would then load it mid-job, which works but defeats the point of loading codecs up front.
  */
 export function codecsForSettings(
-  settings: Pick<ResolvedSettings, 'format' | 'isAnimated'>,
+  settings: Pick<ResolvedSettings, 'format' | 'isAnimated' | 'sourceFormat'>,
 ): CodecName[] {
   const codecs: CodecName[] = ['imagemagick']
 
@@ -31,6 +38,10 @@ export function codecsForSettings(
     } else {
       codecs.push('oxipng', 'quantizer')
     }
+  }
+
+  if (settings.isAnimated && settings.sourceFormat === 'png' && !codecs.includes('upng')) {
+    codecs.push('upng')
   }
 
   return codecs
