@@ -50,19 +50,57 @@ export function ensureImageMagick(): Promise<typeof import('@imagemagick/magick-
   return imageMagickPromise
 }
 
-let gifsiclePromise: Promise<unknown> | null = null
+let gifsiclePromise: Promise<typeof import('gifsicle-wasm-browser').default> | null = null
 
 /**
  * `gifsicle-wasm-browser`'s default export manages its own internal Worker and instantiates its WASM
  * only when `.run()` is called — the package exposes no separate init step. "Loaded" here means the
- * dynamic `import()` has resolved, i.e. its code-split chunk has been fetched; the real GIF encode
- * stage (T26) is what calls `.run()`. See docs/task-notes/T22.md, Surprises.
+ * dynamic `import()` has resolved, i.e. its code-split chunk has been fetched; `stages/gif.ts` (T28)
+ * is what calls `.run()`. See docs/task-notes/T22.md, Surprises.
+ *
+ * Every `.run()` builds a fresh Worker from a blob URL, instantiates the WASM inside it and
+ * terminates it on completion, so nothing accumulates between jobs and nothing is warm between them
+ * either: the measured 22-40 ms of a small GIF run is mostly that spin-up (T28).
  */
-export function ensureGifsicle(): Promise<unknown> {
+export function ensureGifsicle(): Promise<typeof import('gifsicle-wasm-browser').default> {
   if (!gifsiclePromise) {
-    gifsiclePromise = import('gifsicle-wasm-browser').then((module) => module.default)
+    gifsiclePromise = import('gifsicle-wasm-browser').then((module) => {
+      defineElementForGifsicle()
+      return module.default
+    })
   }
   return gifsiclePromise
+}
+
+/**
+ * Gives the Worker an `Element` binding, because `gifsicle-wasm-browser` cannot run without one and
+ * fails in the worst available way when it is missing.
+ *
+ * Its argument type-check starts `A instanceof Element`, and `Element` is a DOM interface that does
+ * not exist in a Worker. So the check raises `ReferenceError: Element is not defined` for *every*
+ * input — and the wrapper runs it inside `new Promise(async (resolve, reject) => …)`, where a throw
+ * in the async executor becomes an unhandled rejection of the executor rather than a rejection of
+ * the promise. The promise is then never settled at all, so `run()` never returns, so the job never
+ * completes and never fails. Measured (T28): a GIF job through the real pipeline worker hung on
+ * Chromium, Firefox and WebKit alike until this existed.
+ *
+ * Declaring the class makes `instanceof` evaluate to `false`, which is the answer the check wants
+ * for every input this codebase passes it — an `ArrayBuffer` — and lets it fall through to the
+ * `Object.prototype.toString` branch it uses for everything else.
+ *
+ * Two things keep the blast radius small. It only defines the name where it is genuinely absent, so
+ * the main thread's real `Element` is never shadowed; and it is reached only from `ensureGifsicle`,
+ * which runs only for a job that resolved to GIF output. It is still a global in a shared worker
+ * scope, and a library that decided it was in a document because `typeof Element !== 'undefined'`
+ * would be misled by it — nothing in `ENSURE_BY_NAME` does, checked, but it is the risk to weigh if
+ * this ever has to move earlier.
+ */
+function defineElementForGifsicle(): void {
+  const scope = globalThis as { Element?: unknown }
+
+  if (typeof scope.Element === 'undefined') {
+    scope.Element = class Element {}
+  }
 }
 
 let oxipngPromise: Promise<typeof import('@jsquash/oxipng/optimise.js')> | null = null

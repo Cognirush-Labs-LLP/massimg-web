@@ -41,7 +41,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | A4 | APNG unavailable from ImageMagick, ffmpeg delegate | 100 | TESTED | — |
 | A5 | UPNG.js produces valid APNG | 100 | TESTED | — |
 | A6 | apng-optimizer is an optimizer, not an encoder | 100 | TESTED | — |
-| A7 | gifsicle-wasm-browser scope and licence | 95 | DOC | — |
+| A7 | gifsicle-wasm-browser scope and licence | 100 | TESTED | — |
 | A8 | HEIC decoding works | 100 | TESTED | — |
 | A9 | libimagequant is **not** linked into the build | 95 | BINARY | P2 |
 | A10 | UPNG `cnum` quantization is effective | 100 | TESTED | P3 |
@@ -132,13 +132,34 @@ Exports only `createOptimizer` and `optAPNG`. APNG in, APNG out. Cannot assemble
 
 ---
 
-### A7 `DOC` `95%` gifsicle-wasm-browser scope
+### A7 `TESTED` `100%` gifsicle-wasm-browser scope
 
-Gifsicle 1.92 complete, MIT, no dependencies, 368 KB unpacked. GIF in, GIF out only. Exposes `--lossy`, `-O1/-O2/-O3`, `--resize`, `--crop`, `--rotate`.
+**Settled** (T28, `verification/t28-gif/results.json`, ten subjects in Chromium, Firefox and WebKit). Gifsicle 1.92 complete, MIT wrapper, no dependencies, 368 KB unpacked. GIF in, GIF out only. `--lossy` and `-O1/-O2/-O3` all executed. The pipeline uses only those two — resizing, cropping and rotation are already done by the time a GIF is written, in RGBA, by stages that every format shares.
 
-**Why not 100.** Package metadata and README read, but not executed, since it is browser-only.
+**The size comparison A7 asked for**, against ImageMagick's own GIF writer with no lossy pass on either side, at slider 100:
 
-**Method to close.** Run it in a Playwright-driven page against a real animated GIF and compare output size against ImageMagick's own GIF writer.
+| Subject | Frames | ImageMagick | gifsicle | Smaller by |
+| --- | --- | --- | --- | --- |
+| `anim-scene.gif` (fixture) | 10 at 128x96 | 93,634 B | 15,533 B | **83.4%** |
+| Generated scene, large | 16 at 480x360 | 1,399,271 B | 356,857 B | **74.5%** |
+| `anim-disposal.gif` | 6 at 64x64 | 1,345 B | 362 B | **73.1%** |
+| Generated scene | 10 at 128x96 | 96,180 B | 29,441 B | **69.4%** |
+| `anim-6f.gif` | 6 at 64x64 | 1,155 B | 1,043 B | 9.7% |
+| Generated flat | 10 at 128x96 | 1,607 B | 1,581 B | 1.6% |
+| `anim-16f-400.webp` | 16 at 400x400 | 22,137 B | 22,105 B | 0.1% |
+| Generated photographic | 12 at 320x240 | 624,526 B | 624,462 B | 0.0% |
+| Real photograph, still | 1 at 1280x1920 | 1,136,991 B | 1,137,165 B | **−0.02%** |
+| Real photograph, still | 1 at 4000x6000 | 9,958,239 B | 9,959,329 B | **−0.01%** |
+
+**R-Q8's "substantially smaller" is true, and it is true for one specific reason.** ImageMagick writes every frame in full; gifsicle's `-O2` finds what a frame shares with its predecessor and stores the rest as transparency. So the saving tracks *inter-frame redundancy* and nothing else. Where consecutive frames share most of their pixels it is 69–83%; where every pixel changes every frame — the flat fixtures, where each frame is a different solid colour, and the photographic one, where the whole field moves — it is nothing at all, and on the still photograph gifsicle's output is **1,090 bytes larger** than the input it was given. The stage therefore keeps whichever candidate is smaller rather than assuming.
+
+**`--lossy` is the lever for the content `-O2` cannot help**, and it is a large one: the still photograph goes from 9,959,329 B to 1,474,499 B at `--lossy=200`, and the photographic animation from 624,462 to 201,498. See `gifLossyLevel` in `src/pipeline/stages/gif-plan.ts` for how the slider maps onto it and why the band is 20 to 200.
+
+**`-O3` is not free after all**, which corrects Technical Design §7.3's rationale rather than its conclusion. It is byte-identical to `-O2` on eight of the ten subjects and *smaller* on two — 29,441 → 28,618 (2.8%) and 356,857 → 343,588 (3.7%) — the larger of those for 1.9x the time, and it costs time on the eight where it returns nothing (89 ms against 177 on one). The setting stays at `-O2`; the reason is now "a small measured gain that costs more than it returns" rather than "no gain".
+
+**It is not reliable, and the wrapper is why.** `gifsicle-wasm-browser` resolves a run when the WASM module calls its `output` callback and rejects — with `undefined` — when the module's own promise settles first, with nothing ordering the two. On `anim-16f-400.webp` at slider 95, 250 attempts per engine: **Chromium 0 failures, Firefox 0, WebKit 44 (17.6%)**; a second run of 80 gave WebKit 18 (22.5%). Nine other subjects failed zero times on any engine. `stages/gif.ts` therefore asks up to four times (`GIFSICLE_ATTEMPTS`) and keeps ImageMagick's own GIF if it still has nothing. Verified after that change, 80 runs per engine: **no job failed on any engine**; WebKit retried 14 times in 80, mean 1.24 attempts, and exhausted all four once.
+
+**Not covered by this test.** Memory. gifsicle builds a fresh Worker per `run()` and terminates it on completion, so nothing accumulates between jobs, but the peak cost of one run on a large GIF is unmeasured and belongs with T46's limits. Also unestablished: *why* WebKit loses that race so much more often, and whether the rate depends on the input at all. The licence question is **A12** and is untouched by any of this.
 
 ---
 

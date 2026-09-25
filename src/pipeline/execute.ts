@@ -11,9 +11,13 @@
 // stages mapped over an `Animation`, which is what keeps the two from growing separate copies of the
 // resize and edit arithmetic.
 //
-// Two rows of §4.2's table are still unbuilt: GIF output (T28) and size targeting (T30) fail as
-// `unimplemented`, which tells the caller something true — the job reached a worker that has no path
-// for it — rather than a fabricated `encode-failed`.
+// **GIF takes one row for both** (T28): `stages/gif.ts` writes the file through ImageMagick and
+// compresses it with gifsicle (R-Q8), and a still image reaches it as an animation of one frame, so
+// the still and animated GIF paths are the same code rather than two that drift.
+//
+// One row of §4.2's table is still unbuilt: size targeting (T30) fails as `unimplemented`, which
+// tells the caller something true — the job reached a worker that has no path for it — rather than a
+// fabricated `encode-failed`.
 //
 // The codec load stays first, ahead of every check (T22): §5.2's "a worker that needs a module it
 // has not loaded loads it and then proceeds" is keyed off the job's resolved settings, and
@@ -30,6 +34,9 @@ import { DecodeError, decodeFrame } from './stages/decode'
 import { applyEdit } from './stages/edit'
 import { UnsupportedColourError, encodeFrame } from './stages/encode'
 import { unsupportedColour } from './stages/encode-plan'
+import type { ColourFormat } from './stages/encode-plan'
+import { singleFrameAnimation } from './stages/frame'
+import { encodeGif } from './stages/gif'
 import { encodePng } from './stages/png'
 import { applyResize } from './stages/resize'
 import type { Caveat, EncodableFormat, Job } from '@/domain/types'
@@ -59,12 +66,6 @@ export async function executeJob(job: Job): Promise<JobResult> {
   const { settings } = job
 
   await ensureCodecsForJob(settings)
-
-  // GIF is checked before the animated branch, not after: an animated GIF output is gifsicle's
-  // (R-Q8) and belongs to T28 whichever path would otherwise have claimed it.
-  if (settings.format === 'gif') {
-    throw new JobExecutionError('gif output is not implemented yet (T28)')
-  }
 
   if (settings.quality.kind === 'size') {
     throw new JobExecutionError('size targeting is not implemented yet (T30)')
@@ -97,9 +98,27 @@ export async function executeJob(job: Job): Promise<JobResult> {
     return { bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
   }
 
+  // A still GIF is an animation of one frame (R-Q8 and §4.2 give GIF one row, not two) — see
+  // `singleFrameAnimation`.
+  if (settings.format === 'gif') {
+    const encoded = await encodeGif(singleFrameAnimation(resized), settings.quality)
+
+    return { bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
+  }
+
   const encoded = await encodeFrame(resized, settings.format, settings.quality)
 
   return { bytes: encoded.bytes, format: settings.format, caveats: report([]) }
+}
+
+/**
+ * Which container the colour has to fit into, for a format that is about to be written animated.
+ *
+ * WebP is the fallback rather than a `never` check because `resolveFormat` has already substituted
+ * it for the formats that cannot animate, so anything not named here is already WebP.
+ */
+function animatedColourFormat(format: EncodableFormat): ColourFormat {
+  return format === 'png' || format === 'gif' ? format : 'webp'
 }
 
 /**
@@ -109,8 +128,8 @@ export async function executeJob(job: Job): Promise<JobResult> {
  * R-C16 remove the Edit action for an animated image, and an edit reaching here is an upstream bug
  * that should say so rather than be silently discarded.
  *
- * Only WebP and PNG arrive — GIF is refused above, JPEG and AVIF cannot animate and `resolveFormat`
- * has already substituted WebP for them (R-F6), carrying its own `animation-substituted` caveat.
+ * WebP, PNG and GIF arrive. JPEG and AVIF cannot animate and `resolveFormat` has already substituted
+ * WebP for them (R-F6), carrying its own `animation-substituted` caveat.
  */
 async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobResult> {
   const { settings } = job
@@ -137,7 +156,7 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
   }
 
   // Checked as soon as the colour is known, before the edit and resize that would be thrown away.
-  const unsupported = unsupportedColour(first.colour, format === 'png' ? 'png' : 'webp')
+  const unsupported = unsupportedColour(first.colour, animatedColourFormat(format))
 
   if (unsupported !== null) {
     throw new UnsupportedColourError(unsupported)
@@ -158,6 +177,12 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
     const encoded = await encodeApng(resized)
 
     return { bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
+  }
+
+  if (format === 'gif') {
+    const encoded = await encodeGif(resized, settings.quality)
+
+    return { bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
   }
 
   if (format !== 'webp') {

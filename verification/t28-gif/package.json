@@ -1,0 +1,9 @@
+{
+  "name": "t28-gif",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway harness for T28 — settles A7 by running gifsicle against ImageMagick's own GIF writer on eight subjects in three browsers, sweeping --lossy across its whole range and -O1/-O2/-O3, through the shipped stages/gif.ts. See docs/task-notes/T28.md and docs/assumptions.md A7.",
+  "scripts": {
+    "test": "node run.mjs"
+  }
+}

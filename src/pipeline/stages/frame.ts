@@ -282,3 +282,21 @@ export function assertUniformAnimation(animation: Animation): void {
     }
   }
 }
+
+/**
+ * One still frame as an animation of one, which is how a still image reaches the GIF encoder.
+ *
+ * GIF is the one output format where the still and animated paths are the *same* encoder: gifsicle
+ * takes a GIF and returns a GIF whether or not it moves, and ImageMagick writes a single-image GIF
+ * from a one-image collection exactly as it writes a multi-image one. Giving `gif.ts` two entry
+ * points instead would duplicate the colour handling, the gifsicle call and every assertion made
+ * about the result, for one frame of difference.
+ *
+ * `loops: 1` — played once — is what makes the file a still GIF rather than an animation that
+ * happens to have one frame: ImageMagick writes **no** NETSCAPE2.0 block at all for 1 (measured,
+ * T28), which is exactly what a non-animated GIF should carry. `delaysMs: [0]` is the same
+ * statement about time: the container declines to specify a duration, which is what a still means.
+ */
+export function singleFrameAnimation(frame: Frame): Animation {
+  return { frames: [frame], delaysMs: [0], loops: 1 }
+}

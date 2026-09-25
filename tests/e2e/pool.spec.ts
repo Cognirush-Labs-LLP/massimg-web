@@ -747,6 +747,49 @@ test('the shipped worker encodes WebP and AVIF through the same chain', async ({
   expect(String.fromCharCode(...outcomes[1]!.result!.head.slice(4, 12))).toBe('ftypavif')
 })
 
+/**
+ * The GIF path through the real worker, which is the only place the nesting is real.
+ *
+ * `gifsicle-wasm-browser` does its work in a Worker it creates itself, from a blob URL, and
+ * terminates when the run finishes. Everything else in `tests/e2e/gif.spec.ts` exercises the stage
+ * from the page, where that Worker is an ordinary one; here the pipeline is already inside a module
+ * Worker, so gifsicle's is a **nested** Worker — a thing Safari did not support at all until
+ * recently and the one part of this path that could plausibly work on two engines and not the third.
+ */
+test('the shipped worker encodes GIF, still and animated, through gifsicle', async ({ page }) => {
+  await page.goto('/')
+
+  const { outcomes } = await runShipped(page, [
+    { imageId: 'gif-still', source: 'fixture', settings: { format: 'gif' } },
+    {
+      imageId: 'gif-animated',
+      source: 'animated-gif',
+      settings: { format: 'gif', isAnimated: true, sourceFormat: 'gif' },
+    },
+    // An animated WebP source to GIF: the frames arrive from a different decoder entirely.
+    {
+      imageId: 'gif-from-webp',
+      source: 'animated-webp',
+      settings: { format: 'gif', isAnimated: true, sourceFormat: 'webp' },
+    },
+  ])
+
+  expect(outcomes.map((o) => [o.imageId, o.outcome, o.result?.format])).toEqual([
+    ['gif-still', 'completed', 'gif'],
+    ['gif-animated', 'completed', 'gif'],
+    ['gif-from-webp', 'completed', 'gif'],
+  ])
+
+  for (const outcome of outcomes) {
+    // The GIF signature, through the protocol's transfer list. Either version: gifsicle writes the
+    // 1987 signature for a file that needs none of the 1989 extensions, which a still GIF does not.
+    expect(String.fromCharCode(...outcome.result!.head.slice(0, 6)), outcome.imageId).toMatch(
+      /^GIF8[79]a$/,
+    )
+    expect(outcome.result?.byteLength, outcome.imageId).toBeGreaterThan(100)
+  }
+})
+
 test('the shipped worker encodes PNG through both branches of the T27 chain', async ({ page }) => {
   await page.goto('/')
 
@@ -825,13 +868,6 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
 
   const { outcomes, settled } = await runShipped(page, [
     { imageId: 'garbage', source: 'garbage' },
-    { imageId: 'gif', source: 'fixture', settings: { format: 'gif' } },
-    // An animated GIF *output* is still T28's, whichever path would otherwise have claimed it.
-    {
-      imageId: 'animated-gif-out',
-      source: 'animated-gif',
-      settings: { format: 'gif', isAnimated: true, sourceFormat: 'gif' },
-    },
     // A still source marked animated is a settings/source mismatch, not an unbuilt path: the
     // decoder refuses a single-frame file rather than announcing an animation nobody asked for.
     {
@@ -855,8 +891,6 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
 
   expect(outcomes.map((o) => [o.imageId, o.outcome, o.reason?.kind])).toEqual([
     ['garbage', 'failed', 'decode-failed'],
-    ['gif', 'failed', 'unimplemented'],
-    ['animated-gif-out', 'failed', 'unimplemented'],
     ['not-really-animated', 'failed', 'decode-failed'],
     ['size', 'failed', 'unimplemented'],
     ['cicp-jpeg', 'failed', 'unimplemented'],

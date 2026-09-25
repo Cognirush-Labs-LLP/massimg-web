@@ -85,6 +85,26 @@ export const LARGE_SIZE = 400
 /** Uniform here on purpose: this fixture is about size, and the delay assertions live on the others. */
 export const LARGE_DELAY_MS = 60
 
+/**
+ * The scene fixture's shape (T28): the one animation here that gifsicle can actually do its job on.
+ *
+ * Every other fixture in this file is flat colour, which is the *worst* case for both of gifsicle's
+ * levers and hides whether either works. `-O2` earns its keep by replacing the parts of a frame that
+ * match the previous one with transparency, and in a flat set every pixel changes every frame;
+ * `--lossy` earns its keep by merging near-identical palette entries, and a flat set has none to
+ * merge. Measured before this fixture existed: `-O2` took the six-frame flat GIF from 1,155 bytes to
+ * 1,043, and `--lossy` from 20 to 200 changed nothing at all on either flat fixture.
+ *
+ * So this one is built the way a real animation is: a detailed background that is **identical in
+ * every frame**, with a small object moving across it. That is the shape `-O2` was written for, and
+ * the noise in the background is what `--lossy` has to work with.
+ */
+export const SCENE_WIDTH = 128
+export const SCENE_HEIGHT = 96
+export const SCENE_FRAME_COUNT = 10
+/** Uniform, like the large fixture: this one is about size, and the delay assertions live elsewhere. */
+export const SCENE_DELAY_MS = 40
+
 /** The fully transparent square, in the bottom-right corner. */
 const TRANSPARENT_ORIGIN = 40
 /** The white marker square, in the top-left corner. */
@@ -218,6 +238,58 @@ export function largeFrameImage(index, width, height, frameCount) {
       pixels[i] = bar ? 255 : r
       pixels[i + 1] = bar ? 255 : g
       pixels[i + 2] = bar ? 255 : b
+      pixels[i + 3] = 255
+    }
+  }
+
+  return pixels
+}
+
+/**
+ * A value in 0..255 that depends only on `x` and `y`, so the background it textures is byte-for-byte
+ * identical in every frame. That identity is the point: it is what `-O2` has to find.
+ *
+ * An integer hash rather than `Math.random`, so the committed fixture is reproducible from this
+ * file alone.
+ */
+function noiseAt(x, y) {
+  let h = (x * 374761393 + y * 668265263) | 0
+  h = (h ^ (h >>> 13)) * 1274126177
+  return (h ^ (h >>> 16)) & 0xff
+}
+
+/**
+ * Frame `index` of the scene: a fixed, detailed background with one moving block over it.
+ *
+ * The background is a two-axis gradient plus +/- 10 of per-pixel noise — enough distinct colours that
+ * the palette is full and the rows do not run-length away, which is what makes `--lossy` measurable.
+ * The block is opaque and travels diagonally, so consecutive frames differ in roughly 8% of their
+ * pixels and agree exactly on the rest.
+ */
+export function sceneFrameImage(index) {
+  const pixels = new Uint8Array(SCENE_WIDTH * SCENE_HEIGHT * 4)
+  const blockSize = 28
+  const travelX = SCENE_WIDTH - blockSize
+  const travelY = SCENE_HEIGHT - blockSize
+  const originX = Math.round((index * travelX) / (SCENE_FRAME_COUNT - 1))
+  const originY = Math.round((index * travelY) / (SCENE_FRAME_COUNT - 1))
+
+  for (let y = 0; y < SCENE_HEIGHT; y += 1) {
+    for (let x = 0; x < SCENE_WIDTH; x += 1) {
+      const i = (y * SCENE_WIDTH + x) * 4
+      const grain = (noiseAt(x, y) % 21) - 10
+      const inBlock =
+        x >= originX && x < originX + blockSize && y >= originY && y < originY + blockSize
+
+      const r = inBlock ? 250 - (x - originX) * 3 : 40 + Math.round((x * 180) / SCENE_WIDTH) + grain
+      const g = inBlock
+        ? 180 - (y - originY) * 2
+        : 30 + Math.round((y * 150) / SCENE_HEIGHT) + grain
+      const b = inBlock ? 40 : 120 - Math.round((x * 60) / SCENE_WIDTH) + grain
+
+      pixels[i] = Math.max(0, Math.min(255, r))
+      pixels[i + 1] = Math.max(0, Math.min(255, g))
+      pixels[i + 2] = Math.max(0, Math.min(255, b))
       pixels[i + 3] = 255
     }
   }
@@ -384,6 +456,25 @@ function generate() {
       writeFileSync(singlePath, concatScript([framePaths[0]], [FRAME_DELAYS_MS[0]]))
       gif('anim-1f.gif', singlePath, 0)
 
+      // The scene (T28). See `sceneFrameImage`: the only fixture here that gives gifsicle something
+      // to compress. `paletteuse=dither=none` for the same reason as every other GIF in this file —
+      // a dithered background would be a second, uncontrolled variable in every size measurement.
+      const scenePaths = []
+      for (let index = 0; index < SCENE_FRAME_COUNT; index += 1) {
+        const path = join(work, `scene-${index}.png`)
+        writeFileSync(path, writePngBuffer(SCENE_WIDTH, SCENE_HEIGHT, sceneFrameImage(index)))
+        scenePaths.push(path)
+      }
+      const scenListPath = join(work, 'scene.txt')
+      writeFileSync(
+        scenListPath,
+        concatScript(
+          scenePaths,
+          scenePaths.map(() => SCENE_DELAY_MS),
+        ),
+      )
+      gif('anim-scene.gif', scenListPath, LOOP_COUNT)
+
       // --- APNG ----------------------------------------------------------------------------------
       //
       // `-final_delay` is needed because the muxer otherwise repeats the previous frame's delay for
@@ -435,6 +526,7 @@ function generate() {
         'anim-loopnone.gif',
         'anim-disposal.gif',
         'anim-1f.gif',
+        'anim-scene.gif',
         'anim-6f.png',
         'anim-icc.png',
       ]) {

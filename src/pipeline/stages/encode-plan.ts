@@ -32,14 +32,21 @@ import type { ResolvedQuality } from '@/domain/types'
 export type StillFormat = 'jpeg' | 'webp' | 'avif'
 
 /**
- * The still formats whose colour question this module answers.
+ * Every format whose colour question this module answers, which is all of them.
  *
- * PNG's encoder lives in `png-plan.ts` / `png.ts`, because it is two candidates through two
- * libraries rather than one ImageMagick write — but "can this container carry this frame's colour"
- * is the same question with the same answer table, and answering it in two places is how the two
- * come to disagree. `executeJob` calls `unsupportedColour` for every still format, PNG included.
+ * PNG's encoder lives in `png-plan.ts` / `png.ts` and GIF's in `gif-plan.ts` / `gif.ts`, because
+ * neither is one ImageMagick write — but "can this container carry this frame's colour" is the same
+ * question with the same answer table, and answering it in three places is how the three come to
+ * disagree. `executeJob` calls `unsupportedColour` for every format.
+ *
+ * **GIF is in this list as a profile-carrying format, which contradicts R-I13** ("when the output
+ * format cannot carry a profile (GIF)…"). It carries one: ImageMagick writes the profile into a GIF
+ * application extension and reads it back, gifsicle preserves it, and D3 measured a Display P3
+ * profile surviving that route byte-identically on all three engines. The requirement's premise is
+ * wrong for this build, so following it — converting the pixels — would be the change nobody asked
+ * for. Recorded for the user in docs/task-notes/T28.md; the requirement is theirs to correct.
  */
-export type ColourFormat = StillFormat | 'png'
+export type ColourFormat = StillFormat | 'png' | 'gif'
 
 export type EncodeMode = 'lossy' | 'lossless'
 
@@ -198,7 +205,7 @@ function cicpDefines(primaries: number, transfer: number): EncoderDefine[] {
 /**
  * Whether a frame's colour has nowhere to go in this format, and why. `null` means it can be written.
  *
- * Only CICP into JPEG, WebP or PNG can fail: none of those containers can express it here, and
+ * Only CICP into JPEG, WebP, PNG or GIF can fail: none of those containers can express it here, and
  * converting the pixels into sRGB — R-I35's other half, with the `colour-converted` caveat — is a
  * deferred follow-up. Two signals are not a failure, because they say no more than an untagged
  * output already says: all-unspecified, and BT.709 primaries with the sRGB transfer.
@@ -230,12 +237,13 @@ export function unsupportedColour(colour: FrameColour, format: ColourFormat): st
 /**
  * Decides how colour is written (R-I12, R-I14, R-I35; §7.7). Pixels are never converted here (R-I15).
  *
- * - `icc` is written verbatim; JPEG, WebP, AVIF and PNG can all carry a profile.
+ * - `icc` is written verbatim; JPEG, WebP, AVIF, PNG and GIF can all carry a profile — see
+ *   `ColourFormat` for why GIF belongs in that list despite R-I13.
  * - `untagged` adds nothing.
  * - `cicp` is written back into AVIF, keeping the primaries and transfer that describe the colour and
- *   stating the matrix this build's writer really used (see `CICP_MATRIX_BT601`). For JPEG, WebP and
- *   PNG see `unsupportedColour` — what reaches here for those three says no more than an untagged
- *   output does, so nothing is written.
+ *   stating the matrix this build's writer really used (see `CICP_MATRIX_BT601`). For JPEG, WebP,
+ *   PNG and GIF see `unsupportedColour` — what reaches here for those four says no more than an
+ *   untagged output does, so nothing is written.
  */
 export function colourPlan(colour: FrameColour, format: ColourFormat): ColourPlan {
   const unsupported = unsupportedColour(colour, format)

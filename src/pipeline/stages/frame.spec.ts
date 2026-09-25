@@ -8,6 +8,7 @@ import {
   isUnspecifiedCicp,
   ownsWholeBuffer,
   sameFrameColour,
+  singleFrameAnimation,
 } from './frame'
 import type { Animation, Frame, OrientationValue } from './frame'
 
@@ -276,5 +277,29 @@ describe('assertUniformAnimation', () => {
   // A zero delay is what a GIF frame with no Graphic Control Extension really says.
   it('accepts a zero delay', () => {
     expect(() => assertUniformAnimation(animation({ delaysMs: [0, 0, 0] }))).not.toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// The still-to-animation adapter the GIF path uses (T28).
+// ---------------------------------------------------------------------------------------------
+
+describe('singleFrameAnimation', () => {
+  it('wraps one frame without copying its pixels', () => {
+    const only = frame()
+    const wrapped = singleFrameAnimation(only)
+
+    expect(wrapped.frames).toHaveLength(1)
+    expect(wrapped.frames[0]).toBe(only)
+  })
+
+  // `loops: 1` is what makes ImageMagick write no NETSCAPE2.0 block at all (measured, T28), which is
+  // what a still GIF should carry — and `delaysMs: [0]` is the same statement about duration.
+  it('says played once, with no duration', () => {
+    expect(singleFrameAnimation(frame())).toMatchObject({ delaysMs: [0], loops: 1 })
+  })
+
+  it('produces an animation that holds together', () => {
+    expect(() => assertUniformAnimation(singleFrameAnimation(frame()))).not.toThrow()
   })
 })

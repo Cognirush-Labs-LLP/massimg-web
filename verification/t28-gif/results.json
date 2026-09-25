@@ -1,0 +1,6136 @@
+{
+  "measuredAt": "2026-09-25T15:36:06.091Z",
+  "quick": false,
+  "machine": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpus": 8,
+    "totalMemoryBytes": 17179869184
+  },
+  "plan": {
+    "sliders": [
+      100,
+      95,
+      80,
+      60,
+      40,
+      10
+    ],
+    "lossySweep": [
+      1,
+      5,
+      10,
+      20,
+      30,
+      40,
+      60,
+      80,
+      100,
+      120,
+      150,
+      200
+    ],
+    "optimizeLevels": [
+      1,
+      2,
+      3
+    ]
+  },
+  "photographs": "2 still photographs, selected by size rank from 359",
+  "engines": {
+    "chromium": [
+      {
+        "id": "flat",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1607,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 109,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 63,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 55,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 86,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 77,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 72,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1581,
+            "ms": 22,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 1581,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 1581,
+            "ms": 31,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 1581,
+            "ms": 51,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 1581,
+            "ms": 32,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 1581,
+            "ms": 27,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 1581,
+            "ms": 28,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 1581,
+            "ms": 28,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 1581,
+            "ms": 28,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 1581,
+            "ms": 27,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 1581,
+            "ms": 27,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 1581,
+            "ms": 27,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 1581,
+            "ms": 27,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1581,
+            "ms": 47
+          },
+          {
+            "level": 2,
+            "bytes": 1581,
+            "ms": 27
+          },
+          {
+            "level": 3,
+            "bytes": 1581,
+            "ms": 24
+          }
+        ]
+      },
+      {
+        "id": "scene",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 96180,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 29441,
+            "keptBytes": 29441,
+            "ms": 108,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 30003,
+            "keptBytes": 30003,
+            "ms": 97,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 26209,
+            "keptBytes": 26209,
+            "ms": 112,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 21860,
+            "keptBytes": 21860,
+            "ms": 96,
+            "meanError": 5.6858,
+            "worstError": 36
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 19464,
+            "keptBytes": 19464,
+            "ms": 94,
+            "meanError": 6.4644,
+            "worstError": 47
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 17227,
+            "keptBytes": 17227,
+            "ms": 119,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 29441,
+            "ms": 31,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "lossy": 1,
+            "bytes": 32676,
+            "ms": 35,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 5,
+            "bytes": 32676,
+            "ms": 34,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 10,
+            "bytes": 32585,
+            "ms": 35,
+            "meanError": 3.8459,
+            "worstError": 34
+          },
+          {
+            "lossy": 20,
+            "bytes": 30003,
+            "ms": 33,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "lossy": 30,
+            "bytes": 26209,
+            "ms": 35,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "lossy": 40,
+            "bytes": 23955,
+            "ms": 57,
+            "meanError": 5.1353,
+            "worstError": 36
+          },
+          {
+            "lossy": 60,
+            "bytes": 21065,
+            "ms": 35,
+            "meanError": 5.8832,
+            "worstError": 36
+          },
+          {
+            "lossy": 80,
+            "bytes": 19893,
+            "ms": 32,
+            "meanError": 6.3096,
+            "worstError": 47
+          },
+          {
+            "lossy": 100,
+            "bytes": 19102,
+            "ms": 33,
+            "meanError": 6.5871,
+            "worstError": 40
+          },
+          {
+            "lossy": 120,
+            "bytes": 18443,
+            "ms": 32,
+            "meanError": 6.7871,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 17809,
+            "ms": 76,
+            "meanError": 7.1533,
+            "worstError": 48
+          },
+          {
+            "lossy": 200,
+            "bytes": 17227,
+            "ms": 32,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 60613,
+            "ms": 50
+          },
+          {
+            "level": 2,
+            "bytes": 29441,
+            "ms": 32
+          },
+          {
+            "level": 3,
+            "bytes": 28618,
+            "ms": 31
+          }
+        ]
+      },
+      {
+        "id": "photo-like",
+        "frameCount": 12,
+        "width": 320,
+        "height": 240,
+        "decodedBytes": 3686400,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 624526,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 624462,
+            "keptBytes": 624462,
+            "ms": 320,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 543135,
+            "keptBytes": 543135,
+            "ms": 389,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 459097,
+            "keptBytes": 459097,
+            "ms": 488,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 373583,
+            "keptBytes": 373583,
+            "ms": 390,
+            "meanError": 5.598,
+            "worstError": 39
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 280060,
+            "keptBytes": 280060,
+            "ms": 380,
+            "meanError": 6.7236,
+            "worstError": 46
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 201498,
+            "keptBytes": 201498,
+            "ms": 334,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 624462,
+            "ms": 99,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 1,
+            "bytes": 678115,
+            "ms": 254,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 5,
+            "bytes": 658668,
+            "ms": 194,
+            "meanError": 3.2705,
+            "worstError": 37
+          },
+          {
+            "lossy": 10,
+            "bytes": 630779,
+            "ms": 204,
+            "meanError": 3.4395,
+            "worstError": 37
+          },
+          {
+            "lossy": 20,
+            "bytes": 543135,
+            "ms": 208,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "lossy": 30,
+            "bytes": 459097,
+            "ms": 170,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "lossy": 40,
+            "bytes": 425126,
+            "ms": 146,
+            "meanError": 5.0433,
+            "worstError": 37
+          },
+          {
+            "lossy": 60,
+            "bytes": 371626,
+            "ms": 217,
+            "meanError": 5.8144,
+            "worstError": 40
+          },
+          {
+            "lossy": 80,
+            "bytes": 302788,
+            "ms": 202,
+            "meanError": 6.5016,
+            "worstError": 43
+          },
+          {
+            "lossy": 100,
+            "bytes": 277024,
+            "ms": 126,
+            "meanError": 6.8984,
+            "worstError": 48
+          },
+          {
+            "lossy": 120,
+            "bytes": 283277,
+            "ms": 133,
+            "meanError": 7.1767,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 238118,
+            "ms": 129,
+            "meanError": 7.6902,
+            "worstError": 51
+          },
+          {
+            "lossy": 200,
+            "bytes": 201498,
+            "ms": 178,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 624462,
+            "ms": 69
+          },
+          {
+            "level": 2,
+            "bytes": 624462,
+            "ms": 89
+          },
+          {
+            "level": 3,
+            "bytes": 624462,
+            "ms": 177
+          }
+        ]
+      },
+      {
+        "id": "scene-large",
+        "frameCount": 16,
+        "width": 480,
+        "height": 360,
+        "decodedBytes": 11059200,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1399271,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 356857,
+            "keptBytes": 356857,
+            "ms": 838,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 328211,
+            "keptBytes": 328211,
+            "ms": 932,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 282223,
+            "keptBytes": 282223,
+            "ms": 931,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 241542,
+            "keptBytes": 241542,
+            "ms": 922,
+            "meanError": 6.1715,
+            "worstError": 48
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 206397,
+            "keptBytes": 206397,
+            "ms": 927,
+            "meanError": 6.9694,
+            "worstError": 54
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 165540,
+            "keptBytes": 165540,
+            "ms": 864,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 356857,
+            "ms": 154,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 1,
+            "bytes": 360221,
+            "ms": 278,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 5,
+            "bytes": 360191,
+            "ms": 290,
+            "meanError": 4.222,
+            "worstError": 44
+          },
+          {
+            "lossy": 10,
+            "bytes": 359551,
+            "ms": 341,
+            "meanError": 4.2266,
+            "worstError": 44
+          },
+          {
+            "lossy": 20,
+            "bytes": 328211,
+            "ms": 290,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "lossy": 30,
+            "bytes": 282223,
+            "ms": 286,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "lossy": 40,
+            "bytes": 260252,
+            "ms": 287,
+            "meanError": 5.626,
+            "worstError": 48
+          },
+          {
+            "lossy": 60,
+            "bytes": 228710,
+            "ms": 260,
+            "meanError": 6.3769,
+            "worstError": 48
+          },
+          {
+            "lossy": 80,
+            "bytes": 212139,
+            "ms": 266,
+            "meanError": 6.7916,
+            "worstError": 60
+          },
+          {
+            "lossy": 100,
+            "bytes": 197629,
+            "ms": 271,
+            "meanError": 7.1347,
+            "worstError": 68
+          },
+          {
+            "lossy": 120,
+            "bytes": 190399,
+            "ms": 283,
+            "meanError": 7.4194,
+            "worstError": 58
+          },
+          {
+            "lossy": 150,
+            "bytes": 176511,
+            "ms": 241,
+            "meanError": 7.7035,
+            "worstError": 91
+          },
+          {
+            "lossy": 200,
+            "bytes": 165540,
+            "ms": 237,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 818272,
+            "ms": 129
+          },
+          {
+            "level": 2,
+            "bytes": 356857,
+            "ms": 122
+          },
+          {
+            "level": 3,
+            "bytes": 343588,
+            "ms": 234
+          }
+        ]
+      },
+      {
+        "id": "anim-scene.gif",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": 15782,
+        "imagemagickBaselineBytes": 93634,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15533,
+            "keptBytes": 15533,
+            "ms": 67,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15508,
+            "keptBytes": 15508,
+            "ms": 66,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 13223,
+            "keptBytes": 13223,
+            "ms": 128,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 10623,
+            "keptBytes": 10623,
+            "ms": 67,
+            "meanError": 3.5572,
+            "worstError": 33
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 9287,
+            "keptBytes": 9287,
+            "ms": 63,
+            "meanError": 4.6657,
+            "worstError": 37
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 8009,
+            "keptBytes": 8009,
+            "ms": 61,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 15533,
+            "ms": 25,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 18548,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 18508,
+            "ms": 28,
+            "meanError": 0.0085,
+            "worstError": 7
+          },
+          {
+            "lossy": 10,
+            "bytes": 17899,
+            "ms": 53,
+            "meanError": 0.2137,
+            "worstError": 15
+          },
+          {
+            "lossy": 20,
+            "bytes": 15508,
+            "ms": 29,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "lossy": 30,
+            "bytes": 13223,
+            "ms": 25,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "lossy": 40,
+            "bytes": 11573,
+            "ms": 27,
+            "meanError": 2.9262,
+            "worstError": 29
+          },
+          {
+            "lossy": 60,
+            "bytes": 10186,
+            "ms": 26,
+            "meanError": 3.9094,
+            "worstError": 38
+          },
+          {
+            "lossy": 80,
+            "bytes": 9456,
+            "ms": 27,
+            "meanError": 4.5367,
+            "worstError": 33
+          },
+          {
+            "lossy": 100,
+            "bytes": 9025,
+            "ms": 25,
+            "meanError": 4.9035,
+            "worstError": 39
+          },
+          {
+            "lossy": 120,
+            "bytes": 8669,
+            "ms": 25,
+            "meanError": 5.2807,
+            "worstError": 40
+          },
+          {
+            "lossy": 150,
+            "bytes": 8373,
+            "ms": 27,
+            "meanError": 5.5735,
+            "worstError": 47
+          },
+          {
+            "lossy": 200,
+            "bytes": 8009,
+            "ms": 26,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 16380,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 15533,
+            "ms": 44
+          },
+          {
+            "level": 3,
+            "bytes": 15533,
+            "ms": 28
+          }
+        ]
+      },
+      {
+        "id": "anim-6f.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 2157,
+        "imagemagickBaselineBytes": 1155,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 32,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 34,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 35,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 35,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 33,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 42,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 1,
+            "bytes": 1043,
+            "ms": 84,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 5,
+            "bytes": 1043,
+            "ms": 39,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 10,
+            "bytes": 1043,
+            "ms": 33,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 20,
+            "bytes": 1043,
+            "ms": 30,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 30,
+            "bytes": 1043,
+            "ms": 34,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 40,
+            "bytes": 1043,
+            "ms": 29,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 60,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 80,
+            "bytes": 1043,
+            "ms": 28,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 100,
+            "bytes": 1043,
+            "ms": 58,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 120,
+            "bytes": 1043,
+            "ms": 91,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 150,
+            "bytes": 1043,
+            "ms": 30,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 200,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1113,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 1043,
+            "ms": 23
+          },
+          {
+            "level": 3,
+            "bytes": 1043,
+            "ms": 26
+          }
+        ]
+      },
+      {
+        "id": "anim-disposal.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 1223,
+        "imagemagickBaselineBytes": 1345,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 37,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 33,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 63,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 32,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 362,
+            "ms": 22,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 362,
+            "ms": 22,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 362,
+            "ms": 21,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 362,
+            "ms": 51,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 362,
+            "ms": 52,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 362,
+            "ms": 37,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 362,
+            "ms": 55,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 362,
+            "ms": 21,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 362,
+            "ms": 22,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 362,
+            "ms": 19,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 362,
+            "ms": 17,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 362,
+            "ms": 19,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 362,
+            "ms": 22,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 362,
+            "ms": 20
+          },
+          {
+            "level": 2,
+            "bytes": 362,
+            "ms": 22
+          },
+          {
+            "level": 3,
+            "bytes": 362,
+            "ms": 22
+          }
+        ]
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "frameCount": 16,
+        "width": 400,
+        "height": 400,
+        "decodedBytes": 10240000,
+        "sourceBytes": 1274,
+        "imagemagickBaselineBytes": 22137,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 550,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 554,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 612,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 564,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 573,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 648,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 22105,
+            "ms": 83,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 22105,
+            "ms": 227,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 22105,
+            "ms": 193,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 22105,
+            "ms": 246,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 22105,
+            "ms": 225,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 22105,
+            "ms": 206,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 22105,
+            "ms": 259,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 22105,
+            "ms": 208,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 22105,
+            "ms": 195,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 22105,
+            "ms": 305,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 22105,
+            "ms": 205,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 22105,
+            "ms": 202,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 22105,
+            "ms": 207,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 22105,
+            "ms": 61
+          },
+          {
+            "level": 2,
+            "bytes": 22105,
+            "ms": 79
+          },
+          {
+            "level": 3,
+            "bytes": 22105,
+            "ms": 96
+          }
+        ]
+      },
+      {
+        "id": "photo-1",
+        "frameCount": 1,
+        "width": 1280,
+        "height": 1920,
+        "decodedBytes": 9830400,
+        "sourceBytes": 643978,
+        "imagemagickBaselineBytes": 1136991,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1137165,
+            "keptBytes": 1136991,
+            "ms": 658,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1023684,
+            "keptBytes": 1023684,
+            "ms": 749,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 962202,
+            "keptBytes": 962202,
+            "ms": 766,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 857975,
+            "keptBytes": 857975,
+            "ms": 763,
+            "meanError": 5.8836,
+            "worstError": 81
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 726072,
+            "keptBytes": 726072,
+            "ms": 750,
+            "meanError": 6.4751,
+            "worstError": 81
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 559760,
+            "keptBytes": 559760,
+            "ms": 697,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1137165,
+            "ms": 137,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 1,
+            "bytes": 1136668,
+            "ms": 228,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 5,
+            "bytes": 1132684,
+            "ms": 245,
+            "meanError": 5.1649,
+            "worstError": 81
+          },
+          {
+            "lossy": 10,
+            "bytes": 1103483,
+            "ms": 261,
+            "meanError": 5.2132,
+            "worstError": 81
+          },
+          {
+            "lossy": 20,
+            "bytes": 1023684,
+            "ms": 305,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "lossy": 30,
+            "bytes": 962202,
+            "ms": 247,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "lossy": 40,
+            "bytes": 923007,
+            "ms": 256,
+            "meanError": 5.6229,
+            "worstError": 81
+          },
+          {
+            "lossy": 60,
+            "bytes": 822853,
+            "ms": 274,
+            "meanError": 6.0247,
+            "worstError": 81
+          },
+          {
+            "lossy": 80,
+            "bytes": 751973,
+            "ms": 233,
+            "meanError": 6.3401,
+            "worstError": 81
+          },
+          {
+            "lossy": 100,
+            "bytes": 696625,
+            "ms": 244,
+            "meanError": 6.6118,
+            "worstError": 81
+          },
+          {
+            "lossy": 120,
+            "bytes": 658541,
+            "ms": 270,
+            "meanError": 6.8273,
+            "worstError": 81
+          },
+          {
+            "lossy": 150,
+            "bytes": 616101,
+            "ms": 216,
+            "meanError": 7.1244,
+            "worstError": 81
+          },
+          {
+            "lossy": 200,
+            "bytes": 559760,
+            "ms": 241,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1137165,
+            "ms": 175
+          },
+          {
+            "level": 2,
+            "bytes": 1137165,
+            "ms": 160
+          },
+          {
+            "level": 3,
+            "bytes": 1137165,
+            "ms": 192
+          }
+        ]
+      },
+      {
+        "id": "photo-2",
+        "frameCount": 1,
+        "width": 4000,
+        "height": 6000,
+        "decodedBytes": 96000000,
+        "sourceBytes": 4419203,
+        "imagemagickBaselineBytes": 9958239,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 9959329,
+            "keptBytes": 9958239,
+            "ms": 5944,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 4082008,
+            "keptBytes": 4082008,
+            "ms": 6317,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 3300081,
+            "keptBytes": 3300081,
+            "ms": 6082,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 2483939,
+            "keptBytes": 2483939,
+            "ms": 5916,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1946254,
+            "keptBytes": 1946254,
+            "ms": 5807,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1474499,
+            "keptBytes": 1474499,
+            "ms": 5897,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 9959329,
+            "ms": 1247,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "lossy": 1,
+            "bytes": 9940811,
+            "ms": 2281,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 5,
+            "bytes": 7972437,
+            "ms": 2262,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 10,
+            "bytes": 5961570,
+            "ms": 2059,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 20,
+            "bytes": 4082008,
+            "ms": 1845,
+            "meanError": 2.6018,
+            "worstError": 29
+          },
+          {
+            "lossy": 30,
+            "bytes": 3300081,
+            "ms": 1767,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 40,
+            "bytes": 2831039,
+            "ms": 1645,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 60,
+            "bytes": 2315220,
+            "ms": 1531,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 80,
+            "bytes": 2038637,
+            "ms": 1511,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 100,
+            "bytes": 1860457,
+            "ms": 1469,
+            "meanError": 3.5265,
+            "worstError": 56
+          },
+          {
+            "lossy": 120,
+            "bytes": 1736863,
+            "ms": 1482,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 150,
+            "bytes": 1607508,
+            "ms": 1422,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 200,
+            "bytes": 1474499,
+            "ms": 1415,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 9959329,
+            "ms": 1176
+          },
+          {
+            "level": 2,
+            "bytes": 9959329,
+            "ms": 1253
+          },
+          {
+            "level": 3,
+            "bytes": 9959329,
+            "ms": 1589
+          }
+        ]
+      }
+    ],
+    "firefox": [
+      {
+        "id": "flat",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1607,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 87,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 72,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 90,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 71,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 72,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 71,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1581,
+            "ms": 28,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 1581,
+            "ms": 62,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 1581,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 1581,
+            "ms": 35,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 1581,
+            "ms": 35,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 1581,
+            "ms": 39,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 1581,
+            "ms": 35,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 1581,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 1581,
+            "ms": 36,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 1581,
+            "ms": 61,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 1581,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 1581,
+            "ms": 35,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 1581,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1581,
+            "ms": 28
+          },
+          {
+            "level": 2,
+            "bytes": 1581,
+            "ms": 30
+          },
+          {
+            "level": 3,
+            "bytes": 1581,
+            "ms": 28
+          }
+        ]
+      },
+      {
+        "id": "scene",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 96180,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 29441,
+            "keptBytes": 29441,
+            "ms": 156,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 30003,
+            "keptBytes": 30003,
+            "ms": 131,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 26209,
+            "keptBytes": 26209,
+            "ms": 142,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 21860,
+            "keptBytes": 21860,
+            "ms": 156,
+            "meanError": 5.6858,
+            "worstError": 36
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 19464,
+            "keptBytes": 19464,
+            "ms": 129,
+            "meanError": 6.4644,
+            "worstError": 47
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 17227,
+            "keptBytes": 17227,
+            "ms": 148,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 29441,
+            "ms": 44,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "lossy": 1,
+            "bytes": 32676,
+            "ms": 53,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 5,
+            "bytes": 32676,
+            "ms": 54,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 10,
+            "bytes": 32585,
+            "ms": 128,
+            "meanError": 3.8459,
+            "worstError": 34
+          },
+          {
+            "lossy": 20,
+            "bytes": 30003,
+            "ms": 53,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "lossy": 30,
+            "bytes": 26209,
+            "ms": 52,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "lossy": 40,
+            "bytes": 23955,
+            "ms": 50,
+            "meanError": 5.1353,
+            "worstError": 36
+          },
+          {
+            "lossy": 60,
+            "bytes": 21065,
+            "ms": 50,
+            "meanError": 5.8832,
+            "worstError": 36
+          },
+          {
+            "lossy": 80,
+            "bytes": 19893,
+            "ms": 80,
+            "meanError": 6.3096,
+            "worstError": 47
+          },
+          {
+            "lossy": 100,
+            "bytes": 19102,
+            "ms": 49,
+            "meanError": 6.5871,
+            "worstError": 40
+          },
+          {
+            "lossy": 120,
+            "bytes": 18443,
+            "ms": 50,
+            "meanError": 6.7871,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 17809,
+            "ms": 48,
+            "meanError": 7.1533,
+            "worstError": 48
+          },
+          {
+            "lossy": 200,
+            "bytes": 17227,
+            "ms": 48,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 60613,
+            "ms": 42
+          },
+          {
+            "level": 2,
+            "bytes": 29441,
+            "ms": 69
+          },
+          {
+            "level": 3,
+            "bytes": 28618,
+            "ms": 46
+          }
+        ]
+      },
+      {
+        "id": "photo-like",
+        "frameCount": 12,
+        "width": 320,
+        "height": 240,
+        "decodedBytes": 3686400,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 624526,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 624462,
+            "keptBytes": 624462,
+            "ms": 437,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 543135,
+            "keptBytes": 543135,
+            "ms": 535,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 459097,
+            "keptBytes": 459097,
+            "ms": 505,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 373583,
+            "keptBytes": 373583,
+            "ms": 515,
+            "meanError": 5.598,
+            "worstError": 39
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 280060,
+            "keptBytes": 280060,
+            "ms": 472,
+            "meanError": 6.7236,
+            "worstError": 46
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 201498,
+            "keptBytes": 201498,
+            "ms": 450,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 624462,
+            "ms": 122,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 1,
+            "bytes": 678115,
+            "ms": 245,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 5,
+            "bytes": 658668,
+            "ms": 303,
+            "meanError": 3.2705,
+            "worstError": 37
+          },
+          {
+            "lossy": 10,
+            "bytes": 630779,
+            "ms": 271,
+            "meanError": 3.4395,
+            "worstError": 37
+          },
+          {
+            "lossy": 20,
+            "bytes": 543135,
+            "ms": 218,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "lossy": 30,
+            "bytes": 459097,
+            "ms": 207,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "lossy": 40,
+            "bytes": 425126,
+            "ms": 182,
+            "meanError": 5.0433,
+            "worstError": 37
+          },
+          {
+            "lossy": 60,
+            "bytes": 371626,
+            "ms": 195,
+            "meanError": 5.8144,
+            "worstError": 40
+          },
+          {
+            "lossy": 80,
+            "bytes": 302788,
+            "ms": 184,
+            "meanError": 6.5016,
+            "worstError": 43
+          },
+          {
+            "lossy": 100,
+            "bytes": 277024,
+            "ms": 198,
+            "meanError": 6.8984,
+            "worstError": 48
+          },
+          {
+            "lossy": 120,
+            "bytes": 283277,
+            "ms": 176,
+            "meanError": 7.1767,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 238118,
+            "ms": 160,
+            "meanError": 7.6902,
+            "worstError": 51
+          },
+          {
+            "lossy": 200,
+            "bytes": 201498,
+            "ms": 135,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 624462,
+            "ms": 84
+          },
+          {
+            "level": 2,
+            "bytes": 624462,
+            "ms": 132
+          },
+          {
+            "level": 3,
+            "bytes": 624462,
+            "ms": 179
+          }
+        ]
+      },
+      {
+        "id": "scene-large",
+        "frameCount": 16,
+        "width": 480,
+        "height": 360,
+        "decodedBytes": 11059200,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1399271,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 356857,
+            "keptBytes": 356857,
+            "ms": 1104,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 328211,
+            "keptBytes": 328211,
+            "ms": 1301,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 282223,
+            "keptBytes": 282223,
+            "ms": 1251,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 241542,
+            "keptBytes": 241542,
+            "ms": 1230,
+            "meanError": 6.1715,
+            "worstError": 48
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 206397,
+            "keptBytes": 206397,
+            "ms": 1234,
+            "meanError": 6.9694,
+            "worstError": 54
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 165540,
+            "keptBytes": 165540,
+            "ms": 1184,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 356857,
+            "ms": 159,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 1,
+            "bytes": 360221,
+            "ms": 358,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 5,
+            "bytes": 360191,
+            "ms": 354,
+            "meanError": 4.222,
+            "worstError": 44
+          },
+          {
+            "lossy": 10,
+            "bytes": 359551,
+            "ms": 352,
+            "meanError": 4.2266,
+            "worstError": 44
+          },
+          {
+            "lossy": 20,
+            "bytes": 328211,
+            "ms": 352,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "lossy": 30,
+            "bytes": 282223,
+            "ms": 337,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "lossy": 40,
+            "bytes": 260252,
+            "ms": 335,
+            "meanError": 5.626,
+            "worstError": 48
+          },
+          {
+            "lossy": 60,
+            "bytes": 228710,
+            "ms": 312,
+            "meanError": 6.3769,
+            "worstError": 48
+          },
+          {
+            "lossy": 80,
+            "bytes": 212139,
+            "ms": 308,
+            "meanError": 6.7916,
+            "worstError": 60
+          },
+          {
+            "lossy": 100,
+            "bytes": 197629,
+            "ms": 337,
+            "meanError": 7.1347,
+            "worstError": 68
+          },
+          {
+            "lossy": 120,
+            "bytes": 190399,
+            "ms": 255,
+            "meanError": 7.4194,
+            "worstError": 58
+          },
+          {
+            "lossy": 150,
+            "bytes": 176511,
+            "ms": 244,
+            "meanError": 7.7035,
+            "worstError": 91
+          },
+          {
+            "lossy": 200,
+            "bytes": 165540,
+            "ms": 227,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 818272,
+            "ms": 137
+          },
+          {
+            "level": 2,
+            "bytes": 356857,
+            "ms": 194
+          },
+          {
+            "level": 3,
+            "bytes": 343588,
+            "ms": 219
+          }
+        ]
+      },
+      {
+        "id": "anim-scene.gif",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": 15782,
+        "imagemagickBaselineBytes": 93634,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15533,
+            "keptBytes": 15533,
+            "ms": 75,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15508,
+            "keptBytes": 15508,
+            "ms": 75,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 13223,
+            "keptBytes": 13223,
+            "ms": 74,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 10623,
+            "keptBytes": 10623,
+            "ms": 101,
+            "meanError": 3.5572,
+            "worstError": 33
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 9287,
+            "keptBytes": 9287,
+            "ms": 76,
+            "meanError": 4.6657,
+            "worstError": 37
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 8009,
+            "keptBytes": 8009,
+            "ms": 75,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 15533,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 18548,
+            "ms": 32,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 18508,
+            "ms": 58,
+            "meanError": 0.0085,
+            "worstError": 7
+          },
+          {
+            "lossy": 10,
+            "bytes": 17899,
+            "ms": 31,
+            "meanError": 0.2137,
+            "worstError": 15
+          },
+          {
+            "lossy": 20,
+            "bytes": 15508,
+            "ms": 32,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "lossy": 30,
+            "bytes": 13223,
+            "ms": 32,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "lossy": 40,
+            "bytes": 11573,
+            "ms": 31,
+            "meanError": 2.9262,
+            "worstError": 29
+          },
+          {
+            "lossy": 60,
+            "bytes": 10186,
+            "ms": 31,
+            "meanError": 3.9094,
+            "worstError": 38
+          },
+          {
+            "lossy": 80,
+            "bytes": 9456,
+            "ms": 30,
+            "meanError": 4.5367,
+            "worstError": 33
+          },
+          {
+            "lossy": 100,
+            "bytes": 9025,
+            "ms": 31,
+            "meanError": 4.9035,
+            "worstError": 39
+          },
+          {
+            "lossy": 120,
+            "bytes": 8669,
+            "ms": 30,
+            "meanError": 5.2807,
+            "worstError": 40
+          },
+          {
+            "lossy": 150,
+            "bytes": 8373,
+            "ms": 30,
+            "meanError": 5.5735,
+            "worstError": 47
+          },
+          {
+            "lossy": 200,
+            "bytes": 8009,
+            "ms": 57,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 16380,
+            "ms": 29
+          },
+          {
+            "level": 2,
+            "bytes": 15533,
+            "ms": 29
+          },
+          {
+            "level": 3,
+            "bytes": 15533,
+            "ms": 31
+          }
+        ]
+      },
+      {
+        "id": "anim-6f.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 2157,
+        "imagemagickBaselineBytes": 1155,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 39,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 38,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 52,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 40,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 69,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 41,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1043,
+            "ms": 24,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 1,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 5,
+            "bytes": 1043,
+            "ms": 26,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 10,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 20,
+            "bytes": 1043,
+            "ms": 26,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 30,
+            "bytes": 1043,
+            "ms": 24,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 40,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 60,
+            "bytes": 1043,
+            "ms": 26,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 80,
+            "bytes": 1043,
+            "ms": 29,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 100,
+            "bytes": 1043,
+            "ms": 43,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 120,
+            "bytes": 1043,
+            "ms": 27,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 150,
+            "bytes": 1043,
+            "ms": 26,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 200,
+            "bytes": 1043,
+            "ms": 29,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1113,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 1043,
+            "ms": 25
+          },
+          {
+            "level": 3,
+            "bytes": 1043,
+            "ms": 25
+          }
+        ]
+      },
+      {
+        "id": "anim-disposal.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 1223,
+        "imagemagickBaselineBytes": 1345,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 36,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 37,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 37,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 67,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 37,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 38,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 362,
+            "ms": 24,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 362,
+            "ms": 25,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 362,
+            "ms": 23,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 362,
+            "ms": 25,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 362,
+            "ms": 23,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 362,
+            "ms": 23,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 362,
+            "ms": 25,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 362,
+            "ms": 24,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 362,
+            "ms": 49,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 362,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 362,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 362,
+            "ms": 24,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 362,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 362,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 362,
+            "ms": 24
+          },
+          {
+            "level": 3,
+            "bytes": 362,
+            "ms": 26
+          }
+        ]
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "frameCount": 16,
+        "width": 400,
+        "height": 400,
+        "decodedBytes": 10240000,
+        "sourceBytes": 1274,
+        "imagemagickBaselineBytes": 22137,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 616,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 736,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 787,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 748,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 743,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 752,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 22105,
+            "ms": 92,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 22105,
+            "ms": 241,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 22105,
+            "ms": 240,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 22105,
+            "ms": 240,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 22105,
+            "ms": 241,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 22105,
+            "ms": 232,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 22105,
+            "ms": 213,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 22105,
+            "ms": 214,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 22105,
+            "ms": 215,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 22105,
+            "ms": 216,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 22105,
+            "ms": 285,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 22105,
+            "ms": 232,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 22105,
+            "ms": 236,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 22105,
+            "ms": 72
+          },
+          {
+            "level": 2,
+            "bytes": 22105,
+            "ms": 117
+          },
+          {
+            "level": 3,
+            "bytes": 22105,
+            "ms": 91
+          }
+        ]
+      },
+      {
+        "id": "photo-1",
+        "frameCount": 1,
+        "width": 1280,
+        "height": 1920,
+        "decodedBytes": 9830400,
+        "sourceBytes": 643978,
+        "imagemagickBaselineBytes": 1136991,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1137165,
+            "keptBytes": 1136991,
+            "ms": 937,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1023684,
+            "keptBytes": 1023684,
+            "ms": 984,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 962202,
+            "keptBytes": 962202,
+            "ms": 978,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 857975,
+            "keptBytes": 857975,
+            "ms": 1038,
+            "meanError": 5.8836,
+            "worstError": 81
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 726072,
+            "keptBytes": 726072,
+            "ms": 974,
+            "meanError": 6.4751,
+            "worstError": 81
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 559760,
+            "keptBytes": 559760,
+            "ms": 952,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1137165,
+            "ms": 158,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 1,
+            "bytes": 1136668,
+            "ms": 283,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 5,
+            "bytes": 1132684,
+            "ms": 264,
+            "meanError": 5.1649,
+            "worstError": 81
+          },
+          {
+            "lossy": 10,
+            "bytes": 1103483,
+            "ms": 285,
+            "meanError": 5.2132,
+            "worstError": 81
+          },
+          {
+            "lossy": 20,
+            "bytes": 1023684,
+            "ms": 285,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "lossy": 30,
+            "bytes": 962202,
+            "ms": 292,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "lossy": 40,
+            "bytes": 923007,
+            "ms": 284,
+            "meanError": 5.6229,
+            "worstError": 81
+          },
+          {
+            "lossy": 60,
+            "bytes": 822853,
+            "ms": 276,
+            "meanError": 6.0247,
+            "worstError": 81
+          },
+          {
+            "lossy": 80,
+            "bytes": 751973,
+            "ms": 274,
+            "meanError": 6.3401,
+            "worstError": 81
+          },
+          {
+            "lossy": 100,
+            "bytes": 696625,
+            "ms": 260,
+            "meanError": 6.6118,
+            "worstError": 81
+          },
+          {
+            "lossy": 120,
+            "bytes": 658541,
+            "ms": 256,
+            "meanError": 6.8273,
+            "worstError": 81
+          },
+          {
+            "lossy": 150,
+            "bytes": 616101,
+            "ms": 281,
+            "meanError": 7.1244,
+            "worstError": 81
+          },
+          {
+            "lossy": 200,
+            "bytes": 559760,
+            "ms": 219,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1137165,
+            "ms": 182
+          },
+          {
+            "level": 2,
+            "bytes": 1137165,
+            "ms": 177
+          },
+          {
+            "level": 3,
+            "bytes": 1137165,
+            "ms": 211
+          }
+        ]
+      },
+      {
+        "id": "photo-2",
+        "frameCount": 1,
+        "width": 4000,
+        "height": 6000,
+        "decodedBytes": 96000000,
+        "sourceBytes": 4419203,
+        "imagemagickBaselineBytes": 9958239,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 9959329,
+            "keptBytes": 9958239,
+            "ms": 7670,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 4082008,
+            "keptBytes": 4082008,
+            "ms": 8215,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 3300081,
+            "keptBytes": 3300081,
+            "ms": 8175,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 2483939,
+            "keptBytes": 2483939,
+            "ms": 7950,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1946254,
+            "keptBytes": 1946254,
+            "ms": 7779,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1474499,
+            "keptBytes": 1474499,
+            "ms": 7783,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 9959329,
+            "ms": 1494,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "lossy": 1,
+            "bytes": 9940811,
+            "ms": 2746,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 5,
+            "bytes": 7972437,
+            "ms": 2709,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 10,
+            "bytes": 5961570,
+            "ms": 2414,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 20,
+            "bytes": 4082008,
+            "ms": 2200,
+            "meanError": 2.6018,
+            "worstError": 29
+          },
+          {
+            "lossy": 30,
+            "bytes": 3300081,
+            "ms": 2020,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 40,
+            "bytes": 2831039,
+            "ms": 1894,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 60,
+            "bytes": 2315220,
+            "ms": 1791,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 80,
+            "bytes": 2038637,
+            "ms": 1717,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 100,
+            "bytes": 1860457,
+            "ms": 1755,
+            "meanError": 3.5265,
+            "worstError": 56
+          },
+          {
+            "lossy": 120,
+            "bytes": 1736863,
+            "ms": 1705,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 150,
+            "bytes": 1607508,
+            "ms": 1665,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 200,
+            "bytes": 1474499,
+            "ms": 1627,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 9959329,
+            "ms": 1392
+          },
+          {
+            "level": 2,
+            "bytes": 9959329,
+            "ms": 1399
+          },
+          {
+            "level": 3,
+            "bytes": 9959329,
+            "ms": 1822
+          }
+        ]
+      }
+    ],
+    "webkit": [
+      {
+        "id": "flat",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1607,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 119,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 67,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 80,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 61,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 108,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1607,
+            "gifsicleBytes": 1581,
+            "keptBytes": 1581,
+            "ms": 60,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1581,
+            "ms": 50,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 1581,
+            "ms": 30,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 1581,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 1581,
+            "ms": 32,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 1581,
+            "ms": 30,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 1581,
+            "ms": 30,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 1581,
+            "ms": 30,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 1581,
+            "ms": 31,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 1581,
+            "ms": 28,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 1581,
+            "ms": 58,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 1581,
+            "ms": 34,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 1581,
+            "ms": 35,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 1581,
+            "ms": 31,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1581,
+            "ms": 23
+          },
+          {
+            "level": 2,
+            "bytes": 1581,
+            "ms": 26
+          },
+          {
+            "level": 3,
+            "bytes": 1581,
+            "ms": 28
+          }
+        ]
+      },
+      {
+        "id": "scene",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 96180,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 29441,
+            "keptBytes": 29441,
+            "ms": 108,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 30003,
+            "keptBytes": 30003,
+            "ms": 99,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 26209,
+            "keptBytes": 26209,
+            "ms": 97,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 21860,
+            "keptBytes": 21860,
+            "ms": 113,
+            "meanError": 5.6858,
+            "worstError": 36
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 19464,
+            "keptBytes": 19464,
+            "ms": 110,
+            "meanError": 6.4644,
+            "worstError": 47
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 96180,
+            "gifsicleBytes": 17227,
+            "keptBytes": 17227,
+            "ms": 94,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 29441,
+            "ms": 30,
+            "meanError": 3.8399,
+            "worstError": 34
+          },
+          {
+            "lossy": 1,
+            "bytes": 32676,
+            "ms": 45,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 5,
+            "bytes": 32676,
+            "ms": 61,
+            "meanError": 3.8404,
+            "worstError": 34
+          },
+          {
+            "lossy": 10,
+            "bytes": 32585,
+            "ms": 37,
+            "meanError": 3.8459,
+            "worstError": 34
+          },
+          {
+            "lossy": 20,
+            "bytes": 30003,
+            "ms": 36,
+            "meanError": 4.1379,
+            "worstError": 34
+          },
+          {
+            "lossy": 30,
+            "bytes": 26209,
+            "ms": 36,
+            "meanError": 4.7052,
+            "worstError": 36
+          },
+          {
+            "lossy": 40,
+            "bytes": 23955,
+            "ms": 33,
+            "meanError": 5.1353,
+            "worstError": 36
+          },
+          {
+            "lossy": 60,
+            "bytes": 21065,
+            "ms": 34,
+            "meanError": 5.8832,
+            "worstError": 36
+          },
+          {
+            "lossy": 80,
+            "bytes": 19893,
+            "ms": 34,
+            "meanError": 6.3096,
+            "worstError": 47
+          },
+          {
+            "lossy": 100,
+            "bytes": 19102,
+            "ms": 34,
+            "meanError": 6.5871,
+            "worstError": 40
+          },
+          {
+            "lossy": 120,
+            "bytes": 18443,
+            "ms": 58,
+            "meanError": 6.7871,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 17809,
+            "ms": 34,
+            "meanError": 7.1533,
+            "worstError": 48
+          },
+          {
+            "lossy": 200,
+            "bytes": 17227,
+            "ms": 32,
+            "meanError": 7.3345,
+            "worstError": 68
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 60613,
+            "ms": 30
+          },
+          {
+            "level": 2,
+            "bytes": 29441,
+            "ms": 33
+          },
+          {
+            "level": 3,
+            "bytes": 28618,
+            "ms": 33
+          }
+        ]
+      },
+      {
+        "id": "photo-like",
+        "frameCount": 12,
+        "width": 320,
+        "height": 240,
+        "decodedBytes": 3686400,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 624526,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 624462,
+            "keptBytes": 624462,
+            "ms": 321,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 543135,
+            "keptBytes": 543135,
+            "ms": 406,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 459097,
+            "keptBytes": 459097,
+            "ms": 401,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 373583,
+            "keptBytes": 373583,
+            "ms": 367,
+            "meanError": 5.598,
+            "worstError": 39
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 280060,
+            "keptBytes": 280060,
+            "ms": 354,
+            "meanError": 6.7236,
+            "worstError": 46
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 624526,
+            "gifsicleBytes": 201498,
+            "keptBytes": 201498,
+            "ms": 333,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 624462,
+            "ms": 91,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 1,
+            "bytes": 678115,
+            "ms": 199,
+            "meanError": 3.2233,
+            "worstError": 37
+          },
+          {
+            "lossy": 5,
+            "bytes": 658668,
+            "ms": 198,
+            "meanError": 3.2705,
+            "worstError": 37
+          },
+          {
+            "lossy": 10,
+            "bytes": 630779,
+            "ms": 175,
+            "meanError": 3.4395,
+            "worstError": 37
+          },
+          {
+            "lossy": 20,
+            "bytes": 543135,
+            "ms": 176,
+            "meanError": 4.0603,
+            "worstError": 37
+          },
+          {
+            "lossy": 30,
+            "bytes": 459097,
+            "ms": 161,
+            "meanError": 4.575,
+            "worstError": 37
+          },
+          {
+            "lossy": 40,
+            "bytes": 425126,
+            "ms": 149,
+            "meanError": 5.0433,
+            "worstError": 37
+          },
+          {
+            "lossy": 60,
+            "bytes": 371626,
+            "ms": 157,
+            "meanError": 5.8144,
+            "worstError": 40
+          },
+          {
+            "lossy": 80,
+            "bytes": 302788,
+            "ms": 126,
+            "meanError": 6.5016,
+            "worstError": 43
+          },
+          {
+            "lossy": 100,
+            "bytes": 277024,
+            "ms": 140,
+            "meanError": 6.8984,
+            "worstError": 48
+          },
+          {
+            "lossy": 120,
+            "bytes": 283277,
+            "ms": 135,
+            "meanError": 7.1767,
+            "worstError": 46
+          },
+          {
+            "lossy": 150,
+            "bytes": 238118,
+            "ms": 180,
+            "meanError": 7.6902,
+            "worstError": 51
+          },
+          {
+            "lossy": 200,
+            "bytes": 201498,
+            "ms": 109,
+            "meanError": 8.2207,
+            "worstError": 59
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 624462,
+            "ms": 66
+          },
+          {
+            "level": 2,
+            "bytes": 624462,
+            "ms": 105
+          },
+          {
+            "level": 3,
+            "bytes": 624462,
+            "ms": 148
+          }
+        ]
+      },
+      {
+        "id": "scene-large",
+        "frameCount": 16,
+        "width": 480,
+        "height": 360,
+        "decodedBytes": 11059200,
+        "sourceBytes": null,
+        "imagemagickBaselineBytes": 1399271,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 356857,
+            "keptBytes": 356857,
+            "ms": 799,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 328211,
+            "keptBytes": 328211,
+            "ms": 923,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 282223,
+            "keptBytes": 282223,
+            "ms": 937,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 241542,
+            "keptBytes": 241542,
+            "ms": 923,
+            "meanError": 6.1715,
+            "worstError": 48
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 206397,
+            "keptBytes": 206397,
+            "ms": 876,
+            "meanError": 6.9694,
+            "worstError": 54
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1399271,
+            "gifsicleBytes": 165540,
+            "keptBytes": 165540,
+            "ms": 843,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 356857,
+            "ms": 140,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 1,
+            "bytes": 360221,
+            "ms": 289,
+            "meanError": 4.2211,
+            "worstError": 44
+          },
+          {
+            "lossy": 5,
+            "bytes": 360191,
+            "ms": 296,
+            "meanError": 4.222,
+            "worstError": 44
+          },
+          {
+            "lossy": 10,
+            "bytes": 359551,
+            "ms": 293,
+            "meanError": 4.2266,
+            "worstError": 44
+          },
+          {
+            "lossy": 20,
+            "bytes": 328211,
+            "ms": 282,
+            "meanError": 4.6244,
+            "worstError": 48
+          },
+          {
+            "lossy": 30,
+            "bytes": 282223,
+            "ms": 281,
+            "meanError": 5.2127,
+            "worstError": 48
+          },
+          {
+            "lossy": 40,
+            "bytes": 260252,
+            "ms": 280,
+            "meanError": 5.626,
+            "worstError": 48
+          },
+          {
+            "lossy": 60,
+            "bytes": 228710,
+            "ms": 263,
+            "meanError": 6.3769,
+            "worstError": 48
+          },
+          {
+            "lossy": 80,
+            "bytes": 212139,
+            "ms": 249,
+            "meanError": 6.7916,
+            "worstError": 60
+          },
+          {
+            "lossy": 100,
+            "bytes": 197629,
+            "ms": 236,
+            "meanError": 7.1347,
+            "worstError": 68
+          },
+          {
+            "lossy": 120,
+            "bytes": 190399,
+            "ms": 235,
+            "meanError": 7.4194,
+            "worstError": 58
+          },
+          {
+            "lossy": 150,
+            "bytes": 176511,
+            "ms": 200,
+            "meanError": 7.7035,
+            "worstError": 91
+          },
+          {
+            "lossy": 200,
+            "bytes": 165540,
+            "ms": 199,
+            "meanError": 7.9965,
+            "worstError": 91
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 818272,
+            "ms": 124
+          },
+          {
+            "level": 2,
+            "bytes": 356857,
+            "ms": 120
+          },
+          {
+            "level": 3,
+            "bytes": 343588,
+            "ms": 207
+          }
+        ]
+      },
+      {
+        "id": "anim-scene.gif",
+        "frameCount": 10,
+        "width": 128,
+        "height": 96,
+        "decodedBytes": 491520,
+        "sourceBytes": 15782,
+        "imagemagickBaselineBytes": 93634,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15533,
+            "keptBytes": 15533,
+            "ms": 61,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 15508,
+            "keptBytes": 15508,
+            "ms": 62,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 13223,
+            "keptBytes": 13223,
+            "ms": 86,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 10623,
+            "keptBytes": 10623,
+            "ms": 61,
+            "meanError": 3.5572,
+            "worstError": 33
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 9287,
+            "keptBytes": 9287,
+            "ms": 63,
+            "meanError": 4.6657,
+            "worstError": 37
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 93634,
+            "gifsicleBytes": 8009,
+            "keptBytes": 8009,
+            "ms": 59,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 15533,
+            "ms": 23,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 18548,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 18508,
+            "ms": 56,
+            "meanError": 0.0085,
+            "worstError": 7
+          },
+          {
+            "lossy": 10,
+            "bytes": 17899,
+            "ms": 30,
+            "meanError": 0.2137,
+            "worstError": 15
+          },
+          {
+            "lossy": 20,
+            "bytes": 15508,
+            "ms": 25,
+            "meanError": 1.1847,
+            "worstError": 22
+          },
+          {
+            "lossy": 30,
+            "bytes": 13223,
+            "ms": 27,
+            "meanError": 2.1752,
+            "worstError": 29
+          },
+          {
+            "lossy": 40,
+            "bytes": 11573,
+            "ms": 25,
+            "meanError": 2.9262,
+            "worstError": 29
+          },
+          {
+            "lossy": 60,
+            "bytes": 10186,
+            "ms": 25,
+            "meanError": 3.9094,
+            "worstError": 38
+          },
+          {
+            "lossy": 80,
+            "bytes": 9456,
+            "ms": 26,
+            "meanError": 4.5367,
+            "worstError": 33
+          },
+          {
+            "lossy": 100,
+            "bytes": 9025,
+            "ms": 28,
+            "meanError": 4.9035,
+            "worstError": 39
+          },
+          {
+            "lossy": 120,
+            "bytes": 8669,
+            "ms": 25,
+            "meanError": 5.2807,
+            "worstError": 40
+          },
+          {
+            "lossy": 150,
+            "bytes": 8373,
+            "ms": 24,
+            "meanError": 5.5735,
+            "worstError": 47
+          },
+          {
+            "lossy": 200,
+            "bytes": 8009,
+            "ms": 28,
+            "meanError": 5.848,
+            "worstError": 42
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 16380,
+            "ms": 51
+          },
+          {
+            "level": 2,
+            "bytes": 15533,
+            "ms": 26
+          },
+          {
+            "level": 3,
+            "bytes": 15533,
+            "ms": 26
+          }
+        ]
+      },
+      {
+        "id": "anim-6f.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 2157,
+        "imagemagickBaselineBytes": 1155,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 29,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 32,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 30,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 30,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 41,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1155,
+            "gifsicleBytes": 1043,
+            "keptBytes": 1043,
+            "ms": 35,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1043,
+            "ms": 16,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 1,
+            "bytes": 1043,
+            "ms": 42,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 5,
+            "bytes": 1043,
+            "ms": 20,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 10,
+            "bytes": 1043,
+            "ms": 19,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 20,
+            "bytes": 1043,
+            "ms": 21,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 30,
+            "bytes": 1043,
+            "ms": 23,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 40,
+            "bytes": 1043,
+            "ms": 17,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 60,
+            "bytes": 1043,
+            "ms": 24,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 80,
+            "bytes": 1043,
+            "ms": 16,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 100,
+            "bytes": 1043,
+            "ms": 19,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 120,
+            "bytes": 1043,
+            "ms": 24,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 150,
+            "bytes": 1043,
+            "ms": 20,
+            "meanError": 3.5156,
+            "worstError": 230
+          },
+          {
+            "lossy": 200,
+            "bytes": 1043,
+            "ms": 17,
+            "meanError": 3.5156,
+            "worstError": 230
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1113,
+            "ms": 20
+          },
+          {
+            "level": 2,
+            "bytes": 1043,
+            "ms": 17
+          },
+          {
+            "level": 3,
+            "bytes": 1043,
+            "ms": 17
+          }
+        ]
+      },
+      {
+        "id": "anim-disposal.gif",
+        "frameCount": 6,
+        "width": 64,
+        "height": 64,
+        "decodedBytes": 98304,
+        "sourceBytes": 1223,
+        "imagemagickBaselineBytes": 1345,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 44,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 25,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 29,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1345,
+            "gifsicleBytes": 362,
+            "keptBytes": 362,
+            "ms": 26,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 362,
+            "ms": 15,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 362,
+            "ms": 13,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 362,
+            "ms": 15,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "bytes": 362,
+            "ms": 14,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 120,
+            "bytes": 362,
+            "ms": 15,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 362,
+            "ms": 15,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 362,
+            "ms": 16,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 362,
+            "ms": 27
+          },
+          {
+            "level": 2,
+            "bytes": 362,
+            "ms": 13
+          },
+          {
+            "level": 3,
+            "bytes": 362,
+            "ms": 13
+          }
+        ]
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "frameCount": 16,
+        "width": 400,
+        "height": 400,
+        "decodedBytes": 10240000,
+        "sourceBytes": 1274,
+        "imagemagickBaselineBytes": 22137,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 476,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 580,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 621,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 572,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 555,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 22137,
+            "gifsicleBytes": 22105,
+            "keptBytes": 22105,
+            "ms": 555,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 22105,
+            "ms": 76,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 1,
+            "bytes": 22105,
+            "ms": 208,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 5,
+            "bytes": 22105,
+            "ms": 188,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 10,
+            "bytes": 22105,
+            "ms": 197,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 20,
+            "bytes": 22105,
+            "ms": 201,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 30,
+            "bytes": 22105,
+            "ms": 199,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 40,
+            "bytes": 22105,
+            "ms": 180,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 60,
+            "bytes": 22105,
+            "ms": 183,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 80,
+            "bytes": 22105,
+            "ms": 204,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 100,
+            "ms": 40,
+            "meanError": null,
+            "worstError": null,
+            "errorMessage": "TypeError: undefined is not an object (evaluating 'bytes.length')"
+          },
+          {
+            "lossy": 120,
+            "bytes": 22105,
+            "ms": 206,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 150,
+            "bytes": 22105,
+            "ms": 201,
+            "meanError": 0,
+            "worstError": 0
+          },
+          {
+            "lossy": 200,
+            "bytes": 22105,
+            "ms": 183,
+            "meanError": 0,
+            "worstError": 0
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 22105,
+            "ms": 90
+          },
+          {
+            "level": 2,
+            "bytes": 22105,
+            "ms": 74
+          },
+          {
+            "level": 3,
+            "bytes": 22105,
+            "ms": 72
+          }
+        ]
+      },
+      {
+        "id": "photo-1",
+        "frameCount": 1,
+        "width": 1280,
+        "height": 1920,
+        "decodedBytes": 9830400,
+        "sourceBytes": 643978,
+        "imagemagickBaselineBytes": 1136991,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1137165,
+            "keptBytes": 1136991,
+            "ms": 641,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 1023684,
+            "keptBytes": 1023684,
+            "ms": 717,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 962202,
+            "keptBytes": 962202,
+            "ms": 717,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 857975,
+            "keptBytes": 857975,
+            "ms": 712,
+            "meanError": 5.8836,
+            "worstError": 81
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 726072,
+            "keptBytes": 726072,
+            "ms": 718,
+            "meanError": 6.4751,
+            "worstError": 81
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 1136991,
+            "gifsicleBytes": 559760,
+            "keptBytes": 559760,
+            "ms": 730,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 1137165,
+            "ms": 128,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 1,
+            "bytes": 1136668,
+            "ms": 209,
+            "meanError": 5.1601,
+            "worstError": 81
+          },
+          {
+            "lossy": 5,
+            "bytes": 1132684,
+            "ms": 236,
+            "meanError": 5.1649,
+            "worstError": 81
+          },
+          {
+            "lossy": 10,
+            "bytes": 1103483,
+            "ms": 243,
+            "meanError": 5.2132,
+            "worstError": 81
+          },
+          {
+            "lossy": 20,
+            "bytes": 1023684,
+            "ms": 222,
+            "meanError": 5.3683,
+            "worstError": 81
+          },
+          {
+            "lossy": 30,
+            "bytes": 962202,
+            "ms": 207,
+            "meanError": 5.5094,
+            "worstError": 81
+          },
+          {
+            "lossy": 40,
+            "bytes": 923007,
+            "ms": 205,
+            "meanError": 5.6229,
+            "worstError": 81
+          },
+          {
+            "lossy": 60,
+            "bytes": 822853,
+            "ms": 228,
+            "meanError": 6.0247,
+            "worstError": 81
+          },
+          {
+            "lossy": 80,
+            "bytes": 751973,
+            "ms": 217,
+            "meanError": 6.3401,
+            "worstError": 81
+          },
+          {
+            "lossy": 100,
+            "bytes": 696625,
+            "ms": 193,
+            "meanError": 6.6118,
+            "worstError": 81
+          },
+          {
+            "lossy": 120,
+            "bytes": 658541,
+            "ms": 220,
+            "meanError": 6.8273,
+            "worstError": 81
+          },
+          {
+            "lossy": 150,
+            "bytes": 616101,
+            "ms": 222,
+            "meanError": 7.1244,
+            "worstError": 81
+          },
+          {
+            "lossy": 200,
+            "bytes": 559760,
+            "ms": 183,
+            "meanError": 7.6394,
+            "worstError": 95
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 1137165,
+            "ms": 117
+          },
+          {
+            "level": 2,
+            "bytes": 1137165,
+            "ms": 114
+          },
+          {
+            "level": 3,
+            "bytes": 1137165,
+            "ms": 173
+          }
+        ]
+      },
+      {
+        "id": "photo-2",
+        "frameCount": 1,
+        "width": 4000,
+        "height": 6000,
+        "decodedBytes": 96000000,
+        "sourceBytes": 4419203,
+        "imagemagickBaselineBytes": 9958239,
+        "sliders": [
+          {
+            "slider": 100,
+            "lossy": null,
+            "branch": "imagemagick",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 9959329,
+            "keptBytes": 9958239,
+            "ms": 5581,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "slider": 95,
+            "lossy": 20,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 4082008,
+            "keptBytes": 4082008,
+            "ms": 6072,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 80,
+            "lossy": 30,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 3300081,
+            "keptBytes": 3300081,
+            "ms": 5976,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 60,
+            "lossy": 52,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 2483939,
+            "keptBytes": 2483939,
+            "ms": 5839,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 40,
+            "lossy": 89,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1946254,
+            "keptBytes": 1946254,
+            "ms": 5784,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "slider": 10,
+            "lossy": 200,
+            "branch": "gifsicle",
+            "imagemagickBytes": 9958239,
+            "gifsicleBytes": 1474499,
+            "keptBytes": 1474499,
+            "ms": 5710,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "lossyCurve": [
+          {
+            "lossy": null,
+            "bytes": 9959329,
+            "ms": 886,
+            "meanError": 1.7998,
+            "worstError": 29
+          },
+          {
+            "lossy": 1,
+            "bytes": 9940811,
+            "ms": 2004,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 5,
+            "bytes": 7972437,
+            "ms": 1957,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 10,
+            "bytes": 5961570,
+            "ms": 1836,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 20,
+            "bytes": 4082008,
+            "ms": 1627,
+            "meanError": 2.6018,
+            "worstError": 29
+          },
+          {
+            "lossy": 30,
+            "bytes": 3300081,
+            "ms": 1491,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 40,
+            "bytes": 2831039,
+            "ms": 1429,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 60,
+            "bytes": 2315220,
+            "ms": 1351,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 80,
+            "bytes": 2038637,
+            "ms": 1272,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 100,
+            "bytes": 1860457,
+            "ms": 1296,
+            "meanError": 3.5265,
+            "worstError": 56
+          },
+          {
+            "lossy": 120,
+            "bytes": 1736863,
+            "ms": 1238,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 150,
+            "bytes": 1607508,
+            "ms": 1200,
+            "meanError": null,
+            "worstError": null,
+            "errorSkipped": true
+          },
+          {
+            "lossy": 200,
+            "bytes": 1474499,
+            "ms": 1302,
+            "meanError": 4.0769,
+            "worstError": 66
+          }
+        ],
+        "optimizeCurve": [
+          {
+            "level": 1,
+            "bytes": 9959329,
+            "ms": 850
+          },
+          {
+            "level": 2,
+            "bytes": 9959329,
+            "ms": 957
+          },
+          {
+            "level": 3,
+            "bytes": 9959329,
+            "ms": 1322
+          }
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "losslessReduction": [
+      {
+        "id": "flat",
+        "frames": 10,
+        "imagemagickBytes": 1607,
+        "gifsicleBytes": 1581,
+        "reduction": 0.0162,
+        "meanError": 0
+      },
+      {
+        "id": "scene",
+        "frames": 10,
+        "imagemagickBytes": 96180,
+        "gifsicleBytes": 29441,
+        "reduction": 0.6939,
+        "meanError": 3.8399
+      },
+      {
+        "id": "photo-like",
+        "frames": 12,
+        "imagemagickBytes": 624526,
+        "gifsicleBytes": 624462,
+        "reduction": 0.0001,
+        "meanError": 3.2233
+      },
+      {
+        "id": "scene-large",
+        "frames": 16,
+        "imagemagickBytes": 1399271,
+        "gifsicleBytes": 356857,
+        "reduction": 0.745,
+        "meanError": 4.2211
+      },
+      {
+        "id": "anim-scene.gif",
+        "frames": 10,
+        "imagemagickBytes": 93634,
+        "gifsicleBytes": 15533,
+        "reduction": 0.8341,
+        "meanError": 0
+      },
+      {
+        "id": "anim-6f.gif",
+        "frames": 6,
+        "imagemagickBytes": 1155,
+        "gifsicleBytes": 1043,
+        "reduction": 0.097,
+        "meanError": 3.5156
+      },
+      {
+        "id": "anim-disposal.gif",
+        "frames": 6,
+        "imagemagickBytes": 1345,
+        "gifsicleBytes": 362,
+        "reduction": 0.7309,
+        "meanError": 0
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "frames": 16,
+        "imagemagickBytes": 22137,
+        "gifsicleBytes": 22105,
+        "reduction": 0.0014,
+        "meanError": 0
+      },
+      {
+        "id": "photo-1",
+        "frames": 1,
+        "imagemagickBytes": 1136991,
+        "gifsicleBytes": 1137165,
+        "reduction": -0.0002,
+        "meanError": 5.1601
+      },
+      {
+        "id": "photo-2",
+        "frames": 1,
+        "imagemagickBytes": 9958239,
+        "gifsicleBytes": 9959329,
+        "reduction": -0.0001,
+        "meanError": 1.7998
+      }
+    ],
+    "lossyBandEvidence": [
+      {
+        "id": "flat",
+        "noLossyBytes": 1581,
+        "firstImprovingLevel": null,
+        "at100": {
+          "bytes": 1581,
+          "meanError": 0
+        },
+        "at200": {
+          "bytes": 1581,
+          "meanError": 0
+        },
+        "tailGain": 0
+      },
+      {
+        "id": "scene",
+        "noLossyBytes": 29441,
+        "firstImprovingLevel": 30,
+        "at100": {
+          "bytes": 19102,
+          "meanError": 6.5871
+        },
+        "at200": {
+          "bytes": 17227,
+          "meanError": 7.3345
+        },
+        "tailGain": 0.0982
+      },
+      {
+        "id": "photo-like",
+        "noLossyBytes": 624462,
+        "firstImprovingLevel": 20,
+        "at100": {
+          "bytes": 277024,
+          "meanError": 6.8984
+        },
+        "at200": {
+          "bytes": 201498,
+          "meanError": 8.2207
+        },
+        "tailGain": 0.2726
+      },
+      {
+        "id": "scene-large",
+        "noLossyBytes": 356857,
+        "firstImprovingLevel": 20,
+        "at100": {
+          "bytes": 197629,
+          "meanError": 7.1347
+        },
+        "at200": {
+          "bytes": 165540,
+          "meanError": 7.9965
+        },
+        "tailGain": 0.1624
+      },
+      {
+        "id": "anim-scene.gif",
+        "noLossyBytes": 15533,
+        "firstImprovingLevel": 20,
+        "at100": {
+          "bytes": 9025,
+          "meanError": 4.9035
+        },
+        "at200": {
+          "bytes": 8009,
+          "meanError": 5.848
+        },
+        "tailGain": 0.1126
+      },
+      {
+        "id": "anim-6f.gif",
+        "noLossyBytes": 1043,
+        "firstImprovingLevel": null,
+        "at100": {
+          "bytes": 1043,
+          "meanError": 3.5156
+        },
+        "at200": {
+          "bytes": 1043,
+          "meanError": 3.5156
+        },
+        "tailGain": 0
+      },
+      {
+        "id": "anim-disposal.gif",
+        "noLossyBytes": 362,
+        "firstImprovingLevel": null,
+        "at100": {
+          "bytes": 362,
+          "meanError": 0
+        },
+        "at200": {
+          "bytes": 362,
+          "meanError": 0
+        },
+        "tailGain": 0
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "noLossyBytes": 22105,
+        "firstImprovingLevel": null,
+        "at100": {
+          "bytes": 22105,
+          "meanError": 0
+        },
+        "at200": {
+          "bytes": 22105,
+          "meanError": 0
+        },
+        "tailGain": 0
+      },
+      {
+        "id": "photo-1",
+        "noLossyBytes": 1137165,
+        "firstImprovingLevel": 1,
+        "at100": {
+          "bytes": 696625,
+          "meanError": 6.6118
+        },
+        "at200": {
+          "bytes": 559760,
+          "meanError": 7.6394
+        },
+        "tailGain": 0.1965
+      },
+      {
+        "id": "photo-2",
+        "noLossyBytes": 9959329,
+        "firstImprovingLevel": 1,
+        "at100": {
+          "bytes": 1860457,
+          "meanError": 3.5265
+        },
+        "at200": {
+          "bytes": 1474499,
+          "meanError": 4.0769
+        },
+        "tailGain": 0.2075
+      }
+    ],
+    "optimizeLevels": [
+      {
+        "id": "flat",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 1581,
+            "ms": 47
+          },
+          {
+            "level": 2,
+            "bytes": 1581,
+            "ms": 27
+          },
+          {
+            "level": 3,
+            "bytes": 1581,
+            "ms": 24
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "scene",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 60613,
+            "ms": 50
+          },
+          {
+            "level": 2,
+            "bytes": 29441,
+            "ms": 32
+          },
+          {
+            "level": 3,
+            "bytes": 28618,
+            "ms": 31
+          }
+        ],
+        "o3SmallerThanO2": true
+      },
+      {
+        "id": "photo-like",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 624462,
+            "ms": 69
+          },
+          {
+            "level": 2,
+            "bytes": 624462,
+            "ms": 89
+          },
+          {
+            "level": 3,
+            "bytes": 624462,
+            "ms": 177
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "scene-large",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 818272,
+            "ms": 129
+          },
+          {
+            "level": 2,
+            "bytes": 356857,
+            "ms": 122
+          },
+          {
+            "level": 3,
+            "bytes": 343588,
+            "ms": 234
+          }
+        ],
+        "o3SmallerThanO2": true
+      },
+      {
+        "id": "anim-scene.gif",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 16380,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 15533,
+            "ms": 44
+          },
+          {
+            "level": 3,
+            "bytes": 15533,
+            "ms": 28
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "anim-6f.gif",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 1113,
+            "ms": 24
+          },
+          {
+            "level": 2,
+            "bytes": 1043,
+            "ms": 23
+          },
+          {
+            "level": 3,
+            "bytes": 1043,
+            "ms": 26
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "anim-disposal.gif",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 362,
+            "ms": 20
+          },
+          {
+            "level": 2,
+            "bytes": 362,
+            "ms": 22
+          },
+          {
+            "level": 3,
+            "bytes": 362,
+            "ms": 22
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "anim-16f-400.webp",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 22105,
+            "ms": 61
+          },
+          {
+            "level": 2,
+            "bytes": 22105,
+            "ms": 79
+          },
+          {
+            "level": 3,
+            "bytes": 22105,
+            "ms": 96
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "photo-1",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 1137165,
+            "ms": 175
+          },
+          {
+            "level": 2,
+            "bytes": 1137165,
+            "ms": 160
+          },
+          {
+            "level": 3,
+            "bytes": 1137165,
+            "ms": 192
+          }
+        ],
+        "o3SmallerThanO2": false
+      },
+      {
+        "id": "photo-2",
+        "levels": [
+          {
+            "level": 1,
+            "bytes": 9959329,
+            "ms": 1176
+          },
+          {
+            "level": 2,
+            "bytes": 9959329,
+            "ms": 1253
+          },
+          {
+            "level": 3,
+            "bytes": 9959329,
+            "ms": 1589
+          }
+        ],
+        "o3SmallerThanO2": false
+      }
+    ],
+    "meanLosslessReduction": 0.3118
+  }
+}
