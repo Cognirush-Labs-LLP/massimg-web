@@ -721,9 +721,12 @@ Dark theme only. Tint is reserved for action and state. It is never decorative. 
 
 ### 14.2 Typography
 
-- Display and UI: **Archivo**. 800 for the wordmark and primary action, 700 for section headings and small functional labels, 600 for controls and chips.
-- Data: **JetBrains Mono**. File sizes, dimensions, counters, breadcrumb, the `N / N` stepper, the `N / N processed` counter.
-- Section headings are uppercase with wide tracking. Functional micro-labels (OUTPUT, ZOOM, RATIO, BACKGROUND, R/G/B/A) use Archivo at 11.5 to 12px, weight 700, `#a2a2a2`.
+**System fonts only. No webfont is bundled or fetched.** A bundled Latin webfont covers only the scripts it ships subsets for, so every other locale falls back to a system font regardless — a different look per language, and a download that buys those readers nothing. The system stack is already correct for whatever scripts the reader's platform supports, costs no bytes, and never flashes unstyled text.
+
+- Display and UI: the **proportional system sans** stack. 700 for the wordmark and primary action, 600 for section headings and small functional labels, normal weight for body text.
+- Data: the **system monospace** stack. File sizes, dimensions, counters, breadcrumb, the `N / N` stepper, the `N / N processed` counter. Numbers that update in place carry `font-variant-numeric: tabular-nums` so digits do not jitter as values change.
+- Weights above 700 are not used. Weight 800 is not a real cut in every system family and is synthesised where it is missing. Where the wordmark needs more presence, it comes from size, tracking and colour.
+- Section headings are uppercase with wide tracking, applied as a CSS transform rather than uppercased strings, because not every script has a case mapping (R-L1). Functional micro-labels (OUTPUT, ZOOM, RATIO, BACKGROUND) use 11.5 to 12px, weight 600, `#a2a2a2`.
 - Passive metadata (TARGET, PICK ONE) stays deliberately quiet in small mono grey.
 - Rounded corners throughout: 6 to 7px on chips and small fields, 8 to 10px on controls and rows, 11 to 12px on the primary button and stage frame.
 

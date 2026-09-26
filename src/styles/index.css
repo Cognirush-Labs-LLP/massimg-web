@@ -1,5 +1,4 @@
 /* Global stylesheet entry point (T07). Imported once, from src/app/main.ts. */
 
 @import './tokens.css';
-@import './fonts.css';
 @import './base.css';

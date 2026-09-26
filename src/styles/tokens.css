@@ -45,20 +45,23 @@
 
   /* --- Typography (§14.2) --- */
 
-  /* Display/UI font, with a real system-sans fallback stack. */
+  /* System fonts only — no webfont is bundled. A bundled Latin face would cover
+     only its shipped subsets, leaving every other script on a system fallback
+     anyway. */
   --font-family-display:
-    'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji';
 
-  /* Data font (file sizes, dimensions, counters, breadcrumb, stepper), with a real system-mono fallback stack. */
-  --font-family-mono:
-    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  /* Data font (file sizes, dimensions, counters, breadcrumb, stepper). */
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 
-  /* Archivo weights, named by their §14.2 use. */
-  --font-weight-wordmark: 800; /* wordmark, primary action */
-  --font-weight-heading: 700; /* section headings, small functional labels */
+  /* Weights, named by their §14.2 use. Capped at 700: 800 is not a real cut in
+     every system family and gets synthesised where it is missing. */
+  --font-weight-wordmark: 700; /* wordmark, primary action */
+  --font-weight-heading: 600; /* section headings, small functional labels */
   --font-weight-control: 600; /* controls, chips */
 
-  /* Functional micro-label type: Archivo 11.5-12px/700/#a2a2a2, uppercase, wide tracking. */
+  /* Functional micro-label type: 11.5-12px/600/#a2a2a2, uppercase, wide tracking. */
   --font-size-micro-label: 11.5px;
   --letter-spacing-micro-label: 0.045em;
 

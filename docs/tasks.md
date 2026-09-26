@@ -155,7 +155,7 @@ Playwright configured for Chromium, Firefox and WebKit. CI runs `check`, unit te
 **Functional Design:** §14.1, §14.2, R-L4
 **Technical Design:** §11
 
-Colour tokens, type scale, radii, spacing. Archivo and JetBrains Mono with a fallback stack.
+Colour tokens, type scale, radii, spacing. System font stacks only, one proportional and one monospace — no bundled webfont, per §14.2.
 
 - Logical properties only: `inline-start`, `inline-end`, `padding-inline`. No `left` or `right` in layout rules.
 - A lint rule that fails on physical direction properties in stylesheets.

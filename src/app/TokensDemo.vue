@@ -54,17 +54,17 @@ const radiusSwatches = [
     <section class="tokens-demo__group">
       <h2 class="tokens-demo__heading">Typography</h2>
 
-      <p class="type-sample type-sample--wordmark">Wordmark / primary action (800)</p>
+      <p class="type-sample type-sample--wordmark">Wordmark / primary action (700)</p>
       <p class="type-sample type-sample--heading">
-        Section heading (700, uppercase, wide tracking)
+        Section heading (600, uppercase, wide tracking)
       </p>
       <p class="type-sample type-sample--control">Controls and chips (600)</p>
       <p class="type-sample type-sample--micro-label">
-        FUNCTIONAL MICRO-LABEL (700, 11.5px, muted)
+        FUNCTIONAL MICRO-LABEL (600, 11.5px, muted)
       </p>
       <p class="type-sample type-sample--metadata">Passive metadata, quiet small mono grey</p>
       <p class="type-sample type-sample--mono">
-        JetBrains Mono data text — 128 KB · 1920 × 1080 · 3 / 12
+        System mono data text — 128 KB · 1920 × 1080 · 3 / 12
       </p>
       <p class="type-sample type-sample--mono-strong">−62% (emphasised mono, tint)</p>
     </section>
