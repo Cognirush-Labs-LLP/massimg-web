@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { resolveSettings, type BatchSettings, type SettingsImage } from './job'
-import type { EditRecord, ResolvedDimension, Rgba } from './types'
+import {
+  QUALITY_SLIDER_MAX,
+  QUALITY_SLIDER_MIN,
+  qualityForSlider,
+  requestIsSatisfiedBySource,
+  resolveSettings,
+  type BatchSettings,
+  type SettingsImage,
+} from './job'
+import type { EditRecord, ResolvedDimension, ResolvedSettings, Rgba } from './types'
 
 const DIMENSIONS = [
   { kind: 'original' },
@@ -226,5 +234,81 @@ describe('settings resolution', () => {
         ),
       ).toEqual({ kind: 'rejected', reason: 'animated-avif-input' })
     })
+  })
+})
+
+// T30: the size-target search walks the slider itself and maps each position through the same
+// function `resolveSettings` uses, so that a searched file is one the quality path could also have
+// produced (§7.5).
+describe('qualityForSlider', () => {
+  it('is what settings resolution uses, for every format and both ends of the slider', () => {
+    for (const format of ['jpeg', 'png', 'webp', 'avif', 'gif'] as const) {
+      for (const slider of [QUALITY_SLIDER_MIN, 55, 95, 96, QUALITY_SLIDER_MAX]) {
+        const viaResolution = resolved(BASE_IMAGE, {
+          ...BASE_BATCH,
+          quality: { kind: 'quality', value: slider },
+          format,
+        })
+
+        expect(qualityForSlider(slider, format), `${format} at ${slider}`).toEqual(
+          viaResolution.settings.quality,
+        )
+      }
+    }
+  })
+
+  it('covers the slider Functional Design §4.1 offers', () => {
+    expect([QUALITY_SLIDER_MIN, QUALITY_SLIDER_MAX]).toEqual([10, 100])
+  })
+})
+
+// R-Q2's pass-through and R-X24's substitution both need this test, and R-X45 is what it says: the
+// original may only be returned when returning it gives the user what they asked for.
+describe('requestIsSatisfiedBySource', () => {
+  const settings = (overrides: Partial<ResolvedSettings> = {}): ResolvedSettings => ({
+    quality: { kind: 'size', targetBytes: 100_000 },
+    dimension: { kind: 'original' },
+    format: 'jpeg',
+    sourceFormat: 'jpeg',
+    isAnimated: false,
+    alpha: { kind: 'preserve' },
+    ...overrides,
+  })
+
+  it('is true when the job asks for nothing the source does not already have', () => {
+    expect(requestIsSatisfiedBySource(settings(), null)).toBe(true)
+  })
+
+  it('is false when the format changes', () => {
+    expect(requestIsSatisfiedBySource(settings({ format: 'webp' }), null)).toBe(false)
+  })
+
+  it.each([
+    { kind: 'fit-long-edge', pixels: 1920 },
+    { kind: 'fixed-width', pixels: 1200 },
+    { kind: 'fixed-height', pixels: 1080 },
+  ] as const)('is false under a $kind rule', (dimension) => {
+    expect(requestIsSatisfiedBySource(settings({ dimension }), null)).toBe(false)
+  })
+
+  it.each([
+    ['a rotation', ROTATE_EDIT],
+    ['a crop', CROP_EDIT],
+  ] as const)('is false under %s', (_label, edit) => {
+    // A crop forces the resolved dimension back to `original`, so the edit is what has to be seen.
+    expect(requestIsSatisfiedBySource(settings(), edit)).toBe(false)
+  })
+
+  it('is true for an animated source whose format is unchanged', () => {
+    expect(
+      requestIsSatisfiedBySource(
+        settings({ format: 'gif', sourceFormat: 'gif', isAnimated: true }),
+        null,
+      ),
+    ).toBe(true)
+  })
+
+  it('is false for a source format that cannot be written at all', () => {
+    expect(requestIsSatisfiedBySource(settings({ sourceFormat: 'heic' }), null)).toBe(false)
   })
 })

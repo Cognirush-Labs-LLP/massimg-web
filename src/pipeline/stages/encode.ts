@@ -139,8 +139,9 @@ function encodeOnce(
 /**
  * Encodes one still frame to JPEG, WebP or AVIF.
  *
- * `quality` is `ResolvedSettings.quality` once the size target is ruled out (T30). Pass the frame the
- * resize stage returned; this stage does not modify or retain it.
+ * `quality` is `ResolvedSettings.quality` when the job names one, and one probe of the size search
+ * when it names a target instead (T30, `stages/size.ts`). Pass the frame the resize stage returned;
+ * this stage does not modify or retain it.
  */
 export async function encodeFrame(
   frame: Frame,

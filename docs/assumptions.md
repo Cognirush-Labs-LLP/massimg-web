@@ -63,7 +63,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
 | C7 | Animated sources processed incrementally | 95 | REFUTED | P2 |
 | C8 | Six WASM modules coexist acceptably, loaded lazily | 80 | TESTED | P2 |
-| D1 | Size-target search is affordable | 95 | TESTED | P2 |
+| D1 | Size-target search is affordable | 99 | TESTED | P2 |
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
 | D3 | ICC profiles survive every encoder path | 92 | TESTED | P2 |
 | D4 | EXIF auto-orientation correct for all eight values | 95 | TESTED | P2 |
@@ -789,9 +789,9 @@ this is 80% and not higher.**
 
 ## 5. Encoder behaviour
 
-### D1 `TESTED` `95%` `P2` Size-target search cost
+### D1 `TESTED` `99%` `P2` Size-target search cost
 
-**Measured**, binary search to a 150 KB target on a 1600×1200 photographic image:
+**Originally measured**, binary search to a 150 KB target on a 1600×1200 photographic image:
 
 | Format | Iterations | Total | Result |
 | --- | --- | --- | --- |
@@ -799,9 +799,43 @@ this is 80% and not higher.**
 | WebP | 6 | 3770 ms | q=17, 142.4 KB |
 | AVIF, default speed | 7 | 29317 ms | q=44, 113.3 KB |
 
-Six to seven iterations converges. AVIF at default speed is prohibitive, but see D7: at speed 9 the same search would be roughly 3 seconds, which changes the conclusion. R-Q4 should be decided after re-measuring with the speed define applied.
+That entry ended: "AVIF at default speed is prohibitive, but see D7: at speed 9 the same search would be roughly 3 seconds, which changes the conclusion. R-Q4 should be decided after re-measuring with the speed define applied."
 
-**Why not 100.** One image, one target, synthetic content. Iteration count is stable; wall time is content-dependent.
+**Re-measured in T30 through the shipped search** (`pipeline/stages/size.ts`, §7.3's effort settings, `verification/t30-size/results.json`), same image shape and same 150 KB target, on Chromium, Firefox and WebKit. Every output format, not only the three above:
+
+| Format | Iterations | Chromium | Firefox | WebKit | Kept |
+| --- | --- | --- | --- | --- | --- |
+| JPEG | 8 | 461 ms | 606 ms | 504 ms | slider 43, 151,062 B |
+| WebP | 8 | 4,280 ms | 5,040 ms | 4,063 ms | slider 23, 149,426 B |
+| AVIF | 8 | 1,420 ms | 1,604 ms | 1,387 ms | slider 47, 150,491 B |
+| PNG | 1 | 1,832 ms | 1,933 ms | 1,739 ms | slider 10, 2,639,098 B — target not reached |
+| GIF | 1 | 500 ms | 663 ms | 509 ms | slider 10, 375,759 B — target not reached |
+
+The output bytes are identical on all three engines; only the times differ.
+
+**The AVIF question is answered, by a measured pair rather than by the estimate.** Same frame, same target, same search, one define changed:
+
+| | Wall time | Iterations | Kept |
+| --- | --- | --- | --- |
+| `heic:speed` 9, the shipped setting | **1,489 ms** | 8 | slider 47, 150,491 B |
+| ImageMagick's default speed | 16,040 ms | 8 | slider 46, 128,569 B |
+
+**10.8× faster for the same iteration count and one slider position.** The original 29,317 ms was different hardware; the ratio is what transfers, and "roughly 3 seconds" was if anything pessimistic. At §7.3's settings AVIF's search is the second fastest of the five formats and three times quicker than WebP's.
+
+**Six to seven iterations was right about convergence and wrong about the shape.** Over 375 searches — five subjects, five targets, five formats, three engines — the iteration count takes exactly four values and never anything between 4 and 7:
+
+| Count | Meaning | Where |
+| --- | --- | --- |
+| 1 | The lowest quality already misses the target (R-Q3) | 90 of 375 |
+| 2 | The highest quality already fits, or the axis is inert | 123 of 375 |
+| 3 | A probe landed on a plateau, so the axis had nothing more to say | 18 of 375, **all PNG** |
+| 8 | There is a curve, and the cap stops the bisection | 144 of 375 |
+
+The count is a property of the *axis*, not of the content or the engine: it is identical across Chromium, Firefox and WebKit for every subject. Wall time is the only engine-dependent part, and Firefox is 10–20% slower throughout.
+
+**R-Q4's exclusion list is decided: it is empty.** The worst single image over every engine, subject and target — JPEG 645 ms, AVIF 1,604 ms, GIF 5,388 ms, WebP 7,485 ms, PNG 12,666 ms — contains nothing like the half-minute-per-image AVIF was at the default speed, which is the case the requirement was written against. §7.5 carries the table and the reasoning, including why PNG is the one that could still reasonably be overruled.
+
+**Why not 100.** Three engines, five subjects and five targets per format, through the shipped stage rather than a reimplementation, and the iteration counts are identical across engines — so the structural claim is solid. What is left is content and hardware: two of the five subjects are real photographs, the rest are generated; every figure is desktop macOS on Apple silicon, and no phone was measured (C4). The wall times therefore transfer as ratios, not as absolutes.
 
 ---
 

@@ -31,11 +31,12 @@ export function nextToken(): JobToken {
  * The pipeline-level reasons a job did not produce bytes. `FailureReason` (the domain's
  * decode/encode/out-of-memory set) is reused rather than restated.
  *
- * `unimplemented` is what the worker returns for a job it has no stage chain for (§4.2). Still JPEG,
- * WebP and AVIF run (T26), still PNG runs (T27), and animated WebP and animated PNG run (T29); GIF
- * output and size targeting do not yet (T28, T30), nor does a CICP-signalled frame going to JPEG,
- * WebP or PNG. It is deliberately a distinct reason rather than a fabricated `encode-failed`, and it
- * disappears when those paths land.
+ * `unimplemented` is what the worker returns for a job it has no stage chain for (§4.2). Every row
+ * of §4.2's table now runs — still JPEG, WebP and AVIF (T26), still PNG (T27), GIF (T28), the
+ * animated chain (T29) and size targeting (T30) — so the one thing left that returns it is a
+ * CICP-signalled frame going to JPEG, WebP, PNG or GIF, where converting the pixels to sRGB is a
+ * deferred follow-up. It is deliberately a distinct reason rather than a fabricated `encode-failed`,
+ * and it disappears when that path lands.
  */
 export type JobFailure = FailureReason | { kind: 'unimplemented'; detail: string }
 

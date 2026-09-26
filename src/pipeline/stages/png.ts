@@ -132,8 +132,9 @@ function writeQuantizedPng(
 /**
  * Encodes one still frame to PNG.
  *
- * `quality` is `ResolvedSettings.quality` once the size target is ruled out (T30), carrying R-Q11's
- * mapped value and R-Q12's `lossless` flag as `domain/job.ts` computed them.
+ * `quality` is `ResolvedSettings.quality` once the size target is ruled out, carrying R-Q11's mapped
+ * value and R-Q12's `lossless` flag as `domain/job.ts` computed them. A size-targeted job reaches
+ * here too, once per probe, through `qualityForSlider` — see `stages/size.ts` (T30).
  */
 export async function encodePng(frame: Frame, quality: QualitySettings): Promise<PngEncodeResult> {
   const plan = colourPlan(frame.colour, 'png')

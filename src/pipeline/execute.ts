@@ -15,9 +15,12 @@
 // compresses it with gifsicle (R-Q8), and a still image reaches it as an animation of one frame, so
 // the still and animated GIF paths are the same code rather than two that drift.
 //
-// One row of §4.2's table is still unbuilt: size targeting (T30) fails as `unimplemented`, which
-// tells the caller something true — the job reached a worker that has no path for it — rather than a
-// fabricated `encode-failed`.
+// **A size target (T30) is the same chain with the encoder run several times** (§7.5): `stages/size.ts`
+// walks the quality slider, and each probe is the whole encode stage the quality path would have run,
+// so R-Q6, R-Q11, R-Q14 and R-Q15 all still hold under a target. Decode, edit and resize happen once,
+// before the search, because none of them depends on quality. R-Q2's pass-through is decided before
+// any of that: an image already under the target that the job asks nothing else of is returned as it
+// stands rather than re-encoded.
 //
 // The codec load stays first, ahead of every check (T22): §5.2's "a worker that needs a module it
 // has not loaded loads it and then proceeds" is keyed off the job's resolved settings, and
@@ -39,6 +42,9 @@ import { singleFrameAnimation } from './stages/frame'
 import { encodeGif } from './stages/gif'
 import { encodePng } from './stages/png'
 import { applyResize } from './stages/resize'
+import { encodeAnimatedToSize, encodeStillToSize } from './stages/size'
+import type { AnimatedFormat } from './stages/size'
+import { requestIsSatisfiedBySource } from '@/domain/job'
 import type { Caveat, EncodableFormat, Job } from '@/domain/types'
 
 export class JobExecutionError extends Error {
@@ -67,8 +73,22 @@ export async function executeJob(job: Job): Promise<JobResult> {
 
   await ensureCodecsForJob(settings)
 
-  if (settings.quality.kind === 'size') {
-    throw new JobExecutionError('size targeting is not implemented yet (T30)')
+  // R-Q2, before anything is decoded: an image already smaller than the target is passed through
+  // rather than re-encoded up to it, and the tool never increases a file's size to meet a target.
+  // Only when the job asks nothing else of it — R-X45's test, in `requestIsSatisfiedBySource` —
+  // because returning the original when a resize or a format change was asked for returns the wrong
+  // file. The bytes are the source's own, so this path also keeps whatever metadata the source
+  // carried, exactly as R-X24's substitution does.
+  if (
+    settings.quality.kind === 'size' &&
+    job.source.byteLength <= settings.quality.targetBytes &&
+    requestIsSatisfiedBySource(settings, job.edit)
+  ) {
+    return {
+      bytes: job.source,
+      format: settings.format,
+      caveats: job.intent === 'run' ? [{ kind: 'original-kept' }] : [],
+    }
   }
 
   if (settings.isAnimated) {
@@ -91,6 +111,18 @@ export async function executeJob(job: Job): Promise<JobResult> {
   // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
   const report = (stage: Caveat[]): Caveat[] =>
     job.intent === 'run' ? [...edited.caveats, ...stage] : []
+
+  // §7.5: the same encoders, run up to eight times over the slider. Ahead of the per-format branches
+  // because the search covers all five still formats, including the two that have their own stage.
+  if (settings.quality.kind === 'size') {
+    const searched = await encodeStillToSize(resized, settings.format, settings.quality.targetBytes)
+
+    return {
+      bytes: searched.bytes,
+      format: settings.format,
+      caveats: report(searched.caveats),
+    }
+  }
 
   if (settings.format === 'png') {
     const encoded = await encodePng(resized, settings.quality)
@@ -134,9 +166,14 @@ function animatedColourFormat(format: EncodableFormat): ColourFormat {
 async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobResult> {
   const { settings } = job
 
-  if (settings.quality.kind !== 'quality') {
-    throw new JobExecutionError('size targeting is not implemented yet (T30)')
+  // Checked before the decode rather than after the three per-frame stages, so that a format with no
+  // animated path costs nothing. JPEG and AVIF are the only two, and `resolveFormat` has already
+  // substituted WebP for them (R-F6), so this is a statement about an upstream bug.
+  if (format !== 'png' && format !== 'gif' && format !== 'webp') {
+    throw new JobExecutionError(`animated ${format} output is not a path this build has`)
   }
+
+  const animated: AnimatedFormat = format
 
   const animation = await decodeAnimation(job.source).catch((error: unknown) => {
     // An allocation failure is still out-of-memory; `decodeAnimation` already reports a damaged
@@ -169,6 +206,15 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
   const report = (stage: Caveat[]): Caveat[] =>
     job.intent === 'run' ? [...edited.caveats, ...stage] : []
 
+  // §7.5, and the expensive half of it: every probe re-encodes every frame. R-Q10 forbids the other
+  // lever — no frame is ever dropped to hit a target — and an animated PNG has no quality axis at
+  // all (R-Q15), so its search is one encode. See `encodeAnimatedToSize`.
+  if (settings.quality.kind === 'size') {
+    const searched = await encodeAnimatedToSize(resized, animated, settings.quality.targetBytes)
+
+    return { bytes: searched.bytes, format: animated, caveats: report(searched.caveats) }
+  }
+
   if (format === 'png') {
     // `settings.quality` deliberately does not reach this encoder: animated PNG is always written
     // losslessly, because apng-optimizer's quality parameter is a request it neither honours nor
@@ -183,10 +229,6 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
     const encoded = await encodeGif(resized, settings.quality)
 
     return { bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
-  }
-
-  if (format !== 'webp') {
-    throw new JobExecutionError(`animated ${format} output is not a path this build has`)
   }
 
   const encoded = await encodeAnimatedWebp(resized, settings.quality)

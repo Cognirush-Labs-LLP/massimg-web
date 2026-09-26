@@ -861,6 +861,130 @@ test('a run carries the edit stage caveats; a preview of the same job carries no
   expect(outcomes[1]?.result?.caveats).toEqual([])
 })
 
+// T30: a size target through a real module worker. T28's lesson is why this is here and not only in
+// `size.spec.ts` — the stage passed every test in the page while the shipped pipeline hung, so a path
+// is not proven until a job has gone through `pipeline/worker.ts`.
+test('the shipped worker runs a size target and answers under it', async ({ page }) => {
+  await page.goto('/')
+
+  const { outcomes } = await runShipped(page, [
+    // The decode fixture is a small JPEG; 700 bytes is comfortably inside what it can reach, and
+    // comfortably under its own file size, so the search runs rather than R-Q2 passing it through.
+    {
+      imageId: 'size-jpeg',
+      source: 'fixture',
+      settings: { quality: { kind: 'size', targetBytes: 700 }, sourceFormat: 'jpeg' },
+      intent: 'run',
+    },
+    // A target nothing can reach: R-Q3 keeps the smallest result and marks it, rather than failing.
+    {
+      imageId: 'size-unreachable',
+      source: 'shaded-png',
+      settings: {
+        format: 'png',
+        quality: { kind: 'size', targetBytes: 200 },
+        sourceFormat: 'png',
+      },
+      intent: 'run',
+    },
+    // An animated source under a size target: the animated chain, searched, inside the worker.
+    {
+      imageId: 'size-animated',
+      source: 'animated-gif',
+      settings: {
+        format: 'webp',
+        quality: { kind: 'size', targetBytes: 20_000 },
+        isAnimated: true,
+        sourceFormat: 'gif',
+      },
+      intent: 'run',
+    },
+  ])
+
+  const [jpeg, unreachable, animated] = outcomes
+
+  expect(outcomes.map((o) => [o.imageId, o.outcome, o.result?.format])).toEqual([
+    ['size-jpeg', 'completed', 'jpeg'],
+    ['size-unreachable', 'completed', 'png'],
+    ['size-animated', 'completed', 'webp'],
+  ])
+
+  expect(jpeg!.result!.head.slice(0, 3)).toEqual([0xff, 0xd8, 0xff])
+  expect(jpeg!.result!.byteLength).toBeLessThanOrEqual(700)
+  expect(jpeg!.result?.caveats).toEqual([])
+
+  // R-Q3 and R-X46: the image is produced, marked, and the caveat states both numbers. The kept
+  // candidate is the quantized one, so the report carries its caveat too — R-Q3's marking is added
+  // to what the encode already had to say, not substituted for it.
+  expect(unreachable!.result!.byteLength).toBeGreaterThan(200)
+  expect(unreachable!.result?.caveats).toEqual([
+    { kind: 'png-quantized' },
+    {
+      kind: 'size-target-not-reached',
+      targetBytes: 200,
+      achievedBytes: unreachable!.result!.byteLength,
+    },
+  ])
+
+  expect(String.fromCharCode(...animated!.result!.head.slice(8, 12))).toBe('WEBP')
+  expect(animated!.result!.byteLength).toBeLessThanOrEqual(20_000)
+})
+
+// R-Q2: an image already smaller than the target is passed through unchanged rather than re-encoded
+// up to it — but only when the job asks nothing else of it, which is R-X45's test.
+test('the shipped worker passes an already-small image through untouched, unless something else was asked for', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const source = fixture('orientation-1.jpg')
+  const generous = { kind: 'size', targetBytes: source.length + 1 }
+
+  const { outcomes } = await runShipped(page, [
+    {
+      imageId: 'passthrough',
+      source: 'fixture',
+      settings: { quality: generous, sourceFormat: 'jpeg' },
+      intent: 'run',
+      keepBytes: true,
+    },
+    // The same image and the same target, but the user also asked for WebP: returning the original
+    // would return the wrong file, so it is encoded (R-X45's reasoning, applied to R-Q2).
+    {
+      imageId: 'format-changed',
+      source: 'fixture',
+      settings: { format: 'webp', quality: generous, sourceFormat: 'jpeg' },
+      intent: 'run',
+    },
+    // And again with a dimension rule, which the original does not satisfy either.
+    {
+      imageId: 'resized',
+      source: 'fixture',
+      settings: {
+        quality: generous,
+        sourceFormat: 'jpeg',
+        dimension: { kind: 'fit-long-edge', pixels: 16 },
+      },
+      intent: 'run',
+    },
+  ])
+
+  const [passthrough, formatChanged, resized] = outcomes
+
+  // Byte for byte the file that went in, and the report says the original was kept.
+  expect(passthrough!.outcome).toBe('completed')
+  expect(passthrough!.result?.bytes).toEqual(source)
+  expect(passthrough!.result?.caveats).toEqual([{ kind: 'original-kept' }])
+
+  expect(formatChanged!.result?.format).toBe('webp')
+  expect(String.fromCharCode(...formatChanged!.result!.head.slice(8, 12))).toBe('WEBP')
+  expect(formatChanged!.result?.caveats).toEqual([])
+
+  expect(resized!.result?.format).toBe('jpeg')
+  expect(resized!.result!.byteLength).toBeLessThan(source.length)
+  expect(resized!.result?.caveats).toEqual([])
+})
+
 test('the shipped worker reports undecodable bytes as decode-failed and unbuilt paths as unimplemented', async ({
   page,
 }) => {
@@ -875,11 +999,6 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
       source: 'fixture',
       settings: { format: 'webp', isAnimated: true, sourceFormat: 'jpeg' },
     },
-    {
-      imageId: 'size',
-      source: 'fixture',
-      settings: { quality: { kind: 'size', targetBytes: 5000 } },
-    },
     // A Display P3 CICP source going to JPEG: the colour has nowhere to go and converting it is a
     // deferred follow-up, so the worker says `unimplemented` rather than inventing an encode failure.
     { imageId: 'cicp-jpeg', source: 'cicp-avif', settings: { format: 'jpeg' } },
@@ -892,7 +1011,6 @@ test('the shipped worker reports undecodable bytes as decode-failed and unbuilt 
   expect(outcomes.map((o) => [o.imageId, o.outcome, o.reason?.kind])).toEqual([
     ['garbage', 'failed', 'decode-failed'],
     ['not-really-animated', 'failed', 'decode-failed'],
-    ['size', 'failed', 'unimplemented'],
     ['cicp-jpeg', 'failed', 'unimplemented'],
     ['cicp-png', 'failed', 'unimplemented'],
     ['cicp-avif', 'completed', undefined],

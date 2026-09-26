@@ -171,10 +171,13 @@ Output paths differ in shape, and three of them leave ImageMagick partway throug
 | GIF, still or animated | decode (frames), orient, edit, resize, encode-gif, gifsicle, keep the smaller (T28) |
 | WebP animated | decode-frames, edit-frames, resize-frames, encode, second-encode compare (R-Q6), restore frame durations (T29) |
 | PNG animated | decode-frames, edit-frames, resize-frames, assemble-apng, patch loop count, optimise-apng, attach `iCCP` (T29). Always lossless, R-Q15 — no quantize and no compare |
+| Any output, size target | the matching row above, with everything from its first encode onward repeated over the quality slider until the target is met or eight iterations are spent (§7.5, T30). Decode, orient, edit and resize run once |
 
 Stages share one intermediate representation, an RGBA frame buffer with dimensions and an optional ICC profile. Without this, the GIF and animated paths each grow their own copy of the resize and edit logic, which is how the two drift apart. An animation is that same `Frame`, in a list, with a delay per frame and a loop count (`Animation` in `pipeline/stages/frame.ts`), so `edit-frames` and `resize-frames` are the still stages mapped rather than reimplemented.
 
 **GIF is one row for both still and animated** (T28). A still image reaches `stages/gif.ts` as an animation of one frame (`singleFrameAnimation`), because gifsicle takes a GIF and returns a GIF whether or not it moves and ImageMagick writes a one-image collection the same way it writes a many-image one. Two rows would have meant two copies of the colour handling, the gifsicle call and every assertion made about the result. The row ends in a comparison rather than an encode because gifsicle is not always the winner: it is 69–83% smaller where frames share content, and **larger** on a still photograph (A7).
+
+**A size target repeats the encode stages and nothing else** (§7.5). Decode, orient, edit and resize do not depend on the quality asked for, so they run once and the search re-encodes the frame — or every frame — it left behind. Each probe is the whole of its format's encode row, not one codec call, which is why a PNG probe is two candidates and a GIF probe is an ImageMagick write plus a gifsicle pass. R-Q2's pass-through is decided before the decode: an image already under the target that the job asks nothing else of never enters the chain at all.
 
 **Both animated rows end in byte surgery, and neither ending is optional.** ImageMagick's WebP writer replaces any frame delay under 10 ms with 100 ms, and UPNG hardcodes `acTL.num_plays` to 0 whatever it is asked for — so the durations are put back into the `ANMF` chunks and the loop count into `acTL` after each encoder has run (T29). The `iCCP` goes on last of all, because apng-optimizer strips one attached before it (D3).
 
@@ -368,7 +371,7 @@ Implements Functional Design §7.1. The mapping is pure and lives in `domain/job
 
 **So below slider 85 the PNG slider changes *which* images are quantized, not how hard.** libimagequant's `target` is 100 (§7.3), so an image it can quantize gets the same file at every slider value it can meet; what the slider moves is `minimum`, and therefore the point at which an image stops being quantizable and falls back to lossless. Measured over 24 images (T27): 14 kept a quantized file at slider 10 and 10 at slider 84, with the mean saving falling from 45.8% to 39.0%. This satisfies R-Q1 — the panel does not expose the difference — and is the behaviour R-Q11 asks for read literally, since the requirement remaps the slider onto "a quantization quality with a floor of 70" and says nothing about colour counts. It is a consequence two later pieces of work depend on:
 
-- **Size targeting (§7.5, T30)** cannot binary-search PNG on `minimum`, because most of that axis produces one of two outcomes rather than a size curve. A PNG size search wants `target` as its variable, and D8 records what that costs in quality.
+- **Size targeting (§7.5, T30)** searches this axis anyway, and it is cheap precisely *because* it has two outcomes: a search that has seen the same file size twice has learnt everything the axis can tell it, and stops. Measured at two or three encodes rather than eight. The alternative this section used to recommend — searching `target` instead — was measured in T30 and is not an axis at all: see §7.5.
 - **Any UI that explains the quality control** should not describe the PNG slider as trading size against fidelity in the way it does for JPEG. On PNG it trades *how many images stay lossless* against size, which is the conservative direction R-Q11 and P1 intend.
 
 **The GIF mapping is geometric, and both of its ends are measured** (T28, `verification/t28-gif/results.json`; the derivation and the figures are in `gifLossyLevel`). Three things decided it:
@@ -383,19 +386,86 @@ Implements Functional Design §7.1. The mapping is pure and lives in `domain/job
 
 ### 7.5 Size targeting
 
-Binary search over the quality parameter. **D1 measured** six to seven iterations to converge on a 1600×1200 image:
+A binary search over the quality **slider**, capped at eight iterations. `pipeline/stages/size-plan.ts` holds the decisions — where to probe next, when to stop, which candidate to keep, R-Q3's caveat — and `size.ts` binds them to the encoders. **Measured in T30** across three engines, five still subjects and three animations: `verification/t30-size/results.json`.
 
-| Format | Iterations | Time at default effort |
-| --- | --- | --- |
-| JPEG | 6 | 1260 ms |
-| WebP | 6 | 3770 ms |
-| AVIF | 7 | 29,317 ms |
+**The search moves the slider, not a codec's own parameter.** Every probe maps its position through `domain/job.ts`'s `qualityForSlider` and then runs the same stage the quality path runs, so the file a size target produces is the file that slider position produces by hand — asserted byte for byte in `tests/e2e/size.spec.ts`. Everything §7.4 and §7.6 decide therefore still holds under a target: R-Q6's comparison and its content gate, R-Q11's floor, R-Q12's lossless point, R-Q14's pick and R-Q15's lossless animation. It is also how PNG and GIF are searched at all without a second set of format rules, since §7.4's mapping already makes the slider libimagequant's `minimum` and gifsicle's `--lossy`.
 
-The AVIF figure is at the default speed. At speed 9 the same search is roughly 3 seconds, so R-Q4 should not exclude AVIF. Re-measure with §7.3 settings applied before deciding.
+**The probe order is the bottom of the slider, then the top, then the interior**, and each of the first two can end the search on its own:
 
-PNG and GIF search a different axis, colour count and lossy level, which converges differently and needs its own measurement.
+- *The bottom misses the target.* Nothing above it can be smaller, so R-Q3 applies after **one** encode: the smallest achieved result is kept and the caveat recorded.
+- *The top fits.* The best quality the slider offers is affordable, in **two** encodes. R-Q2's other half is structural here — the target is a ceiling, and the search never encodes above slider 100 to fill it.
+- *Both ends return the same size.* The axis does nothing, so the top fits whenever the bottom did and the search has already stopped at two. **Nothing in the code detects an unresponsive axis; the probe order makes detecting one unnecessary.** T28 measured `--lossy` to be byte-identical from 1 to 200 on flat animations, which is the case this exists for.
 
-Search caps at 8 iterations. If the target is unreachable, the smallest achieved result is kept and the caveat recorded (R-Q3).
+**A file size seen twice also ends it.** When an interior probe returns a size already measured, the axis is a plateau rather than a curve — on every axis measured that means the *same file* — and bisecting further would only move a boundary the user never sees. This is what makes PNG cheap: §7.4's axis has two outcomes, and the third probe lands on one of them. The risk it takes is a curve that is flat between two probes and rises again inside the interval; no measured axis has that shape, and in T30's runs the only exact ties were PNG's, which are identical files, and adjacent-position ties on AVIF, which cost nothing.
+
+**The eight-iteration cap costs at most one slider position.** Six interior probes do not quite resolve the 89 positions between the two ends. Checked exhaustively against a monotone axis for all 91 answers the band can have (`size-plan.spec.ts`), the search lands on the best fitting position or one below it, never further.
+
+**The measured table** (T30), the shipped search to a 150 KB target on a 1600×1200 photographic frame — D1's own image shape and target — on all three engines. The **bytes are identical on all three**; only the times differ:
+
+| Format | Iterations | Chromium | Firefox | WebKit | Kept |
+| --- | --- | --- | --- | --- | --- |
+| JPEG | 8 | 461 ms | 606 ms | 504 ms | slider 43, 151,062 B |
+| WebP | 8 | 4,280 ms | 5,040 ms | 4,063 ms | slider 23, 149,426 B |
+| AVIF | 8 | 1,420 ms | 1,604 ms | 1,387 ms | slider 47, 150,491 B |
+| PNG | **1** | 1,832 ms | 1,933 ms | 1,739 ms | slider 10, 2,639,098 B — **not reached** (R-Q3) |
+| GIF | **1** | 500 ms | 663 ms | 509 ms | slider 10, 375,759 B — **not reached** (R-Q3) |
+
+**The iteration count is a property of the axis, not of the content or the engine.** Over 375 searches — five subjects, five targets, five formats, three engines — only four counts ever occur: **1** where the lowest quality already misses (R-Q3), **2** where the highest already fits or the axis is inert, **8** where there is a curve to bisect, and **3** on PNG, where the third probe lands on a plateau. Nothing between 4 and 7 was ever observed, on any format.
+
+| Format | 1 iteration | 2 | 3 | 8 | ms per iteration |
+| --- | --- | --- | --- | --- | --- |
+| JPEG | 15 | 18 | — | 42 | 6–88 |
+| WebP | 15 | 27 | — | 33 | 24–1,568 |
+| AVIF | 15 | 21 | — | 39 | 14–276 |
+| PNG | 24 | 33 | 18 | — | 117–4,911 |
+| GIF | 21 | 24 | — | 30 | 61–674 |
+
+**AVIF: the question D1 left open is now a measured pair rather than an estimate.** The same frame, the same 150 KB target, the same search, with the one define changed — §7.3's `heic:speed` 9 against the library's own default:
+
+| | Wall time | Iterations | Kept |
+| --- | --- | --- | --- |
+| **`heic:speed` 9** (shipped) | **1,489 ms** | 8 | slider 47, 150,491 B |
+| Library default | 16,040 ms | 8 | slider 46, 128,569 B |
+
+**10.8× faster, for the same iteration count and one slider position of quality.** D1's original figure was 29,317 ms at the default on different hardware; the ratio is the part that transfers. At §7.3's settings AVIF's search is the **second cheapest of the five**, both per iteration (14–276 ms against WebP's 24–1,568) and in the worst case measured (1,604 ms against WebP's 7,485) — so the format D1 was ready to exclude is one of the two this should least worry about.
+
+**R-Q4's exclusion list is empty.** The requirement disables the Size option "where the cost is prohibitive for a format", and the Technical Design decides which those are. On this evidence, none. The worst single image measured, over every engine, subject and target:
+
+| Format | Worst | Iterations | Where |
+| --- | --- | --- | --- |
+| JPEG | 645 ms | 8 | Firefox, 1600×1200 photograph |
+| AVIF | 1,604 ms | 8 | Firefox, 1600×1200 photograph |
+| GIF | 5,388 ms | 8 | Firefox, 1600×1200 photograph |
+| WebP | 7,485 ms | 8 | Firefox, 1600×1200 palette-like |
+| PNG | 12,666 ms | **3** | Firefox, real photograph at 1600 px |
+
+Nothing here is the half-minute-per-image AVIF was at the default speed, which is the case R-Q4 was written against. **PNG is the one a reasonable person might still exclude** — it is the slowest per image *and* the one whose targets are most often unreachable — but its cost is three encodes of a format that is expensive per encode, not a search that runs away: the same image in quality mode is one of those encodes. The numbers are here so that this can be overruled from data rather than from impression.
+
+**PNG is the slowest per encode and the narrowest in reach, and that is §7.4's axis showing through.** A photographic frame has *no* axis at all: the quantizer cannot meet R-Q11's floor at any slider position, so both ends of the band return the identical lossless file (2,639,098 B on the subject above) and the search costs one or two encodes. Where quantization does succeed the axis has exactly two values, and the third probe finds that out — every one of the 18 three-iteration searches in the corpus is a PNG, every one probed 10, 100 and 55, and every one stopped because 55 returned the size 10 had already returned. **A PNG size target is therefore cheap to attempt and often impossible to meet**, which is exactly the case R-Q3 exists for.
+
+**This section's own earlier recommendation for PNG does not survive measurement.** It read: "A PNG size search wants `target` as its variable, and D8 records what that costs in quality." Tested in T30 with `minimum` pinned at R-Q11's floor of 70 and `target` swept from 70 to 100 — the whole of the axis, because libimagequant raises `VALUE_OUT_OF_RANGE` for a target below the minimum, so R-Q11's floor caps the axis at 31 points before anything else does:
+
+| Subject | `target` 70 | 85 | 100 | Shape |
+| --- | --- | --- | --- | --- |
+| Photographic, 1600×1200 | aborts | aborts | aborts | **No axis at all** — the floor is unreachable at every target |
+| Flat graphic | 708 B | 708 B | 708 B | **Inert** |
+| Palette-like illustration | 132,536 B (12 colours) | 144,642 B | **57,066 B** (197) | **Inverted** — a lower target is 2.3× *larger* |
+| Real photograph 1 | 423,844 B | 560,207 B | 626,021 B | Monotone, 1.5× range |
+| Real photograph 2 | 239,559 B | 361,577 B | 800,098 B | Monotone, 3.3× range |
+
+So it is a real axis on two subjects of five, **inverted on a third**, and absent on the other two — libimagequant dithers harder to compensate for a lower target, which is the same mechanism §7.3's `QUANTIZER_TARGET_QUALITY` records. A binary search over it would hand a user asking for a smaller file a larger one. **The slider stays the axis.** What the alternative would have bought is recorded rather than discarded: on the two real photographs it would have reached 423,844 B and 239,559 B instead of 626,021 B and 800,098 B — a genuine 1.5×–3.3× more reach, and still nowhere near the 150 KB target either of them was asked for.
+
+**An animated search re-encodes every frame, so its cost is per frame and per iteration.** R-Q10 forbids the cheaper lever — no frame is ever dropped to reach a target — so quality is the only axis, and `encodeAnimatedToSize` pays the whole animation on each probe. Measured (Chromium; Firefox is 10–20% slower and WebKit matches Chromium):
+
+| Subject | WebP | APNG | GIF |
+| --- | --- | --- | --- |
+| 6 frames, 64×64 | 2 it, 12 ms | **1 it**, 25 ms | 2 it, 55 ms |
+| 10 frames, 128×96 | 8 it, 158 ms (20 ms/it) | **1 it**, 49 ms | 8 it, 440 ms (55 ms/it) |
+| 16 frames, 400×400 | 2 it, 514 ms (257 ms/it) | **1 it**, 1,946 ms | 2 it, 932 ms (466 ms/it) |
+
+**Animated PNG never searches at all**, because R-Q15 leaves it no axis: `sizeSearchBand` gives it a single position and it encodes once. That matters most where it costs most — apng-optimizer is the most expensive animated encoder here, at about 2 s for a 16-frame 400×400 animation.
+
+**R-Q2 is decided before the decode.** An image whose *source file* is already at or under the target is returned unchanged rather than re-encoded — but only when the job asks nothing else of it: same format, no dimension rule, no rotation or crop. That is R-X45's test, applied to R-Q2 (`requestIsSatisfiedBySource` in `domain/job.ts`, which R-X24 will reuse), and returning the original when a resize was requested would return the wrong file. The report records `original-kept`. **The passed-through file keeps whatever metadata it carried**, exactly as R-X24's substitution does, which is a known tension with R-I17 and is recorded in docs/task-notes/T30.md for the user rather than resolved here.
 
 ### 7.6 The two comparison rules
 
@@ -674,6 +744,7 @@ Which sections change if an entry fails.
 | **B4** | 90 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
 | **A13** | 95 | §7.7 | Settled in T23 for the mechanism — ImageMagick reports nothing about CICP, so the pipeline parses the `colr` box itself. The *frequency* clause is unconfirmed: no naturally CICP-only file in the local sample |
 | **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
+| **D1** | 99 | §7.5 | **Settled in T30.** The search costs 1, 2, 3 or 8 encodes and nothing between; AVIF at §7.3's speed is 10.8× quicker than at the library default, so **R-Q4 excludes no format**. Residual risk is wall time on hardware slower than a desktop, not the structure |
 | **C2** | 92 | §8.2 | Workers recycle on a pixel budget; throughput drops |
 | **C4** | 25 | §8.3 | Mobile caps fall, possibly far |
 | **C3** | 30 | §8.3 | Every limit value changes; no structural change |
