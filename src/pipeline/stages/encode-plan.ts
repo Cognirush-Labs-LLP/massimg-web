@@ -93,9 +93,24 @@ export const AVIF_MAX_QUALITY = 99
  */
 export const LOSSLESS_GATE_MAX_COLORS = 65_536
 
+/**
+ * Raised for an encoder quality, mode or format this module was asked for that is out of range or
+ * unsupported.
+ *
+ * Deliberately not a `RangeError`: `pipeline/worker.ts` reports any `RangeError` as the machine
+ * running out of memory (T23), and a bad quality value or an unsupported mode/format is an upstream
+ * bug, not an allocation failure.
+ */
+export class EncodePlanError extends Error {
+  constructor(readonly detail: string) {
+    super(detail)
+    this.name = 'EncodePlanError'
+  }
+}
+
 function assertQuality(value: number): void {
   if (!Number.isInteger(value) || value < 1 || value > 100) {
-    throw new RangeError(`encoder quality must be a whole number from 1 to 100, got ${value}`)
+    throw new EncodePlanError(`encoder quality must be a whole number from 1 to 100, got ${value}`)
   }
 }
 
@@ -132,7 +147,7 @@ export function encoderAttempt(
   switch (format) {
     case 'jpeg':
       if (mode === 'lossless') {
-        throw new RangeError('JPEG has no lossless mode')
+        throw new EncodePlanError('JPEG has no lossless mode')
       }
 
       return { mode, format: 'Jpeg', quality: quality.value, defines: [] }
@@ -150,7 +165,7 @@ export function encoderAttempt(
     }
     case 'avif': {
       if (mode === 'lossless') {
-        throw new RangeError('AVIF has no usable lossless mode in this build (D9)')
+        throw new EncodePlanError('AVIF has no usable lossless mode in this build (D9)')
       }
 
       const defines: EncoderDefine[] = [
@@ -172,7 +187,7 @@ export function encoderAttempt(
     }
     default: {
       const unknown: never = format
-      throw new RangeError(`unsupported still format: ${String(unknown)}`)
+      throw new EncodePlanError(`unsupported still format: ${String(unknown)}`)
     }
   }
 }
@@ -263,7 +278,7 @@ export function colourPlan(colour: FrameColour, format: ColourFormat): ColourPla
         : { kind: 'none' }
     default: {
       const unknown: never = colour
-      throw new RangeError(`unsupported colour: ${JSON.stringify(unknown)}`)
+      throw new EncodePlanError(`unsupported colour: ${JSON.stringify(unknown)}`)
     }
   }
 }

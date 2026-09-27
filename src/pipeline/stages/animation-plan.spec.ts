@@ -854,7 +854,7 @@ describe('setApngLoopCount', () => {
 
   it('refuses a loop count that is not a whole number in range', () => {
     for (const value of [-1, 1.5, Number.NaN, 0x100000000]) {
-      expect(() => setApngLoopCount(APNG_6F, value)).toThrow(RangeError)
+      expect(() => setApngLoopCount(APNG_6F, value)).toThrow(AnimationFormatError)
     }
   })
 
@@ -925,8 +925,10 @@ describe('setWebpFrameDurations', () => {
 
   it('refuses a delay list of the wrong length, or a duration out of range', () => {
     expect(() => setWebpFrameDurations(WEBP_6F, [1, 2])).toThrow(AnimationFormatError)
-    expect(() => setWebpFrameDurations(WEBP_6F, [1, 2, 3, 4, 5, -1])).toThrow(RangeError)
-    expect(() => setWebpFrameDurations(WEBP_6F, [1, 2, 3, 4, 5, 16777216])).toThrow(RangeError)
+    expect(() => setWebpFrameDurations(WEBP_6F, [1, 2, 3, 4, 5, -1])).toThrow(AnimationFormatError)
+    expect(() => setWebpFrameDurations(WEBP_6F, [1, 2, 3, 4, 5, 16777216])).toThrow(
+      AnimationFormatError,
+    )
   })
 })
 
@@ -967,8 +969,8 @@ describe('apngDelayFraction', () => {
   })
 
   it('refuses a delay that is not a whole number of milliseconds', () => {
-    expect(() => apngDelayFraction(1.5)).toThrow(RangeError)
-    expect(() => apngDelayFraction(-1)).toThrow(RangeError)
+    expect(() => apngDelayFraction(1.5)).toThrow(AnimationFormatError)
+    expect(() => apngDelayFraction(-1)).toThrow(AnimationFormatError)
   })
 })
 

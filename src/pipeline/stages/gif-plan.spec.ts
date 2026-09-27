@@ -9,6 +9,7 @@ import {
   GIF_LOSSY_AT_SLIDER_95,
   GIF_OPTIMIZE_LEVEL,
   GIF_TICKS_PER_SECOND,
+  GifPlanError,
   gifDelayCentiseconds,
   gifFrameDelays,
   gifLossyLevel,
@@ -69,9 +70,9 @@ describe('gifDelayCentiseconds', () => {
   })
 
   it('refuses a delay that is not a whole non-negative number of milliseconds', () => {
-    expect(() => gifDelayCentiseconds(-1)).toThrow(RangeError)
-    expect(() => gifDelayCentiseconds(12.5)).toThrow(RangeError)
-    expect(() => gifDelayCentiseconds(Number.NaN)).toThrow(RangeError)
+    expect(() => gifDelayCentiseconds(-1)).toThrow(GifPlanError)
+    expect(() => gifDelayCentiseconds(12.5)).toThrow(GifPlanError)
+    expect(() => gifDelayCentiseconds(Number.NaN)).toThrow(GifPlanError)
   })
 })
 

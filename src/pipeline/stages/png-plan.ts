@@ -129,7 +129,14 @@ export const PNG_SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 
  */
 const KEPT_CHUNKS: ReadonlySet<string> = new Set(['IHDR', 'PLTE', 'tRNS', 'IDAT', 'IEND'])
 
-/** Raised when the bytes handed to a chunk walk are not a PNG this module can read. */
+/**
+ * Raised when the bytes handed to a chunk walk are not a PNG this module can read, or a value this
+ * module is asked to write is out of range.
+ *
+ * Deliberately not a `RangeError` for the value case: `pipeline/worker.ts` reports any `RangeError`
+ * as the machine running out of memory (T23), and an out-of-range quality is an upstream bug, not an
+ * allocation failure.
+ */
 export class PngFormatError extends Error {
   constructor(readonly detail: string) {
     super(detail)
@@ -315,7 +322,7 @@ export function pngBranches(quality: QualitySettings): PngBranch[] {
 
 function assertMappedQuality(value: number): void {
   if (!Number.isFinite(value) || value < 1 || value > 100) {
-    throw new RangeError(`PNG quality must be a number from 1 to 100, got ${value}`)
+    throw new PngFormatError(`PNG quality must be a number from 1 to 100, got ${value}`)
   }
 }
 

@@ -18,6 +18,20 @@
 import type { QualitySettings } from './encode-plan'
 
 /**
+ * Raised for a GIF timing or quality value out of range.
+ *
+ * Deliberately not a `RangeError`: `pipeline/worker.ts` reports any `RangeError` as the machine
+ * running out of memory (T23), and an out-of-range frame delay is an upstream bug, not an
+ * allocation failure.
+ */
+export class GifPlanError extends Error {
+  constructor(readonly detail: string) {
+    super(detail)
+    this.name = 'GifPlanError'
+  }
+}
+
+/**
  * `-O2`, not `-O3` (§7.3: "`-O3` tries every option per frame").
  *
  * Measured in T28 across ten subjects (`verification/t28-gif/results.json`, `summary.optimizeLevels`).
@@ -93,7 +107,7 @@ const SLIDER_LOSSY_MAX = 95
  */
 export function gifDelayCentiseconds(delayMs: number): number {
   if (!Number.isInteger(delayMs) || delayMs < 0) {
-    throw new RangeError(`frame delay must be a whole number of milliseconds, got ${delayMs}`)
+    throw new GifPlanError(`frame delay must be a whole number of milliseconds, got ${delayMs}`)
   }
 
   if (delayMs === 0) {

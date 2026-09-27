@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AVIF_MAX_QUALITY,
   AVIF_SPEED,
+  EncodePlanError,
   LOSSLESS_GATE_MAX_COLORS,
   WEBP_METHOD,
   colourPlan,
@@ -65,7 +66,7 @@ describe('encoderAttempt', () => {
   })
 
   it('refuses a lossless JPEG attempt', () => {
-    expect(() => encoderAttempt('jpeg', quality(100), 'lossless')).toThrow(RangeError)
+    expect(() => encoderAttempt('jpeg', quality(100), 'lossless')).toThrow(EncodePlanError)
   })
 
   it('sets WebP method 4 on every attempt, never 6 (§7.3)', () => {
@@ -137,13 +138,13 @@ describe('encoderAttempt', () => {
   })
 
   it('refuses a lossless AVIF attempt, since this build has none that works', () => {
-    expect(() => encoderAttempt('avif', quality(100), 'lossless')).toThrow(RangeError)
+    expect(() => encoderAttempt('avif', quality(100), 'lossless')).toThrow(EncodePlanError)
   })
 
   it.each([0, 101, 70.5, Number.NaN])('rejects a quality of %s', (value) => {
     expect(() =>
       encoderAttempt('jpeg', { kind: 'quality', value, lossless: false }, 'lossy'),
-    ).toThrow(RangeError)
+    ).toThrow(EncodePlanError)
   })
 })
 

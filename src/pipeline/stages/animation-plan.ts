@@ -735,7 +735,9 @@ const MAX_LOOP_COUNT = 0xffffffff
  */
 export function setApngLoopCount(png: Uint8Array, loops: number): Uint8Array {
   if (!Number.isInteger(loops) || loops < 0 || loops > MAX_LOOP_COUNT) {
-    throw new RangeError(`APNG loop count must be a whole number from 0 to ${MAX_LOOP_COUNT}`)
+    throw new AnimationFormatError(
+      `APNG loop count must be a whole number from 0 to ${MAX_LOOP_COUNT}`,
+    )
   }
 
   const actl = readPngChunkSpans(png).find((chunk) => chunk.type === 'acTL')
@@ -811,7 +813,9 @@ export function setWebpFrameDurations(webp: Uint8Array, delaysMs: number[]): Uin
     const delay = delaysMs[index] as number
 
     if (!Number.isInteger(delay) || delay < 0 || delay > 0xffffff) {
-      throw new RangeError(`WebP frame duration must be a whole number of 0 to 16777215 ms`)
+      throw new AnimationFormatError(
+        `WebP frame duration must be a whole number of 0 to 16777215 ms`,
+      )
     }
 
     // x, y, width-1 and height-1 occupy the first twelve bytes; the duration is the next three.
@@ -843,7 +847,9 @@ export function setWebpFrameDurations(webp: Uint8Array, delaysMs: number[]): Uin
  */
 export function apngDelayFraction(delayMs: number): { num: number; den: number } | null {
   if (!Number.isInteger(delayMs) || delayMs < 0) {
-    throw new RangeError(`frame delay must be a whole number of milliseconds, got ${delayMs}`)
+    throw new AnimationFormatError(
+      `frame delay must be a whole number of milliseconds, got ${delayMs}`,
+    )
   }
 
   if (delayMs <= APNG_MAX_DELAY_MS) {

@@ -414,7 +414,7 @@ describe('quantizerSettings', () => {
     'rejects a mapped quality of %s',
     (value) => {
       expect(() => quantizerSettings({ kind: 'quality', value, lossless: false })).toThrow(
-        RangeError,
+        PngFormatError,
       )
     },
   )
