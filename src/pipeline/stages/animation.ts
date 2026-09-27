@@ -511,15 +511,23 @@ export function applyEditFrames(
  * the same answer for each; the uniformity check afterwards is what proves that rather than trusting
  * it. A frame that needs no resize comes back as the same object, exactly as on the still path, so
  * an animation already at its target size costs nothing.
+ *
+ * **Replaces each frame in `animation.frames` in place, one at a time** (CORE-010, R-B2, R-B6),
+ * rather than building a second array while the first still holds every original: a resize that
+ * allocates a new full-resolution buffer would otherwise keep the whole source frame set and the
+ * whole output frame set alive together, doubling an animation's peak decoded-pixel memory. Mutating
+ * the caller's array means the frame just replaced has no remaining reference and is free to be
+ * collected before the next one decodes, matching the "consumes what it is given" contract
+ * `execute.ts` documents for the still path. Callers must not read `animation` again afterwards.
  */
 export async function applyResizeFrames(
   animation: Animation,
   dimension: ResolvedDimension,
 ): Promise<Animation> {
-  const frames: Frame[] = []
+  const frames = animation.frames
 
-  for (const frame of animation.frames) {
-    frames.push(await applyResize(frame, dimension))
+  for (let index = 0; index < frames.length; index += 1) {
+    frames[index] = await applyResize(frames[index]!, dimension)
   }
 
   const resized: Animation = { ...animation, frames }
