@@ -87,7 +87,7 @@ export async function executeJob(job: Job): Promise<JobResult> {
     return {
       bytes: job.source,
       format: settings.format,
-      caveats: job.intent === 'run' ? [{ kind: 'original-kept' }] : [],
+      caveats: job.intent === 'run' ? [...(job.caveats ?? []), { kind: 'original-kept' }] : [],
     }
   }
 
@@ -109,8 +109,10 @@ export async function executeJob(job: Job): Promise<JobResult> {
   const resized = await applyResize(edited.frame, settings.dimension)
 
   // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
+  // `job.caveats` first: whatever `resolveSettings` already decided (R-F6's `animation-substituted`
+  // is the one today) precedes what this job's own stages find (CORE-006).
   const report = (stage: Caveat[]): Caveat[] =>
-    job.intent === 'run' ? [...edited.caveats, ...stage] : []
+    job.intent === 'run' ? [...(job.caveats ?? []), ...edited.caveats, ...stage] : []
 
   // §7.5: the same encoders, run up to eight times over the slider. Ahead of the per-format branches
   // because the search covers all five still formats, including the two that have their own stage.
@@ -203,8 +205,10 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
   const resized = await applyResizeFrames(edited.animation, settings.dimension)
 
   // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
+  // `job.caveats` first: whatever `resolveSettings` already decided (R-F6's `animation-substituted`
+  // is the one today) precedes what this job's own stages find (CORE-006).
   const report = (stage: Caveat[]): Caveat[] =>
-    job.intent === 'run' ? [...edited.caveats, ...stage] : []
+    job.intent === 'run' ? [...(job.caveats ?? []), ...edited.caveats, ...stage] : []
 
   // §7.5, and the expensive half of it: every probe re-encodes every frame. R-Q10 forbids the other
   // lever — no frame is ever dropped to hit a target — and an animated PNG has no quality axis at

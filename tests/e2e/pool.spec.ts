@@ -594,6 +594,8 @@ function runShipped(
       | 'animated-webp'
     settings?: Record<string, unknown>
     intent?: 'preview' | 'run'
+    /** A resolution-time caveat, as `resolveSettings` would attach to the job (CORE-006). */
+    caveats?: { kind: string }[]
     /** Bring the whole output back, not just its first twelve bytes. Small outputs only. */
     keepBytes?: boolean
   }[],
@@ -668,6 +670,7 @@ function runShipped(
               ...spec.settings,
             },
             intent: spec.intent ?? 'preview',
+            ...(spec.caveats ? { caveats: spec.caveats } : {}),
           }),
         )
       }
@@ -857,6 +860,47 @@ test('a run carries the edit stage caveats; a preview of the same job carries no
 
   expect(outcomes[0]?.outcome).toBe('completed')
   expect(outcomes[0]?.result?.caveats.map((c) => c.kind)).toEqual(['transparency-flattened'])
+  expect(outcomes[1]?.outcome).toBe('completed')
+  expect(outcomes[1]?.result?.caveats).toEqual([])
+})
+
+// CORE-006: `resolveSettings` decides `animation-substituted` before a Job exists at all, and
+// `Job` had nowhere to carry it — the report could lose the one fact that the bytes and extension
+// it hands back differ from what was asked for. `Job.caveats` is that place; this proves
+// `executeJob` puts it ahead of what its own stages (here, edit's flatten) find, and that a preview
+// of the same job still carries none.
+test('a run carries the job-level resolution caveat ahead of the stage caveats (CORE-006)', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const flatten = {
+    format: 'jpeg',
+    alpha: { kind: 'flatten', background: { r: 255, g: 255, b: 255, a: 1 } },
+  }
+  const substituted = [{ kind: 'animation-substituted' }]
+  const { outcomes } = await runShipped(page, [
+    {
+      imageId: 'run',
+      source: 'transparent-png',
+      settings: flatten,
+      intent: 'run',
+      caveats: substituted,
+    },
+    {
+      imageId: 'preview',
+      source: 'transparent-png',
+      settings: flatten,
+      intent: 'preview',
+      caveats: substituted,
+    },
+  ])
+
+  expect(outcomes[0]?.outcome).toBe('completed')
+  expect(outcomes[0]?.result?.caveats.map((c) => c.kind)).toEqual([
+    'animation-substituted',
+    'transparency-flattened',
+  ])
   expect(outcomes[1]?.outcome).toBe('completed')
   expect(outcomes[1]?.result?.caveats).toEqual([])
 })
