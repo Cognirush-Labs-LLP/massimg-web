@@ -47,6 +47,23 @@ A task is finished only when its **Done when** conditions all hold *and* its han
 - **Tests are part of the task, not a later task.** A task that adds a pure function adds its unit tests.
   There is no cleanup phase at the end of the list.
 
+## Keeping `docs/faq.md` current
+
+`docs/faq.md` is the end-user FAQ. It documents *actual current behaviour*, including known gaps, not
+just what the design docs intend — so a change to behaviour can silently make an answer wrong.
+
+After any change that touches user-visible behaviour, re-read `docs/faq.md` and check whether an
+existing answer no longer matches what the app does.
+
+- Correct any answer the change falsified, with the smallest edit that makes it true again.
+- **Do not add a new question without the user's permission.** Adding Q&A entries is the user's call;
+  if a change introduces behaviour no existing answer covers, say so and propose the question rather
+  than writing it in.
+- Keep the register: plain language for non-technical readers, no requirement IDs, task numbers, file
+  paths or code identifiers in the FAQ itself.
+- Where a behaviour is deliberately unfinished or undecided, the answer says so plainly rather than
+  describing the intended end state as though it already works.
+
 ## Repository layout
 
 ```
