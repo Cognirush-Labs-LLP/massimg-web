@@ -457,7 +457,20 @@ export function rotateCropInput(input: CropGeometryInput, delta: QuarterTurns): 
   })
 }
 
-/** Builds the stored operations for an applied edit, rotation before crop. */
+/**
+ * Whether a normalised rect covers the whole (rotated) source exactly, with no pan or zoom —
+ * the shape `resolveCropInput`'s untouched default always resolves to.
+ */
+function isIdentityCrop(rect: NormalisedRect): boolean {
+  return rect.x === 0 && rect.y === 0 && rect.width === 1 && rect.height === 1
+}
+
+/**
+ * Builds the stored operations for an applied edit, rotation before crop. A crop rectangle that
+ * still covers the whole source is omitted rather than stored as a no-op `crop` op (R-D4): a
+ * stored crop op is what tells `resolveDimension` the batch dimension rule was overridden, so a
+ * rotation-only edit must not produce one.
+ */
 export function editOpsFor(
   geometry: ResolvedCropGeometry,
   zoom: number,
@@ -469,7 +482,9 @@ export function editOpsFor(
     ops.push({ kind: 'rotate', quarterTurns: geometry.quarterTurns })
   }
 
-  ops.push({ kind: 'crop', rect: geometry.normalisedRect, zoom, background })
+  if (!isIdentityCrop(geometry.normalisedRect)) {
+    ops.push({ kind: 'crop', rect: geometry.normalisedRect, zoom, background })
+  }
 
   return ops
 }

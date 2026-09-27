@@ -448,6 +448,33 @@ describe('crop and rotation arithmetic', () => {
     expect(resolveEditedSize(SOURCE, ops)).toEqual(geometry.output.size)
   })
 
+  it.each([0, 1, 2, 3] as const satisfies readonly QuarterTurns[])(
+    'omits a no-op crop for an untouched edit at %d quarter turns (R-D4)',
+    (quarterTurns) => {
+      // The production path, not a hand-built op list: `resolveCropInput` is what the editor calls
+      // for a fresh entry or a rotation with no crop of its own, and `hasCropOp` is what
+      // `resolveDimension` reads back to decide whether the batch dimension rule was overridden.
+      const geometry = resolveCropGeometry(
+        resolveCropInput({
+          source: SOURCE,
+          frame: FRAME,
+          quarterTurns,
+          ratio: { kind: 'free' },
+          limits: DEFAULT_CROP_LIMITS,
+        }),
+      )
+
+      if (geometry.kind !== 'resolved') {
+        throw new Error(`expected resolved geometry, received ${geometry.reason}`)
+      }
+
+      const ops = editOpsFor(geometry, 1, OPAQUE_WHITE)
+
+      expect(ops.map((op) => op.kind)).toEqual(quarterTurns === 0 ? [] : ['rotate'])
+      expect(hasCropOp(ops)).toBe(false)
+    },
+  )
+
   it.each([
     ['empty-frame', input({ frame: { width: 0, height: 600 } })],
     ['empty-source', input({ source: { width: 4000, height: 0 } })],

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_CROP_LIMITS,
+  editOpsFor,
+  resolveCropGeometry,
+  resolveCropInput,
+  type PixelSize,
+} from './edit'
+import {
   QUALITY_SLIDER_MAX,
   QUALITY_SLIDER_MIN,
   qualityForSlider,
@@ -143,6 +150,39 @@ describe('settings resolution', () => {
 
       expect(result.settings.dimension).toEqual(dimension)
     })
+
+    it.each(DIMENSIONS)(
+      'does not let a rotation applied through the real editor override $kind (R-D4)',
+      (dimension) => {
+        // The gap CORE-001 found: `ROTATE_EDIT` above is hand-built and never exercised the bug,
+        // because `editOpsFor` — the function the editor actually calls — used to append a no-op
+        // crop even for a rotation-only edit. This composes the real path instead:
+        // resolveCropInput -> resolveCropGeometry -> editOpsFor -> resolveSettings.
+        const source: PixelSize = { width: 4000, height: 3000 }
+        const frame: PixelSize = { width: 800, height: 600 }
+
+        const geometry = resolveCropGeometry(
+          resolveCropInput({
+            source,
+            frame,
+            quarterTurns: 1,
+            ratio: { kind: 'free' },
+            limits: DEFAULT_CROP_LIMITS,
+          }),
+        )
+
+        if (geometry.kind !== 'resolved') {
+          throw new Error(`expected resolved geometry, received ${geometry.reason}`)
+        }
+
+        const ops = editOpsFor(geometry, 1, { r: 255, g: 255, b: 255, a: 1 })
+        const edit: EditRecord = { ops, version: 1 }
+
+        const result = resolved({ ...BASE_IMAGE, edit }, { ...BASE_BATCH, dimension })
+
+        expect(result.settings.dimension).toEqual(dimension)
+      },
+    )
 
     it.each(DIMENSIONS)(
       'lets crop override $kind even when rotation is also present',
