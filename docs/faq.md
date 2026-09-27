@@ -87,7 +87,7 @@ No — rotating currently resets any crop back to cover the whole (newly rotated
 No. An explicit crop always takes priority over the batch resize setting for that image, since the crop already states an exact output size.
 
 **If I only rotate an image without cropping it, does the batch resize setting still apply?**
-It's meant to — rotating alone shouldn't override your resize setting. Right now, though, rotating an image also disables the batch resize setting for that image, the same as a crop would. This is a known gap that's expected to be fixed.
+Yes — rotating alone doesn't override your resize setting. Only an explicit crop does that.
 
 **What fills the empty corners if I crop or zoom out past the edges of my image?**
 A color you choose, or transparency if your chosen output format supports it. JPEG has no transparency, so cropped images heading to JPEG always get a solid fill color instead.
