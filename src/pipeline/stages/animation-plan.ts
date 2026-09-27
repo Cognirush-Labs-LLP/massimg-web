@@ -346,6 +346,88 @@ export function readGifAnimation(bytes: Uint8Array): AnimationInfo {
   }
 }
 
+/** The de facto application-extension identifier ImageMagick's GIF coder writes a profile under. */
+const GIF_ICC_APPLICATION_PREFIX = 'ICCRGBG'
+
+/**
+ * Reads a GIF's ICC profile, if it carries one.
+ *
+ * GIF has no chunk built for this — R-I13's premise — but `gif.ts` writes one anyway, as a de facto
+ * `ICCRGBG1012` application extension (T28, D3), because ImageMagick's own GIF coder does and D3
+ * measured it surviving gifsicle byte for byte. `decodeAnimation` used to assume GIF had nowhere to
+ * put a profile and always answered `untagged`, which meant this pipeline could not round-trip its
+ * own colour-managed GIF output (CORE-005). This mirrors `readWebpIccProfile`: a second, independent
+ * walk rather than a value threaded through `readGifAnimation`, for the same reason that one is its
+ * own pass over the RIFF chunks rather than folded into `readWebpAnimation`.
+ */
+export function readGifIccProfile(bytes: Uint8Array): Uint8Array | null {
+  const signature = ascii(bytes, 0, 6)
+
+  if (bytes.length < 13 || (signature !== 'GIF87a' && signature !== 'GIF89a')) {
+    throw new AnimationFormatError('not a GIF: signature missing')
+  }
+
+  const screenPacked = byteAt(bytes, 10, 'GIF logical screen')
+  let offset = 13
+
+  if (screenPacked & 0x80) {
+    offset += colourTableBytes(screenPacked)
+  }
+
+  for (;;) {
+    const marker = byteAt(bytes, offset, 'GIF block')
+    offset += 1
+
+    if (marker === GIF_TRAILER) {
+      return null
+    }
+
+    if (marker === GIF_EXTENSION) {
+      const label = byteAt(bytes, offset, 'GIF extension')
+      const { blocks, end } = readSubBlocks(bytes, offset + 1)
+      offset = end
+
+      const first = blocks[0]
+
+      if (
+        label === GIF_APPLICATION &&
+        first !== undefined &&
+        first.length >= 11 &&
+        ascii(first, 0, 11).startsWith(GIF_ICC_APPLICATION_PREFIX)
+      ) {
+        const profileBlocks = blocks.slice(1)
+        const length = profileBlocks.reduce((total, block) => total + block.length, 0)
+        const profile = new Uint8Array(length)
+        let at = 0
+
+        for (const block of profileBlocks) {
+          profile.set(block, at)
+          at += block.length
+        }
+
+        return profile
+      }
+
+      continue
+    }
+
+    if (marker === GIF_IMAGE_DESCRIPTOR) {
+      const packed = byteAt(bytes, offset + 8, 'GIF image descriptor')
+      offset += 9
+
+      if (packed & 0x80) {
+        offset += colourTableBytes(packed)
+      }
+
+      // The LZW minimum code size, then the compressed data as a sub-block chain.
+      offset = readSubBlocks(bytes, offset + 1).end
+      continue
+    }
+
+    throw new AnimationFormatError(`GIF block marker ${marker} at ${offset - 1} is not known`)
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // WebP (RIFF)
 // ---------------------------------------------------------------------------------------------

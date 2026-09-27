@@ -24,8 +24,9 @@
 //   3. **The user never receives the larger file.** Under `--lossy` 20 the option can *cost* bytes
 //      (measured; see `gifLossyLevel`), so the unoptimised candidate is kept when it wins. That is
 //      strictly better on both axes at once: smaller *and* untouched by the lossy pass.
-//   4. **Colour is carried, never converted** (R-I12, R-I15) — see `ColourFormat` for why a GIF can
-//      carry a profile in this build even though R-I13 says it cannot.
+//   4. **Colour is carried, never converted** (R-I12, R-I15) — see `ColourFormat` for how a GIF
+//      carries a profile in this build, and CORE-005 for the animated decode side of the same round
+//      trip.
 //   5. **The bytes are owned**, asserted, because `pipeline/worker.ts` transfers the result.
 //   6. **A flaky optimiser never costs the user their image.** gifsicle fails about one run in five
 //      on WebKit for reasons that have nothing to do with the file (see `GIFSICLE_ATTEMPTS`), so it

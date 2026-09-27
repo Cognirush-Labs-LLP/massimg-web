@@ -618,8 +618,8 @@ test.describe('a still image to GIF', () => {
 })
 
 // ---------------------------------------------------------------------------------------------
-// Colour (R-I12). GIF *can* carry an ICC profile in this build, which is what R-I13 assumes it
-// cannot — see `ColourFormat` in encode-plan.ts and docs/task-notes/T28.md.
+// Colour (R-I12). GIF *can* carry an ICC profile in this build — see `ColourFormat` in
+// encode-plan.ts and docs/task-notes/T28.md; R-I13 has been corrected to say so.
 // ---------------------------------------------------------------------------------------------
 
 test.describe('animated output colour', () => {
@@ -645,6 +645,77 @@ test.describe('animated output colour', () => {
 
     expect(encoded.branch).toBe('gifsicle')
     expect(encoded.iccProfile).toEqual(ICC_PROFILE)
+  })
+
+  // CORE-005: writing a profile is only half a round trip. `decodeAnimation` used to hardcode
+  // `untagged` for every GIF, so this pipeline could not read back the profile it had just written —
+  // proven here by feeding the GIF this suite already proves carries one straight back into the real
+  // animated decoder.
+  test('reads the profile back through the animated decoder it wrote it with (CORE-005)', async ({
+    page,
+  }) => {
+    const result = await page.evaluate(
+      async ({ animationPath, gifPath, jobPath, bytes }) => {
+        const stages = await import(/* @vite-ignore */ animationPath)
+        const gif = await import(/* @vite-ignore */ gifPath)
+        const job = await import(/* @vite-ignore */ jobPath)
+
+        const resolution = job.resolveSettings(
+          { sourceFormat: 'webp', isAnimated: true, edit: null },
+          {
+            quality: { kind: 'quality', value: 80 },
+            dimension: { kind: 'original' },
+            format: 'gif',
+          },
+        )
+
+        if (resolution.kind !== 'resolved') {
+          throw new Error(`settings did not resolve: ${JSON.stringify(resolution)}`)
+        }
+
+        const source = new Uint8Array(bytes)
+        const animation = await stages.decodeAnimation(source)
+        const encoded = await gif.encodeGif(animation, resolution.settings.quality)
+        const roundTripped = await stages.decodeAnimation(encoded.bytes as Uint8Array)
+        const colour = roundTripped.frames[0].colour as { kind: string; profile?: Uint8Array }
+
+        return {
+          frameCount: roundTripped.frames.length,
+          everyFrameSameKind: roundTripped.frames.every(
+            (frame: { colour: { kind: string } }) => frame.colour.kind === colour.kind,
+          ),
+          kind: colour.kind,
+          profile: colour.profile ? Array.from(colour.profile) : null,
+        }
+      },
+      {
+        animationPath: ANIMATION_MODULE_PATH,
+        gifPath: GIF_MODULE_PATH,
+        jobPath: JOB_MODULE_PATH,
+        bytes: fixture('anim-icc.webp'),
+      },
+    )
+
+    expect(result.frameCount).toBeGreaterThan(1)
+    expect(result.everyFrameSameKind).toBe(true)
+    expect(result.kind).toBe('icc')
+    expect(result.profile).toEqual(ICC_PROFILE)
+  })
+
+  test('reads an untagged GIF back as untagged, not as a false positive (R-I14)', async ({
+    page,
+  }) => {
+    const kind = await page.evaluate(
+      async ({ animationPath, bytes }) => {
+        const stages = await import(/* @vite-ignore */ animationPath)
+        const animation = await stages.decodeAnimation(new Uint8Array(bytes))
+
+        return (animation.frames[0].colour as { kind: string }).kind
+      },
+      { animationPath: ANIMATION_MODULE_PATH, bytes: fixture('anim-6f.gif') },
+    )
+
+    expect(kind).toBe('untagged')
   })
 })
 

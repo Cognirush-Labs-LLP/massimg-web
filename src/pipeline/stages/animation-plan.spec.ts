@@ -15,6 +15,7 @@ import {
   setWebpFrameDurations,
   readApngAnimation,
   readGifAnimation,
+  readGifIccProfile,
   readWebpAnimation,
   readWebpIccProfile,
   readWebpOrientation,
@@ -431,6 +432,86 @@ describe('readGifAnimation', () => {
     corrupt[13] = 0x5a
 
     expect(() => readGifAnimation(corrupt)).toThrow(/is not known/)
+  })
+})
+
+// CORE-005: the animated decode side of the same round trip `gif.ts`'s `ICCRGBG1012` application
+// extension writes (see docs/task-notes/T28.md, tests/e2e/gif.spec.ts).
+describe('readGifIccProfile', () => {
+  const PROFILE = [1, 2, 3, 4, 5, 250, 251, 252, 253, 254, 255]
+
+  function iccApplicationBlock(profile: number[]): number[] {
+    const blocks: number[] = []
+
+    for (let offset = 0; offset < profile.length; offset += 255) {
+      const chunk = profile.slice(offset, offset + 255)
+      blocks.push(chunk.length, ...chunk)
+    }
+
+    return [0x21, 0xff, 11, ...ascii('ICCRGBG1012'), ...blocks, 0]
+  }
+
+  function gifWithIcc(profile: number[] | null): Uint8Array {
+    return bytes(
+      ascii('GIF89a'),
+      u16le(WIDTH),
+      u16le(HEIGHT),
+      [0x00, 0x00, 0x00],
+      netscapeBlock(0),
+      profile === null ? [] : iccApplicationBlock(profile),
+      gifFrame(40),
+      [0x3b],
+    )
+  }
+
+  it('reads the profile out of an ICCRGBG1012 application extension', () => {
+    expect(readGifIccProfile(gifWithIcc(PROFILE))).toEqual(new Uint8Array(PROFILE))
+  })
+
+  it('reassembles a profile spread across more than one 255-byte sub-block', () => {
+    const long = Array.from({ length: 600 }, (_, index) => index % 256)
+
+    expect(readGifIccProfile(gifWithIcc(long))).toEqual(new Uint8Array(long))
+  })
+
+  it('returns null for a GIF with no ICC application extension', () => {
+    expect(readGifIccProfile(gifWithIcc(null))).toBeNull()
+    expect(readGifIccProfile(GIF_6F)).toBeNull()
+  })
+
+  it('ignores an application extension that is not ICCRGBG', () => {
+    const other = bytes(
+      ascii('GIF89a'),
+      u16le(WIDTH),
+      u16le(HEIGHT),
+      [0x00, 0x00, 0x00],
+      [0x21, 0xff, 11, ...ascii('XMP DataXMP'), 4, 9, 9, 9, 9, 0],
+      gifFrame(40),
+      [0x3b],
+    )
+
+    expect(readGifIccProfile(other)).toBeNull()
+  })
+
+  it('finds the profile alongside the loop record, in either order', () => {
+    const beforeLoop = bytes(
+      ascii('GIF89a'),
+      u16le(WIDTH),
+      u16le(HEIGHT),
+      [0x00, 0x00, 0x00],
+      iccApplicationBlock(PROFILE),
+      netscapeBlock(3),
+      gifFrame(40),
+      [0x3b],
+    )
+
+    expect(readGifIccProfile(beforeLoop)).toEqual(new Uint8Array(PROFILE))
+    expect(readGifAnimation(beforeLoop).loopSignal).toEqual({ kind: 'present', loops: 3 })
+  })
+
+  it('refuses bytes that are not a GIF', () => {
+    expect(() => readGifIccProfile(new Uint8Array(20))).toThrow(AnimationFormatError)
+    expect(() => readGifIccProfile(WEBP_6F)).toThrow(AnimationFormatError)
   })
 })
 

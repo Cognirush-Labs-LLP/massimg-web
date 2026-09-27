@@ -416,10 +416,10 @@ A folder can be selected through a picker or dropped onto the stage. The folder 
 
 ### 5.5 Colour management
 
-- R-I12 An embedded ICC colour profile is preserved in the output when the output format can carry one (JPEG, PNG, APNG, WebP, AVIF).
-- R-I13 When the output format cannot carry a profile (GIF), the image is converted to sRGB using the embedded profile before encoding, so the colours remain correct.
+- R-I12 An embedded ICC colour profile is preserved in the output when the output format can carry one (JPEG, PNG, APNG, WebP, AVIF, GIF).
+- R-I13 (retired, kept as a numbered placeholder so existing references to it stay meaningful) Originally: "when the output format cannot carry a profile (GIF), the image is converted to sRGB using the embedded profile before encoding." Measurement (T28) found GIF is not that format in this build: ImageMagick's GIF coder writes and reads back a profile through a de facto application extension, and it survives gifsicle byte for byte (D3). GIF is covered by R-I12 instead, on both encode and decode (CORE-005); no currently supported output format triggers a conversion under this clause.
 - R-I14 When no profile is embedded, the image is treated as sRGB and no profile is added.
-- R-I15 Pixel values are not converted between colour spaces except where R-I13 requires it. A Display P3 photo stays in Display P3.
+- R-I15 Pixel values are not converted between colour spaces. (R-I13 no longer requires this of any currently supported format — see its note. CICP-signalled colour going to a format that cannot carry the signal is a separate, open gap; see R-I35 and CORE-003.) A Display P3 photo stays in Display P3.
 - R-I16 The Preview frame renders the encoded output directly rather than drawing it through a canvas, so the browser applies the embedded profile and the preview matches the downloaded file.
 - R-I35 Colour is not always carried by an ICC profile. HEIC and AVIF commonly signal it as CICP values (primaries, transfer function, matrix coefficients) with no profile present. Such signalling is read and honoured, and carried to the output where the format can express it, or resolved into the pixels where it cannot. An image whose colour is described only by CICP must not be treated as untagged sRGB.
 

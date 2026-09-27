@@ -45,6 +45,7 @@ import {
   gifTotalPlays,
   readApngAnimation,
   readGifAnimation,
+  readGifIccProfile,
   readWebpAnimation,
   readWebpIccProfile,
   readWebpOrientation,
@@ -406,9 +407,12 @@ export async function decodeAnimation(source: Uint8Array): Promise<Animation> {
   switch (classification.format) {
     case 'gif': {
       const info = readContainer(() => readGifAnimation(source))
+      const profile = readContainer(() => readGifIccProfile(source))
 
-      // GIF carries no colour profile and no orientation: the format has nowhere to put either.
-      // This is `untagged` by the specification rather than by an unanswered question.
+      // GIF carries no EXIF orientation: the format has nowhere to put one. Colour is different —
+      // R-I13 says GIF cannot carry a profile, but `gif.ts` writes one anyway (see `ColourFormat`'s
+      // note in `encode-plan.ts`), so it has to be read back the same way, or this pipeline could
+      // not round-trip its own colour-managed GIF output (CORE-005).
       //
       // `gifTotalPlays` is the one conversion in the animated paths. GIF's NETSCAPE2.0 block counts
       // repeats *after* the first play; WebP and APNG count total plays. Passing the stored number
@@ -419,7 +423,7 @@ export async function decodeAnimation(source: Uint8Array): Promise<Animation> {
         info,
         gifTotalPlays(info.loopSignal),
         { kind: 'absent' },
-        { kind: 'untagged' },
+        resolveFrameColour(profile ? { profile, description: null } : null, source),
       )
     }
     case 'webp': {

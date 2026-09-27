@@ -39,12 +39,12 @@ export type StillFormat = 'jpeg' | 'webp' | 'avif'
  * question with the same answer table, and answering it in three places is how the three come to
  * disagree. `executeJob` calls `unsupportedColour` for every format.
  *
- * **GIF is in this list as a profile-carrying format, which contradicts R-I13** ("when the output
- * format cannot carry a profile (GIF)…"). It carries one: ImageMagick writes the profile into a GIF
+ * **GIF is in this list as a profile-carrying format.** ImageMagick writes the profile into a GIF
  * application extension and reads it back, gifsicle preserves it, and D3 measured a Display P3
- * profile surviving that route byte-identically on all three engines. The requirement's premise is
- * wrong for this build, so following it — converting the pixels — would be the change nobody asked
- * for. Recorded for the user in docs/task-notes/T28.md; the requirement is theirs to correct.
+ * profile surviving that route byte-identically on all three engines — the animated decode side of
+ * the same round trip is CORE-005. R-I13 originally said GIF could not carry one and had to be
+ * converted to sRGB instead; that premise was wrong for this build, and R-I13 has been corrected to
+ * say so (docs/functional-design.md, docs/task-notes/T28.md) rather than followed.
  */
 export type ColourFormat = StillFormat | 'png' | 'gif'
 
