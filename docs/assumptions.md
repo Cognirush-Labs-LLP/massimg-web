@@ -75,6 +75,8 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
+| F1 | vite-ssg produces genuinely static per-route HTML | 70 | OPEN | P2 |
+| F2 | Analytics beacon fires on a cache-served page load | 60 | OPEN | P3 |
 
 ---
 
@@ -159,7 +161,7 @@ Exports only `createOptimizer` and `optAPNG`. APNG in, APNG out. Cannot assemble
 
 **It is not reliable, and the wrapper is why.** `gifsicle-wasm-browser` resolves a run when the WASM module calls its `output` callback and rejects — with `undefined` — when the module's own promise settles first, with nothing ordering the two. On `anim-16f-400.webp` at slider 95, 250 attempts per engine: **Chromium 0 failures, Firefox 0, WebKit 44 (17.6%)**; a second run of 80 gave WebKit 18 (22.5%). Nine other subjects failed zero times on any engine. `stages/gif.ts` therefore asks up to four times (`GIFSICLE_ATTEMPTS`) and keeps ImageMagick's own GIF if it still has nothing. Verified after that change, 80 runs per engine: **no job failed on any engine**; WebKit retried 14 times in 80, mean 1.24 attempts, and exhausted all four once.
 
-**Not covered by this test.** Memory. gifsicle builds a fresh Worker per `run()` and terminates it on completion, so nothing accumulates between jobs, but the peak cost of one run on a large GIF is unmeasured and belongs with T46's limits. Also unestablished: *why* WebKit loses that race so much more often, and whether the rate depends on the input at all. The licence question is **A12** and is untouched by any of this.
+**Not covered by this test.** Memory. gifsicle builds a fresh Worker per `run()` and terminates it on completion, so nothing accumulates between jobs, but the peak cost of one run on a large GIF is unmeasured and belongs with T50's limits. Also unestablished: *why* WebKit loses that race so much more often, and whether the rate depends on the input at all. The licence question is **A12** and is untouched by any of this.
 
 ---
 
@@ -327,11 +329,11 @@ Safari private windows do not provide OPFS. Firefox disables it in private mode.
 
 Pass condition ("peak stays far below file size") held on all three engines: peaks stay in the hundreds-of-MB range and barely move between 1 GB and 3 GB of file size, where a full in-memory materialisation would show peak minus baseline tracking the file size directly (i.e. roughly 3 GB more at the 3 GB size than at the 1 GB size). Confirmed byte counts (`file.size` after write; the downloaded file's size on disk) matched the target exactly in every run, so the low memory reading isn't an artefact of a truncated write or download. Full detail, per-phase numbers and methodology in `docs/task-notes/T01.md`.
 
-**Why not higher.** iOS Safari — the platform with the tightest OPFS quota (B2, ~20% of disk) and the one most likely to diverge — is out of scope for this task (needs real hardware; deferred to T46) and remains completely unverified. Desktop WebKit here is Playwright's bundled build, not shipping Safari. Everything ran on one machine (macOS) with a synthetic, single-byte-pattern payload rather than a real image/archive, and the two runs, while consistent, are not a large sample. Firefox's absolute baseline (~1 GB RSS at idle) is unexpectedly high for a blank automation profile, though it is flat rather than size-proportional, which is the property B4 actually claims.
+**Why not higher.** iOS Safari — the platform with the tightest OPFS quota (B2, ~20% of disk) and the one most likely to diverge — is out of scope for this task (needs real hardware; deferred to T50) and remains completely unverified. Desktop WebKit here is Playwright's bundled build, not shipping Safari. Everything ran on one machine (macOS) with a synthetic, single-byte-pattern payload rather than a real image/archive, and the two runs, while consistent, are not a large sample. Firefox's absolute baseline (~1 GB RSS at idle) is unexpectedly high for a blank automation profile, though it is flat rather than size-proportional, which is the property B4 actually claims.
 
-**Method.** Write 1 GB, then 3 GB, into OPFS in chunks. Trigger a download. Watch tab memory in the browser task manager. Pass condition: peak stays far below file size. Test Chrome, Firefox, Safari desktop and iOS Safari separately. *(T01 completed this for Chromium, Firefox and desktop WebKit via Playwright's OS-process-RSS proxy rather than the manual task manager; iOS Safari on real hardware is still open, see T46.)*
+**Method.** Write 1 GB, then 3 GB, into OPFS in chunks. Trigger a download. Watch tab memory in the browser task manager. Pass condition: peak stays far below file size. Test Chrome, Firefox, Safari desktop and iOS Safari separately. *(T01 completed this for Chromium, Firefox and desktop WebKit via Playwright's OS-process-RSS proxy rather than the manual task manager; iOS Safari on real hardware is still open, see T50.)*
 
-**Fallback if false.** Chrome uses `showSaveFilePicker` with `createWritable`. Other browsers get a hard batch cap from measured in-memory assembly. Not engaged for any engine T01 tested — B4 held on Chromium, Firefox and desktop WebKit. If iOS Safari (T46) turns out to fail, it falls into the "other browsers" fallback (hard batch cap from measured in-memory assembly), since `showSaveFilePicker` is Chromium-only.
+**Fallback if false.** Chrome uses `showSaveFilePicker` with `createWritable`. Other browsers get a hard batch cap from measured in-memory assembly. Not engaged for any engine T01 tested — B4 held on Chromium, Firefox and desktop WebKit. If iOS Safari (T50) turns out to fail, it falls into the "other browsers" fallback (hard batch cap from measured in-memory assembly), since `showSaveFilePicker` is Chromium-only.
 
 ---
 
@@ -341,9 +343,9 @@ Pass condition ("peak stays far below file size") held on all three engines: pea
 
 **Measured** (T18, `tests/e2e/folder.spec.ts`). A nested fixture tree (three real files at three depths, a dot-prefixed file, `Thumbs.db`, `desktop.ini`, and a dot-prefixed directory whose contents must not appear at all) was selected via `page.setInputFiles()` against a real `<input webkitdirectory>` element on Chromium, Firefox and desktop WebKit. On every engine, `webkitRelativePath` came back exactly as expected — including the hidden dotfile, the two named system files and the entire hidden directory, all of which the browser *does* surface to script (nothing filters them out before JavaScript sees them; `platform/folder.ts` does that filtering). No divergence between engines: desktop WebKit's folder-picker behaviour was identical to Chromium's and Firefox's on every case tested, including the depth-cap and file-count-cap rejection paths. The drop path (`DataTransferItem.webkitGetAsEntry`) could not be exercised with a genuine OS-level drag on any engine — no browser-automation tool can synthesize one, since `webkitGetAsEntry()` only returns a real entry for browser-populated items, never for script-constructed ones (see `docs/task-notes/T18.md`) — so its traversal logic (identical code path to the picker's cap/filter logic, sharing the same relative-path convention) was proven instead by calling `readDroppedFolder()` directly with a structurally faithful mock `FileSystemDirectoryEntry`/`FileSystemFileEntry` graph, and cross-checked to produce an identical file list to the real picker-based traversal of the same tree.
 
-**Why not higher.** Everything above is desktop WebKit (Playwright's bundled build, run on macOS), not real iOS Safari, which is the platform this assumption was actually written to worry about. iOS Safari on real hardware is still completely unverified and remains T46's job, same caveat B4 carries for the same reason. The genuine OS-level drop path is untestable in *any* automation tool on *any* engine, not just unverified here — see Surprises in `docs/task-notes/T18.md`.
+**Why not higher.** Everything above is desktop WebKit (Playwright's bundled build, run on macOS), not real iOS Safari, which is the platform this assumption was actually written to worry about. iOS Safari on real hardware is still completely unverified and remains T50's job, same caveat B4 carries for the same reason. The genuine OS-level drop path is untestable in *any* automation tool on *any* engine, not just unverified here — see Surprises in `docs/task-notes/T18.md`.
 
-**Method.** On each browser, select a nested folder and log every `webkitRelativePath`. Drop the same folder and traverse, comparing the two file lists. Record iOS Safari explicitly. *(T18 completed the picker half for Chromium, Firefox and desktop WebKit exactly as specified. The drop half was completed as a direct call to `readDroppedFolder()` with a structural mock rather than a real OS-level drag — no automation tool can produce a genuine one — and its result was compared against the picker's file list for the same tree, which is the comparison this method was actually after. iOS Safari on real hardware remains open, see T46.)*
+**Method.** On each browser, select a nested folder and log every `webkitRelativePath`. Drop the same folder and traverse, comparing the two file lists. Record iOS Safari explicitly. *(T18 completed the picker half for Chromium, Firefox and desktop WebKit exactly as specified. The drop half was completed as a direct call to `readDroppedFolder()` with a structural mock rather than a real OS-level drag — no automation tool can produce a genuine one — and its result was compared against the picker's file list for the same tree, which is the comparison this method was actually after. iOS Safari on real hardware remains open, see T50.)*
 
 ---
 
@@ -502,7 +504,7 @@ T22's assumption to re-open — see `docs/task-notes/T22.md` for the fix itself 
 - **R-G8's automatic threshold: 100 files — the same number as `maximumThumbnails`.** Above the read
   budget, grid mode cannot give every tile a thumbnail and the surplus renders as placeholders, which
   is exactly the case list mode serves better. Tying the threshold to the limit rather than to an
-  independent constant means T46's measurement moves both together.
+  independent constant means T50's measurement moves both together.
 - **Cancellation works.** A worker generating continuously was terminated mid-flight on all three
   engines: **zero further completions afterwards** — proof that growth stops, rather than a late
   result merely being hidden, and true regardless of the RSS caveat above since it counts worker
@@ -523,7 +525,7 @@ T22's assumption to re-open — see `docs/task-notes/T22.md` for the fix itself 
 
 **Why not higher.** Desktop only. C5's method also calls for a mid-range phone, and no device was
 available; phone throughput and the memory headroom behind it are unmeasured and belong with C4 and
-T46. The 50 fixtures come from one machine's photo library, so the format mix is representative of
+T50. The 50 fixtures come from one machine's photo library, so the format mix is representative of
 that library rather than of every batch a user might bring.
 
 **Method.** Over 50 photographs of mixed dimensions and formats, on desktop and a mid-range phone, time
@@ -535,7 +537,7 @@ result. The product ceiling for source-read attempts and retained Blobs comes fr
 `maximumThumbnails` limit in R-G3/R-G10, initially 100; measurement chooses representation and the lower
 automatic-mode threshold, not a hidden hard-coded ceiling. *(T20 completed every part of this on
 desktop across all three engines. The mid-range phone was not available and remains open, with C4 and
-T46.)*
+T50.)*
 
 ---
 
@@ -1177,3 +1179,39 @@ By dependency and cost, not document order.
 9. **B9** and **B6**, headers and isolation. Decide the build variant.
 10. **E1**, streaming ZIP memory. Confirms the output path end to end.
 11. Everything else in priority order.
+
+---
+
+## 9. Public site and delivery
+
+### F1 `OPEN` `70%` `P2` vite-ssg produces genuinely static, crawlable HTML per route
+
+vite-ssg runs the app once per route at build time and is expected to write real,
+route-specific HTML to disk — not one shared shell that depends on client-side
+JavaScript to show different content per route. This matters because the whole reason
+to move off a pure SPA is that a route's content must be present in the fetched
+document.
+
+**Method.** Build the site, fetch a non-tool route's HTML file directly (no script
+execution), and assert its `<title>`, meta description and visible body text are
+present and correct without hydration.
+
+**Affects.** Technical Design §12.3. If false, the SEO surface (§12.5) has nothing to
+attach itself to, and a different SSG or prerendering plugin is substituted.
+
+---
+
+### F2 `OPEN` `60%` `P3` The analytics beacon fires when the shell is served from the service worker's cache
+
+Cloudflare Web Analytics is a client-side script; the concern is whether it still
+executes and reports a page view when the HTML and its scripts are served entirely
+from the service worker's cache rather than fetched from the network — the case this
+design was chosen to cover.
+
+**Method.** Load the app once online, force cache-only fetches (or go offline), reload,
+and assert the analytics request still fires, using a Playwright test that intercepts
+network requests.
+
+**Affects.** Technical Design §12.6. If false, an alternative is a beacon fired from
+the service worker's own lifecycle instead of the page, at the cost of per-view
+granularity.

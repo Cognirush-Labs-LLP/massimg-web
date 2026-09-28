@@ -337,7 +337,7 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
 - Headline: "Drop images to compress."
 - A mono line stating accepted formats and the batch limit, e.g.
   `JPEG · PNG · WEBP · AVIF · GIF · up to N files` (N comes from the runtime limits
-  config, T46 — never hard-code it in copy).
+  config, T50 — never hard-code it in copy).
 - **Two buttons**, not one: **Select images** and **Select folder**. The sample
   mockup has only a "Select images" button; the folder picker is a required
   affordance (R-I24–R-I32) that must be added here, and it should hide itself
@@ -1001,7 +1001,7 @@ doesn't communicate a state change, it doesn't get one.
 
 ## 16. Accessibility notes
 
-**Satisfies:** R-K1–R-K9, functional-design §12. This is a consolidated checklist
+**Satisfies:** R-K1–R-K11, functional-design §12. This is a consolidated checklist
 pointing back to where each rule is detailed above, not a restatement of the
 requirements themselves.
 
@@ -1027,3 +1027,14 @@ requirements themselves.
   size-increase glyph), and §13 (the donut's full text redundancy).
 - **R-K9:** the leave-with-undownloaded-results dialog (§14) is focus-trapped
   with **Stay** as its default-focused action.
+- **R-K10:** an accessible name is added *only* where a control has no visible
+  text label — the icon-only controls in this interface: the tile remove × (§6),
+  the mobile Options and Hide buttons (§2), the rotate and crop-handle controls
+  (§12). A button that already reads "Compress", "Add images" or "Back to
+  images" gets no `aria-label`; its visible text is already its accessible name,
+  and duplicating it only doubles what has to be translated. Each name that *is*
+  added is a catalogue key with a context entry like any other string (R-L1,
+  R-L2) — not a literal in the template.
+- **R-K11:** no text is added anywhere for a crawler rather than a person. No
+  hidden keyword copy, no markup comments describing features to machines. This
+  is a hard line, not a tradeoff to revisit for ranking.

@@ -17,11 +17,18 @@ Where an assumption is below 75% confidence, the decision is written together wi
 | Unit and integration tests | Vitest | Not Jest, see below |
 | Browser tests | Playwright | Chromium, Firefox, WebKit |
 | Formatting and linting | Prettier, ESLint, `vue-tsc` | All three in CI |
-| Deployment | Static files to Hostinger | §11 |
+| Deployment | Static files to Hostinger | §12 |
+| Routing | vue-router | Client-side navigation between the site's real routes (§12.3) |
+| Static generation | vite-ssg | Static HTML per route at build time, no Node server (§12.3) |
+| Head management | `@unhead/vue` | Per-route title, meta, Open Graph and JSON-LD (§12.5) |
+| PWA | vite-plugin-pwa | Manifest and service worker (§12.6) |
+| Analytics | Cloudflare Web Analytics | Client-triggered, cookieless beacon (§12.6); a single script tag, no SDK dependency |
 
 **Vitest rather than Jest.** Jest against a Vite project needs a parallel transform configuration that drifts from the real build. The specific pain here is ESM plus WASM plus workers, which is where Jest's module handling is weakest. Vitest runs through the same resolution and transform as production. Its API is close enough to Jest that agent-written tests transfer without retraining.
 
 **`vue-tsc` from the first commit.** Vue templates are type-checked by a separate tool rather than by the compiler. TypeScript was chosen partly so an implementing agent gets machine-checkable feedback, and without `vue-tsc` in CI that feedback does not cover templates. Adding it later means fixing a backlog of errors at the worst time.
+
+**`vite-ssg` rather than a full SSR framework.** Nuxt or a hand-rolled Node SSR server would need a server process this project has never had and does not want. `vite-ssg` prerenders each route at build time on the existing Vite+Vue3+Pinia stack, producing static files Hostinger can serve exactly like today's build.
 
 ### 1.1 Two rules specific to Vue
 
@@ -45,7 +52,10 @@ This is enforced by a lint rule and by a unit test that asserts no store contain
 
 ```
 src/
-  app/            shell, routing, mode switching
+  app/            site shell, page routing (§12.3), stage-mode switching
+  config/
+    limits.ts       runtime limits, every value measured (§8.3)
+    site.ts         canonical base URL, supported locales, default locale (§12.2)
   stores/         Pinia stores (§3)
   domain/         pure logic, no DOM, no Vue, fully unit-testable
     edit.ts         edit record, crop arithmetic (§6)
@@ -61,7 +71,7 @@ src/
   platform/       browser capability wrappers
     opfs.ts, picker.ts, folder.ts, download.ts, capability.ts
   ui/             components, one directory per stage mode
-  i18n/           locale files and context files (§10)
+  i18n/           one messages file per locale, one shared context file (§11)
 ```
 
 `domain/` is the important boundary. It contains no browser APIs and no Vue, so every rule in the Functional Design that can be expressed as a pure function is unit-testable without a browser. Crop arithmetic, format routing, naming, the caveat set in R-X46, and the PNG quality rescale in R-Q11 all live there.
@@ -678,24 +688,29 @@ pathologically tall image.
 
 English ships first; the structure supports translation without restructuring (R-L1 to R-L5).
 
-Two parallel files per locale:
+One file per locale, plus a single context file shared by all of them:
 
 ```
 i18n/
+  context.json      key -> translator context, English only, never duplicated per locale
   en/
-    messages.json     key -> string
-    context.json      key -> translator context
+    messages.json    key -> string
+  es/
+    messages.json    key -> string
 ```
 
-`context.json` carries, per key, the situation the string appears in, what the surrounding control does, and any length constraint. A translator working from keys and strings alone cannot tell a verb from a noun in English, and that is where translation quality is lost. A CI check fails when a key exists in `messages.json` without an entry in `context.json`.
+`context.json` exists once for the whole project, keyed the same way as every locale's messages. It carries, per key, the situation the string appears in, what the surrounding control does, and any length constraint, all written against the English source string — that is what a translator needs regardless of which locale they are translating into, so the file is never translated and never duplicated per locale. Every locale's `messages.json` is read alongside this same one file. A CI check fails when a key exists in any locale's `messages.json` without an entry in `context.json`, or when a key exists in `context.json` with no entry in the default locale's `messages.json`. T08 built both directions of that check.
+
+**Current state.** T08 shipped the single context file at `src/i18n/en/context.json`, inside the English directory, because English was the only locale and the shared-versus-per-locale question had not been settled. There is still exactly one such file, so nothing is duplicated or mistranslated today — only its path disagrees with the tree above. It moves up to `src/i18n/context.json` in T48, which is where the distinction starts to matter, because that is when a second locale directory appears.
 
 Other rules with implementation consequences:
 
 - No runtime concatenation. One parameterised string per sentence (R-L5), because word order differs by language.
 - Logical CSS properties throughout: `inline-start`, `inline-end`, `padding-inline`. The side panel and drawer are on the inline-end side, not the right (R-L4).
 - The report is never translated (R-L3). See §9.3.
+- An accessible-name string with no visible rendering is a key in this same catalogue, not a separate mechanism (R-K10).
 
-Locale routing is a real path, `massimg.com/es/`, with `hreflang`. Client-side switching alone would give one indexable page, which defeats the point for a site whose job is to rank.
+Locale routing is a real path, `massimg.com/es/`, with `hreflang`. Client-side switching alone would give one indexable page, which defeats the point for a site whose job is to rank. The static per-locale path is produced by the same build-time static-generation step described in §12.3, not by a second routing mechanism.
 
 ---
 
@@ -716,6 +731,58 @@ The landing page exists to rank for "compress image online" and its translations
 3. Every other codec on first use (§5.2).
 
 WASM payloads get long cache lifetimes and content-hashed filenames. They change rarely and are the largest thing we ship.
+
+### 12.2 Site configuration
+
+One module, `src/config/site.ts`, is the single source of truth for: the canonical production base URL (`https://massimg.com`), the list of supported locales, and the default locale. Router base paths, canonical and Open Graph URLs, JSON-LD `url` fields, `sitemap.xml`, `robots.txt`'s `Sitemap:` line and the `hreflang` alternates in §11 all read from this module rather than repeating the URL or the locale list per file.
+
+This is deliberately distinct from Vite's own `base` build option, which is a deployment sub-path for built assets (a project served from `/app/` rather than `/`) and has nothing to do with which URL the site is canonicalized to or which locales exist.
+
+The base URL is read from an environment variable rather than hardcoded, so a local or staging build does not claim to be `https://massimg.com` in its canonical tags, its JSON-LD or its sitemap.
+
+### 12.3 Routing and static generation
+
+`vue-router` plus `vite-ssg`, not a full SSR framework. Rationale:
+
+- The compressor's four stage modes stay internal state on one route (R-S1); introducing a router changes nothing about how that page works.
+- `vite-ssg` needs no Node server: it runs the app once per route at build time and writes real HTML to disk, which fits static hosting on Hostinger (§12) and keeps "everything happens in the browser" true after the crawler has left. A full SSR framework would add a server process this project has deliberately never had.
+- The same build step produces the locale-prefixed paths §11 already requires (`massimg.com/es/`), so locale routing is not a second mechanism bolted on beside page routing.
+
+Routes: `/` (the tool), `/faq`, `/privacy`, `/terms`, `/desktop`, each repeated under every locale prefix in `src/config/site.ts`. None of the tool's internal stage modes is a route.
+
+**F1**: that `vite-ssg` produces genuinely static, fetchable HTML per route — not one shared shell that depends on client-side JavaScript to show route-specific content — is assumed rather than proven; verified in T43 by fetching a built route's file directly and asserting its title, meta description and body content without executing any script.
+
+### 12.4 Public content pages
+
+FAQ, Privacy, Terms and Desktop are markdown, one file per locale, under `content/<locale>/<page>.md`. The FAQ already lives there, at `content/en/faq.md`; `AGENTS.md` carries the rule for keeping it true as behaviour changes. A locale with no file for a given page falls back to the English file for that page rather than a missing page or an error.
+
+This is a separate mechanism from the interface string catalogue in §11: a content page is continuous prose a person writes and edits, not decomposed into keyed strings, and the CI check in §11 does not apply to it.
+
+Privacy and Terms ship with placeholder content. The legal text is out of scope for this design and is not an engineering task; the routes and the fallback mechanism are built now so nothing about the pipeline blocks on it later.
+
+### 12.5 SEO surface
+
+Per-route metadata (title, description, canonical URL, Open Graph and Twitter card tags) is set through a head-management library (`@unhead/vue`, the library `vite-ssg` already integrates with) rather than hand-written per component, so every route sets its own values through one mechanism instead of five near-identical ones.
+
+Structured data: `WebApplication`/`SoftwareApplication` JSON-LD on the tool route, `FAQPage` JSON-LD on the FAQ route. Google mostly retired the FAQ rich result in 2023; this is included for other engines and for LLM-facing retrieval, not for a guaranteed search-result appearance.
+
+`sitemap.xml` and `robots.txt` are generated at build time by a script that reads the same route list and locale list as §12.2/§12.3, so the sitemap can never drift from the routes actually built. `robots.txt` carries the `Sitemap:` line and an explicit `Allow:` entry for named crawlers (`GPTBot`, `ClaudeBot`, `Google-Extended`) in addition to the default allow-all.
+
+`llms.txt` is provided at the site root. It is an informal, unadopted convention with no confirmed effect on any engine's behaviour; it costs one file and is not expected to do anything measurable beyond that.
+
+No content described in this subsection is hidden from a visual reader — R-K11 applies to the site exactly as it applies to the tool.
+
+### 12.6 Progressive Web App and usage visibility
+
+`vite-plugin-pwa` generates the manifest and the service worker, consistent with the app already being fully local and offline-capable.
+
+Usage visibility does not read server or edge access logs: a repeat visit served entirely by the service worker never reaches the origin, which would undercount exactly the returning, offline-capable users the product is for. Instead, a client-triggered, cookieless beacon (Cloudflare Web Analytics) fires from the page itself on every load, cached shell or not.
+
+The service worker's generated runtime-caching rules must not intercept requests to the analytics domain: an explicit `NetworkOnly` (or equivalent exclusion) rule is added for it, rather than relying on the default precache manifest simply not mentioning a domain it was never told about, so a later change to the caching strategy cannot silently swallow it.
+
+**F2**: that the beacon still fires reliably when the page shell is served from the service worker's cache rather than the network is assumed rather than proven; verified in T46 with a Playwright test that forces a cache-served load and asserts the analytics request still fires.
+
+This is the concrete mechanism for Functional Design R-V3's "if analytics are added" clause; no other tracking is planned.
 
 ---
 
@@ -757,4 +824,4 @@ Which sections change if an entry fails.
 | **D3** | 90 | §7.7 | Measured in T23: every path preserves the profile except apng-optimizer, which is avoided by attaching `iCCP` after it runs. The sRGB-conversion contingency is no longer needed |
 | **E1** | 76 | §9.1 | Batch caps tighten |
 
-**B4 is now settled** (T01, 90%): it held on Chromium, Firefox and desktop WebKit, so no fallback and no structural change are needed for those engines. iOS Safari is untested and deferred to T46, but that no longer blocks starting implementation the way an open B4 would have. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.
+**B4 is now settled** (T01, 90%): it held on Chromium, Firefox and desktop WebKit, so no fallback and no structural change are needed for those engines. iOS Safari is untested and deferred to T50, but that no longer blocks starting implementation the way an open B4 would have. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.

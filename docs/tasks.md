@@ -5,6 +5,8 @@ A sequential build plan. Each task is sized for one agent session: large enough 
 ## Repository layout
 
 ```
+content/
+  en/, es/, ...        public page markdown, English is the fallback (§12.4)
 docs/
   functional-design.md
   technical-design.md
@@ -633,38 +635,143 @@ Explicit Download. Single image downloads directly with no ZIP and no report. Th
 
 ---
 
-# Phase 7 — Completeness
+# Phase 7 — Public site
 
-### T43 — Accessibility
+### T43 — Site shell, router and static generation
 
-**Functional Design:** §12, R-K1 to R-K9
+**Functional Design:** R-S1, R-S2, R-S3
+**Technical Design:** §2, §12.2, §12.3
+**Depends on:** T31
+
+`vue-router` with one route per public page (`/`, `/faq`, `/privacy`, `/terms`,
+`/desktop`, plus locale-prefixed variants), and `vite-ssg` producing static HTML for
+each at build time. `src/config/site.ts` as the single source of the canonical
+production base URL, the supported-locale list and the default locale — every task in
+this phase reads it rather than a local constant.
+
+- The compressor's Gallery/Preview/Edit/Processing modes stay internal state on the
+  tool's one route (R-S1); this task adds no route for any of them.
+- The header nav and footer wrap every route, including the tool's. The tool route
+  mounts its existing internal header/stage/panel shell (T31) unchanged inside this
+  outer one.
+- The production base URL is env-driven, so a local or staging build does not
+  canonicalize to `https://massimg.com`.
+
+**Done when:** `vite build` produces real static HTML for every route (verified by
+fetching the built file directly, not by reading the SPA's runtime DOM), the
+compressor tool hydrates and is fully interactive on its route, and F1 is updated with
+the result.
+
+### T44 — Public content pages
+
+**Functional Design:** R-S4, R-S5
+**Technical Design:** §12.4
+**Depends on:** T43
+
+FAQ, Privacy, Terms and Desktop pages rendered from markdown, one file per supported
+locale under `content/<locale>/<page>.md`, falling back to the English file where a
+locale's file is absent. The FAQ already sits at `content/en/faq.md`, relocated when
+this phase was designed; the other three pages are new files. This task builds the
+rendering and fallback mechanism, not the relocation.
+
+- Placeholder content for Privacy and Terms ships now; the legal text is future work
+  by someone else and does not block this task.
+- This is a distinct mechanism from the interface string catalogue in §1.5 — a content
+  page is prose a person edits directly, not a set of keyed strings — and T48
+  (Language completeness) does not cover it.
+
+**Done when:** all four pages render for the default locale, and a page with no
+locale-specific file falls back to English rather than erroring.
+
+### T45 — SEO surface
+
+**Functional Design:** R-S6 to R-S10
+**Technical Design:** §12.5
+**Depends on:** T43, T44
+
+Per-route title, description, canonical URL, Open Graph and Twitter card metadata;
+`WebApplication`/`SoftwareApplication` structured data on the tool route and
+`FAQPage` structured data on the FAQ route; a build-time script generating
+`sitemap.xml` from the real routes in the site config, `robots.txt` with the sitemap
+location and an explicit allow entry for named AI crawlers, and an `llms.txt` file at
+the site root.
+
+- No hidden or crawler-only content is added anywhere in this task; R-K11 applies to
+  the site as much as to the tool.
+- `FAQPage` structured data is a courtesy to engines that read it, not an expected
+  Google rich result.
+
+**Done when:** every route's rendered HTML carries its own title and canonical tag
+distinct from every other route's, `sitemap.xml` lists exactly the real routes and
+none of the tool's internal modes, and `robots.txt` validates against the sitemap it
+names.
+
+### T46 — Progressive Web App and usage visibility
+
+**Functional Design:** R-S11 to R-S14, R-V3
+**Technical Design:** §12.6
+**Assumptions:** F1, F2
+**Depends on:** T43
+
+A web app manifest and a generated service worker for offline installability, and a
+client-triggered, cookieless analytics beacon (Cloudflare Web Analytics) as the
+usage-visibility mechanism R-V3 anticipates.
+
+- The service worker's runtime-caching configuration explicitly excludes the analytics
+  domain, so a future caching-strategy change cannot silently swallow it.
+- The privacy line (R-V1) is revised to name exactly what the beacon collects, per
+  R-V3.
+
+**Done when:** the app installs and opens offline after a first visit, a Playwright
+test confirms a page load served entirely from the service worker's cache still fires
+the analytics request, and F2 is updated with the result.
+
+---
+
+# Phase 8 — Completeness
+
+### T47 — Accessibility
+
+**Functional Design:** §12, R-K1 to R-K11
 
 Keyboard operation throughout, live-region announcements, accessible names, reduced motion, no information carried by colour alone.
 
+- R-K10 is a review gate here as much as a build step: an accessible name is added only where a control has no visible text label, never as a redundant addition to a control that already has one, and never anywhere as crawler-facing text.
+
 **Done when:** every flow is completable by keyboard alone, an automated audit passes on each stage mode, and run progress announces at intervals rather than per image.
 
-### T44 — Language completeness
+### T48 — Language completeness
 
 **Functional Design:** R-L1 to R-L5
 **Technical Design:** §11
 
-Every user-facing string extracted with context. A pseudo-locale for testing.
+Every user-facing string extracted with context, including any accessible-name string added under R-K10. A pseudo-locale for testing.
 
 - A test renders every screen in a right-to-left pseudo-locale and asserts no physical-direction layout leaks.
 - A test asserts the report is unaffected by interface locale.
+- Move the context file from `src/i18n/en/context.json` up to `src/i18n/context.json` and update its importers. T08 placed it inside the English directory before the shared-versus-per-locale question was settled (§11); adding a second locale is the moment it has to move, so that no locale ever gets a context file of its own.
+- Public content pages (FAQ, Privacy, Terms, Desktop, T44) use per-locale markdown with English fallback, not this message catalogue. This task's scope is interface strings only.
 
 **Done when:** no literal user-facing string remains in any component, and both tests pass.
 
-### T45 — Privacy, credits and source
+### T49 — Privacy, credits and source
 
 **Functional Design:** R-V1 to R-V4
 **Technical Design:** §7.2
+**Depends on:** T43
 
 The local-processing line, the credits page listing every bundled component with licence and source link, and the link to the application's own source.
 
+The credits page is a route created by the site shell's router (T43), generated from
+`3rd_party_licenses/` rather than authored prose — it needs no locale fallback and is
+not one of T44's four content pages. The source-code link lives in the site footer
+built by T43. If T46 (PWA and usage visibility) has already run, R-V3's disclosure
+names exactly what the analytics beacon collects; if not, the privacy line states
+plainly that nothing is collected yet.
+
 **Done when:** a test asserts no network request carries image bytes, file names, dimensions or sizes, and the credits page covers every directory in `3rd_party_licenses/`.
 
-### T46 — Limits
+### T50 — Limits
 
 **Functional Design:** §5.7, R-I19 to R-I22, R-I33
 **Technical Design:** §8.3
@@ -679,19 +786,19 @@ owning service.
 
 **Done when:** every limit has a measured value with its evidence, C3 and C4 are updated, and Functional Design §5.7 carries real numbers instead of placeholders.
 
-### T47 — End-to-end suite
+### T51 — End-to-end suite
 
 **Technical Design:** §13
 
-The full fixture set and journeys across three engines: single image, mixed batch, folder tree, animated batch, a run with failures, cancellation, and leaving without downloading.
+The full fixture set and journeys across three engines: single image, mixed batch, folder tree, animated batch, a run with failures, cancellation, leaving without downloading, and the public routes (FAQ, Privacy, Terms, Desktop, `sitemap.xml`, `robots.txt`) reachable and rendering correctly.
 
 **Done when:** the suite passes on all three engines in CI and takes an acceptable time to run.
 
 ---
 
-# Phase 8 — Release
+# Phase 9 — Release
 
-### T48 — Build and deploy
+### T52 — Build and deploy
 
 **Technical Design:** §12
 **Assumptions:** B6, B9
@@ -699,11 +806,11 @@ The full fixture set and journeys across three engines: single image, mixed batc
 Production build, content-hashed WASM with long cache lifetimes, deployment to Hostinger, `.htaccess` headers.
 
 - Verify COOP and COEP actually apply and that `crossOriginIsolated` is true. If headers cannot be set, the threaded build is unavailable and single-threaded is the baseline.
-- Locale routing as real paths with `hreflang`.
+- Locale routing as real paths with `hreflang` is built in T43, not here; this task verifies it survives the production deploy rather than building it.
 
 **Done when:** the site serves over HTTPS, headers verified by fetching them, B6 and B9 updated, and first paint measured on a throttled mobile connection.
 
-### T49 — Licence compliance audit
+### T53 — Licence compliance audit
 
 **Technical Design:** §7.2
 **Assumption:** A12

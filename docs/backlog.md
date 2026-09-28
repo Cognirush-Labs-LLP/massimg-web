@@ -3,7 +3,7 @@
 Open gaps from a core-image-processing audit (baseline commit `4911c43`) that are not queued as
 a direct code change — each needs a product decision, a genuinely new capability, or dedicated
 test infrastructure before it can be fixed reliably. Every entry below is already disclosed to
-users in `docs/faq.md` unless marked otherwise — nobody is being told something false, but the
+users in `content/en/faq.md` unless marked otherwise — nobody is being told something false, but the
 underlying code gap is still there.
 
 The same audit found five other findings that were straightforward to fix; those are already
@@ -15,7 +15,7 @@ here either.
 ## BL-001 — R-Q2 pass-through keeps the source's metadata (CORE-002)
 
 - **Requirements:** P1, R-Q2, R-I17, R-X46
-- **Disclosed:** `docs/faq.md` §7, "Does the app preserve EXIF metadata, like camera info or GPS
+- **Disclosed:** `content/en/faq.md` §7, "Does the app preserve EXIF metadata, like camera info or GPS
   location?"
 - **Location:** `src/pipeline/execute.ts:82–92` (the pass-through branch); `src/domain/report.ts`
   (the `original-kept` caveat text).
@@ -32,7 +32,7 @@ here either.
 ## BL-002 — Non-sRGB CICP sources fail for every non-AVIF output (CORE-003)
 
 - **Requirements:** R-I5, R-I8, R-I35
-- **Disclosed:** `docs/faq.md` §7, "What about the newer wide-color formats used by recent
+- **Disclosed:** `content/en/faq.md` §7, "What about the newer wide-color formats used by recent
   iPhones and AVIF photos (like Display P3)?"
 - **Location:** `src/pipeline/stages/encode-plan.ts` (`unsupportedColour`); `src/pipeline/execute.ts`;
   `src/pipeline/worker.ts`.
@@ -47,7 +47,7 @@ here either.
 ## BL-003 — "Keep original when re-encoding is larger" (R-X24) is not wired in (CORE-004)
 
 - **Requirements:** P5, R-X24, R-X45, R-Q7
-- **Disclosed:** `docs/faq.md` §4, "Will the app ever hand me back a bigger file than the one I
+- **Disclosed:** `content/en/faq.md` §4, "Will the app ever hand me back a bigger file than the one I
   uploaded?"
 - **Location:** `src/pipeline/execute.ts`, after the final candidate is selected in both the still
   and animated paths.
@@ -62,7 +62,7 @@ here either.
 ## BL-004 — GIF only models alpha as boolean; partial transparency silently binarized (CORE-007)
 
 - **Requirements:** P1, R-C13, R-X46
-- **Disclosed:** `docs/faq.md` §7, "Does GIF support transparency the same way PNG or WebP does?"
+- **Disclosed:** `content/en/faq.md` §7, "Does GIF support transparency the same way PNG or WebP does?"
 - **Location:** `src/domain/format.ts` (`supportsAlpha`); `src/domain/job.ts`; `src/pipeline/execute.ts`.
 - **Why backlog:** needs a product decision on the disclosed policy — threshold/matte, format
   substitution, or outright rejection — before the alpha model can move from a boolean to
@@ -72,7 +72,7 @@ here either.
 ## BL-005 — Animation timing rounding has no disclosed tolerance or per-run caveat (CORE-008)
 
 - **Requirements:** P1, R-Q9
-- **Disclosed:** `docs/faq.md` §6, "Will the timing between frames be perfectly preserved?"
+- **Disclosed:** `content/en/faq.md` §6, "Will the timing between frames be perfectly preserved?"
 - **Location:** `src/pipeline/stages/gif-plan.ts` (`gifDelayCentiseconds`);
   `src/pipeline/stages/animation-plan.ts` (`apngDelayFraction`).
 - **Why backlog:** GIF's centisecond rounding and APNG's rational-to-integer-millisecond
@@ -83,7 +83,7 @@ here either.
 
 ## BL-006 — Source-derived metadata and auxiliary-image caveats have no producer (CORE-009)
 
-- **Disclosed (partially):** `docs/faq.md` §7 covers the metadata-removal policy and the Live
+- **Disclosed (partially):** `content/en/faq.md` §7 covers the metadata-removal policy and the Live
   Photo/portrait auxiliary-data loss in general terms. What is **not** disclosed anywhere: a
   specific run never tells the user "this file's GPS data was removed" or "this file's Live Photo
   data was dropped" — `metadata-removed` and `auxiliary-images-dropped` are declared in
@@ -112,7 +112,7 @@ here either.
 ## BL-008 — No mobile Safari / device-limit measurement for large animations
 
 - **Requirements:** R-B2, R-B6, and memory safety generally
-- **Disclosed:** `docs/faq.md` §8 says mobile Safari's memory behavior "hasn't been verified yet."
+- **Disclosed:** `content/en/faq.md` §8 says mobile Safari's memory behavior "hasn't been verified yet."
 - **Why backlog:** needs real device test infrastructure, not a code change. The longest committed
   browser fixture is 16 frames at 400×400; T29 measured larger generated cases on desktop only.
   There is no mobile Safari run and no regression threshold for resize/encode peak memory.

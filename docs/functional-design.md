@@ -49,7 +49,7 @@ These govern decisions not yet anticipated. When a requirement below and a princ
 The interface ships in English and is built to be translated without restructuring.
 
 - R-L1 No user-facing string is written inline. Every string lives in a locale file keyed by identifier.
-- R-L2 A parallel context file accompanies the locale file, giving each key the situation it appears in, what the surrounding UI does, and any length constraint. A translator working from keys and strings alone cannot tell a verb from a noun in English, and this is where translation quality is lost.
+- R-L2 A parallel context file accompanies the locale file, giving each key the situation it appears in, what the surrounding UI does, and any length constraint. A translator working from keys and strings alone cannot tell a verb from a noun in English, and this is where translation quality is lost. This file exists once, in English; it is never translated and never duplicated per locale, and every locale's strings are read alongside this same file (Technical Design §11).
 - R-L3 The report is not translated. It is machine-readable, so its keys stay English and its numbers stay dot-decimal regardless of interface language. The interface and the report never share a number formatter.
 - R-L4 Layout uses direction-neutral properties throughout, so a right-to-left locale mirrors without rewriting layout rules. The side panel and the mobile drawer are on the inline-end side, not the right.
 - R-L5 Text that is composed from parts at runtime uses a single parameterised string per sentence. Sentences are never assembled by concatenating fragments, because word order differs by language.
@@ -678,6 +678,8 @@ Every condition below has a defined surface and message. No condition may fail s
 - R-K7 Animation and transitions respect `prefers-reduced-motion`.
 - R-K8 Information is never carried by colour alone. The increase case in R-P5 uses a glyph as well as a colour, and the donut's segments are labelled in text per R-X4.
 - R-K9 The confirmation in R-X18 is a focus-trapped dialog with **Stay** as the default focused action.
+- R-K10 An accessible name is added only to a control that has no visible text label. A control that already has one is not given a separate accessible-name attribute, because its visible text is already its accessible name, and duplicating it doubles the translation burden for no accessibility gain. An accessible-name string is a key in the same message catalogue as visible text (R-L1) and carries the same context entry (R-L2). It is translated content, not a separate mechanism.
+- R-K11 No text, visible or invisible, is added anywhere in the interface or the public site (§15) for a search engine or an AI crawler rather than for a person. A markup comment addressed to a crawler is not read by one, and text hidden from sighted users with no assistive-technology purpose is a dark pattern rather than an SEO technique, whatever benefit is claimed for it.
 
 ---
 
@@ -740,7 +742,72 @@ Dimension shortcuts are plain numbers with short labels (`FHD 1920`, `IG 1080`),
 
 ---
 
-## 15. Decisions on record
+## 15. Public site
+
+The compressor is one page inside a small public site: pages that explain it, and the
+pages a privacy-conscious audience expects to find. This section is scoped to the site
+around the tool; the tool's own interface is specified in §§2-7.
+
+### 15.1 Site structure
+
+- R-S1 The compressor is a single route. Gallery, Preview, Edit and Processing (§3) are
+  internal states of that one page; none of them is a separate URL, and none appears in
+  the sitemap (R-S8). This is a routing decision, not an oversight, and treating a stage
+  mode as a page does not revisit it.
+- R-S2 A site shell — a header carrying navigation and a footer — wraps the tool and
+  every public page alike. The tool renders inside the shell exactly as any other page
+  does.
+- R-S3 FAQ, Privacy, Terms and a Desktop information page are separate, real,
+  independently addressable routes.
+
+### 15.2 Content pages and translation
+
+- R-S4 FAQ, Privacy, Terms and Desktop content is authored as markdown, one file per
+  supported locale, kept apart from the interface string catalogue (§1.5). A content
+  page is prose a person writes directly; R-L1 to R-L5 solve a problem — retranslating
+  small fragments of interface chrome — that a page of continuous prose does not have.
+- R-S5 Where a locale has no file for a given page, the English file for that page is
+  served in its place, rather than an error or a missing page.
+
+### 15.3 Discoverability
+
+- R-S6 Every public route, the tool's own included, carries its own title, description,
+  canonical URL, and Open Graph and Twitter card metadata. No two routes share a
+  description.
+- R-S7 The tool route carries WebApplication/SoftwareApplication structured data; the
+  FAQ route carries FAQPage structured data. Both are offered to any engine that reads
+  them; neither is required to produce a visible result for the site to be complete.
+- R-S8 A sitemap.xml lists the real routes only. The stage modes excluded by R-S1 are
+  not routes and are not listed.
+- R-S9 A robots.txt names the sitemap's location and explicitly allows named,
+  identifiable crawlers, in addition to its default allow. Hidden or crawler-only
+  content of any kind, on any page, is excluded by R-K11; nothing in this section is a
+  licence to add it.
+- R-S10 An llms.txt file may be published at the site root, as a low-cost courtesy to a
+  tool that reads it. It is not a channel the product depends on.
+
+### 15.4 Legal content
+
+- R-S11 The Privacy and Terms routes, and the pipeline that builds them, exist
+  independent of their copy. Placeholder content ships until the legal text is written;
+  the routes are not withheld waiting for it.
+
+### 15.5 Installability and usage visibility
+
+- R-S12 The application is installable as a Progressive Web App — a manifest and a
+  service worker enabling offline use — consistent with every image already being
+  processed on-device.
+- R-S13 Usage visibility does not rely on server or edge access logs alone. A repeat
+  visit served entirely from the service worker's cache may never reach the origin,
+  undercounting exactly the loyal, offline-capable users the product exists for. Where
+  usage is measured, a client-triggered event fired from the page itself does the
+  measuring.
+- R-S14 Where such measurement exists, it is the case R-V3 already anticipates:
+  anonymous, aggregate, cookieless, and named exactly in the revised privacy line.
+
+---
+
+## 16. Decisions on record
 
 Recorded so they are not relitigated.
 
@@ -784,7 +851,7 @@ Recorded so they are not relitigated.
 
 ---
 
-## 16. Items for the Technical Design
+## 17. Items for the Technical Design
 
 Functional behaviour above is settled. These are implementation questions that must be resolved before the Tasks document:
 

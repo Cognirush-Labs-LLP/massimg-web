@@ -47,13 +47,16 @@ A task is finished only when its **Done when** conditions all hold *and* its han
 - **Tests are part of the task, not a later task.** A task that adds a pure function adds its unit tests.
   There is no cleanup phase at the end of the list.
 
-## Keeping `docs/faq.md` current
+## Keeping `content/en/faq.md` current
 
-`docs/faq.md` is the end-user FAQ. It documents *actual current behaviour*, including known gaps, not
-just what the design docs intend — so a change to behaviour can silently make an answer wrong.
+`content/en/faq.md` is the end-user FAQ, served as the public `/faq` page (and the
+fallback for any locale with no translated file of its own — see
+`docs/technical-design.md` §12.4). It documents *actual current behaviour*, including
+known gaps, not just what the design docs intend — so a change to behaviour can
+silently make an answer wrong.
 
-After any change that touches user-visible behaviour, re-read `docs/faq.md` and check whether an
-existing answer no longer matches what the app does.
+After any change that touches user-visible behaviour, re-read `content/en/faq.md` and
+check whether an existing answer no longer matches what the app does.
 
 - Correct any answer the change falsified, with the smallest edit that makes it true again.
 - **Do not add a new question without the user's permission.** Adding Q&A entries is the user's call;
@@ -63,10 +66,18 @@ existing answer no longer matches what the app does.
   paths or code identifiers in the FAQ itself.
 - Where a behaviour is deliberately unfinished or undecided, the answer says so plainly rather than
   describing the intended end state as though it already works.
+- This rule covers the English source only. Keeping a locale's translated FAQ file in
+  sync with a behaviour change is a translation task, not an engineering one, and does
+  not block this rule.
 
 ## Repository layout
 
 ```
+content/
+  en/                  public site pages — FAQ, Privacy, Terms, Desktop — one markdown
+                        file per page; English is the fallback for any locale with no
+                        file (docs/technical-design.md §12.4)
+  es/, ...              same pages translated, added per locale as they exist
 docs/
   functional-design.md
   technical-design.md
@@ -76,14 +87,15 @@ docs/
   sample_design/        imported Claude Design prototype — visual/interaction reference only, see its README
 3rd_party_licenses/    one directory per bundled component (populated by T06)
 src/                   application code — see docs/technical-design.md §2 for the module structure
+  config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T43)
 verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
 tests/                 permanent browser/e2e test suite, added from T05 onward
 LICENSE                AGPL v3 (added by T06)
 ```
 
-`src/` is currently just the skeleton from `docs/technical-design.md` §2 (empty directories). The actual
-Vite/Vue/TypeScript/Pinia/Vitest scaffold is task **T04** — nothing is installed yet, and
-`npm run check` / `npm test` intentionally fail until then.
+`src/` holds the Vite/Vue/TypeScript/Pinia/Vitest scaffold from **T04** onward, and the
+core pipeline (decode, resize, encode, formats) through **T30**. Phase 5 onward
+(interface, public site, completeness, release) is still ahead of it.
 
 ## Stack (once T04 is done)
 
