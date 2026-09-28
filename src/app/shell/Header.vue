@@ -3,13 +3,12 @@
 // only) the Options button that opens the settings drawer.
 import { computed } from 'vue'
 import { t } from '@/i18n/t'
-import type { StageMode } from './useStageMode'
+import type { StageMode } from '@/stores/ui'
 
 const props = withDefaults(
   defineProps<{
     stageMode: StageMode
     isDesktop: boolean
-    // TODO(T32): bind to useBatchStore's image count.
     selectedCount?: number
     // TODO(T33/T36): bind to the active image's file name once Gallery/Preview carry real data.
     activeFileName?: string

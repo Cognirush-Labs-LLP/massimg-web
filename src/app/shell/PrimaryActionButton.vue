@@ -5,9 +5,9 @@
 // placement must sit outside the drawer's transform context so opening/closing the drawer can
 // never cover or remove it.
 //
-// TODO(T32): `count` and `disabled` should come from `useBatchStore` (image count, and
-// `disabled` = batch is empty, R-A3). Until that store exists, T31 hardcodes the only state
-// that's actually true right now: no batch exists at all.
+// `count` and `disabled` come from `useBatchStore` (image count, and `disabled` = batch is
+// empty, R-A3) via the caller — ToolPage.vue reads the store, this component stays a plain,
+// store-free leaf like Header.vue and Drawer.vue.
 import { computed } from 'vue'
 import { t } from '@/i18n/t'
 

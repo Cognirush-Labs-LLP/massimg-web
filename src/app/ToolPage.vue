@@ -5,7 +5,8 @@
 // separate from App.vue (the thin vite-ssg root) because T43 wraps App.vue with an outer site
 // header/footer later; this page's own chrome must already live inside the routed page, not the
 // app root.
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, ref, type Component } from 'vue'
+import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import Gallery from '@/ui/gallery/Gallery.vue'
@@ -17,10 +18,14 @@ import StageContainer from './shell/StageContainer.vue'
 import SidePanel from './shell/SidePanel.vue'
 import Drawer from './shell/Drawer.vue'
 import PrimaryActionButton from './shell/PrimaryActionButton.vue'
-import { useStageMode, type StageMode } from './shell/useStageMode'
+import { useUiStore, type StageMode } from '@/stores/ui'
+import { useBatchStore } from '@/stores/batch'
 import { useBreakpoint } from './shell/useBreakpoint'
 
-const { stageMode } = useStageMode()
+const uiStore = useUiStore()
+const { stageMode, drawerOpen } = storeToRefs(uiStore)
+const batchStore = useBatchStore()
+const { images } = storeToRefs(batchStore)
 const { isDesktop } = useBreakpoint()
 
 const STAGE_COMPONENTS: Record<StageMode, Component> = {
@@ -37,22 +42,18 @@ const stageComponent = computed(() => STAGE_COMPONENTS[stageMode.value])
 // own actions (Cancel, then Download/Back to images, T38).
 const showPanel = computed(() => stageMode.value !== 'processing')
 
-const drawerOpen = ref(false)
+const imageCount = computed(() => images.value.length)
+const primaryActionDisabled = computed(() => imageCount.value === 0)
+
+// Not store state (docs/ui-design.md §4 lists only drawer *open* state as store-owned): a live
+// DOM handle for focus-return has the same non-serializable, DOM-coupled character the
+// binary-data rule guards against in spirit, so it stays local to the component that opens it.
 const drawerOpener = ref<HTMLElement | null>(null)
 
 function openPanel(opener: HTMLElement): void {
   drawerOpener.value = opener
-  drawerOpen.value = true
+  uiStore.openDrawer()
 }
-
-// Defensive: nothing in T31 can reach Processing through real interaction (the primary action
-// is hardcoded disabled, see PrimaryActionButton.vue's TODO), but this keeps the drawer from
-// being left stranded open, mid-transform, if a later task's real transition fires while it's open.
-watch(stageMode, (mode) => {
-  if (mode === 'processing') {
-    drawerOpen.value = false
-  }
-})
 
 // Client-only: vite-ssg runs this component once in Node at build time, where `window`, WASM
 // and workers don't exist (Technical Design §12.1/§12.3). `onMounted` never fires during that
@@ -64,7 +65,12 @@ onMounted(() => {
 
 <template>
   <div class="tool-page">
-    <Header :stage-mode="stageMode" :is-desktop="isDesktop" @open-panel="openPanel" />
+    <Header
+      :stage-mode="stageMode"
+      :is-desktop="isDesktop"
+      :selected-count="imageCount"
+      @open-panel="openPanel"
+    />
 
     <div class="tool-body">
       <StageContainer>
@@ -80,7 +86,7 @@ onMounted(() => {
           <SidePanel />
         </div>
         <div class="side-panel-footer">
-          <PrimaryActionButton />
+          <PrimaryActionButton :count="imageCount" :disabled="primaryActionDisabled" />
         </div>
       </aside>
 
@@ -90,7 +96,7 @@ onMounted(() => {
     </div>
 
     <div v-if="!isDesktop && showPanel" class="mobile-action-bar">
-      <PrimaryActionButton />
+      <PrimaryActionButton :count="imageCount" :disabled="primaryActionDisabled" />
     </div>
   </div>
 </template>

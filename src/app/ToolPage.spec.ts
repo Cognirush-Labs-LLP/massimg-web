@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import ToolPage from './ToolPage.vue'
-import { useStageMode } from './shell/useStageMode'
+import { useUiStore } from '@/stores/ui'
+import type { ImageId } from '@/domain/types'
 import PrimaryActionButton from './shell/PrimaryActionButton.vue'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import Preview from '@/ui/preview/Preview.vue'
@@ -31,13 +32,12 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  // useStageMode's ref is a T31-temporary module-scope singleton (see its own doc comment) —
-  // reset it so one test's mode change can't leak into the next.
-  useStageMode().stageMode.value = 'gallery'
 })
 
 async function mountToolPage(): Promise<VueWrapper> {
-  const wrapper = mount(ToolPage, { global: { plugins: [createPinia()] } })
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const wrapper = mount(ToolPage, { global: { plugins: [pinia] } })
   // useBreakpoint's real matchMedia value only lands after onMounted's reactive update flushes.
   await nextTick()
   return wrapper
@@ -52,11 +52,10 @@ describe('ToolPage stage-mode mounting', () => {
 
   it('unmounts the outgoing mode and mounts the incoming one on a mode switch', async () => {
     const wrapper = await mountToolPage()
-    const { stageMode } = useStageMode()
 
     expect(wrapper.findComponent(Gallery).exists()).toBe(true)
 
-    stageMode.value = 'preview'
+    useUiStore().openPreview('image-1' as ImageId)
     await nextTick()
 
     // A real unmount, not a hidden-but-alive tree: <component :is> swapping destroys the
@@ -98,14 +97,27 @@ describe('ToolPage panel layout', () => {
 
   it('hides the panel entirely — static or drawer — while Processing is mounted', async () => {
     const wrapper = await mountToolPage()
-    const { stageMode } = useStageMode()
 
-    stageMode.value = 'processing'
+    useUiStore().enterProcessing()
     await nextTick()
 
     expect(wrapper.findComponent(Processing).exists()).toBe(true)
     expect(wrapper.find('.side-panel-static').exists()).toBe(false)
     expect(wrapper.find('[data-testid="options-button"]').exists()).toBe(false)
+  })
+
+  it('entering Processing force-closes an open drawer', async () => {
+    matches = false
+    const wrapper = await mountToolPage()
+    const ui = useUiStore()
+
+    await wrapper.find('[data-testid="options-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(true)
+
+    ui.enterProcessing()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(false)
   })
 })
 
@@ -122,11 +134,18 @@ describe('ToolPage primary action', () => {
     expect(wrapper.find('.mobile-action-bar').text()).toContain('Compress')
   })
 
+  it('is disabled while the batch is empty', async () => {
+    const wrapper = await mountToolPage()
+    const button = wrapper.findComponent(PrimaryActionButton)
+
+    expect(button.props('count')).toBe(0)
+    expect(button.props('disabled')).toBe(true)
+  })
+
   it('is not rendered while Processing is mounted, on either layout', async () => {
     const wrapper = await mountToolPage()
-    const { stageMode } = useStageMode()
 
-    stageMode.value = 'processing'
+    useUiStore().enterProcessing()
     await nextTick()
 
     // Not a text-content check: the wordmark "Compressor" itself contains "Compress" as a
