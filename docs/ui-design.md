@@ -19,7 +19,7 @@ mockup.
 
 | Task | Title | Section here |
 |---|---|---|
-| T31 | Shell and layout | §2, §3 |
+| T31 | Shell, routing and static generation | §2, §3 |
 | T32 | Stores | §4 |
 | T33 | Gallery, grid view | §5, §6 |
 | T34 | Gallery, list view | §7 |
@@ -110,7 +110,16 @@ Two consequences of dropping named fonts, which the implementation must respect:
 
 ## 2. App shell & responsive behaviour
 
-**Satisfies:** R-R1–R-R5, R-A1, functional-design §2, §11.
+**Satisfies:** R-R1–R-R5, R-A1, R-S1, functional-design §2, §11.
+
+Everything below describes the compressor's own chrome, which lives on **one route**.
+Its four stage modes (§3) are internal state, never URLs (R-S1). T31's other half — the
+router, the site config and static generation — is specified in technical-design §12.2
+and §12.3 rather than here, and the outer site header and footer that wrap this shell
+arrive later, in T43. Two consequences for anyone implementing this section: the regions
+below are mounted inside a route component rather than at the application root, and
+every component here is rendered once in Node at build time, so browser APIs belong in
+client-only lifecycle hooks.
 
 ### Regions
 

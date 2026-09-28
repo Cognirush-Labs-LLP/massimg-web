@@ -498,16 +498,44 @@ Binary search over the quality parameter, capped at 8 iterations.
 
 # Phase 5 — Interface
 
-### T31 — Shell and layout
+### T31 — Shell, routing and static generation
 
-**Functional Design:** §2, R-R1 to R-R5, R-A1
-**Technical Design:** §1.1
+**Functional Design:** §2, R-R1 to R-R5, R-A1, R-S1
+**Technical Design:** §1.1, §2, §12.2, §12.3
+**Assumption:** F1
 
-Header, stage container, side panel, responsive behaviour at 900px, mobile drawer with focus trapping.
+The largest task in this phase, and deliberately so: it replaces the placeholder root
+that T04 through T08 have been building against, and the app's shape afterwards is what
+every later interface task builds inside. Two halves.
+
+**The app becomes a routed, statically generated site.** `src/config/site.ts` holding the
+canonical base URL (env-driven), the supported-locale list and the default locale.
+`vue-router` with the tool at `/`; the content routes arrive with their pages in T44.
+`vite-ssg` replacing the `createApp(...).mount()` entry, so each route is rendered to
+real HTML at build time.
+
+- **Settle F1 here, not later.** It is 70% confident and the whole §12 SEO surface rests
+  on it. Build the site, fetch a route's HTML file from disk, and assert its content is
+  present without executing any script. If vite-ssg cannot do that, this is the moment to
+  substitute a different prerenderer — while one route exists rather than twelve tasks of
+  interface.
+- **Everything after this is authored under a build-time rendering constraint.** vite-ssg
+  runs each route in Node, so `window`, `document`, `navigator`, WASM, workers and OPFS
+  are unavailable during that pass and belong in client-only lifecycle hooks. The
+  existing `scheduleImageMagickPreload()` call in `main.ts` moves accordingly. Getting
+  this right now is nearly free; retrofitting it across T32 to T42 is not.
+
+**The compressor's own shell, inside that route.** Header, stage container, side panel,
+responsive behaviour at 900px, mobile drawer with focus trapping.
 
 - Stage modes are exclusively mounted components, so leaving a mode unmounts its state. This is how R-M4 is satisfied automatically.
+- The tool is one route; its four stage modes are internal state and never become URLs (R-S1).
+- Removes the T07 and T08 demo components parked on the placeholder root, as both of those handover notes anticipated, and rewrites the placeholder e2e test T05 flagged.
 
-**Done when:** the panel is static above 900px and a drawer below, the primary action is visible in both, and the drawer traps focus and returns it on close.
+**Done when:** the panel is static above 900px and a drawer below, the primary action is
+visible in both, the drawer traps focus and returns it on close, a production build emits
+a static HTML file for the tool route whose content is present without JavaScript, and F1
+is updated with that result.
 
 ### T32 — Stores
 
@@ -637,30 +665,27 @@ Explicit Download. Single image downloads directly with no ZIP and no report. Th
 
 # Phase 7 — Public site
 
-### T43 — Site shell, router and static generation
+### T43 — Site shell and navigation
 
-**Functional Design:** R-S1, R-S2, R-S3
-**Technical Design:** §2, §12.2, §12.3
+**Functional Design:** R-S2, R-S3
+**Technical Design:** §12.2, §12.3
 **Depends on:** T31
 
-`vue-router` with one route per public page (`/`, `/faq`, `/privacy`, `/terms`,
-`/desktop`, plus locale-prefixed variants), and `vite-ssg` producing static HTML for
-each at build time. `src/config/site.ts` as the single source of the canonical
-production base URL, the supported-locale list and the default locale — every task in
-this phase reads it rather than a local constant.
+The outer chrome every route renders inside: a header carrying navigation and a footer.
+The router, the site config and static generation already exist from T31; this task adds
+the site's own furniture and the remaining routes' entries, so T44 has somewhere to
+mount its pages.
 
-- The compressor's Gallery/Preview/Edit/Processing modes stay internal state on the
-  tool's one route (R-S1); this task adds no route for any of them.
-- The header nav and footer wrap every route, including the tool's. The tool route
-  mounts its existing internal header/stage/panel shell (T31) unchanged inside this
-  outer one.
-- The production base URL is env-driven, so a local or staging build does not
-  canonicalize to `https://massimg.com`.
+- The tool route mounts its existing header/stage/panel shell (T31) unchanged inside
+  this outer shell. The compressor does not lose or duplicate its own chrome.
+- Route entries for `/faq`, `/privacy`, `/terms` and `/desktop`, plus the
+  locale-prefixed variants derived from `src/config/site.ts`. Their content is T44's.
+- The footer carries the source-code link R-V4 requires; T49 owns the credits page it
+  points at.
 
-**Done when:** `vite build` produces real static HTML for every route (verified by
-fetching the built file directly, not by reading the SPA's runtime DOM), the
-compressor tool hydrates and is fully interactive on its route, and F1 is updated with
-the result.
+**Done when:** header and footer render on every route including the tool's, the tool
+remains fully interactive beneath them, and each new route resolves to a page rather
+than a 404.
 
 ### T44 — Public content pages
 
@@ -710,8 +735,8 @@ names.
 
 **Functional Design:** R-S11 to R-S14, R-V3
 **Technical Design:** §12.6
-**Assumptions:** F1, F2
-**Depends on:** T43
+**Assumption:** F2
+**Depends on:** T31
 
 A web app manifest and a generated service worker for offline installability, and a
 client-triggered, cookieless analytics beacon (Cloudflare Web Analytics) as the
@@ -762,7 +787,7 @@ Every user-facing string extracted with context, including any accessible-name s
 
 The local-processing line, the credits page listing every bundled component with licence and source link, and the link to the application's own source.
 
-The credits page is a route created by the site shell's router (T43), generated from
+The credits page is a route on the router built in T31, generated from
 `3rd_party_licenses/` rather than authored prose — it needs no locale fallback and is
 not one of T44's four content pages. The source-code link lives in the site footer
 built by T43. If T46 (PWA and usage visibility) has already run, R-V3's disclosure

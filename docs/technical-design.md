@@ -750,7 +750,7 @@ The base URL is read from an environment variable rather than hardcoded, so a lo
 
 Routes: `/` (the tool), `/faq`, `/privacy`, `/terms`, `/desktop`, each repeated under every locale prefix in `src/config/site.ts`. None of the tool's internal stage modes is a route.
 
-**F1**: that `vite-ssg` produces genuinely static, fetchable HTML per route — not one shared shell that depends on client-side JavaScript to show route-specific content — is assumed rather than proven; verified in T43 by fetching a built route's file directly and asserting its title, meta description and body content without executing any script.
+**F1**: that `vite-ssg` produces genuinely static, fetchable HTML per route — not one shared shell that depends on client-side JavaScript to show route-specific content — is assumed rather than proven; verified in T31 by fetching a built route's file directly and asserting its title, meta description and body content without executing any script.
 
 ### 12.4 Public content pages
 

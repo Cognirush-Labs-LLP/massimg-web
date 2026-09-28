@@ -87,7 +87,7 @@ docs/
   sample_design/        imported Claude Design prototype — visual/interaction reference only, see its README
 3rd_party_licenses/    one directory per bundled component (populated by T06)
 src/                   application code — see docs/technical-design.md §2 for the module structure
-  config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T43)
+  config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T31)
 verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
 tests/                 permanent browser/e2e test suite, added from T05 onward
 LICENSE                AGPL v3 (added by T06)
