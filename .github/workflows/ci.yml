@@ -38,6 +38,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  build:
+    name: production build + static HTML check (F1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm verify:ssg
+
   e2e:
     name: browser tests (playwright, ${{ matrix.project }})
     runs-on: ubuntu-latest

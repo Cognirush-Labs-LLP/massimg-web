@@ -1,0 +1,147 @@
+<script setup lang="ts">
+// The compressor tool's own page, mounted at '/' (Technical Design §12.3, R-S1). Owns the
+// header/stage/side-panel shell (docs/ui-design.md §2) and exclusive stage-mode mounting
+// (docs/ui-design.md §3, Technical Design §1.1) — everything Half 2 of T31 describes. Deliberately
+// separate from App.vue (the thin vite-ssg root) because T43 wraps App.vue with an outer site
+// header/footer later; this page's own chrome must already live inside the routed page, not the
+// app root.
+import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { t } from '@/i18n/t'
+import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
+import Gallery from '@/ui/gallery/Gallery.vue'
+import Preview from '@/ui/preview/Preview.vue'
+import Edit from '@/ui/edit/Edit.vue'
+import Processing from '@/ui/processing/Processing.vue'
+import Header from './shell/Header.vue'
+import StageContainer from './shell/StageContainer.vue'
+import SidePanel from './shell/SidePanel.vue'
+import Drawer from './shell/Drawer.vue'
+import PrimaryActionButton from './shell/PrimaryActionButton.vue'
+import { useStageMode, type StageMode } from './shell/useStageMode'
+import { useBreakpoint } from './shell/useBreakpoint'
+
+const { stageMode } = useStageMode()
+const { isDesktop } = useBreakpoint()
+
+const STAGE_COMPONENTS: Record<StageMode, Component> = {
+  gallery: Gallery,
+  preview: Preview,
+  edit: Edit,
+  processing: Processing,
+}
+const stageComponent = computed(() => STAGE_COMPONENTS[stageMode.value])
+
+// The panel is not shown during Processing — it is replaced entirely by run status
+// (docs/ui-design.md §2, §13); there is nothing to configure mid-run. The persistent Compress
+// button is part of Gallery/Preview/Edit chrome for the same reason: Processing supplies its
+// own actions (Cancel, then Download/Back to images, T38).
+const showPanel = computed(() => stageMode.value !== 'processing')
+
+const drawerOpen = ref(false)
+const drawerOpener = ref<HTMLElement | null>(null)
+
+function openPanel(opener: HTMLElement): void {
+  drawerOpener.value = opener
+  drawerOpen.value = true
+}
+
+// Defensive: nothing in T31 can reach Processing through real interaction (the primary action
+// is hardcoded disabled, see PrimaryActionButton.vue's TODO), but this keeps the drawer from
+// being left stranded open, mid-transform, if a later task's real transition fires while it's open.
+watch(stageMode, (mode) => {
+  if (mode === 'processing') {
+    drawerOpen.value = false
+  }
+})
+
+// Client-only: vite-ssg runs this component once in Node at build time, where `window`, WASM
+// and workers don't exist (Technical Design §12.1/§12.3). `onMounted` never fires during that
+// pass, which is what makes this safe — moved here from the old src/app/main.ts module scope.
+onMounted(() => {
+  scheduleImageMagickPreload()
+})
+</script>
+
+<template>
+  <div class="tool-page">
+    <Header :stage-mode="stageMode" :is-desktop="isDesktop" @open-panel="openPanel" />
+
+    <div class="tool-body">
+      <StageContainer>
+        <component :is="stageComponent" />
+      </StageContainer>
+
+      <aside
+        v-if="isDesktop && showPanel"
+        class="side-panel-static"
+        :aria-label="t('shell.panelLabel')"
+      >
+        <div class="side-panel-scroll">
+          <SidePanel />
+        </div>
+        <div class="side-panel-footer">
+          <PrimaryActionButton />
+        </div>
+      </aside>
+
+      <Drawer v-if="!isDesktop && showPanel" v-model="drawerOpen" :return-focus-to="drawerOpener">
+        <SidePanel />
+      </Drawer>
+    </div>
+
+    <div v-if="!isDesktop && showPanel" class="mobile-action-bar">
+      <PrimaryActionButton />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.tool-page {
+  display: flex;
+  flex-direction: column;
+  block-size: 100vh;
+  min-block-size: 100vh;
+  overflow: hidden;
+}
+
+.tool-body {
+  display: flex;
+  flex: 1;
+  min-block-size: 0;
+  position: relative;
+}
+
+.side-panel-static {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  inline-size: 344px;
+  min-block-size: 0;
+  background: var(--color-surface-panel);
+  border-inline-start: 1px solid var(--color-border-group);
+}
+
+.side-panel-scroll {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
+.side-panel-footer {
+  flex: none;
+  padding-block: 14px 18px;
+  padding-inline: 16px;
+  border-block-start: 1px solid var(--color-border-group);
+}
+
+.mobile-action-bar {
+  position: fixed;
+  z-index: 20;
+  inset-inline: 0;
+  inset-block-end: 0;
+  padding-block: 12px 16px;
+  padding-inline: 14px;
+  background: var(--color-surface-panel);
+  border-block-start: 1px solid var(--color-border-group);
+}
+</style>

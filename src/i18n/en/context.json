@@ -13,5 +13,55 @@
     "situation": "Section heading above the Quality controls (target selector, slider, LOW/MED/HIGH shortcut chips) in the side panel (Functional Design §4.1). Sibling headings in the same visual family are Dimension and Format (§4.2, §4.3) — not yet added as keys, but translators should expect this word to read consistently with those when they arrive.",
     "control": "Static section heading, rendered uppercase with wide letter-tracking (Functional Design §14.2, 'Section headings are uppercase with wide tracking'). Not a button — do not translate as a call to action.",
     "maxLength": 12
+  },
+  "panel.section.dimension": {
+    "situation": "Section heading above the Dimension accordion (Original size / Fit within long edge / Fixed width / Fixed height rows) in the side panel (Functional Design §4.2, docs/ui-design.md §9). Sibling of panel.section.quality and panel.section.format — should read consistently with both.",
+    "control": "Static section heading, rendered uppercase with wide letter-tracking, same treatment as panel.section.quality. Not a button.",
+    "maxLength": 12
+  },
+  "panel.section.format": {
+    "situation": "Section heading above the output-format dropdown in the side panel (Functional Design §4.3, docs/ui-design.md §10). Sibling of panel.section.quality and panel.section.dimension — should read consistently with both.",
+    "control": "Static section heading, rendered uppercase with wide letter-tracking, same treatment as panel.section.quality. Not a button.",
+    "maxLength": 12
+  },
+  "shell.breadcrumb.selected": {
+    "situation": "Header breadcrumb (docs/ui-design.md §2) shown while the Gallery stage mode is mounted. {count} is the number of images currently in the batch, including zero for the empty state.",
+    "control": "Mono, uppercase (applied via CSS text-transform, not baked into this string), small text next to the wordmark. Not interactive.",
+    "maxLength": 20
+  },
+  "shell.breadcrumb.preview": {
+    "situation": "Header breadcrumb shown while the Preview stage mode is mounted, for the one image currently being previewed. {filename} is that image's original file name, user data, so it must not be uppercased by this template — CSS text-transform handles the surrounding label text only in visual effect, but since the whole line is one uppercase run, translators should not add casing logic around {filename} either; it renders however the surrounding CSS transform renders the whole string.",
+    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
+    "maxLength": null
+  },
+  "shell.breadcrumb.edit": {
+    "situation": "Header breadcrumb shown while the Edit stage mode is mounted, for the image currently being rotated/cropped. {filename} is that image's original file name (user data).",
+    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
+    "maxLength": null
+  },
+  "shell.breadcrumb.processing": {
+    "situation": "Header breadcrumb shown while a compression run is in progress (Processing stage mode).",
+    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
+    "maxLength": 16
+  },
+  "shell.optionsButton": {
+    "situation": "Mobile-only header button (docs/ui-design.md §2) that opens the settings drawer. Rendered next to a decorative menu glyph (☰) that is not part of this string — the glyph is marked aria-hidden and carries no translatable text of its own.",
+    "control": "Solid tint-red pill button, same visual weight as the primary Compress action. This is the button's full visible label, so it also serves as its accessible name (R-K10) — no separate aria-label is added.",
+    "maxLength": 12
+  },
+  "shell.hideButton": {
+    "situation": "Sticky button pinned to the top of the mobile settings drawer (docs/ui-design.md §2) that closes it. Rendered next to a decorative arrow glyph (→) that is not part of this string.",
+    "control": "Small button at the top of the drawer's scroll area. This is the button's full visible label and accessible name (R-K10) — no separate aria-label is added.",
+    "maxLength": 10
+  },
+  "shell.panelLabel": {
+    "situation": "Not visible text — the accessible name (aria-label) for the side panel landmark, used identically whether it renders as the static desktop column or the mobile drawer (docs/ui-design.md §2). Lets a screen-reader user identify the region without relying on its visual position.",
+    "control": "ARIA label on a region/dialog container, never rendered as visible text.",
+    "maxLength": 40
+  },
+  "shell.modeNotYetBuilt": {
+    "situation": "Placeholder body text shown inside each of the four stage-mode components (Gallery/Preview/Edit/Processing) as built by T31, before T33-T38 give each one real content. Temporary — removed as each mode's real task lands.",
+    "control": "Plain paragraph text inside the stage body.",
+    "maxLength": null
   }
 }

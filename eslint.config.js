@@ -30,6 +30,21 @@ export default tseslint.config(
         extraFileExtensions: ['.vue'],
       },
     },
+    rules: {
+      // .vue <script setup> blocks aren't linted with a type-aware `project` (only plain .ts
+      // files are), so base ESLint's no-undef can't resolve ambient DOM lib types (HTMLElement,
+      // MouseEvent, ...) used in type position and false-positives on them. vue-tsc already
+      // covers this correctly and authoritatively as part of `pnpm check`, run before eslint.
+      'no-undef': 'off',
+      // T31 (docs/task-notes/T31.md): these are the stage-mode components' and shell chrome's
+      // real, eventual names, each already scoped by its own directory
+      // (src/ui/gallery/Gallery.vue, src/app/shell/Header.vue, ...) — no ambiguity in context,
+      // so a "GalleryGallery"-style multi-word rename buys nothing.
+      'vue/multi-word-component-names': [
+        'error',
+        { ignores: ['Header', 'Drawer', 'Gallery', 'Preview', 'Edit', 'Processing'] },
+      ],
+    },
   },
   {
     // Keep the root config files (vite.config.ts, vitest.config.ts) linted as

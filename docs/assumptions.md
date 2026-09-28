@@ -75,7 +75,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
-| F1 | vite-ssg produces genuinely static per-route HTML | 70 | OPEN | P2 |
+| F1 | vite-ssg produces genuinely static per-route HTML | 95 | TESTED | P2 |
 | F2 | Analytics beacon fires on a cache-served page load | 60 | OPEN | P3 |
 
 ---
@@ -1184,7 +1184,7 @@ By dependency and cost, not document order.
 
 ## 9. Public site and delivery
 
-### F1 `OPEN` `70%` `P2` vite-ssg produces genuinely static, crawlable HTML per route
+### F1 `TESTED` `95%` `P2` vite-ssg produces genuinely static, crawlable HTML per route
 
 vite-ssg runs the app once per route at build time and is expected to write real,
 route-specific HTML to disk — not one shared shell that depends on client-side
@@ -1192,12 +1192,43 @@ JavaScript to show different content per route. This matters because the whole r
 to move off a pure SPA is that a route's content must be present in the fetched
 document.
 
+**Measured** (T31, `pnpm build && pnpm verify:ssg`, and a direct read of the built
+file). `vite-ssg@28.3.0` installed cleanly against `vite@^8.3.0` with no peer-dependency
+warnings — the version pairing this project uses was itself an open question the task
+brief flagged, and it resolved without needing a different prerenderer. A production
+build renders `/` (the only route that exists at T31) to `dist/index.html`, which grew
+from the pre-T31 placeholder's 0.40 kB (a bare `<div id="app"></div>`) to 2.13 KiB of
+real markup. Reading the file directly off disk (`node:fs`, no browser, no script
+execution — `scripts/verify-ssg-html.mjs`) shows the header wordmark, the live
+breadcrumb text (`0 SELECTED`), all three side-panel section headings (`QUALITY`,
+`DIMENSION`, `FORMAT`) and the primary action button's real interpolated label
+(`Compress (0)`, not a template literal) already present in the HTML, each marked
+`data-server-rendered="true"`. None of this depends on the `<script type="module"
+async>` tag also present in the head — the content is baked into the served bytes
+themselves, which is exactly the property this assumption claims.
+
+**Why not higher.** The original Method text below asks for "a non-tool route" — T31
+builds only the tool route (`/faq`, `/privacy`, `/terms`, `/desktop` arrive in T44), so
+there is no second, differently-content route to compare against yet. The rendering
+mechanism observed here is the same one T44's routes will go through — nothing in it
+is tool-route-specific — so there is no concrete reason to expect a different result,
+but "content differs correctly per route" specifically has not been directly observed,
+only "content is real and present for the one route that exists." `@unhead/vue`
+(per-route `<title>`/meta) is deliberately not installed yet (T45's job), so this run
+still carries the same static `<title>` every route will start from. Held back from
+100% for these two reasons, not because anything measured suggested a problem.
+
 **Method.** Build the site, fetch a non-tool route's HTML file directly (no script
 execution), and assert its `<title>`, meta description and visible body text are
-present and correct without hydration.
+present and correct without hydration. *(T31 completed this for the tool route only —
+the one route that exists at this point in the build — reading `dist/index.html`
+directly via Node's `fs` rather than fetching over HTTP, which satisfies "no script
+execution" at least as strictly. The non-tool-route and meta-description halves of the
+original method carry forward to T44/T45, over the same mechanism verified here.)*
 
 **Affects.** Technical Design §12.3. If false, the SEO surface (§12.5) has nothing to
-attach itself to, and a different SSG or prerendering plugin is substituted.
+attach itself to, and a different SSG or prerendering plugin is substituted. *(Not
+engaged — vite-ssg held.)*
 
 ---
 

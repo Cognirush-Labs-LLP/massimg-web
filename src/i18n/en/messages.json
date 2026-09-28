@@ -1,5 +1,15 @@
 {
   "gallery.title": "Your Images",
   "action.compressLabel": "Compress ({count})",
-  "panel.section.quality": "QUALITY"
+  "panel.section.quality": "QUALITY",
+  "panel.section.dimension": "DIMENSION",
+  "panel.section.format": "FORMAT",
+  "shell.breadcrumb.selected": "{count} SELECTED",
+  "shell.breadcrumb.preview": "PREVIEW · {filename}",
+  "shell.breadcrumb.edit": "EDIT · {filename}",
+  "shell.breadcrumb.processing": "PROCESSING",
+  "shell.optionsButton": "Options",
+  "shell.hideButton": "Hide",
+  "shell.panelLabel": "Compression settings",
+  "shell.modeNotYetBuilt": "This screen isn't built yet."
 }

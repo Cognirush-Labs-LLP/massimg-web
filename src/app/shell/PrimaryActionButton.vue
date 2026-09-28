@@ -1,0 +1,50 @@
+<script setup lang="ts">
+// The one primary call-to-action (Functional Design R-A1-R-A4, docs/ui-design.md §10). Rendered
+// twice by ToolPage.vue — once pinned to the static side panel's footer (>=900px), once as a
+// fixed bottom bar outside the drawer (<900px) — never repositioned, because the mobile
+// placement must sit outside the drawer's transform context so opening/closing the drawer can
+// never cover or remove it.
+//
+// TODO(T32): `count` and `disabled` should come from `useBatchStore` (image count, and
+// `disabled` = batch is empty, R-A3). Until that store exists, T31 hardcodes the only state
+// that's actually true right now: no batch exists at all.
+import { computed } from 'vue'
+import { t } from '@/i18n/t'
+
+const props = withDefaults(
+  defineProps<{
+    count?: number
+    disabled?: boolean
+  }>(),
+  { count: 0, disabled: true },
+)
+
+const label = computed(() => t('action.compressLabel', { count: props.count }))
+</script>
+
+<template>
+  <button type="button" class="primary-action" :disabled="disabled">
+    {{ label }}
+  </button>
+</template>
+
+<style scoped>
+.primary-action {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding-block: 0.9rem;
+  padding-inline: 1rem;
+  background: var(--color-tint);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: var(--font-weight-wordmark);
+  cursor: pointer;
+}
+
+.primary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

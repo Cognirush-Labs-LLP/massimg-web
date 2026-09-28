@@ -1,0 +1,136 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mount, type VueWrapper } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import { nextTick } from 'vue'
+import ToolPage from './ToolPage.vue'
+import { useStageMode } from './shell/useStageMode'
+import PrimaryActionButton from './shell/PrimaryActionButton.vue'
+import Gallery from '@/ui/gallery/Gallery.vue'
+import Preview from '@/ui/preview/Preview.vue'
+import Processing from '@/ui/processing/Processing.vue'
+
+// See App.spec.ts for why this is mocked: the real implementation fetches WASM in a real
+// browser and has no place to do that safely inside a jsdom unit test.
+vi.mock('@/pipeline/codecs/loader', () => ({
+  scheduleImageMagickPreload: vi.fn(),
+}))
+
+// jsdom has no matchMedia. `matches` is read fresh on every call, so a test can set it before
+// mounting to choose which breakpoint useBreakpoint.ts's onMounted resolves to.
+let matches = true
+
+beforeEach(() => {
+  matches = true
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches,
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  // useStageMode's ref is a T31-temporary module-scope singleton (see its own doc comment) —
+  // reset it so one test's mode change can't leak into the next.
+  useStageMode().stageMode.value = 'gallery'
+})
+
+async function mountToolPage(): Promise<VueWrapper> {
+  const wrapper = mount(ToolPage, { global: { plugins: [createPinia()] } })
+  // useBreakpoint's real matchMedia value only lands after onMounted's reactive update flushes.
+  await nextTick()
+  return wrapper
+}
+
+describe('ToolPage stage-mode mounting', () => {
+  it('mounts exactly the component matching the current stage mode', async () => {
+    const wrapper = await mountToolPage()
+    expect(wrapper.findComponent(Gallery).exists()).toBe(true)
+    expect(wrapper.findComponent(Preview).exists()).toBe(false)
+  })
+
+  it('unmounts the outgoing mode and mounts the incoming one on a mode switch', async () => {
+    const wrapper = await mountToolPage()
+    const { stageMode } = useStageMode()
+
+    expect(wrapper.findComponent(Gallery).exists()).toBe(true)
+
+    stageMode.value = 'preview'
+    await nextTick()
+
+    // A real unmount, not a hidden-but-alive tree: <component :is> swapping destroys the
+    // outgoing instance instead of hiding it (Technical Design §1.1, R-M4).
+    expect(wrapper.findComponent(Gallery).exists()).toBe(false)
+    expect(wrapper.findComponent(Preview).exists()).toBe(true)
+  })
+})
+
+describe('ToolPage panel layout', () => {
+  it('shows the static side panel and no Options button at >=900px', async () => {
+    matches = true
+    const wrapper = await mountToolPage()
+    expect(wrapper.find('.side-panel-static').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="options-button"]').exists()).toBe(false)
+  })
+
+  it('hides the static side panel and shows the Options button at <900px', async () => {
+    matches = false
+    const wrapper = await mountToolPage()
+    expect(wrapper.find('.side-panel-static').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="options-button"]').exists()).toBe(true)
+  })
+
+  it('opens the drawer from the Options button and closes it via the Hide button', async () => {
+    matches = false
+    const wrapper = await mountToolPage()
+
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="options-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="drawer-scrim"]').exists()).toBe(true)
+
+    await wrapper.find('.drawer-hide-button').trigger('click')
+    expect(wrapper.find('[data-testid="drawer-panel"]').exists()).toBe(false)
+  })
+
+  it('hides the panel entirely — static or drawer — while Processing is mounted', async () => {
+    const wrapper = await mountToolPage()
+    const { stageMode } = useStageMode()
+
+    stageMode.value = 'processing'
+    await nextTick()
+
+    expect(wrapper.findComponent(Processing).exists()).toBe(true)
+    expect(wrapper.find('.side-panel-static').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="options-button"]').exists()).toBe(false)
+  })
+})
+
+describe('ToolPage primary action', () => {
+  it('is visible on desktop, pinned to the panel footer', async () => {
+    matches = true
+    const wrapper = await mountToolPage()
+    expect(wrapper.find('.side-panel-footer').text()).toContain('Compress')
+  })
+
+  it('is visible on mobile, as a fixed bottom bar outside the drawer', async () => {
+    matches = false
+    const wrapper = await mountToolPage()
+    expect(wrapper.find('.mobile-action-bar').text()).toContain('Compress')
+  })
+
+  it('is not rendered while Processing is mounted, on either layout', async () => {
+    const wrapper = await mountToolPage()
+    const { stageMode } = useStageMode()
+
+    stageMode.value = 'processing'
+    await nextTick()
+
+    // Not a text-content check: the wordmark "Compressor" itself contains "Compress" as a
+    // substring, so this asserts the button component's absence directly instead.
+    expect(wrapper.findComponent(PrimaryActionButton).exists()).toBe(false)
+  })
+})

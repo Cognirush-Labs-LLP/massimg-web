@@ -2,6 +2,9 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+// Pulls in vite-ssg's `ssgOptions` augmentation of Vite's UserConfig type — without this,
+// `ssgOptions` below doesn't type-check as a known Vite config field.
+import type {} from 'vite-ssg'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,6 +13,12 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  // vite-ssg (T31, Technical Design §12.3): `vite-ssg build` reads this same config, so its
+  // route-by-route Node prerender options live here rather than a separate file.
+  ssgOptions: {
+    script: 'async',
+    formatting: 'minify',
   },
   optimizeDeps: {
     // `imagequant` is a wasm-bindgen "bundler" target: `imagequant.js` imports the `.wasm`, hands the

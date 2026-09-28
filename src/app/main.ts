@@ -1,12 +1,17 @@
-import { createApp } from 'vue'
+import { ViteSSG } from 'vite-ssg'
 import { createPinia } from 'pinia'
-import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import '@/styles/index.css'
 import App from './App.vue'
+import { routes } from './router'
 
-createApp(App).use(createPinia()).mount('#app')
-
-// Technical Design §12.1: ImageMagick's WASM fetched on idle after first paint (or on first
-// interaction — `notifyImageAdded()` — whichever comes first, once T30+ wires Gallery to call it).
-// Scheduled after mount, not before: nothing here may block first paint (§5.2).
-scheduleImageMagickPreload()
+// vite-ssg (Technical Design §12.3) renders each route once in Node at build time and writes
+// real HTML to disk, then mounts the same app on the client — no Node server ever runs. Pinia
+// installs inside this context callback rather than a bare `.use()` chain: stores are plain
+// reactive JS with no DOM/WASM dependency, so this is safe on both the prerender pass and the
+// client (only *consuming* browser APIs inside a store or component is the actual hazard).
+//
+// `scheduleImageMagickPreload()` no longer lives here — it moved into ToolPage.vue's
+// `onMounted` hook, which never fires during the Node prerender pass. See docs/task-notes/T31.md.
+export const createApp = ViteSSG(App, { routes }, ({ app }) => {
+  app.use(createPinia())
+})
