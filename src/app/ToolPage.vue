@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import Gallery from '@/ui/gallery/Gallery.vue'
+import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
 import Preview from '@/ui/preview/Preview.vue'
 import Edit from '@/ui/edit/Edit.vue'
 import Processing from '@/ui/processing/Processing.vue'
@@ -45,6 +46,23 @@ const showPanel = computed(() => stageMode.value !== 'processing')
 const imageCount = computed(() => images.value.length)
 const primaryActionDisabled = computed(() => imageCount.value === 0)
 
+// A second, independently mounted component per stage mode, rendered into StageContainer's
+// `toolbar` slot — `<component :is="stageComponent">` above only fills the default slot, so a
+// mode's toolbar content (Gallery's Add images/Add folder/Clear, from T33-A) can't come from
+// inside that same component instance. Only 'gallery' has one so far; T35-T38 add the rest as
+// their own stage modes need toolbar content. The Gallery entry is gated on a non-empty batch
+// here (rather than the component rendering nothing for an empty batch) so this doesn't depend on
+// StageContainer's `.stage-toolbar:empty` CSS rule matching a component that renders only a
+// comment node.
+const STAGE_TOOLBARS: Partial<Record<StageMode, Component>> = {
+  gallery: GalleryToolbar,
+}
+const stageToolbar = computed(() =>
+  stageMode.value === 'gallery' && imageCount.value === 0
+    ? null
+    : (STAGE_TOOLBARS[stageMode.value] ?? null),
+)
+
 // Not store state (docs/ui-design.md §4 lists only drawer *open* state as store-owned): a live
 // DOM handle for focus-return has the same non-serializable, DOM-coupled character the
 // binary-data rule guards against in spirit, so it stays local to the component that opens it.
@@ -74,6 +92,9 @@ onMounted(() => {
 
     <div class="tool-body">
       <StageContainer>
+        <template v-if="stageToolbar" #toolbar>
+          <component :is="stageToolbar" />
+        </template>
         <component :is="stageComponent" />
       </StageContainer>
 

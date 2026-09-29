@@ -11,5 +11,12 @@
   "shell.optionsButton": "Options",
   "shell.hideButton": "Hide",
   "shell.panelLabel": "Compression settings",
-  "shell.modeNotYetBuilt": "This screen isn't built yet."
+  "shell.modeNotYetBuilt": "This screen isn't built yet.",
+  "gallery.emptyState.headline": "Drop images to compress",
+  "gallery.emptyState.formats": "JPEG · PNG · WEBP · AVIF · GIF · HEIC",
+  "gallery.emptyState.selectImages": "Select images",
+  "gallery.emptyState.selectFolder": "Select folder",
+  "gallery.toolbar.addImages": "Add images",
+  "gallery.toolbar.addFolder": "Add folder",
+  "gallery.toolbar.clear": "Clear"
 }

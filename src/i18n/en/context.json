@@ -63,5 +63,40 @@
     "situation": "Placeholder body text shown inside each of the four stage-mode components (Gallery/Preview/Edit/Processing) as built by T31, before T33-T38 give each one real content. Temporary — removed as each mode's real task lands.",
     "control": "Plain paragraph text inside the stage body.",
     "maxLength": null
+  },
+  "gallery.emptyState.headline": {
+    "situation": "The large headline inside the empty-state drop zone that covers the whole stage when the batch has no images (Functional Design §3.2). Shown alongside the formats line and two Select buttons.",
+    "control": "Large, bold display text, centred. Not interactive.",
+    "maxLength": 40
+  },
+  "gallery.emptyState.formats": {
+    "situation": "A mono line below the empty-state headline naming the formats this build accepts as input (R-I1). Rendered as a middle-dot-separated list; translators should keep format names as their common technical abbreviations (JPEG, PNG, ...) rather than translating them, and may keep or substitute the '·' separator with whatever list punctuation reads naturally.",
+    "control": "Small, quiet mono text. Not interactive.",
+    "maxLength": 80
+  },
+  "gallery.emptyState.selectImages": {
+    "situation": "Primary button inside the empty-state drop zone that opens the file picker for individual images (R-I24 and its sibling flat-selection entry point).",
+    "control": "Solid tint-red pill button, the empty state's main call to action. This is the button's full visible label and accessible name (R-K10).",
+    "maxLength": 20
+  },
+  "gallery.emptyState.selectFolder": {
+    "situation": "Secondary button inside the empty-state drop zone that opens the folder picker (R-I24). Hidden entirely on a platform where folder selection is unavailable (R-I31) rather than shown disabled.",
+    "control": "Outlined button next to Select images. Full visible label and accessible name.",
+    "maxLength": 20
+  },
+  "gallery.toolbar.addImages": {
+    "situation": "Toolbar button in the populated Gallery state (Functional Design §3.2) that adds more individual images to the existing batch via the file picker. Same underlying action as gallery.emptyState.selectImages, different surrounding chrome (a small toolbar button rather than the empty state's large primary button), so it may read more tersely.",
+    "control": "Small outlined toolbar button. Full visible label and accessible name.",
+    "maxLength": 20
+  },
+  "gallery.toolbar.addFolder": {
+    "situation": "Toolbar button in the populated Gallery state that adds more images from a folder to the existing batch. Hidden when folder selection is unavailable (R-I31), same as gallery.emptyState.selectFolder.",
+    "control": "Small outlined toolbar button. Full visible label and accessible name.",
+    "maxLength": 20
+  },
+  "gallery.toolbar.clear": {
+    "situation": "Toolbar button that removes every image from the batch and returns to the empty state, with no confirmation prompt (R-G6 — re-selecting files is cheap, and a confirmation dialog costs more on a touch device than the mistake it guards against).",
+    "control": "Small quiet toolbar button, visually de-emphasised relative to Add images/Add folder since it is destructive. Full visible label and accessible name.",
+    "maxLength": 12
   }
 }

@@ -46,5 +46,14 @@ export const useBatchStore = defineStore('batch', () => {
     Object.assign(target, patch)
   }
 
-  return { images, addImages, removeImage, updateImage }
+  // R-G6: no confirmation, since re-selecting files is cheap. Routed through the same
+  // count-boundary transition addImages/removeImage already use, rather than a bespoke
+  // "go to empty state" call, so there is exactly one place that decides what a count of zero
+  // means for stage mode.
+  function clearAll(): void {
+    images.value = []
+    useUiStore().onBatchCountChanged(0, [])
+  }
+
+  return { images, addImages, removeImage, updateImage, clearAll }
 })

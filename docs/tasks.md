@@ -550,10 +550,39 @@ The four Pinia stores.
 
 ### T33 — Gallery, grid view
 
+**Split into T33-A and T33-B** when T33-B/T34's planning surfaced that no earlier task turns a
+picked/dropped `File` into an `ImageRecord` in the batch store (T18 deliberately stopped short of
+this; T32 confirmed it didn't add it either) — a prerequisite both the grid and list views need,
+decided with the user to be built once as shared infrastructure rather than inside the grid task.
+See `docs/task-notes/T33-A.md` for the full rationale and decisions.
+
+#### T33-A — Gallery infrastructure
+
+**Functional Design:** R-G1 to R-G3, R-G5, R-G6, R-I3
+**Technical Design:** §1.1, §10.1, §10.2
+
+Selection ingest (classify → `ImageRecord` → `useBatchStore`), binary source-file storage
+(`platform/source-files.ts`), a lazy/killable background dimension-probe service (`W×H` resolved
+in the background, never blocking selection, stopped the instant Processing starts), the
+batch-wide `Clear` action, capability-gated controls (R-I31), and the empty state and toolbar UI
+shared by both the grid (T33-B) and list (T34) views — everything except the virtualized grid
+body itself.
+
+**Done when:** selecting or dropping files/folders produces real `ImageRecord`s in the batch store
+with `width`/`height` starting unresolved and updating once the background probe completes, a file
+the build cannot classify is skipped without blocking the rest of the selection (R-I3), Clear
+empties the batch with no confirmation and releases every source file, and the dimension-probe
+worker is provably terminated (no further callbacks, no continuing worker) the moment the stage
+mode becomes `processing`.
+
+#### T33-B — Gallery, grid view
+
 **Functional Design:** R-G1 to R-G6, R-G10, R-G12
 **Technical Design:** §10.4
+**Depends on:** T33-A
 
-Empty state with both Select buttons and drop zone. Virtualized thumbnail grid. Tiles with badges and remove.
+Virtualized thumbnail grid body, plugged into T33-A's empty state/toolbar/ingest. Tiles with
+thumbnails, badges (`EDITED`/`ANIMATED`/`FAILED`) and remove.
 
 **Done when:** 500 fixture images scroll smoothly, thumbnails generate only for visible or near-visible
 tiles, the source-read and retained-Blob counts never exceed the injected runtime limit, tiles outside the
@@ -563,8 +592,10 @@ untouched.
 ### T34 — Gallery, list view
 
 **Functional Design:** R-G7 to R-G12
+**Depends on:** T33-A
 
-List view with relative paths, directory grouping for folder input, and the mode toggle with automatic selection by file count.
+List view with relative paths, directory grouping for folder input, and the mode toggle with automatic
+selection by file count, added into T33-A's shared toolbar.
 
 **Done when:** list mode decodes nothing at all and stops any grid thumbnail work when entered, grouping
 reflects the source tree, and the automatic threshold uses the value T20 recommended.

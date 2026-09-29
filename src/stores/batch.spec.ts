@@ -137,3 +137,25 @@ describe('useBatchStore.updateImage', () => {
     expect(batch.images[1]?.status).toBe('ready')
   })
 })
+
+describe('useBatchStore.clearAll', () => {
+  it('empties the batch and returns to Gallery with no current image (R-G6)', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+    batch.addImages([recordWithId('a'), recordWithId('b')])
+    ui.openPreview('a' as ImageId)
+
+    batch.clearAll()
+
+    expect(batch.images).toHaveLength(0)
+    expect(ui.stageMode).toBe('gallery')
+    expect(ui.currentImageId).toBeNull()
+  })
+
+  it('clearing an already-empty batch is a no-op', () => {
+    const batch = useBatchStore()
+
+    expect(() => batch.clearAll()).not.toThrow()
+    expect(batch.images).toHaveLength(0)
+  })
+})
