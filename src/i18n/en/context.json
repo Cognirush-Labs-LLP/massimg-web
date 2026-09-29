@@ -98,5 +98,50 @@
     "situation": "Toolbar button that removes every image from the batch and returns to the empty state, with no confirmation prompt (R-G6 — re-selecting files is cheap, and a confirmation dialog costs more on a touch device than the mistake it guards against).",
     "control": "Small quiet toolbar button, visually de-emphasised relative to Add images/Add folder since it is destructive. Full visible label and accessible name.",
     "maxLength": 12
+  },
+  "gallery.meta": {
+    "situation": "Mono meta line beneath the 'Your Images' title in the populated Gallery header, shown above both the grid and list views (docs/ui-design.md §6, 'Populated header row'). {count} is the current batch size and {size} is the total input size using the UI size formatter, never a size estimate — nothing has been compressed yet.",
+    "control": "Small mono text beneath the title. Not interactive.",
+    "maxLength": null
+  },
+  "gallery.affordance": {
+    "situation": "One line of guidance shown above the grid/list body in the populated Gallery header (docs/ui-design.md §6), telling the user what clicking a tile or row does before they've tried it.",
+    "control": "Small quiet text. Not interactive.",
+    "maxLength": 80
+  },
+  "gallery.badge.edited": {
+    "situation": "Tile/row badge shown when an image has a stored rotation or crop (R-G4). Appears first when more than one badge applies (docs/ui-design.md §6: EDITED → ANIMATED → FAILED).",
+    "control": "Small text label with its own background, not a colour-only indicator (R-K10's colour-never-alone rule). Not interactive.",
+    "maxLength": 12
+  },
+  "gallery.badge.animated": {
+    "situation": "Tile/row badge shown when the source is a multi-frame image that will be written as an animated output format. Second in display order when more than one badge applies.",
+    "control": "Small text label with its own background, same treatment as gallery.badge.edited. Not interactive.",
+    "maxLength": 12
+  },
+  "gallery.badge.failed": {
+    "situation": "Tile/row badge shown when processing failed for this image (Functional Design §10). Last in display order when more than one badge applies.",
+    "control": "Small text label with its own background, same treatment as gallery.badge.edited. Not interactive.",
+    "maxLength": 12
+  },
+  "gallery.tile.dimensionPending": {
+    "situation": "Placeholder shown in place of the W×H figure while the background dimension probe (T33-A) has not yet resolved this image's size. Replaced in place once the probe resolves or fails.",
+    "control": "Inline text inside the tile's mono meta line. Not interactive.",
+    "maxLength": 8
+  },
+  "gallery.tile.dimensionError": {
+    "situation": "Shown in place of the W×H figure when the background dimension probe could not read this image's size at all. Distinct from gallery.tile.dimensionPending — this is a terminal state, not a still-resolving one. The image itself may still be processed; only the displayed dimensions are affected.",
+    "control": "Inline text inside the tile's mono meta line. Not interactive.",
+    "maxLength": 12
+  },
+  "gallery.tile.meta": {
+    "situation": "The tile's 'W×H · size' line (docs/ui-design.md §6). {dimensions} is either the real W×H figure or one of gallery.tile.dimensionPending/dimensionError, already resolved to text before this template runs; {size} uses the UI size formatter. One template per R-L5, not a concatenation of two translated fragments.",
+    "control": "Small mono text beneath the filename. Not interactive.",
+    "maxLength": null
+  },
+  "gallery.tile.remove": {
+    "situation": "Accessible name for each tile's remove (×) control, top-right (docs/ui-design.md §6). {filename} disambiguates one tile's remove button from every other tile's in the same grid for a screen-reader user, since the visible glyph alone does not. Clicking it does not open the tile's Preview and does not affect any other tile (R-G2).",
+    "control": "Small icon-only button with no visible text label, so this string is its aria-label rather than a redundant addition to visible text (R-K10).",
+    "maxLength": 60
   }
 }

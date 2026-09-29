@@ -1,0 +1,102 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import type { ImageId } from '@/domain/types'
+import { imageRecordFixture } from '@/domain/types.fixtures'
+import { useUiStore } from '@/stores/ui'
+
+const removeIngestedImage = vi.fn()
+const dimensionErrors = new Set<ImageId>()
+vi.mock('./ingest', () => ({ removeIngestedImage, dimensionErrors }))
+
+const GalleryTile = (await import('./GalleryTile.vue')).default
+
+beforeEach(() => {
+  setActivePinia(createPinia())
+  removeIngestedImage.mockReset()
+  dimensionErrors.clear()
+})
+
+describe('GalleryTile', () => {
+  it('renders the thumbnail image when a URL is available', () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: 'blob:thumb' },
+    })
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('blob:thumb')
+    expect(wrapper.find('.thumb').classes()).not.toContain('placeholder')
+  })
+
+  it('renders a neutral placeholder, not an error, when no thumbnail URL is available', () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: null },
+    })
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.find('.thumb').classes()).toContain('placeholder')
+  })
+
+  it('shows EDITED then ANIMATED then FAILED badges in that fixed order', () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        image: { ...imageRecordFixture, isAnimated: true, status: 'failed' },
+        thumbnailUrl: null,
+      },
+    })
+    const badgeTexts = wrapper.findAll('.badge').map((badge) => badge.text())
+    expect(badgeTexts).toEqual(['EDITED', 'ANIMATED', 'FAILED'])
+  })
+
+  it('shows no badges for a plain, unedited, non-animated, successful image', () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        image: { ...imageRecordFixture, edit: null, isAnimated: false },
+        thumbnailUrl: null,
+      },
+    })
+    expect(wrapper.findAll('.badge')).toHaveLength(0)
+  })
+
+  it('shows the pending placeholder for width/height still at 0', () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: { ...imageRecordFixture, width: 0, height: 0 }, thumbnailUrl: null },
+    })
+    expect(wrapper.find('.meta').text()).toContain('–×–')
+  })
+
+  it('shows an error in place of dimensions when the probe failed for this image', () => {
+    dimensionErrors.add(imageRecordFixture.id)
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: null },
+    })
+    expect(wrapper.find('.meta').text()).toContain('Error')
+  })
+
+  it('shows real W×H and the UI-formatted size once resolved', () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: { ...imageRecordFixture, width: 1600, height: 1200 }, thumbnailUrl: null },
+    })
+    expect(wrapper.find('.meta').text()).toContain('1600×1200')
+  })
+
+  it('clicking the tile opens Preview for that image (R-G1)', async () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: null },
+    })
+    await wrapper.find('.open-button').trigger('click')
+
+    const uiStore = useUiStore()
+    expect(uiStore.stageMode).toBe('preview')
+    expect(uiStore.currentImageId).toBe(imageRecordFixture.id)
+  })
+
+  it('clicking remove calls removeIngestedImage and does not open Preview (R-G2)', async () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: null },
+    })
+    await wrapper.find('[data-testid="gallery-tile-remove"]').trigger('click')
+
+    expect(removeIngestedImage).toHaveBeenCalledWith(imageRecordFixture.id)
+    expect(useUiStore().stageMode).toBe('gallery')
+  })
+})

@@ -22,6 +22,7 @@ import type { SelectedFile } from '@/platform/picker'
 import { clearSourceFiles, deleteSourceFile, setSourceFile } from '@/platform/source-files'
 import { useBatchStore } from '@/stores/batch'
 import { useUiStore } from '@/stores/ui'
+import { getThumbnailService } from './thumbnail-service'
 
 // Images the dimension probe could not decode. Kept outside `ImageRecord` on purpose — T09's
 // type is a settled contract used by fixtures/tests across every earlier phase, and "the probe
@@ -176,17 +177,22 @@ export function clearGallery(): void {
   probeService?.clear()
   dimensionErrors.clear()
   clearSourceFiles()
+  // Releases every retained thumbnail Blob and revokes its object URL (R-G3) — the batch itself
+  // is gone, so unlike removeIngestedImage below there is no cache worth keeping.
+  getThumbnailService().clear()
   useBatchStore().clearAll()
 }
 
 /**
- * Not called by anything in T33-A (no tile/row UI exists yet to call it from) — exposed now for
- * T33-B/T34's per-tile "remove" to call, so the invalidate-probe/release-file/remove-from-store
- * sequence lives in one place rather than being re-derived per view.
+ * Wired to each tile/row's "remove" control (T33-B/T34): the invalidate-probe/release-file/
+ * release-thumbnail/remove-from-store sequence lives in one place rather than being re-derived
+ * per view. Removing one image releases only its own thumbnail cache entry, leaving every other
+ * image's cached thumbnail and in-flight generation untouched (R-G2).
  */
 export function removeIngestedImage(id: ImageId): void {
   probeService?.cancel(id)
   dimensionErrors.delete(id)
   deleteSourceFile(id)
+  getThumbnailService().invalidate(id)
   useBatchStore().removeImage(id)
 }

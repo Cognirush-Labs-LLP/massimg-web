@@ -5,8 +5,8 @@ import { expect, test } from '@playwright/test'
 
 // T33-A: real selection through the actual UI (empty state -> populated -> Clear), proving
 // ingest.ts's classify -> ImageRecord -> store path end to end, distinct from T20's own
-// module-level thumbnail/dimension-probe tests. Only Header's breadcrumb count and the presence
-// of the (still-placeholder) populated view are observable from here — the real grid is T33-B's.
+// module-level thumbnail/dimension-probe tests. Grid-body behaviour (thumbnails, virtualization,
+// badges, remove) is T33-B's own suite, tests/e2e/gallery-grid.spec.ts.
 
 // A minimal, valid 1x1 red PNG (well-known fixture bytes).
 const ONE_PIXEL_PNG_HEX =
@@ -44,7 +44,7 @@ test('selecting files populates the batch; a non-image among them is skipped, no
   // Only the two PNGs count — the .txt file is classified as not-image and silently skipped.
   await expect(page.getByText('2 SELECTED')).toBeVisible()
   await expect(page.getByTestId('gallery-empty-state')).toHaveCount(0)
-  await expect(page.getByTestId('gallery-placeholder')).toBeVisible()
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible()
 })
 

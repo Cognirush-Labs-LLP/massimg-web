@@ -18,5 +18,14 @@
   "gallery.emptyState.selectFolder": "Select folder",
   "gallery.toolbar.addImages": "Add images",
   "gallery.toolbar.addFolder": "Add folder",
-  "gallery.toolbar.clear": "Clear"
+  "gallery.toolbar.clear": "Clear",
+  "gallery.meta": "{count} images · {size}",
+  "gallery.affordance": "Click an image to preview the result, rotate or crop it",
+  "gallery.badge.edited": "EDITED",
+  "gallery.badge.animated": "ANIMATED",
+  "gallery.badge.failed": "FAILED",
+  "gallery.tile.dimensionPending": "–×–",
+  "gallery.tile.dimensionError": "Error",
+  "gallery.tile.meta": "{dimensions} · {size}",
+  "gallery.tile.remove": "Remove {filename}"
 }

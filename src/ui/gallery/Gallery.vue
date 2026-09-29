@@ -1,20 +1,31 @@
 <script setup lang="ts">
 // Gallery stage mode (Technical Design §2: "src/ui/, one directory per stage mode").
 //
-// T33-A builds the empty state and the selection/drop plumbing (see ingest.ts); the populated
-// state still shows the T31 placeholder here until T33-B replaces this branch with the real
-// virtualized grid (docs/task-notes/T33-A.md). Drop handling lives at this level rather than
-// inside GalleryEmptyState.vue so it keeps working once the batch is populated, not only in the
-// empty state (Functional Design §3.2 describes it for the empty state; extending it to the
-// populated state is a T33-A decision — the underlying action is identical to the toolbar's own
-// Add images/Add folder, just triggered a different way).
+// T33-A builds the empty state and the selection/drop plumbing (see ingest.ts). T33-B adds the
+// populated header row and the virtualized grid body (docs/ui-design.md §6, "Populated header row
+// (Gallery, both view modes)" - the title/meta/affordance line live here, above GalleryGrid,
+// rather than inside GalleryGrid.vue, because T34's list view reuses this same header unchanged).
+// Drop handling lives at this level rather than inside GalleryEmptyState.vue so it keeps working
+// once the batch is populated, not only in the empty state (Functional Design §3.2 describes it
+// for the empty state; extending it to the populated state is a T33-A decision - the underlying
+// action is identical to the toolbar's own Add images/Add folder, just triggered a different way).
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
+import { formatUiSize } from '@/domain/sizes'
 import { useBatchStore } from '@/stores/batch'
 import GalleryEmptyState from './GalleryEmptyState.vue'
+import GalleryGrid from './GalleryGrid.vue'
 import { ingestDrop } from './ingest'
 
 const { images } = storeToRefs(useBatchStore())
+
+const metaText = computed(() =>
+  t('gallery.meta', {
+    count: images.value.length,
+    size: formatUiSize(images.value.reduce((total, image) => total + image.sizeBytes, 0)),
+  }),
+)
 
 function onDrop(event: DragEvent): void {
   event.preventDefault()
@@ -33,12 +44,45 @@ function onDragOver(event: DragEvent): void {
 <template>
   <div class="gallery" data-testid="gallery-root" @dragover="onDragOver" @drop="onDrop">
     <GalleryEmptyState v-if="images.length === 0" />
-    <p v-else data-testid="gallery-placeholder">{{ t('shell.modeNotYetBuilt') }}</p>
+    <div v-else class="gallery-populated">
+      <div class="gallery-header">
+        <h2 class="title">{{ t('gallery.title') }}</h2>
+        <p class="meta">{{ metaText }}</p>
+        <p class="affordance">{{ t('gallery.affordance') }}</p>
+      </div>
+      <GalleryGrid />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .gallery {
   block-size: 100%;
+}
+
+.gallery-populated {
+  display: flex;
+  block-size: 100%;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--font-weight-heading);
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+}
+
+.affordance {
+  margin: 0;
+  color: var(--color-text-muted-quiet);
+  font-size: 12.5px;
 }
 </style>
