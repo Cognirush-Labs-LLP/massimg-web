@@ -9,6 +9,10 @@ function recordWithId(id: string): ImageRecord {
   return { ...imageRecordFixture, id: id as ImageId, edit: null }
 }
 
+function flatRecordWithId(id: string): ImageRecord {
+  return { ...recordWithId(id), relativePath: null }
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
 })
@@ -53,6 +57,56 @@ describe('useBatchStore.addImages', () => {
 
     expect(ui.stageMode).toBe('gallery')
     expect(ui.currentImageId).toBeNull()
+  })
+
+  it('auto-selects list once a flat batch reaches the maximumThumbnails threshold (R-G8)', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+
+    batch.addImages(Array.from({ length: 100 }, (_, i) => flatRecordWithId(`f${i}`)))
+
+    expect(ui.galleryView).toBe('list')
+  })
+
+  it('auto-selects list for a folder-sourced batch even at count 1 (R-G8, R-G11)', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+
+    batch.addImages([{ ...recordWithId('a'), relativePath: 'sub/a.jpg' }])
+
+    expect(ui.galleryView).toBe('list')
+  })
+
+  it('leaves a small flat batch on grid', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+
+    batch.addImages([flatRecordWithId('a'), flatRecordWithId('b')])
+
+    expect(ui.galleryView).toBe('grid')
+  })
+
+  it('a manual override survives a further add', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+    batch.addImages([{ ...recordWithId('a'), relativePath: 'sub/a.jpg' }])
+    ui.setGalleryView('grid')
+
+    batch.addImages([flatRecordWithId('b')])
+
+    expect(ui.galleryView).toBe('grid')
+  })
+
+  it('a manual override survives an intervening clearAll', () => {
+    const batch = useBatchStore()
+    const ui = useUiStore()
+    batch.addImages([{ ...recordWithId('a'), relativePath: 'sub/a.jpg' }])
+    ui.setGalleryView('grid')
+
+    batch.clearAll()
+    batch.addImages([{ ...recordWithId('b'), relativePath: 'sub/b.jpg' }])
+
+    expect(ui.galleryView).toBe('grid')
   })
 })
 

@@ -24,7 +24,7 @@ interface NameParts {
   extension: string
 }
 
-function splitPath(path: string): PathParts {
+export function splitPath(path: string): PathParts {
   const separatorIndex = path.lastIndexOf('/')
 
   if (separatorIndex === -1) {

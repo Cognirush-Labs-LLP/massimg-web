@@ -2,9 +2,13 @@
 // Gallery stage mode (Technical Design §2: "src/ui/, one directory per stage mode").
 //
 // T33-A builds the empty state and the selection/drop plumbing (see ingest.ts). T33-B adds the
-// populated header row and the virtualized grid body (docs/ui-design.md §6, "Populated header row
-// (Gallery, both view modes)" - the title/meta/affordance line live here, above GalleryGrid,
-// rather than inside GalleryGrid.vue, because T34's list view reuses this same header unchanged).
+// populated header row and the virtualized grid body; T34 adds the list body alongside it
+// (docs/ui-design.md §6, "Populated header row (Gallery, both view modes)" - the title/meta/
+// affordance line live here, above the grid/list branch, rather than inside either body
+// component, so both view modes reuse it unchanged). The v-if/v-else between GalleryGrid and
+// GalleryList fully unmounts the false branch before mounting the true one, which is what makes
+// GalleryGrid's own onUnmounted -> getThumbnailService().stop() fire on a grid-to-list switch with
+// no extra wiring here (R-G12).
 // Drop handling lives at this level rather than inside GalleryEmptyState.vue so it keeps working
 // once the batch is populated, not only in the empty state (Functional Design §3.2 describes it
 // for the empty state; extending it to the populated state is a T33-A decision - the underlying
@@ -14,11 +18,14 @@ import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { formatUiSize } from '@/domain/sizes'
 import { useBatchStore } from '@/stores/batch'
+import { useUiStore } from '@/stores/ui'
 import GalleryEmptyState from './GalleryEmptyState.vue'
 import GalleryGrid from './GalleryGrid.vue'
+import GalleryList from './GalleryList.vue'
 import { ingestDrop } from './ingest'
 
 const { images } = storeToRefs(useBatchStore())
+const { galleryView } = storeToRefs(useUiStore())
 
 const metaText = computed(() =>
   t('gallery.meta', {
@@ -50,7 +57,8 @@ function onDragOver(event: DragEvent): void {
         <p class="meta">{{ metaText }}</p>
         <p class="affordance">{{ t('gallery.affordance') }}</p>
       </div>
-      <GalleryGrid />
+      <GalleryGrid v-if="galleryView === 'grid'" />
+      <GalleryList v-else />
     </div>
   </div>
 </template>

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveWorkerPoolSize, runtimeLimits, type RuntimeLimits } from './limits'
+import {
+  resolveAutomaticGalleryView,
+  resolveWorkerPoolSize,
+  runtimeLimits,
+  type RuntimeLimits,
+} from './limits'
 
 describe('resolveWorkerPoolSize', () => {
   it('leaves one core for the UI thread', () => {
@@ -55,6 +60,30 @@ describe('resolveWorkerPoolSize', () => {
     expect(runtimeLimits.maximumWorkers).toBe(3)
     expect(runtimeLimits.mobileWorkers).toBe(1)
     expect(runtimeLimits.reservedCores).toBe(1)
+  })
+})
+
+describe('resolveAutomaticGalleryView', () => {
+  it('is list, regardless of count, for folder-sourced input (R-G8)', () => {
+    expect(resolveAutomaticGalleryView(1, true)).toBe('list')
+    expect(resolveAutomaticGalleryView(0, true)).toBe('list')
+  })
+
+  it('is grid below the maximumThumbnails threshold for loose files', () => {
+    expect(resolveAutomaticGalleryView(1, false)).toBe('grid')
+    expect(resolveAutomaticGalleryView(99, false)).toBe('grid')
+  })
+
+  it('is list at or above the maximumThumbnails threshold for loose files', () => {
+    expect(resolveAutomaticGalleryView(100, false)).toBe('list')
+    expect(resolveAutomaticGalleryView(150, false)).toBe('list')
+  })
+
+  it('reads the threshold from the limits it is given, hard-coding none of it', () => {
+    const measured: RuntimeLimits = { ...runtimeLimits, maximumThumbnails: 3 }
+
+    expect(resolveAutomaticGalleryView(2, false, measured)).toBe('grid')
+    expect(resolveAutomaticGalleryView(3, false, measured)).toBe('list')
   })
 })
 

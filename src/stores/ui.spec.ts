@@ -109,6 +109,68 @@ describe('useUiStore explicit actions', () => {
     expect(ui.comparisonTab).toBe('original')
     expect(ui.galleryView).toBe('list')
   })
+
+  it('setGalleryView also records a manual override (R-G8)', () => {
+    const ui = useUiStore()
+    expect(ui.galleryViewOverridden).toBe(false)
+
+    ui.setGalleryView('list')
+
+    expect(ui.galleryViewOverridden).toBe(true)
+  })
+})
+
+describe('useUiStore.applyAutomaticGalleryView', () => {
+  function flatImages(count: number): ImageRecord[] {
+    return Array.from({ length: count }, (_, index) => ({
+      ...recordWithId(`f${index}` as ImageId),
+      relativePath: null,
+    }))
+  }
+
+  it('selects grid for a small, loose-file batch', () => {
+    const ui = useUiStore()
+
+    ui.applyAutomaticGalleryView(true, flatImages(5))
+
+    expect(ui.galleryView).toBe('grid')
+  })
+
+  it('selects list once the batch reaches the configured threshold', () => {
+    const ui = useUiStore()
+
+    ui.applyAutomaticGalleryView(true, flatImages(100))
+
+    expect(ui.galleryView).toBe('list')
+  })
+
+  it('selects list for folder-sourced input regardless of count', () => {
+    const ui = useUiStore()
+    const folderImage: ImageRecord = { ...recordWithId(idA), relativePath: 'sub/a.jpg' }
+
+    ui.applyAutomaticGalleryView(true, [folderImage])
+
+    expect(ui.galleryView).toBe('list')
+  })
+
+  it('does nothing when the batch was not previously empty', () => {
+    const ui = useUiStore()
+    ui.setGalleryView('list')
+    ui.galleryViewOverridden = false // isolate this test from the override rule below
+
+    ui.applyAutomaticGalleryView(false, flatImages(1))
+
+    expect(ui.galleryView).toBe('list')
+  })
+
+  it('does nothing once the user has manually overridden the view this session', () => {
+    const ui = useUiStore()
+    ui.setGalleryView('grid')
+
+    ui.applyAutomaticGalleryView(true, flatImages(100))
+
+    expect(ui.galleryView).toBe('grid')
+  })
 })
 
 describe('useUiStore.onBatchCountChanged', () => {

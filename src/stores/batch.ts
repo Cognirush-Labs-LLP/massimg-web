@@ -19,8 +19,11 @@ export const useBatchStore = defineStore('batch', () => {
   const images = ref<ImageRecord[]>([])
 
   function addImages(records: ImageRecord[]): void {
+    const wasEmpty = images.value.length === 0
     images.value.push(...records)
-    useUiStore().onBatchCountChanged(images.value.length, images.value)
+    const uiStore = useUiStore()
+    uiStore.applyAutomaticGalleryView(wasEmpty, images.value)
+    uiStore.onBatchCountChanged(images.value.length, images.value)
   }
 
   function removeImage(id: ImageId): void {

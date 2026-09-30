@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { resolveAutomaticGalleryView } from '@/config/limits'
 import type { ImageId, ImageRecord } from '@/domain/types'
 
 // The four stage modes (Functional Design §3.1, docs/ui-design.md §3). Exactly one is mounted
@@ -25,6 +26,10 @@ export const useUiStore = defineStore('ui', () => {
   const stageMode = ref<StageMode>('gallery')
   const currentImageId = ref<ImageId | null>(null)
   const galleryView = ref<'grid' | 'list'>('grid')
+  // R-G8: once the user has toggled the view themselves, automatic selection stops touching
+  // `galleryView` for the rest of the session — set only by setGalleryView, never by
+  // applyAutomaticGalleryView, so the automatic path can never silently undo a manual choice.
+  const galleryViewOverridden = ref(false)
   const drawerOpen = ref(false)
   // R-P2 default: Preview opens on the Compressed tab.
   const comparisonTab = ref<'original' | 'compressed'>('compressed')
@@ -77,6 +82,24 @@ export const useUiStore = defineStore('ui', () => {
 
   function setGalleryView(mode: 'grid' | 'list'): void {
     galleryView.value = mode
+    galleryViewOverridden.value = true
+  }
+
+  /**
+   * R-G8: called by `useBatchStore.addImages` right after a mutation, with whether the batch was
+   * empty beforehand and the batch as it now stands. "Selects the initial mode automatically" is
+   * read as the empty-to-populated transition only — a batch that grows past the threshold via
+   * repeated small adds is not silently flipped to list mid-session — and is skipped entirely once
+   * the user has manually toggled the view this session (see docs/task-notes/T34.md for both
+   * decisions).
+   */
+  function applyAutomaticGalleryView(wasEmpty: boolean, images: ImageRecord[]): void {
+    if (!wasEmpty || galleryViewOverridden.value) {
+      return
+    }
+
+    const folderSourced = images.some((image) => image.relativePath !== null)
+    galleryView.value = resolveAutomaticGalleryView(images.length, folderSourced)
   }
 
   function setComparisonTab(tab: 'original' | 'compressed'): void {
@@ -145,6 +168,7 @@ export const useUiStore = defineStore('ui', () => {
     stageMode,
     currentImageId,
     galleryView,
+    galleryViewOverridden,
     drawerOpen,
     comparisonTab,
     openPreview,
@@ -157,6 +181,7 @@ export const useUiStore = defineStore('ui', () => {
     openDrawer,
     closeDrawer,
     setGalleryView,
+    applyAutomaticGalleryView,
     setComparisonTab,
     onBatchCountChanged,
     retargetAfterRemoval,

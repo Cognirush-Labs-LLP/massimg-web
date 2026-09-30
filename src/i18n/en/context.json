@@ -99,6 +99,21 @@
     "control": "Small quiet toolbar button, visually de-emphasised relative to Add images/Add folder since it is destructive. Full visible label and accessible name.",
     "maxLength": 12
   },
+  "gallery.toolbar.viewToggleLabel": {
+    "situation": "Accessible group label for the grid/list view-mode toggle in the Gallery toolbar (R-G7). The app auto-selects an initial mode by file count and folder origin (R-G8); this control lets the user override it for the session.",
+    "control": "role=\"group\" wrapper around the two toggle buttons. Not itself visible text — an aria-label only.",
+    "maxLength": 40
+  },
+  "gallery.toolbar.viewGrid": {
+    "situation": "One of the two grid/list view-mode toggle buttons (R-G7). Selects the thumbnail grid.",
+    "control": "Small toggle button with aria-pressed reflecting whether grid is the active view. Full visible label and accessible name.",
+    "maxLength": 12
+  },
+  "gallery.toolbar.viewList": {
+    "situation": "One of the two grid/list view-mode toggle buttons (R-G7). Selects the no-thumbnail list view (R-G9), grouped by directory for folder input (R-G11).",
+    "control": "Small toggle button with aria-pressed reflecting whether list is the active view. Full visible label and accessible name.",
+    "maxLength": 12
+  },
   "gallery.meta": {
     "situation": "Mono meta line beneath the 'Your Images' title in the populated Gallery header, shown above both the grid and list views (docs/ui-design.md §6, 'Populated header row'). {count} is the current batch size and {size} is the total input size using the UI size formatter, never a size estimate — nothing has been compressed yet.",
     "control": "Small mono text beneath the title. Not interactive.",

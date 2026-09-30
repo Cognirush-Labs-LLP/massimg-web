@@ -6,10 +6,10 @@
 // must not also open Preview). Badges are plain text, not colour-only (R-K10).
 import { computed } from 'vue'
 import { t } from '@/i18n/t'
-import { formatUiSize } from '@/domain/sizes'
 import type { ImageRecord } from '@/domain/types'
 import { useUiStore } from '@/stores/ui'
-import { dimensionErrors, removeIngestedImage } from './ingest'
+import { removeIngestedImage } from './ingest'
+import { badgeLabel, badgesFor, metaTextFor } from './imageMeta'
 
 const props = defineProps<{
   image: ImageRecord
@@ -18,46 +18,8 @@ const props = defineProps<{
 
 const uiStore = useUiStore()
 
-type BadgeKind = 'edited' | 'animated' | 'failed'
-
-// Fixed order per docs/ui-design.md §6: EDITED -> ANIMATED -> FAILED.
-const badges = computed<BadgeKind[]>(() => {
-  const list: BadgeKind[] = []
-  if (props.image.edit) {
-    list.push('edited')
-  }
-  if (props.image.isAnimated) {
-    list.push('animated')
-  }
-  if (props.image.status === 'failed') {
-    list.push('failed')
-  }
-  return list
-})
-
-const badgeLabel: Record<BadgeKind, string> = {
-  edited: t('gallery.badge.edited'),
-  animated: t('gallery.badge.animated'),
-  failed: t('gallery.badge.failed'),
-}
-
-const dimensionText = computed(() => {
-  if (dimensionErrors.has(props.image.id)) {
-    return t('gallery.tile.dimensionError')
-  }
-  if (props.image.width === 0 || props.image.height === 0) {
-    return t('gallery.tile.dimensionPending')
-  }
-  return `${props.image.width}×${props.image.height}`
-})
-
-const metaText = computed(() =>
-  t('gallery.tile.meta', {
-    dimensions: dimensionText.value,
-    size: formatUiSize(props.image.sizeBytes),
-  }),
-)
-
+const badges = computed(() => badgesFor(props.image))
+const metaText = computed(() => metaTextFor(props.image))
 const removeLabel = computed(() => t('gallery.tile.remove', { filename: props.image.name }))
 
 function open(): void {

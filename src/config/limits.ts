@@ -82,3 +82,24 @@ export function resolveWorkerPoolSize(
 
   return Math.max(1, Math.min(Math.floor(cores) - limits.reservedCores, limits.maximumWorkers))
 }
+
+/**
+ * R-G8's automatic Gallery view-mode rule: list always for folder-sourced input, otherwise list
+ * once the batch reaches the same budget the thumbnail cache uses. T20 measured this threshold
+ * and recommended reusing `maximumThumbnails` rather than tuning a second constant (docs/task-
+ * notes/T20.md) — above that budget, grid mode can't give every tile a thumbnail anyway, which is
+ * exactly the case list mode serves better. Pure and limits-injectable for the same reason
+ * `resolveWorkerPoolSize` is: a test can inject a small threshold without mutating the shared
+ * `runtimeLimits` singleton.
+ */
+export function resolveAutomaticGalleryView(
+  count: number,
+  folderSourced: boolean,
+  limits: RuntimeLimits = runtimeLimits,
+): 'grid' | 'list' {
+  if (folderSourced) {
+    return 'list'
+  }
+
+  return count >= limits.maximumThumbnails ? 'list' : 'grid'
+}
