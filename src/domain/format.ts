@@ -29,6 +29,27 @@ export function supportsAlpha(format: EncodableFormat): boolean {
   return format !== 'jpeg'
 }
 
+/**
+ * R-Q4's disabling mechanism: which formats make repeated size-target encoding prohibitively
+ * expensive, and why. T30/assumptions.md D1 measured every format through the shipped search and
+ * found none prohibitive, so this returns `null` for all five today — the mechanism exists so a
+ * future re-measurement is a data change here, not new UI work in the Size control.
+ */
+export function sizeTargetDisabledReason(format: EncodableFormat): string | null {
+  switch (format) {
+    case 'jpeg':
+    case 'png':
+    case 'webp':
+    case 'avif':
+    case 'gif':
+      return null
+    default: {
+      const unknown: never = format
+      throw new RangeError(`unsupported format: ${JSON.stringify(unknown)}`)
+    }
+  }
+}
+
 /** Resolves a batch format choice for one input image. */
 export function resolveFormat(
   inputFormat: Format,

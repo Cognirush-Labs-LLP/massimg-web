@@ -7,6 +7,7 @@ import {
   type PixelSize,
 } from './edit'
 import {
+  describePrimaryActionOutput,
   QUALITY_SLIDER_MAX,
   QUALITY_SLIDER_MIN,
   qualityForSlider,
@@ -15,7 +16,14 @@ import {
   type BatchSettings,
   type SettingsImage,
 } from './job'
-import type { EditRecord, ResolvedDimension, ResolvedSettings, Rgba } from './types'
+import type {
+  EditRecord,
+  ImageId,
+  ImageRecord,
+  ResolvedDimension,
+  ResolvedSettings,
+  Rgba,
+} from './types'
 
 const DIMENSIONS = [
   { kind: 'original' },
@@ -350,5 +358,116 @@ describe('requestIsSatisfiedBySource', () => {
 
   it('is false for a source format that cannot be written at all', () => {
     expect(requestIsSatisfiedBySource(settings({ sourceFormat: 'heic' }), null)).toBe(false)
+  })
+})
+
+describe('describePrimaryActionOutput', () => {
+  let nextId = 0
+
+  function image(overrides: Partial<ImageRecord> = {}): ImageRecord {
+    nextId += 1
+
+    return {
+      id: `image-${nextId}` as ImageId,
+      name: 'photo.jpg',
+      relativePath: null,
+      sizeBytes: 500_000,
+      width: 4000,
+      height: 3000,
+      sourceFormat: 'jpeg',
+      isAnimated: false,
+      frameCount: null,
+      hasTransparency: false,
+      edit: null,
+      status: 'ready',
+      failure: null,
+      ...overrides,
+    }
+  }
+
+  const batch = (overrides: Partial<BatchSettings> = {}): BatchSettings => ({
+    quality: { kind: 'quality', value: 70 },
+    dimension: { kind: 'original' },
+    format: 'dont-change',
+    ...overrides,
+  })
+
+  it('reports empty for an empty batch', () => {
+    expect(describePrimaryActionOutput([], batch())).toEqual({ kind: 'empty' })
+  })
+
+  it('names the setting, not a resolved format, for a multi-image "Don\'t change" batch', () => {
+    expect(describePrimaryActionOutput([image(), image()], batch())).toEqual({
+      kind: 'multi',
+      count: 2,
+      formatLabel: 'original',
+    })
+  })
+
+  it('names the chosen format for a multi-image batch with a concrete format', () => {
+    expect(
+      describePrimaryActionOutput([image(), image(), image()], batch({ format: 'webp' })),
+    ).toEqual({ kind: 'multi', count: 3, formatLabel: 'webp' })
+  })
+
+  it('never names a concrete format for a single image under "Don\'t change" (R-F4)', () => {
+    expect(describePrimaryActionOutput([image({ sourceFormat: 'png' })], batch())).toEqual({
+      kind: 'single',
+      formatLabel: 'original',
+      dimensions: { width: 4000, height: 3000 },
+    })
+  })
+
+  it('resolves the real output format for a single image with a concrete format', () => {
+    expect(describePrimaryActionOutput([image()], batch({ format: 'avif' }))).toEqual({
+      kind: 'single',
+      formatLabel: 'avif',
+      dimensions: { width: 4000, height: 3000 },
+    })
+  })
+
+  it('shows the R-F6 substitution, not the requested still-only format, for a single animated source', () => {
+    expect(
+      describePrimaryActionOutput(
+        [image({ sourceFormat: 'gif', isAnimated: true })],
+        batch({ format: 'jpeg' }),
+      ),
+    ).toEqual({ kind: 'single', formatLabel: 'webp', dimensions: { width: 4000, height: 3000 } })
+  })
+
+  it('takes dimensions from the crop, not the dimension rule, for a single cropped image (R-D1)', () => {
+    expect(
+      describePrimaryActionOutput(
+        [image({ edit: CROP_EDIT })],
+        batch({ dimension: { kind: 'fit-long-edge', pixels: 800 } }),
+      ),
+    ).toEqual({
+      kind: 'single',
+      formatLabel: 'original',
+      // rect { width: 0.7, height: 0.6 } over a 4000x3000 source, per resolveCropOutput.
+      dimensions: { width: 2800, height: 1800 },
+    })
+  })
+
+  it('follows the batch dimension rule, applied to the rotated size, for a rotation-only image (R-D4)', () => {
+    expect(
+      describePrimaryActionOutput(
+        [image({ edit: ROTATE_EDIT, width: 4000, height: 3000 })],
+        batch({ dimension: { kind: 'fixed-width', pixels: 1200 } }),
+      ),
+    ).toEqual({
+      kind: 'single',
+      formatLabel: 'original',
+      // Rotated to 3000x4000, then fixed-width 1200 derives height preserving that ratio.
+      dimensions: { width: 1200, height: 1600 },
+    })
+  })
+
+  it('omits dimensions rather than inventing them while the probe is still pending', () => {
+    expect(describePrimaryActionOutput([image({ width: 0, height: 0 })], batch())).toEqual({
+      kind: 'single',
+      formatLabel: 'original',
+      dimensions: null,
+    })
   })
 })

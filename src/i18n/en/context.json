@@ -158,5 +158,170 @@
     "situation": "Accessible name for each tile's remove (×) control, top-right (docs/ui-design.md §6). {filename} disambiguates one tile's remove button from every other tile's in the same grid for a screen-reader user, since the visible glyph alone does not. Clicking it does not open the tile's Preview and does not affect any other tile (R-G2).",
     "control": "Small icon-only button with no visible text label, so this string is its aria-label rather than a redundant addition to visible text (R-K10).",
     "maxLength": 60
+  },
+  "panel.quality.targetGroupLabel": {
+    "situation": "Accessible group label for the two-button Quality/Size segmented toggle at the top of the side panel's Quality section (Functional Design §4.1, docs/ui-design.md §8). Not visible text — read by assistive technology to identify the group, same role as gallery.toolbar.viewToggleLabel.",
+    "control": "aria-label on a role=\"group\" wrapping two aria-pressed buttons. Should name what the two buttons choose between, not describe the buttons themselves.",
+    "maxLength": 40
+  },
+  "panel.quality.targetQuality": {
+    "situation": "Label on the first of the two Quality/Size segmented-toggle buttons (Functional Design §4.1). Selecting it switches the panel to show the quality slider instead of the size-target field.",
+    "control": "Button text inside a two-option segmented control. Short — sits in a fixed-width pill alongside 'Size'.",
+    "maxLength": 16
+  },
+  "panel.quality.targetSize": {
+    "situation": "Label on the second of the two Quality/Size segmented-toggle buttons (Functional Design §4.1). Selecting it switches the panel to show the numeric size-target field and KB/MB toggle instead of the slider.",
+    "control": "Button text inside a two-option segmented control. Short — sits in a fixed-width pill alongside 'Quality'.",
+    "maxLength": 16
+  },
+  "panel.quality.sliderLabel": {
+    "situation": "Accessible name for the quality range slider (10–100), shown only when the Quality target is active (Functional Design §4.1). The numeric value itself is displayed separately in a large mono readout above the slider, not part of this string.",
+    "control": "aria-label on a native <input type=\"range\">. Should read as what the slider controls, not include the current value or range.",
+    "maxLength": 24
+  },
+  "panel.quality.chipLow": {
+    "situation": "One of three shortcut chips above the quality slider that jump the slider to a preset value (Functional Design §4.1: LOW 40 / MED 70 / HIGH 90). Clicking it sets the slider to 40; the slider remains freely adjustable afterward.",
+    "control": "Chip button text. The number is part of the fixed English label per the design table, not a separate interpolated value — keep 'LOW' and '40' together as translators see fit for their language's convention.",
+    "maxLength": 12
+  },
+  "panel.quality.chipMed": {
+    "situation": "One of three shortcut chips above the quality slider (Functional Design §4.1: LOW 40 / MED 70 / HIGH 90). Clicking it sets the slider to 70.",
+    "control": "Chip button text, same treatment as panel.quality.chipLow.",
+    "maxLength": 12
+  },
+  "panel.quality.chipHigh": {
+    "situation": "One of three shortcut chips above the quality slider (Functional Design §4.1: LOW 40 / MED 70 / HIGH 90). Clicking it sets the slider to 90.",
+    "control": "Chip button text, same treatment as panel.quality.chipLow.",
+    "maxLength": 12
+  },
+  "panel.quality.sizeFieldLabel": {
+    "situation": "Accessible name for the numeric text field where the user types a target file size, shown only when the Size target is active (Functional Design §4.1). The KB/MB unit is a separate adjacent toggle, not part of this field's value.",
+    "control": "aria-label on a numeric <input>. Should name what the number represents, not include the unit.",
+    "maxLength": 24
+  },
+  "panel.quality.unitGroupLabel": {
+    "situation": "Accessible group label for the KB/MB segmented unit toggle next to the size-target field (Functional Design §4.1). 'KB' and 'MB' themselves are not translated — they are the standard byte-unit abbreviations, same convention as domain/sizes.ts's report/UI size formatters.",
+    "control": "aria-label on a role=\"group\" wrapping two unit-toggle buttons.",
+    "maxLength": 32
+  },
+  "panel.dimension.groupLabel": {
+    "situation": "Accessible group label for the four-row Dimension radio accordion (Functional Design §4.2, docs/ui-design.md §9). The section already has a visible 'DIMENSION' heading (panel.section.dimension) rendered by SidePanelSection; this is a separate string read by assistive technology directly on the radio group, since an <h2> is not programmatically associated with the group it introduces.",
+    "control": "aria-label (or <legend>-equivalent) on the radio group wrapping the four dimension rows.",
+    "maxLength": 24
+  },
+  "panel.dimension.rowOriginal": {
+    "situation": "First row of the Dimension accordion (Functional Design §4.2): the default, no-op dimension rule. Selecting it means the batch's output keeps each image's original pixel size (subject to per-image crop, R-D1).",
+    "control": "Radio row label, clickable text next to a radio dot. No value field or chips appear under this row when selected.",
+    "maxLength": 24
+  },
+  "panel.dimension.rowFitLongEdge": {
+    "situation": "Second row of the Dimension accordion (Functional Design §4.2): downscale-only rule bounding the image's longer edge to a pixel value the user enters or picks via a shortcut chip (HD/FHD/2K/4K/IG).",
+    "control": "Radio row label. When selected, reveals a numeric pixel field and five shortcut chips.",
+    "maxLength": 28
+  },
+  "panel.dimension.rowFixedWidth": {
+    "situation": "Third row of the Dimension accordion (Functional Design §4.2, R-N1, R-N2): sets output width to an exact value (upscaling or downscaling as needed), deriving height to preserve aspect ratio.",
+    "control": "Radio row label. When selected, reveals a numeric pixel field and four shortcut chips (IG/WEB/MAIL/PRINT).",
+    "maxLength": 24
+  },
+  "panel.dimension.rowFixedHeight": {
+    "situation": "Fourth row of the Dimension accordion (Functional Design §4.2, R-N1, R-N2): sets output height to an exact value, deriving width to preserve aspect ratio.",
+    "control": "Radio row label. When selected, reveals a numeric pixel field and three shortcut chips (IG/HD/FHD).",
+    "maxLength": 24
+  },
+  "panel.dimension.chipHd": {
+    "situation": "A shortcut chip that writes a preset pixel value into the active Dimension row's numeric field (Functional Design §4.2's chip table). 'HD' is reused across two different rows with two different values (1280 on Fit within long edge, 720 on Fixed height) via {value} — the abbreviation itself is translated once here.",
+    "control": "Chip button text, e.g. 'HD 1280'. {value} is a plain pixel number, not locale-formatted (matches gallery.tile dimension display convention).",
+    "maxLength": 16
+  },
+  "panel.dimension.chipFhd": {
+    "situation": "Shortcut chip abbreviation 'FHD' (Full HD), reused across the Fit within long edge row (1920) and Fixed height row (1080) with different {value}s. Same mechanism as panel.dimension.chipHd.",
+    "control": "Chip button text, e.g. 'FHD 1920'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chip2k": {
+    "situation": "Shortcut chip abbreviation '2K', used only on the Fit within long edge row (value 2560).",
+    "control": "Chip button text, e.g. '2K 2560'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chip4k": {
+    "situation": "Shortcut chip abbreviation '4K', used only on the Fit within long edge row (value 3840).",
+    "control": "Chip button text, e.g. '4K 3840'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chipIg": {
+    "situation": "Shortcut chip abbreviation 'IG' (Instagram), reused across three rows with three different {value}s: Fit within long edge (1080), Fixed width (1080) and Fixed height (1350).",
+    "control": "Chip button text, e.g. 'IG 1080'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chipWeb": {
+    "situation": "Shortcut chip abbreviation 'WEB', used only on the Fixed width row (value 1200).",
+    "control": "Chip button text, e.g. 'WEB 1200'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chipMail": {
+    "situation": "Shortcut chip abbreviation 'MAIL', used only on the Fixed width row (value 800).",
+    "control": "Chip button text, e.g. 'MAIL 800'.",
+    "maxLength": 16
+  },
+  "panel.dimension.chipPrint": {
+    "situation": "Shortcut chip abbreviation 'PRINT', used only on the Fixed width row (value 3000).",
+    "control": "Chip button text, e.g. 'PRINT 3000'.",
+    "maxLength": 16
+  },
+  "panel.dimension.noteMultiCropped": {
+    "situation": "R-D2's note, shown above the Dimension accordion when the batch has more than one image and at least one carries a crop. {count} is how many images in the batch are cropped (can be less than the total batch size) — those images take their output size from their own crop and ignore the row selected below; the rest still follow it.",
+    "control": "Informational note text, not a button. Exact wording is specified in docs/ui-design.md §9: \"Crop applied to N images. Their crop overrides the setting below; the rest follow it.\"",
+    "maxLength": 160
+  },
+  "panel.dimension.noteSingleCropped": {
+    "situation": "R-D3's note, shown in place of the accordion (which becomes fully disabled) when the batch has exactly one image and it is cropped — that image's crop already fixes its output size, so there is nothing left for the Dimension rows to control.",
+    "control": "Informational note text, not a button. Exact wording is specified in docs/ui-design.md §9.",
+    "maxLength": 160
+  },
+  "panel.format.selectLabel": {
+    "situation": "Accessible name for the output-format <select> dropdown (Functional Design §4.3, docs/ui-design.md §10). The section already has a visible 'FORMAT' heading (panel.section.format); this is a separate string read directly on the control, since an <h2> is not programmatically associated with the <select> it introduces.",
+    "control": "aria-label on a native <select>.",
+    "maxLength": 24
+  },
+  "panel.format.optionDontChange": {
+    "situation": "The default, first entry in the output-format dropdown (Functional Design R-F1, §4.3): each image keeps its own input format independently rather than being converted. The other five options (JPEG/PNG/WebP/AVIF/GIF) are format names/acronyms and are deliberately left untranslated, same convention as domain/sizes.ts's KB/MB — this is the one option that is an actual sentence fragment needing translation.",
+    "control": "<option> text. Should read as an instruction not to convert, distinct from naming any specific format.",
+    "maxLength": 20
+  },
+  "panel.format.gifWarning": {
+    "situation": "Inline warning note shown beneath the format dropdown only while GIF is the selected output format (Functional Design §4.3: \"Produces worse results than JPEG for photographs, stated inline in the dropdown\"; docs/ui-design.md §10 places the same copy as inline warning text rather than inside the <option> itself, since <option> text can't carry secondary styling).",
+    "control": "Informational note text, not a button.",
+    "maxLength": 80
+  },
+  "action.meta.multiOriginal": {
+    "situation": "Primary action meta line (Functional Design §4.4, R-A2, R-F4) for a batch of more than one image with the format setting on 'Don’t change'. {count} is the batch size. Shown beneath the Compress button's label, states facts only — never an estimated output size.",
+    "control": "Small mono meta text under the primary button. Exact wording per docs/ui-design.md §10 example: '6 images · Original formats · ZIP'. 'Original formats' itself is not re-translated here — it's baked into this template rather than composed from panel.format.optionDontChange, since R-L5 forbids building a sentence by concatenating two translated fragments.",
+    "maxLength": 48
+  },
+  "action.meta.multiFormat": {
+    "situation": "Primary action meta line for a batch of more than one image with a concrete format selected. {count} is the batch size; {format} is the chosen format's acronym (e.g. 'WEBP'), supplied already uppercased and not itself translated (see panel.format.optionDontChange's note on format acronyms).",
+    "control": "Small mono meta text under the primary button. Exact wording per docs/ui-design.md §10 example: '6 images · WEBP · ZIP'.",
+    "maxLength": 48
+  },
+  "action.meta.singleOriginalWithDimensions": {
+    "situation": "Primary action meta line for a single-image batch with the format setting on 'Don’t change' and the image's output pixel size already known. R-F4 applies unconditionally on batch size, so this still reads 'Original formats' rather than naming the one concrete format that would actually be produced. {width}/{height} are the resolved output dimensions (accounting for any crop or the batch dimension rule), not the raw source size.",
+    "control": "Small mono meta text under the primary button, e.g. 'Original formats · 1920×1440'.",
+    "maxLength": 40
+  },
+  "action.meta.singleOriginalPending": {
+    "situation": "Same as action.meta.singleOriginalWithDimensions, but for the moment before the single image's dimensions have been probed (width/height still unresolved, gallery.tile.dimensionPending's same 'not yet known' state) — the pixel figure is omitted rather than shown as a placeholder.",
+    "control": "Small mono meta text under the primary button, e.g. just 'Original formats'.",
+    "maxLength": 24
+  },
+  "action.meta.singleFormatWithDimensions": {
+    "situation": "Primary action meta line for a single-image batch with a concrete format selected (or resolved, e.g. an animated source substituted to WebP per R-F6, or an unencodable source falling back to JPEG per R-F2). {format} is the real resolved output format's acronym, already uppercased. {width}/{height} are the resolved output dimensions.",
+    "control": "Small mono meta text under the primary button. Exact wording per docs/ui-design.md §10 example: 'WEBP · 1920×1440'.",
+    "maxLength": 40
+  },
+  "action.meta.singleFormatPending": {
+    "situation": "Same as action.meta.singleFormatWithDimensions, but before the single image's dimensions have been probed — the pixel figure is omitted.",
+    "control": "Small mono meta text under the primary button, e.g. just 'WEBP'.",
+    "maxLength": 16
   }
 }

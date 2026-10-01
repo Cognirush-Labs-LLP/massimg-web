@@ -1,9 +1,12 @@
-import { hasCropOp } from './edit'
+import { hasCropOp, resolveEditedSize, type PixelSize } from './edit'
+import { resolveResizedSize } from './dimension'
 import { resolveFormat, supportsAlpha, type FormatSetting, type FormatResolution } from './format'
 import type {
   Caveat,
   EditRecord,
+  EncodableFormat,
   Format,
+  ImageRecord,
   ResolvedDimension,
   ResolvedQuality,
   ResolvedSettings,
@@ -153,4 +156,71 @@ export function requestIsSatisfiedBySource(
     settings.dimension.kind === 'original' &&
     edit === null
   )
+}
+
+/**
+ * The primary action's facts-only meta line (Functional Design R-A2, R-F4; Technical Design §4.1).
+ * A multi-image batch never resolves a single output format, so its label names the *setting*
+ * ("original" under "Don't change", per R-F4's literal wording, unconditional on batch size —
+ * otherwise the batch format the user picked). A single image's label instead goes through
+ * `resolveFormat` so an R-F2 fallback (unencodable input to JPEG) or an R-F6 animated substitution
+ * shows the real output format rather than the raw setting — except under "Don't change" itself,
+ * where R-F4 still applies and no concrete format is named even though one is resolvable.
+ */
+export type PrimaryActionSummary =
+  | { kind: 'empty' }
+  | { kind: 'multi'; count: number; formatLabel: 'original' | EncodableFormat }
+  | { kind: 'single'; formatLabel: 'original' | EncodableFormat; dimensions: PixelSize | null }
+
+/**
+ * The output size a single image would produce, for display only (never encoded from this). Crop
+ * overrides the batch dimension rule and supplies its own size (R-D1); a rotation-only edit still
+ * follows the batch rule, applied to the rotated size (R-D4). `null` when the source's own
+ * dimensions haven't been probed yet (`ImageRecord.width`/`height` still 0, `imageMeta.ts`'s same
+ * "pending" convention) — the meta line omits the figure rather than inventing one.
+ */
+function singleImageDimensions(image: ImageRecord, dimension: ResolvedDimension): PixelSize | null {
+  if (image.width === 0 || image.height === 0) {
+    return null
+  }
+
+  const ops = image.edit?.ops ?? []
+  const edited = resolveEditedSize({ width: image.width, height: image.height }, ops)
+
+  return hasCropOp(ops) ? edited : resolveResizedSize(edited, dimension)
+}
+
+export function describePrimaryActionOutput(
+  images: readonly ImageRecord[],
+  batch: BatchSettings,
+): PrimaryActionSummary {
+  if (images.length === 0) {
+    return { kind: 'empty' }
+  }
+
+  if (images.length > 1) {
+    return {
+      kind: 'multi',
+      count: images.length,
+      formatLabel: batch.format === 'dont-change' ? 'original' : batch.format,
+    }
+  }
+
+  const image = images[0]!
+  const dimensions = singleImageDimensions(image, batch.dimension)
+
+  if (batch.format === 'dont-change') {
+    return { kind: 'single', formatLabel: 'original', dimensions }
+  }
+
+  const resolution = resolveFormat(image.sourceFormat, image.isAnimated, batch.format)
+
+  return {
+    kind: 'single',
+    // A rejected resolution (today, only an animated-AVIF source classify() hasn't filtered out
+    // yet — R-F8's selection-time rejection is T39's) has no resolved format to name; fall back to
+    // the raw setting rather than fabricating one.
+    formatLabel: resolution.kind === 'resolved' ? resolution.format : batch.format,
+    dimensions,
+  }
 }

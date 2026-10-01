@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   resolveFormat,
+  sizeTargetDisabledReason,
   supportsAlpha,
   supportsAnimation,
   type FormatResolution,
@@ -243,6 +244,13 @@ describe('format routing', () => {
     'reports animation capability for %s',
     (format, expected) => {
       expect(supportsAnimation(format)).toBe(expected)
+    },
+  )
+
+  it.each(['jpeg', 'png', 'webp', 'avif', 'gif'] as const satisfies readonly EncodableFormat[])(
+    'does not disable size targeting for %s (T30/D1: none measured prohibitive)',
+    (format) => {
+      expect(sizeTargetDisabledReason(format)).toBeNull()
     },
   )
 })

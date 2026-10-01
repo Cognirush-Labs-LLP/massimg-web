@@ -4,7 +4,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import ToolPage from './ToolPage.vue'
 import { useUiStore } from '@/stores/ui'
-import type { ImageId } from '@/domain/types'
+import { useBatchStore } from '@/stores/batch'
+import { useSettingsStore } from '@/stores/settings'
+import type { ImageId, ImageRecord } from '@/domain/types'
 import PrimaryActionButton from './shell/PrimaryActionButton.vue'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import Preview from '@/ui/preview/Preview.vue'
@@ -151,5 +153,80 @@ describe('ToolPage primary action', () => {
     // Not a text-content check: the wordmark "Compressor" itself contains "Compress" as a
     // substring, so this asserts the button component's absence directly instead.
     expect(wrapper.findComponent(PrimaryActionButton).exists()).toBe(false)
+  })
+})
+
+let nextId = 0
+
+function image(overrides: Partial<ImageRecord> = {}): ImageRecord {
+  nextId += 1
+
+  return {
+    id: `image-${nextId}` as ImageId,
+    name: 'photo.jpg',
+    relativePath: null,
+    sizeBytes: 500_000,
+    width: 1920,
+    height: 1080,
+    sourceFormat: 'jpeg',
+    isAnimated: false,
+    frameCount: null,
+    hasTransparency: false,
+    edit: null,
+    status: 'ready',
+    failure: null,
+    ...overrides,
+  }
+}
+
+describe('ToolPage primary action meta line (R-A2, R-F4, T35)', () => {
+  beforeEach(() => {
+    nextId = 0
+  })
+
+  it('is empty while the batch is empty', async () => {
+    const wrapper = await mountToolPage()
+
+    expect(wrapper.findComponent(PrimaryActionButton).props('metaLine')).toBe('')
+  })
+
+  it('names the setting, not "images", for a multi-image "Don\'t change" batch', async () => {
+    const wrapper = await mountToolPage()
+    useBatchStore().addImages([image(), image()])
+    await nextTick()
+
+    expect(wrapper.findComponent(PrimaryActionButton).props('metaLine')).toBe(
+      '2 images · Original formats · ZIP',
+    )
+  })
+
+  it('names the chosen format for a multi-image batch with a concrete format', async () => {
+    const wrapper = await mountToolPage()
+    useBatchStore().addImages([image(), image(), image()])
+    useSettingsStore().format = 'webp'
+    await nextTick()
+
+    expect(wrapper.findComponent(PrimaryActionButton).props('metaLine')).toBe(
+      '3 images · WEBP · ZIP',
+    )
+  })
+
+  it('shows format and dimensions for a single-image batch with a concrete format', async () => {
+    const wrapper = await mountToolPage()
+    useSettingsStore().format = 'avif'
+    useBatchStore().addImages([image()])
+    await nextTick()
+
+    expect(wrapper.findComponent(PrimaryActionButton).props('metaLine')).toBe('AVIF · 1920×1080')
+  })
+
+  it('reads "Original formats" even for a single image under "Don\'t change" (R-F4)', async () => {
+    const wrapper = await mountToolPage()
+    useBatchStore().addImages([image()])
+    await nextTick()
+
+    expect(wrapper.findComponent(PrimaryActionButton).props('metaLine')).toBe(
+      'Original formats · 1920×1080',
+    )
   })
 })

@@ -21,12 +21,16 @@ import Drawer from './shell/Drawer.vue'
 import PrimaryActionButton from './shell/PrimaryActionButton.vue'
 import { useUiStore, type StageMode } from '@/stores/ui'
 import { useBatchStore } from '@/stores/batch'
+import { useSettingsStore } from '@/stores/settings'
+import { describePrimaryActionOutput } from '@/domain/job'
+import type { EncodableFormat } from '@/domain/types'
 import { useBreakpoint } from './shell/useBreakpoint'
 
 const uiStore = useUiStore()
 const { stageMode, drawerOpen } = storeToRefs(uiStore)
 const batchStore = useBatchStore()
 const { images } = storeToRefs(batchStore)
+const settingsStore = useSettingsStore()
 const { isDesktop } = useBreakpoint()
 
 const STAGE_COMPONENTS: Record<StageMode, Component> = {
@@ -45,6 +49,53 @@ const showPanel = computed(() => stageMode.value !== 'processing')
 
 const imageCount = computed(() => images.value.length)
 const primaryActionDisabled = computed(() => imageCount.value === 0)
+
+// Facts-only meta line beneath the Compress button (R-A2, R-F4, T35). Format acronyms are
+// deliberately not translated (see SidePanelFormat.vue's own note) — only "Original formats" is
+// an actual sentence.
+const FORMAT_DISPLAY_NAME: Record<EncodableFormat, string> = {
+  jpeg: 'JPEG',
+  png: 'PNG',
+  webp: 'WEBP',
+  avif: 'AVIF',
+  gif: 'GIF',
+}
+
+const primaryActionMeta = computed(() => {
+  const summary = describePrimaryActionOutput(images.value, {
+    quality: settingsStore.quality,
+    dimension: settingsStore.dimension,
+    format: settingsStore.format,
+  })
+
+  if (summary.kind === 'empty') {
+    return ''
+  }
+
+  if (summary.kind === 'multi') {
+    return summary.formatLabel === 'original'
+      ? t('action.meta.multiOriginal', { count: summary.count })
+      : t('action.meta.multiFormat', {
+          count: summary.count,
+          format: FORMAT_DISPLAY_NAME[summary.formatLabel],
+        })
+  }
+
+  const format =
+    summary.formatLabel === 'original' ? null : FORMAT_DISPLAY_NAME[summary.formatLabel]
+
+  if (summary.dimensions === null) {
+    return format === null
+      ? t('action.meta.singleOriginalPending')
+      : t('action.meta.singleFormatPending', { format })
+  }
+
+  const { width, height } = summary.dimensions
+
+  return format === null
+    ? t('action.meta.singleOriginalWithDimensions', { width, height })
+    : t('action.meta.singleFormatWithDimensions', { format, width, height })
+})
 
 // A second, independently mounted component per stage mode, rendered into StageContainer's
 // `toolbar` slot — `<component :is="stageComponent">` above only fills the default slot, so a
@@ -107,7 +158,11 @@ onMounted(() => {
           <SidePanel />
         </div>
         <div class="side-panel-footer">
-          <PrimaryActionButton :count="imageCount" :disabled="primaryActionDisabled" />
+          <PrimaryActionButton
+            :count="imageCount"
+            :disabled="primaryActionDisabled"
+            :meta-line="primaryActionMeta"
+          />
         </div>
       </aside>
 
@@ -117,7 +172,11 @@ onMounted(() => {
     </div>
 
     <div v-if="!isDesktop && showPanel" class="mobile-action-bar">
-      <PrimaryActionButton :count="imageCount" :disabled="primaryActionDisabled" />
+      <PrimaryActionButton
+        :count="imageCount"
+        :disabled="primaryActionDisabled"
+        :meta-line="primaryActionMeta"
+      />
     </div>
   </div>
 </template>

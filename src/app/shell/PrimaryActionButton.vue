@@ -7,7 +7,9 @@
 //
 // `count` and `disabled` come from `useBatchStore` (image count, and `disabled` = batch is
 // empty, R-A3) via the caller — ToolPage.vue reads the store, this component stays a plain,
-// store-free leaf like Header.vue and Drawer.vue.
+// store-free leaf like Header.vue and Drawer.vue. `metaLine` (R-A2, R-F4, T35) is the same:
+// already-translated text computed by ToolPage.vue from `describePrimaryActionOutput`
+// (domain/job.ts) — this component only renders it, so it never needs its own store access.
 import { computed } from 'vue'
 import { t } from '@/i18n/t'
 
@@ -15,20 +17,41 @@ const props = withDefaults(
   defineProps<{
     count?: number
     disabled?: boolean
+    metaLine?: string
   }>(),
-  { count: 0, disabled: true },
+  { count: 0, disabled: true, metaLine: '' },
 )
 
 const label = computed(() => t('action.compressLabel', { count: props.count }))
 </script>
 
 <template>
-  <button type="button" class="primary-action" :disabled="disabled">
-    {{ label }}
-  </button>
+  <div class="primary-action-wrap">
+    <button type="button" class="primary-action" :disabled="disabled">
+      {{ label }}
+    </button>
+    <p v-if="metaLine" class="primary-action-meta" data-testid="primary-action-meta">
+      {{ metaLine }}
+    </p>
+  </div>
 </template>
 
 <style scoped>
+.primary-action-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.primary-action-meta {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+}
+
 .primary-action {
   inline-size: 100%;
   min-block-size: 44px;
