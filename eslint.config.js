@@ -1,5 +1,6 @@
 // @ts-check
 import eslint from '@eslint/js'
+import compat from 'eslint-plugin-compat'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import pluginVue from 'eslint-plugin-vue'
 import tseslint from 'typescript-eslint'
@@ -67,6 +68,16 @@ export default tseslint.config(
         process: 'readonly',
       },
     },
+  },
+  {
+    // Browser-compat baseline (.browserslistrc: Chrome/Edge 108+, Firefox 114+,
+    // Safari/iOS 16.4+). Flags a runtime Web API the declared floor doesn't have.
+    // Scoped to shipped app source only — Node scripts and config files don't run
+    // in a browser, and specs exercise mocked globals, so compat checks there
+    // would just be noise.
+    ...compat.configs['flat/recommended'],
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['**/*.spec.ts'],
   },
   {
     // T08 (i18n scaffold), R-L5: fail the lint gate on runtime concatenation

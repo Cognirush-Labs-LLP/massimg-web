@@ -1,0 +1,10 @@
+# Minimum browser baseline, derived from actual feature requirements:
+# OPFS (navigator.storage.getDirectory), OffscreenCanvas 2D context off the
+# main thread, createImageBitmap resize options, and module workers
+# (`new Worker(url, { type: 'module' })`, which is what pins Firefox at 114
+# rather than OPFS's own 111).
+chrome >= 108
+edge >= 108
+firefox >= 114
+safari >= 16.4
+ios_saf >= 16.4

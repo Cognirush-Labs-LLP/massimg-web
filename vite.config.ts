@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import browserslistToEsbuild from 'browserslist-to-esbuild'
 // Pulls in vite-ssg's `ssgOptions` augmentation of Vite's UserConfig type — without this,
 // `ssgOptions` below doesn't type-check as a known Vite config field.
 import type {} from 'vite-ssg'
@@ -13,6 +14,21 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  build: {
+    // Derived from .browserslistrc (the app's feature-driven minimum browser baseline) rather
+    // than left on Vite's own default, which is date-pinned per major version and would
+    // otherwise silently raise or lower the real floor on a future Vite upgrade.
+    target: browserslistToEsbuild(),
+  },
+  worker: {
+    // Every `new Worker(...)` in this codebase already requests `{ type: 'module' }`
+    // (pool.ts, thumbnails.ts, dimension-probe.ts), and the declared browser baseline
+    // requires module-worker support anyway (it's what pins Firefox at 114). Vite's
+    // own default worker output format is 'iife' regardless of build.target, which
+    // cannot express the top-level await the WASM codec glue (e.g. imagequant) uses —
+    // 'es' matches what the runtime already asks for and is what production build needs.
+    format: 'es',
   },
   // vite-ssg (T31, Technical Design §12.3): `vite-ssg build` reads this same config, so its
   // route-by-route Node prerender options live here rather than a separate file.
