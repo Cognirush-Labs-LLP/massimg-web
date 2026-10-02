@@ -14,6 +14,7 @@ import { singleImageDimensions, type BatchSettings } from '@/domain/job'
 import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
+import { ingestDrop } from '@/ui/gallery/ingest'
 import PreviewComparisonPill from './PreviewComparisonPill.vue'
 import PreviewFrame from './PreviewFrame.vue'
 import PreviewTransformLine from './PreviewTransformLine.vue'
@@ -68,6 +69,24 @@ function toggleTab(): void {
 }
 
 /**
+ * Dropping a file onto Preview adds it the same way Gallery's own drop target does (ingest.ts's
+ * `ingestDrop`) — `onBatchCountChanged` already returns to Gallery once the batch grows past one
+ * image, so no Preview-specific transition logic is needed here.
+ */
+function onDrop(event: DragEvent): void {
+  event.preventDefault()
+  const dataTransfer = event.dataTransfer
+  if (dataTransfer) {
+    void ingestDrop(dataTransfer)
+  }
+}
+
+function onDragOver(event: DragEvent): void {
+  // Required for the element to become a valid drop target at all.
+  event.preventDefault()
+}
+
+/**
  * R-K2: arrow keys step through the batch in Preview. Bound to the window rather than to the
  * stepper, so it works wherever focus happens to be — except inside a control that owns the arrow
  * keys itself, which the quality slider in the side panel does.
@@ -107,7 +126,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="image" class="preview" data-testid="preview-root">
+  <div
+    v-if="image"
+    class="preview"
+    data-testid="preview-root"
+    @dragover="onDragOver"
+    @drop="onDrop"
+  >
     <!-- R-P4: hidden, not stale, while an encode is in flight. -->
     <PreviewComparisonPill
       v-if="encode.phase.value !== 'encoding'"

@@ -33,6 +33,9 @@ vi.mock('@/platform/source-files', () => ({
   getSourceFile: (id: ImageId) => sourceFiles.get(id),
 }))
 
+const ingestDrop = vi.fn()
+vi.mock('@/ui/gallery/ingest', () => ({ ingestDrop }))
+
 const Preview = (await import('./Preview.vue')).default
 
 function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
@@ -90,6 +93,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   runs.length = 0
   run.mockClear()
+  ingestDrop.mockReset()
   sourceFiles.clear()
   urlCounter = 0
   URL.createObjectURL = vi.fn(() => {
@@ -217,5 +221,15 @@ describe('Preview', () => {
 
     expect(wrapper.find('[data-testid="preview-root"]').exists()).toBe(false)
     expect(run).not.toHaveBeenCalled()
+  })
+
+  it('forwards a drop event to ingestDrop', async () => {
+    seed(['a'])
+    const wrapper = await mountPreview()
+    const dataTransfer = {} as DataTransfer
+
+    await wrapper.find('[data-testid="preview-root"]').trigger('drop', { dataTransfer })
+
+    expect(ingestDrop).toHaveBeenCalledWith(dataTransfer)
   })
 })
