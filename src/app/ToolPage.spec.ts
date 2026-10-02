@@ -14,8 +14,9 @@ import Processing from '@/ui/processing/Processing.vue'
 
 // See App.spec.ts for why this is mocked: the real implementation fetches WASM in a real
 // browser and has no place to do that safely inside a jsdom unit test.
+const scheduleImageMagickPreload = vi.fn()
 vi.mock('@/pipeline/codecs/loader', () => ({
-  scheduleImageMagickPreload: vi.fn(),
+  scheduleImageMagickPreload: (...args: unknown[]) => scheduleImageMagickPreload(...args),
 }))
 
 // jsdom has no matchMedia. `matches` is read fresh on every call, so a test can set it before
@@ -24,6 +25,7 @@ let matches = true
 
 beforeEach(() => {
   matches = true
+  scheduleImageMagickPreload.mockClear()
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches,
     media: query,
@@ -50,6 +52,17 @@ describe('ToolPage stage-mode mounting', () => {
     const wrapper = await mountToolPage()
     expect(wrapper.findComponent(Gallery).exists()).toBe(true)
     expect(wrapper.findComponent(Preview).exists()).toBe(false)
+  })
+
+  it('schedules the ImageMagick preload with a warm action, not the bare main-thread loader', async () => {
+    await mountToolPage()
+
+    // Locks in the T31 fix: the preload must be handed an action (to warm the real pipeline
+    // worker) rather than running with no argument, which would fall back to loader.ts's own
+    // main-thread `ensureImageMagick()` and reintroduce the double load this call site exists to
+    // avoid.
+    expect(scheduleImageMagickPreload).toHaveBeenCalledTimes(1)
+    expect(scheduleImageMagickPreload).toHaveBeenCalledWith(expect.any(Function))
   })
 
   it('unmounts the outgoing mode and mounts the incoming one on a mode switch', async () => {

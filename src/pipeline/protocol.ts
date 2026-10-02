@@ -100,6 +100,12 @@ export type WorkerRequest =
    * therefore costs no codec re-initialisation.
    */
   | { kind: 'cancel'; through: JobToken }
+  /**
+   * Pre-loads ImageMagick in this worker's own realm (§12.1's idle preload). Fire-and-forget: there
+   * is deliberately no response, since nothing needs to track whether or when it finishes — a `run`
+   * landing afterwards shares the same memoised promise inside `ensureImageMagick()`.
+   */
+  | { kind: 'warm' }
 
 export type WorkerResponse =
   | { kind: 'result'; token: JobToken; imageId: ImageId; result: JobResult }

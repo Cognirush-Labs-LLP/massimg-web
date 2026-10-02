@@ -98,6 +98,14 @@ export interface WorkerPool {
   /** Queues one job. Its `done` promise always settles, with an outcome; it never rejects. */
   run(job: PipelineJob): JobHandle
   /**
+   * Pre-spawns one worker (if none exists yet) and asks it to pre-load ImageMagick, so the idle-time
+   * preload (§12.1) pays the real cost once, in the realm that will actually use it, instead of a
+   * throwaway main-thread copy. Fire-and-forget and a no-op once cancelled or destroyed. Warms at
+   * most one worker — a full pool would speculatively fetch 14.8 MB per worker for jobs that may
+   * never arrive.
+   */
+  warm(): void
+  /**
    * R-X26. Nothing further is dispatched and every queued job resolves `cancelled`; jobs already in
    * a worker run to completion and deliver their results, so the wait is bounded by one image per
    * busy worker rather than by the rest of the batch.
@@ -430,6 +438,25 @@ export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
       pump()
 
       return { token, done }
+    },
+
+    warm() {
+      // Idempotent regardless of pool size: once any slot has a worker — whether from a previous
+      // `warm()` or because a real job already dispatched — there is nothing left to warm. Without
+      // this check, calling `warm()` twice on a pool sized above 1 would spin up a *second* worker
+      // and pay a second ImageMagick load, the exact duplication this method exists to avoid.
+      if (cancelled || destroyed || slots.some((slot) => slot.worker !== null)) {
+        return
+      }
+
+      // `size` is clamped to at least 1 above, so slot 0 always exists.
+      const worker = ensureWorker(slots[0]!)
+      if (!worker) {
+        return
+      }
+
+      const request: WorkerRequest = { kind: 'warm' }
+      worker.postMessage(request)
     },
 
     cancel() {

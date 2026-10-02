@@ -9,6 +9,7 @@ import { computed, onMounted, ref, shallowRef, type Component } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
+import { getPreviewPool } from '@/ui/preview/preview-pool'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
 import Preview from '@/ui/preview/Preview.vue'
@@ -147,7 +148,9 @@ const activeDialog = computed(() => backGuard.value?.dialog.value ?? null)
 // and workers don't exist (Technical Design §12.1/§12.3). `onMounted` never fires during that
 // pass, which is what makes this safe — moved here from the old src/app/main.ts module scope.
 onMounted(() => {
-  scheduleImageMagickPreload()
+  // Warms the real pipeline worker instead of initialising a second, throwaway ImageMagick instance
+  // on the main thread — see loader.ts's `scheduleImageMagickPreload` doc comment.
+  scheduleImageMagickPreload(() => getPreviewPool().warm())
   backGuard.value = useBackNavigationGuard()
 })
 </script>

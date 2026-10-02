@@ -196,6 +196,90 @@ test('pool size comes from the runtime limits module, not from a literal in the 
   expect(result.widened).toBeGreaterThan(result.shipped.maximumWorkers)
 })
 
+// T31's fix for ImageMagick loading twice (idle preload on the main thread, then again inside the
+// first worker): `warm()` moves the idle-time load into the real worker instead, so there is exactly
+// one, however many times it is asked for.
+test('warm() pre-loads ImageMagick in exactly one worker, and asking twice is a no-op', async ({
+  page,
+}) => {
+  const urls: string[] = []
+  page.on('request', (request) => urls.push(request.url()))
+  await page.goto('/')
+
+  // The real app's own idle preload (`app/ToolPage.vue`'s onMounted) warms its own, separate pool
+  // in the background too — a different `WorkerPool` instance from the one this test creates below,
+  // so it causes its own, independent `magick.wasm` request. Wait for that one to land and snapshot
+  // past it, so only the request this test's own pool causes is what gets counted afterwards.
+  await page.waitForRequest((request) => request.url().endsWith('magick.wasm'), { timeout: 10000 })
+  const baseline = urls.filter((url) => url.endsWith('magick.wasm')).length
+
+  const immediate = await page.evaluate(async ({ poolPath }) => {
+    const mod = await import(/* @vite-ignore */ poolPath)
+    // Sized above 1: if `warm()` picked "any slot without a worker" rather than tracking whether it
+    // had already warmed one, a second call here would spin up a second worker and a second load.
+    const instance = mod.createWorkerPool({ size: 3 })
+    instance.warm()
+    instance.warm()
+    ;(globalThis as unknown as { __warmTestPool: unknown }).__warmTestPool = instance
+    return instance.stats() as Stats
+  }, { poolPath: POOL_MODULE_PATH })
+
+  expect(immediate.workersAlive).toBe(1)
+  expect(immediate.started).toBe(0)
+
+  // Only a request from this point on can be this test's own pool — the app's own preload already
+  // landed above.
+  await page.waitForRequest((request) => request.url().endsWith('magick.wasm'), { timeout: 10000 })
+
+  const settled = await page.evaluate(() => {
+    const instance = (
+      globalThis as unknown as { __warmTestPool: { stats(): Stats; destroy(): void } }
+    ).__warmTestPool
+    const stats = instance.stats()
+    instance.destroy()
+    return stats
+  })
+
+  expect(settled.workersAlive).toBe(1)
+  expect(urls.filter((url) => url.endsWith('magick.wasm')).length - baseline).toBe(1)
+})
+
+test('cancel() and destroy() right after warm() terminate the warmed worker cleanly', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+
+  const result = await page.evaluate(
+    async ({ poolPath }) => {
+      const mod = await import(/* @vite-ignore */ poolPath)
+
+      const cancelled = mod.createWorkerPool({ size: 1 })
+      cancelled.warm()
+      const afterWarm = cancelled.stats() as Stats
+      cancelled.cancel()
+      const afterCancel = cancelled.stats() as Stats
+      cancelled.destroy()
+
+      const destroyedDirectly = mod.createWorkerPool({ size: 1 })
+      destroyedDirectly.warm()
+      destroyedDirectly.destroy()
+      const afterDestroy = destroyedDirectly.stats() as Stats
+
+      return { afterWarm, afterCancel, afterDestroy }
+    },
+    { poolPath: POOL_MODULE_PATH },
+  )
+
+  expect(result.afterWarm.workersAlive).toBe(1)
+  expect(result.afterWarm.started).toBe(0)
+  expect(result.afterCancel.cancelled).toBe(true)
+  expect(result.afterCancel.workersAlive).toBe(1)
+  // destroy() always wins: the warmed worker is gone, not leaked.
+  expect(result.afterDestroy.workersAlive).toBe(0)
+  expect(errors).toEqual([])
+})
+
 test('concurrency is bounded by the pool size (R-X8)', async ({ page }) => {
   await page.goto('/')
 

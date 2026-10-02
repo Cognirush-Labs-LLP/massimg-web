@@ -14,7 +14,7 @@ import { expect, test, type Page } from '@playwright/test'
 // before any stage runs, not what the job returns. Awaiting a job's own `done` promise is therefore a deterministic checkpoint — by the time
 // it settles, every codec load that job was going to trigger has either happened or never will.
 const POOL_MODULE_PATH = '/src/pipeline/pool.ts'
-const LOADER_MODULE_PATH = '/src/pipeline/codecs/loader.ts'
+const PREVIEW_POOL_MODULE_PATH = '/src/ui/preview/preview-pool.ts'
 
 // The browser APIs used inside page callbacks, declared minimally because tests/e2e has no DOM lib.
 declare function makeCodecJob(
@@ -73,7 +73,7 @@ test('first paint is not blocked by any WASM fetch, and ImageMagick loads afterw
   const urls = requestUrls(page)
 
   // 'domcontentloaded' fires once the placeholder shell has parsed and rendered — before the
-  // `load` event that `scheduleImageMagickPreload()` (wired into app/main.ts) waits for.
+  // `load` event that `scheduleImageMagickPreload()` (wired into app/ToolPage.vue) waits for.
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   const atFirstPaint = [...urls]
   expect(atFirstPaint.some((url) => url.includes('magick'))).toBe(false)
@@ -90,7 +90,9 @@ test('first paint is not blocked by any WASM fetch, and ImageMagick loads afterw
   await page.waitForRequest((request) => request.url().includes('magick'), { timeout: 10000 })
 })
 
-test('ImageMagick loads exactly once even when asked for twice', async ({ page }) => {
+test('ImageMagick loads exactly once: the idle preload warms the same worker a later job uses', async ({
+  page,
+}) => {
   const urls = requestUrls(page)
   await page.goto('/')
 
@@ -101,11 +103,16 @@ test('ImageMagick loads exactly once even when asked for twice', async ({ page }
   const afterPreload = urls.filter((url) => url.endsWith('magick.wasm')).length
   expect(afterPreload).toBe(1)
 
-  await page.evaluate(async (loaderPath) => {
-    const mod = await import(/* @vite-ignore */ loaderPath)
-    await mod.ensureImageMagick()
-    await mod.ensureImageMagick()
-  }, LOADER_MODULE_PATH)
+  // Reuses `getPreviewPool()` — the very pool `app/ToolPage.vue`'s idle preload just warmed via
+  // `pool.ts`'s `warm()` — and runs a real job through it, the same way dropping an image does. This
+  // is the regression this test exists to catch: before `warm()` existed, the preload initialised a
+  // throwaway ImageMagick instance on the main thread while the first real job paid for a second,
+  // independent load inside the worker. One load total, not two, is what this asserts now.
+  await page.evaluate(async (previewPoolPath) => {
+    const mod = await import(/* @vite-ignore */ previewPoolPath)
+    const pool = mod.getPreviewPool()
+    await pool.run(makeCodecJob('img', 'jpeg')).done
+  }, PREVIEW_POOL_MODULE_PATH)
 
   expect(urls.filter((url) => url.endsWith('magick.wasm')).length).toBe(afterPreload)
 })

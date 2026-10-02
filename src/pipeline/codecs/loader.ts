@@ -4,8 +4,8 @@
 // nothing here may run at module-evaluation time: every codec is fetched only from inside one of the
 // `ensure*` functions below, each memoised so a second call is free. This module runs on both sides
 // of the `postMessage` boundary — `pipeline/execute.ts` calls `ensureCodecsForJob` from inside a
-// worker, and `app/main.ts` calls `scheduleImageMagickPreload` from the main thread — so nothing here
-// assumes `window` exists.
+// worker, and `app/ToolPage.vue` calls `scheduleImageMagickPreload` from the main thread — so nothing
+// here assumes `window` exists.
 //
 //   | Module               | Loaded when                                    |
 //   | --------------------- | ----------------------------------------------- |
@@ -204,6 +204,17 @@ const IDLE_FALLBACK_MS = 200
 
 let preloadScheduled = false
 
+/**
+ * What the idle preload (and `notifyImageAdded()`) actually runs. Defaults to this module's own
+ * `ensureImageMagick()` — the main-thread load that §5.2's "two separate realms" problem warns
+ * against on its own — but the one real caller, `app/ToolPage.vue`, always overrides this via
+ * `scheduleImageMagickPreload`'s required `action` parameter to warm the real pipeline worker
+ * instead, so the load happens once, in the realm that actually uses it. This module cannot default
+ * to that itself: it is imported from inside a worker too (see the header comment), and must not
+ * import UI-layer code like `ui/preview/preview-pool.ts`.
+ */
+let preloadAction: () => void = () => void ensureImageMagick()
+
 function runWhenIdle(callback: () => void): void {
   const win = window as Window & {
     requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number
@@ -217,18 +228,21 @@ function runWhenIdle(callback: () => void): void {
 }
 
 /**
- * Call once from the app's entry point. Idempotent. Schedules `ensureImageMagick()` for idle time
- * after the page has finished loading — never before, which is what keeps first paint unblocked.
- * `notifyImageAdded()` below pre-empts this the moment there is real work to do.
+ * Call once from the app's entry point. Idempotent. Schedules `action` for idle time after the page
+ * has finished loading — never before, which is what keeps first paint unblocked. `notifyImageAdded()`
+ * below pre-empts this the moment there is real work to do, reusing whichever `action` was registered
+ * here.
  */
-export function scheduleImageMagickPreload(): void {
+export function scheduleImageMagickPreload(action: () => void): void {
+  preloadAction = action
+
   if (typeof window === 'undefined' || preloadScheduled) {
     return
   }
   preloadScheduled = true
 
   const start = (): void => {
-    void ensureImageMagick()
+    preloadAction()
   }
 
   if (document.readyState === 'complete') {
@@ -241,10 +255,11 @@ export function scheduleImageMagickPreload(): void {
 /**
  * The "first image is added" trigger from §5.2's table. Left unwired deliberately — there is no
  * Gallery yet to call it from (T30+), the same seam shape T20 left for `fallbackDecoder`. Idempotent
- * and safe to call before or after `scheduleImageMagickPreload()`; `ensureImageMagick()`'s own
- * memoisation is what prevents a double load, so this need not track or cancel the idle callback.
+ * and safe to call before or after `scheduleImageMagickPreload()`; whichever `action` was last
+ * registered is what runs, so this stays consistent with it rather than falling back to a
+ * main-thread `ensureImageMagick()` of its own.
  */
 export function notifyImageAdded(): void {
   preloadScheduled = true
-  void ensureImageMagick()
+  preloadAction()
 }
