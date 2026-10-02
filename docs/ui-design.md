@@ -625,7 +625,7 @@ changed without leaving Preview.
   finishes.
 - **R-P3/R-X28:** changing any setting that affects output — quality, size
   target, dimension rule or value, format, rotation, crop — supersedes any
-  in-flight encode. The mechanism is **debounce 300ms + discard-by-token**: each
+  in-flight encode. The mechanism is **debounce 1000ms + discard-by-token**: each
   encode job carries a monotonic token; the UI records the latest token
   requested per image; a result whose token is stale on arrival is dropped, never
   rendered. The debounce means a dragged slider produces **one** encode after the

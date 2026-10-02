@@ -227,7 +227,7 @@ A WASM call cannot be interrupted once entered. §6.2 of the Functional Design c
 
 **Terminate and respawn (R-X29).** `worker.terminate()` is the only true interrupt and costs a full codec re-initialisation. It is used only when a single job exceeds a threshold and the user is waiting. The threshold is set from measured re-init cost, not guessed.
 
-Debounce interval: 300 ms after the last input event. Long enough that a slider drag produces one job, short enough that it feels immediate.
+Debounce interval: 1000 ms after the last input event. Long enough that a slider drag produces one job, short enough that it feels immediate.
 
 ---
 

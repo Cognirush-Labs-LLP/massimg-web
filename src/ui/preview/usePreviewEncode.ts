@@ -11,10 +11,10 @@
 //   - **One watcher, not two.** An image change encodes immediately (R-P1); a settings change is
 //     debounced (R-P3). They are branches of one watcher over one snapshot because two independent
 //     watchers both fire when stepping to an image whose stored edit has a different version — the
-//     immediate encode, then a redundant debounced one 300 ms later.
+//     immediate encode, then a redundant debounced one 1000 ms later.
 //   - **The previous result is released at the *start* of the debounce window, not at the end.** R-B1
 //     discards a preview on any settings change, and R-P4 wants the figures hidden rather than stale
-//     while an encode is in flight. Keeping the old image on screen for 300 ms would show the user a
+//     while an encode is in flight. Keeping the old image on screen for 1000 ms would show the user a
 //     picture of settings they have already changed.
 //   - **Supersession is not enough on its own.** The pool's `supersede()` is keyed by `imageId`, so
 //     stepping to a different image does not supersede the outgoing one's job. A local generation
@@ -29,8 +29,8 @@ import type { JobFailure } from '@/pipeline/protocol'
 import { getSourceFile } from '@/platform/source-files'
 import { getPreviewPool } from './preview-pool'
 
-/** Technical Design §5.3: "Debounce interval: 300 ms after the last input event." */
-export const PREVIEW_DEBOUNCE_MS = 300
+/** Technical Design §5.3: "Debounce interval: 1000 ms after the last input event." */
+export const PREVIEW_DEBOUNCE_MS = 1000
 
 export type PreviewPhase = 'idle' | 'encoding' | 'ready' | 'error'
 

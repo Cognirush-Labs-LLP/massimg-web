@@ -617,7 +617,7 @@ Quality with mode toggle and chips, the Dimension accordion, the Format dropdown
 
 Real encode on entry, Compressed tab by default, comparison toggle, transform line, stepper, Add more images.
 
-- Debounce 300 ms. Superseded results discarded by token.
+- Debounce 1000 ms. Superseded results discarded by token.
 - The frame renders the encoded output directly rather than through a canvas, so the browser applies the colour profile (R-I16).
 
 **Done when:** dragging the quality slider produces one encode rather than many, the size shown is measured rather than estimated, and stepping releases the outgoing working set before decoding the next.
