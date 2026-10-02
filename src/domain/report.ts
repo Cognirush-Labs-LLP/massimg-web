@@ -1,5 +1,5 @@
 import { formatReportSize } from './sizes'
-import type { Caveat, Rgba } from './types'
+import type { Caveat, Rgba, SizeTargetSkipReason } from './types'
 
 export interface ReportFile {
   name: string
@@ -21,7 +21,7 @@ export interface ReportFailure {
 
 export interface ReportSkippedImage {
   file: ReportFile
-  reason: string
+  reason: string | SizeTargetSkipReason
 }
 
 export interface ReportSettings {
@@ -115,8 +115,6 @@ export function formatCaveat(caveat: Caveat): string {
       return 'Original kept; re-encoding produced a larger file'
     case 'output-larger-than-input':
       return `Output larger than input; input ${formatReportSize(caveat.inputBytes)}, output ${formatReportSize(caveat.outputBytes)}`
-    case 'size-target-not-reached':
-      return `Size target not reached; target ${formatReportSize(caveat.targetBytes)}, achieved ${formatReportSize(caveat.achievedBytes)}`
     case 'png-quantized':
       return 'PNG quantized; PNG was not written losslessly'
     case 'colour-converted':
@@ -124,6 +122,12 @@ export function formatCaveat(caveat: Caveat): string {
     case 'auxiliary-images-dropped':
       return 'Auxiliary images dropped; only the primary image was processed'
   }
+}
+
+export function formatSkippedReason(reason: string | SizeTargetSkipReason): string {
+  if (typeof reason === 'string') return reason
+
+  return `Size target not reached; target ${formatReportSize(reason.targetBytes)}, smallest achieved ${formatReportSize(reason.achievedBytes)}, ${reason.width}×${reason.height} ${reason.format.toUpperCase()}`
 }
 
 /** Builds the complete, serialisable report model from reportable run outcomes. */
@@ -160,7 +164,7 @@ export function buildReport(source: ReportSource): ReportModel {
     })),
     Skipped: source.skippedImages.map((skipped) => ({
       file: reportPath(skipped.file),
-      reason: skipped.reason,
+      reason: formatSkippedReason(skipped.reason),
     })),
     Notes: source.successes.flatMap((success) => {
       if (success.caveats.length === 0) {

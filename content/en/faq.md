@@ -52,19 +52,19 @@ Not a fixed one yet. The app is designed to warn you and refuse a batch it can't
 ## 4. Compression & quality
 
 **How do I control the output file size — quality or an exact size?**
-Both are offered. You can either pick a quality level (a simple slider) or ask for a target file size, and the app will search for the closest quality that hits it.
+Both are offered. You can either pick a quality level (a simple slider) or set a maximum file size for each image. The size is a ceiling, not an exact byte count: the app searches for the highest quality it can produce without going over it.
 
 **Does the quality slider mean the same thing for every format?**
 Not quite. For JPEG, WebP and AVIF, it works as you'd expect — a straightforward visual-quality dial. For PNG, since PNG is expected to be lossless, the slider mostly decides *whether* the image is compressed with some quality loss at all, staying conservative at the low end so you never see visible banding. At the top of the range, several formats switch to a perfect, pixel-for-pixel lossless copy instead of a lossy one: PNG does so from 85 upward, and the others above 95.
 
 **If I ask for an exact file size, will it always hit that exact number?**
-It gets as close as it can with a bounded search, and if your target genuinely can't be reached, it keeps the smallest result it managed to produce rather than failing outright. It will never make a file larger just to reach a size target. When a PNG is already smaller than your target, the app still tries lossless PNG optimization and keeps whichever file is smaller; other formats are left unchanged when they already fit.
+No. The number is a maximum, so a result may be smaller but will never be delivered above it. If the app cannot get under the limit, that image is skipped instead of giving you an oversized file. For one still image, Preview may offer a tested JPEG or smaller-dimension alternative that fits. Dimension suggestions are sized to fit at 30 or higher on the quality scale, and a second familiar size from 240 px through 4K may be offered to preserve still more quality; every choice is checked again after you select it. When a PNG is already under your limit, the app still tries lossless PNG optimization and keeps whichever file is smaller; other formats are left unchanged when they already fit.
 
 **Can I target a specific file size for any format, or only some?**
 Right now, every output format supports size targeting.
 
 **Will the app ever hand me back a bigger file than the one I uploaded?**
-The rule it's built around is no — if compressing again in the same format would come out larger, you should get your original file back instead. That safety check isn't wired up for every situation yet, so occasionally you may still see an output that's a little larger than your original; this is being tightened up as the app is finished. When you explicitly ask for a change the original can't satisfy — like a specific size or dimensions — a larger result is expected and fine.
+It can when you explicitly request a change such as larger dimensions or a different format. A size limit is different: every delivered size-targeted image stays at or below that limit, and an image that cannot fit is skipped. When no transformation is needed and re-encoding in the same format would only make the file larger, the app is designed to keep the original instead; that safeguard is still being completed for every non-size situation.
 
 **Is AVIF's highest-quality ("lossless") setting really lossless?**
 Not quite, at the moment. It currently produces a very high-quality result rather than a truly pixel-perfect one, because a working lossless AVIF encoder isn't available yet in this build. PNG and WebP's lossless modes are genuinely lossless.

@@ -3,15 +3,15 @@
 // accordion of four mutually-exclusive radio rows writing to `useSettingsStore().dimension`
 // (Technical Design §3.2), plus the R-D2/R-D3 crop-override notes computed from
 // `useBatchStore().images`.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t, type MessageKey } from '@/i18n/t'
 import { hasCropOp } from '@/domain/edit'
-import type { ResolvedDimension } from '@/domain/types'
+import type { BatchDimension } from '@/domain/types'
 import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
 
-type DimensionKind = ResolvedDimension['kind']
+type DimensionKind = BatchDimension['kind']
 
 interface DimensionChip {
   key: MessageKey
@@ -81,6 +81,11 @@ const lastValues = ref<Record<DimensionKind, number>>({ ...DEFAULT_PIXELS })
 if (dimension.value.kind !== 'original') {
   lastValues.value[dimension.value.kind] = dimension.value.pixels
 }
+watch(dimension, (next) => {
+  if (next.kind !== 'original') {
+    lastValues.value[next.kind] = next.pixels
+  }
+})
 
 const croppedCount = computed(
   () => images.value.filter((image) => hasCropOp(image.edit?.ops ?? [])).length,

@@ -24,15 +24,27 @@
 import { onScopeDispose, ref, toRaw, watch, type Ref } from 'vue'
 import { mimeForFormat } from '@/domain/format'
 import { resolveSettings, type BatchSettings } from '@/domain/job'
-import type { EncodableFormat, ImageId, ImageRecord, Job } from '@/domain/types'
-import type { JobFailure } from '@/pipeline/protocol'
+import type {
+  DimensionRecoveryJob,
+  EncodableFormat,
+  ImageId,
+  ImageRecord,
+  JpegRecoveryJob,
+  Job,
+} from '@/domain/types'
+import type {
+  DimensionRecoveryResult,
+  JobFailure,
+  JpegRecoveryResult,
+  SizeTargetUnreachableResult,
+} from '@/pipeline/protocol'
 import { getSourceFile } from '@/platform/source-files'
 import { getPreviewPool } from './preview-pool'
 
 /** Technical Design §5.3: "Debounce interval: 1000 ms after the last input event." */
 export const PREVIEW_DEBOUNCE_MS = 1000
 
-export type PreviewPhase = 'idle' | 'encoding' | 'ready' | 'error'
+export type PreviewPhase = 'idle' | 'encoding' | 'ready' | 'unreachable' | 'error'
 
 /**
  * Why there is no compressed image. Each case has its own message, because §10 forbids a generic
@@ -56,6 +68,8 @@ export interface PreviewEncodeOptions {
   settings: Ref<BatchSettings>
   /** Whether the Original tab is showing, which is what makes the source worth decoding at all. */
   wantsOriginal: Ref<boolean>
+  /** Recovery suggestions are strictly single-image behavior. */
+  allowRecovery: Ref<boolean>
 }
 
 export interface PreviewEncodeState {
@@ -69,6 +83,10 @@ export interface PreviewEncodeState {
   /** The browser could not draw the source itself (a HEIC on Chromium, a TIFF, a JPEG XL). */
   originalUnrenderable: Ref<boolean>
   error: Ref<PreviewEncodeError | null>
+  unreachable: Ref<SizeTargetUnreachableResult | null>
+  recoveryPhase: Ref<'idle' | 'checking' | 'done'>
+  jpegSuggestion: Ref<JpegRecoveryResult['suggestion']>
+  dimensionSuggestion: Ref<DimensionRecoveryResult['suggestion']>
   /** §10's retry, beside the inline error. */
   retry: () => void
   /** Called by the frame when the Original tab's `<img>` raises `error`. */
@@ -82,12 +100,21 @@ interface EncodeSnapshot {
 }
 
 export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeState {
+  const pool = getPreviewPool()
+  // Leaving Preview cancels its queue without throwing away loaded codecs. Re-entering resumes the
+  // same pool before the immediate entry encode is submitted.
+  pool.resume()
+
   const phase = ref<PreviewPhase>('idle')
   const compressedUrl = ref<string | null>(null)
   const compressedBytes = ref<number | null>(null)
   const originalUrl = ref<string | null>(null)
   const originalUnrenderable = ref(false)
   const error = ref<PreviewEncodeError | null>(null)
+  const unreachable = ref<SizeTargetUnreachableResult | null>(null)
+  const recoveryPhase = ref<'idle' | 'checking' | 'done'>('idle')
+  const jpegSuggestion = ref<JpegRecoveryResult['suggestion']>(null)
+  const dimensionSuggestion = ref<DimensionRecoveryResult['suggestion']>(null)
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   /**
@@ -111,6 +138,10 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     }
 
     compressedBytes.value = null
+    unreachable.value = null
+    recoveryPhase.value = 'idle'
+    jpegSuggestion.value = null
+    dimensionSuggestion.value = null
   }
 
   function releaseOriginal(): void {
@@ -134,6 +165,95 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     releaseCompressed()
     error.value = reason
     phase.value = 'error'
+  }
+
+  async function sourceBytes(image: ImageRecord): Promise<Uint8Array | null | undefined> {
+    const file = getSourceFile(image.id)
+
+    if (file === undefined) {
+      return undefined
+    }
+
+    try {
+      return new Uint8Array(await file.arrayBuffer())
+    } catch {
+      return null
+    }
+  }
+
+  async function runRecovery(
+    expected: number,
+    image: ImageRecord,
+    settings: BatchSettings,
+    resolution: Extract<ReturnType<typeof resolveSettings>, { kind: 'resolved' }>,
+    miss: SizeTargetUnreachableResult,
+  ): Promise<void> {
+    if (!options.allowRecovery.value || image.isAnimated) {
+      recoveryPhase.value = 'done'
+      return
+    }
+
+    recoveryPhase.value = 'checking'
+
+    if (image.sourceFormat === 'png' && resolution.settings.format === 'png') {
+      const jpeg = resolveSettings(image, { ...settings, format: 'jpeg' })
+
+      if (jpeg.kind === 'resolved') {
+        const source = await sourceBytes(image)
+
+        if (source instanceof Uint8Array && generation === expected) {
+          const job: JpegRecoveryJob = {
+            kind: 'jpeg-recovery',
+            imageId: image.id,
+            source,
+            edit: image.edit,
+            settings: jpeg.settings,
+          }
+          const outcome = await pool.run(job).done
+
+          if (
+            generation === expected &&
+            outcome.outcome === 'completed' &&
+            outcome.result.kind === 'jpeg-recovery'
+          ) {
+            jpegSuggestion.value = outcome.result.suggestion
+          }
+        }
+      }
+    }
+
+    if (generation !== expected) {
+      return
+    }
+
+    const source = await sourceBytes(image)
+
+    if (source instanceof Uint8Array && generation === expected) {
+      const job: DimensionRecoveryJob = {
+        kind: 'dimension-recovery',
+        imageId: image.id,
+        source,
+        edit: image.edit,
+        settings: resolution.settings,
+        targetBytes: miss.targetBytes,
+        achievedBytes: miss.achievedBytes,
+        width: miss.width,
+        height: miss.height,
+      }
+      const outcome = await pool.run(job).done
+
+      if (
+        generation === expected &&
+        outcome.outcome === 'completed' &&
+        outcome.result.kind === 'dimension-recovery'
+      ) {
+        dimensionSuggestion.value = outcome.result.suggestion
+      }
+    }
+
+    if (generation === expected) {
+      recoveryPhase.value = 'done'
+    }
   }
 
   async function runEncode(): Promise<void> {
@@ -176,18 +296,14 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       return
     }
 
-    const file = getSourceFile(image.id)
+    const source = await sourceBytes(image)
 
-    if (file === undefined) {
+    if (source === undefined) {
       fail({ kind: 'source-missing' })
       return
     }
 
-    let source: Uint8Array
-
-    try {
-      source = new Uint8Array(await file.arrayBuffer())
-    } catch {
+    if (source === null) {
       fail({ kind: 'decode-failed' })
       return
     }
@@ -204,13 +320,26 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       settings: resolution.settings,
       intent: 'preview',
     }
-    const outcome = await getPreviewPool().run(job).done
+    const outcome = await pool.run(job).done
 
     if (generation !== expected) {
       return
     }
 
     if (outcome.outcome === 'completed') {
+      if (outcome.result.kind === 'size-target-unreachable') {
+        releaseCompressed()
+        unreachable.value = outcome.result
+        phase.value = 'unreachable'
+        void runRecovery(expected, image, settings, resolution, outcome.result)
+        return
+      }
+
+      if (outcome.result.kind !== 'output') {
+        fail({ kind: 'encode-failed' })
+        return
+      }
+
       // The cast is for `ArrayBufferLike`, which `Uint8Array`'s buffer parameter defaults to and
       // which admits `SharedArrayBuffer` — the same cast `pipeline/stages/gif.ts` documents. These
       // bytes arrived over `postMessage`, and a `SharedArrayBuffer` cannot be transferred at all
@@ -274,6 +403,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       // Same image, changed output settings (R-P3). The in-flight job is left to run and its result
       // is discarded on arrival (R-X28), which is the pool's own behaviour; what happens here is that
       // the now-stale result stops being shown immediately (R-B1, R-P4).
+      generation += 1
       releaseCompressed()
       error.value = null
       phase.value = 'encoding'
@@ -308,6 +438,10 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
   onScopeDispose(() => {
     releaseWorkingSet()
     generation += 1
+    // R-X26: queued jobs settle as cancelled and no further recovery step can be dispatched. A
+    // codec call already inside WASM finishes in its worker and is discarded; terminating it would
+    // pay R-X29's codec reload cost on ordinary navigation.
+    pool.cancel()
   })
 
   return {
@@ -317,6 +451,10 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     originalUrl,
     originalUnrenderable,
     error,
+    unreachable,
+    recoveryPhase,
+    jpegSuggestion,
+    dimensionSuggestion,
     retry: () => {
       void runEncode()
     },

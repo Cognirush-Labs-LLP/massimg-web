@@ -138,7 +138,7 @@ test('a still search returns the best-quality file that fits, and it is the qual
         endBytes: [at10.bytes.byteLength, at100.bytes.byteLength],
         keptBytes: searched.bytes.byteLength,
         slider: searched.slider,
-        reachedTarget: searched.reachedTarget,
+        kind: searched.kind,
         probeCount: searched.probes.length,
         probes: searched.probes,
         caveats: searched.caveats,
@@ -155,7 +155,7 @@ test('a still search returns the best-quality file that fits, and it is the qual
   expect(measured.endBytes[0]).toBeLessThan(measured.targetBytes)
   expect(measured.endBytes[1]).toBeGreaterThan(measured.targetBytes)
 
-  expect(measured.reachedTarget).toBe(true)
+  expect(measured.kind).toBe('fit')
   expect(measured.keptBytes).toBeLessThanOrEqual(measured.targetBytes)
   expect(measured.caveats).toEqual([])
   expect(measured.probeCount).toBeLessThanOrEqual(8)
@@ -170,7 +170,34 @@ test('a still search returns the best-quality file that fits, and it is the qual
   expect(measured.twoAboveBytes).toBeGreaterThan(measured.targetBytes)
 })
 
-test('an unreachable target keeps the smallest result, records R-Q3’s caveat, and costs one encode', async ({
+test('a still search can enforce the dimension-recovery quality floor', async ({ page }) => {
+  const measured = await page.evaluate(
+    async ({ sizePath }) => {
+      const { encodeStillAtSlider, encodeStillToSize } = await import(/* @vite-ignore */ sizePath)
+      const frame = makeFrame('photo', 320, 240)
+      const at30 = await encodeStillAtSlider(frame, 'jpeg', 30)
+      const at100 = await encodeStillAtSlider(frame, 'jpeg', 100)
+      const targetBytes = Math.round((at30.bytes.byteLength + at100.bytes.byteLength) / 2)
+      const searched = await encodeStillToSize(frame, 'jpeg', targetBytes, 30)
+
+      return {
+        kind: searched.kind,
+        slider: searched.slider,
+        outputBytes: searched.bytes.byteLength,
+        targetBytes,
+        probes: searched.probes,
+      }
+    },
+    { sizePath: SIZE_MODULE_PATH },
+  )
+
+  expect(measured.kind).toBe('fit')
+  expect(measured.slider).toBeGreaterThanOrEqual(30)
+  expect(measured.outputBytes).toBeLessThanOrEqual(measured.targetBytes)
+  expect(measured.probes[0]?.slider).toBe(30)
+})
+
+test('an unreachable target returns the smallest typed attempt and costs one encode', async ({
   page,
 }) => {
   const measured = await page.evaluate(
@@ -189,7 +216,7 @@ test('an unreachable target keeps the smallest result, records R-Q3’s caveat, 
         keptBytes: searched.bytes.byteLength,
         lowestBytes: lowest.bytes.byteLength,
         slider: searched.slider,
-        reachedTarget: searched.reachedTarget,
+        kind: searched.kind,
         probes: searched.probes,
         caveats: searched.caveats,
         head: Array.from(searched.bytes.subarray(0, 3)),
@@ -200,7 +227,7 @@ test('an unreachable target keeps the smallest result, records R-Q3’s caveat, 
 
   // R-Q3: the image is not failed, and what it achieved is what it keeps.
   expect(measured.head).toEqual([0xff, 0xd8, 0xff])
-  expect(measured.reachedTarget).toBe(false)
+  expect(measured.kind).toBe('unreachable')
   expect(measured.slider).toBe(10)
   expect(measured.keptBytes).toBe(measured.lowestBytes)
   expect(measured.keptBytes).toBeGreaterThan(measured.targetBytes)
@@ -208,14 +235,7 @@ test('an unreachable target keeps the smallest result, records R-Q3’s caveat, 
   // One encode, not eight: nothing above the lowest quality can be smaller than it.
   expect(measured.probes).toEqual([{ slider: 10, bytes: measured.lowestBytes }])
 
-  // R-X46's row: the caveat states the target and what was achieved.
-  expect(measured.caveats).toEqual([
-    {
-      kind: 'size-target-not-reached',
-      targetBytes: measured.targetBytes,
-      achievedBytes: measured.keptBytes,
-    },
-  ])
+  expect(measured.caveats).toEqual([])
 })
 
 test('a generous target is answered at the top of the slider in two encodes, never by inflating the file', async ({
@@ -265,7 +285,7 @@ test('the search covers WebP, AVIF, PNG and GIF, and each keeps a file of its ow
         format: string
         bytes: number
         slider: number
-        reachedTarget: boolean
+        kind: 'fit' | 'unreachable'
         probes: number
         caveats: string[]
         head: number[]
@@ -281,7 +301,7 @@ test('the search covers WebP, AVIF, PNG and GIF, and each keeps a file of its ow
           format,
           bytes: searched.bytes.byteLength,
           slider: searched.slider,
-          reachedTarget: searched.reachedTarget,
+          kind: searched.kind,
           probes: searched.probes.length,
           caveats: searched.caveats.map((caveat: { kind: string }) => caveat.kind),
           head: Array.from(searched.bytes.subarray(0, 12)),
@@ -308,13 +328,12 @@ test('the search covers WebP, AVIF, PNG and GIF, and each keeps a file of its ow
     expect(row.probes, row.format).toBeGreaterThanOrEqual(1)
 
     // R-Q3, for every format: either the file is under the target, or the report says it is not.
-    if (row.reachedTarget) {
+    if (row.kind === 'fit') {
       expect(row.bytes, row.format).toBeLessThanOrEqual(9_000)
-      expect(row.caveats, row.format).not.toContain('size-target-not-reached')
     } else {
       expect(row.bytes, row.format).toBeGreaterThan(9_000)
-      expect(row.caveats, row.format).toContain('size-target-not-reached')
     }
+    expect(row.caveats, row.format).not.toContain('size-target-not-reached')
   }
 
   // Each kept file is really that format, read from its own signature.
@@ -350,7 +369,7 @@ test('PNG’s two-valued axis stops the search early instead of spending the who
         keptBytes: searched.bytes.byteLength,
         probes: searched.probes,
         caveats: searched.caveats,
-        reachedTarget: searched.reachedTarget,
+        kind: searched.kind,
       }
     },
     { sizePath: SIZE_MODULE_PATH, pngPath: PNG_MODULE_PATH, jobPath: JOB_MODULE_PATH },
@@ -362,7 +381,7 @@ test('PNG’s two-valued axis stops the search early instead of spending the who
   // §7.4 says a PNG size search cannot binary-search `minimum` usefully. It does not have to: the
   // third probe returns a file of a size already seen, which ends the search (see `nextSizeProbe`).
   expect(measured.probes.map((probe: { slider: number }) => probe.slider)).toEqual([10, 100, 55])
-  expect(measured.reachedTarget).toBe(true)
+  expect(measured.kind).toBe('fit')
   expect(measured.keptBytes).toBe(measured.quantizedBytes)
   // The quantized candidate is what was kept, so the report says the PNG is not lossless (R-X46).
   expect(measured.caveats).toEqual([{ kind: 'png-quantized' }])
@@ -428,20 +447,20 @@ test('an animated search fits the target, keeps every frame (R-Q10), and never s
         webp: {
           bytes: webp.bytes.byteLength,
           probes: webp.probes.length,
-          reachedTarget: webp.reachedTarget,
+          kind: webp.kind,
           frames: readWebp.frameCount,
         },
         png: {
           bytes: png.bytes.byteLength,
           probes: png.probes.length,
           slider: png.slider,
-          reachedTarget: png.reachedTarget,
+          kind: png.kind,
           frames: readPng.frameCount,
         },
         gif: {
           bytes: gif.bytes.byteLength,
           probes: gif.probes.length,
-          reachedTarget: gif.reachedTarget,
+          kind: gif.kind,
           frames: readGif.frameCount,
         },
       }
@@ -457,9 +476,9 @@ test('an animated search fits the target, keeps every frame (R-Q10), and never s
   expect(measured.sourceFrames).toBe(6)
 
   for (const [format, row] of Object.entries(measured).filter(([key]) => key !== 'sourceFrames')) {
-    const animated = row as { bytes: number; reachedTarget: boolean; frames: number }
+    const animated = row as { bytes: number; kind: 'fit' | 'unreachable'; frames: number }
 
-    expect(animated.reachedTarget, format).toBe(true)
+    expect(animated.kind, format).toBe('fit')
     expect(animated.bytes, format).toBeLessThanOrEqual(200_000)
     // R-Q10: the search never buys size by dropping frames.
     expect(animated.frames, format).toBe(6)

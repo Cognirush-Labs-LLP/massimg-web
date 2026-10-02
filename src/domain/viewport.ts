@@ -94,7 +94,10 @@ const INVERSE_QUARTER_TURNS = {
 /** Whether an edit's op list can be summarised as one (quarter turns, crop rect) pair at all. */
 export type ViewportEditGeometry =
   | { kind: 'projectable'; quarterTurns: QuarterTurns; cropRect: NormalisedRect | null }
-  | { kind: 'unprojectable'; reason: 'rotate-after-crop' | 'multiple-crops' }
+  | {
+      kind: 'unprojectable'
+      reason: 'rotate-after-crop' | 'multiple-crops' | 'resize-before-final-operation'
+    }
 
 function isUsableSize(size: PixelSize): boolean {
   return (
@@ -412,13 +415,23 @@ export function viewportEditGeometry(edit: EditRecord | null): ViewportEditGeome
   let quarterTurns: QuarterTurns = 0
   let cropRect: NormalisedRect | null = null
 
-  for (const op of edit?.ops ?? []) {
+  const ops = edit?.ops ?? []
+
+  for (const [index, op] of ops.entries()) {
     if (op.kind === 'rotate') {
       if (cropRect !== null) {
         return { kind: 'unprojectable', reason: 'rotate-after-crop' }
       }
 
       quarterTurns = addQuarterTurns(quarterTurns, op.quarterTurns)
+      continue
+    }
+
+    if (op.kind === 'resize') {
+      if (index !== ops.length - 1) {
+        return { kind: 'unprojectable', reason: 'resize-before-final-operation' }
+      }
+
       continue
     }
 

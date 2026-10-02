@@ -5,7 +5,14 @@
 // level installs a message listener, and separate from pool.ts so the worker does not pull main-thread
 // code into its bundle. Same split as thumbnail-render.ts / thumbnail-worker.ts / thumbnails.ts.
 
-import type { Caveat, EncodableFormat, FailureReason, ImageId, Job } from '@/domain/types'
+import type {
+  Caveat,
+  EncodableFormat,
+  FailureReason,
+  ImageId,
+  PipelineJob,
+  Rgba,
+} from '@/domain/types'
 
 declare const jobTokenBrand: unique symbol
 
@@ -40,7 +47,8 @@ export function nextToken(): JobToken {
  */
 export type JobFailure = FailureReason | { kind: 'unimplemented'; detail: string }
 
-export interface JobResult {
+export interface OutputJobResult {
+  kind: 'output'
   /**
    * The encoded output. `bytes.byteLength` is §4's "measured size" — it is not restated as a second
    * field, because two sources of truth for one number is how they come to disagree.
@@ -52,8 +60,35 @@ export interface JobResult {
   caveats: Caveat[]
 }
 
+export interface SizeTargetUnreachableResult {
+  kind: 'size-target-unreachable'
+  targetBytes: number
+  achievedBytes: number
+  format: EncodableFormat
+  width: number
+  height: number
+}
+
+export interface JpegRecoveryResult {
+  kind: 'jpeg-recovery'
+  suggestion: { outputBytes: number; flattenedFill: Rgba | null } | null
+}
+
+export interface DimensionRecoveryResult {
+  kind: 'dimension-recovery'
+  suggestion: {
+    outputBytes: number
+    width: number
+    height: number
+    probes: number
+  } | null
+}
+
+export type JobResult =
+  OutputJobResult | SizeTargetUnreachableResult | JpegRecoveryResult | DimensionRecoveryResult
+
 export type WorkerRequest =
-  | { kind: 'run'; token: JobToken; job: Job }
+  | { kind: 'run'; token: JobToken; job: PipelineJob }
   /**
    * The worker's half of the between-jobs flag (§5.3): the worker refuses to start any job whose
    * token is at or below `through`. It cannot interrupt a WASM call already entered — that is the

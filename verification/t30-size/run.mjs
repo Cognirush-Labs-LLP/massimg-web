@@ -7,7 +7,7 @@
 // shipped search, at §7.3's effort settings, on a 1600x1200 photograph — the same shape D1 used —
 // with the iteration count and wall time per format. R-Q4's exclusion list is read off that table.
 //
-// Five things are measured:
+// Five original T30 things are measured, plus T36-A's optional recovery-only pass:
 //
 //   1. **`d1`** — the shipped search to a 150 KB target on a 1600x1200 photographic subject, for
 //      every output format. Directly comparable to D1's row, and the table §7.5 carries.
@@ -23,6 +23,8 @@
 //      needs the axis to be monotone; this says whether it is.
 //   5. **`animated`** — the same search over animations, where one iteration re-encodes every frame.
 //      R-Q10 forbids the other lever, so this is the whole cost of an animated size target.
+//   6. **`dimensionRecovery`** — with `T36A_RECOVERY_ONLY=1`, the bounded quality-floor recovery
+//      planner plus its final quality search, on the same still corpus in all engines.
 //
 // Subjects are generated in the page from parameters, so nothing megabyte-sized crosses into the
 // browser, plus the committed animated fixtures and — when PHOTO_FIXTURES_DIR is set — real
@@ -42,6 +44,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..', '..')
 const FIXTURES = join(REPO_ROOT, 'tests', 'fixtures', 'animated')
 const QUICK = Boolean(process.env.T30_QUICK)
+const RECOVERY_ONLY = Boolean(process.env.T36A_RECOVERY_ONLY)
 const PORT = 5188
 const BASE = `http://localhost:${PORT}`
 const ENGINES = QUICK ? { chromium } : { chromium, firefox, webkit }
@@ -52,6 +55,7 @@ const D1_TARGET_BYTES = 150 * 1024
 const MODULES = {
   size: '/src/pipeline/stages/size.ts',
   sizePlan: '/src/pipeline/stages/size-plan.ts',
+  dimensionRecovery: '/src/pipeline/stages/dimension-recovery-plan.ts',
   encode: '/src/pipeline/stages/encode.ts',
   png: '/src/pipeline/stages/png.ts',
   pngPlan: '/src/pipeline/stages/png-plan.ts',
@@ -149,8 +153,10 @@ const MEASURE_STILL = async ({
   d1TargetBytes,
   withPngAxis,
   pngTargetSweep,
+  recoveryOnly,
 }) => {
   const size = await import(/* @vite-ignore */ modules.size)
+  const dimensionRecoveryPlan = await import(/* @vite-ignore */ modules.dimensionRecovery)
   const encode = await import(/* @vite-ignore */ modules.encode)
   const pngStage = await import(/* @vite-ignore */ modules.png)
   const pngPlan = await import(/* @vite-ignore */ modules.pngPlan)
@@ -242,7 +248,7 @@ const MEASURE_STILL = async ({
     let high
     try {
       low = (await encodeAt(format, 10)).byteLength
-      high = (await encodeAt(format, 100)).byteLength
+      high = recoveryOnly ? low : (await encodeAt(format, 100)).byteLength
     } catch (error) {
       results.push({ format, failed: String(error && error.message ? error.message : error) })
       continue
@@ -250,13 +256,15 @@ const MEASURE_STILL = async ({
     const endsMs = Math.round(performance.now() - endsStarted)
 
     // Interior, unreachable (R-Q3) and generous (R-Q2), plus D1's own absolute target.
-    const targets = [
-      { id: 'interior', targetBytes: Math.round(Math.sqrt(low * high)) },
-      { id: 'near-low', targetBytes: Math.round(low * 1.2) },
-      { id: 'unreachable', targetBytes: Math.max(1, Math.round(low / 2)) },
-      { id: 'generous', targetBytes: Math.round(high * 2) },
-      { id: 'd1-150kb', targetBytes: d1TargetBytes },
-    ]
+    const targets = recoveryOnly
+      ? []
+      : [
+          { id: 'interior', targetBytes: Math.round(Math.sqrt(low * high)) },
+          { id: 'near-low', targetBytes: Math.round(low * 1.2) },
+          { id: 'unreachable', targetBytes: Math.max(1, Math.round(low / 2)) },
+          { id: 'generous', targetBytes: Math.round(high * 2) },
+          { id: 'd1-150kb', targetBytes: d1TargetBytes },
+        ]
 
     const runs = []
     for (const target of targets) {
@@ -270,7 +278,7 @@ const MEASURE_STILL = async ({
           ms: Math.round(performance.now() - started),
           keptBytes: searched.bytes.byteLength,
           slider: searched.slider,
-          reachedTarget: searched.reachedTarget,
+          outcome: searched.kind,
           probes: searched.probes,
           caveats: searched.caveats.map((caveat) => caveat.kind),
         })
@@ -284,7 +292,67 @@ const MEASURE_STILL = async ({
       }
     }
 
-    results.push({ format, endBytes: { low, high }, endsMs, runs })
+    const recoveryStarted = performance.now()
+    const recoveryTargetBytes = Math.max(1, Math.round(low / 2))
+    let dimensionRecovery
+    try {
+      const fit = await dimensionRecoveryPlan.searchSmallerDimensions(
+        {
+          current: { width: frame.width, height: frame.height },
+          targetBytes: recoveryTargetBytes,
+          achievedBytes: low,
+        },
+        async (candidate) => {
+          const resized = await resizeStage.applyResize(frame, { kind: 'exact', ...candidate })
+          const encoded = await size.encodeStillAtSlider(
+            resized,
+            format,
+            dimensionRecoveryPlan.DIMENSION_RECOVERY_MIN_SLIDER,
+          )
+          return encoded.bytes.byteLength
+        },
+      )
+
+      if (fit === null) {
+        dimensionRecovery = {
+          targetBytes: recoveryTargetBytes,
+          dimensionProbes: 0,
+          qualityProbes: 0,
+          fit: false,
+          ms: Math.round(performance.now() - recoveryStarted),
+        }
+      } else {
+        const resized = await resizeStage.applyResize(frame, {
+          kind: 'exact',
+          width: fit.width,
+          height: fit.height,
+        })
+        const final = await size.encodeStillToSize(
+          resized,
+          format,
+          recoveryTargetBytes,
+          dimensionRecoveryPlan.DIMENSION_RECOVERY_MIN_SLIDER,
+        )
+        dimensionRecovery = {
+          targetBytes: recoveryTargetBytes,
+          width: fit.width,
+          height: fit.height,
+          outputBytes: final.bytes.byteLength,
+          dimensionProbes: fit.probes.length,
+          qualityProbes: final.probes.length,
+          fit: final.kind === 'fit',
+          ms: Math.round(performance.now() - recoveryStarted),
+        }
+      }
+    } catch (error) {
+      dimensionRecovery = {
+        targetBytes: recoveryTargetBytes,
+        failed: String(error && error.message ? error.message : error),
+        ms: Math.round(performance.now() - recoveryStarted),
+      }
+    }
+
+    results.push({ format, endBytes: { low, high }, endsMs, runs, dimensionRecovery })
   }
 
   // §7.5's PNG recommendation, tested rather than repeated. `minimum` is pinned at R-Q11's floor and
@@ -432,14 +500,14 @@ const MEASURE_AVIF_SPEED = async ({ modules, subject, targetBytes }) => {
       iterations: shipped.probes.length,
       keptBytes: shipped.bytes.byteLength,
       slider: shipped.slider,
-      reachedTarget: shipped.reachedTarget,
+      outcome: shipped.kind,
     },
     libraryDefault: {
       ms: defaultMs,
       iterations: atDefault.probes.length,
       keptBytes: atDefault.bytes.byteLength,
       slider: atDefault.slider,
-      reachedTarget: atDefault.reachedTarget,
+      outcome: atDefault.kind,
     },
   }
 }
@@ -488,7 +556,7 @@ const MEASURE_ANIMATED = async ({ modules, subject, formats }) => {
           ),
           keptBytes: searched.bytes.byteLength,
           slider: searched.slider,
-          reachedTarget: searched.reachedTarget,
+          outcome: searched.kind,
           probes: searched.probes,
         })
       } catch (error) {
@@ -624,18 +692,18 @@ async function main() {
               subject,
               formats: STILL_FORMATS,
               d1TargetBytes: D1_TARGET_BYTES,
-              withPngAxis: engineName === 'chromium',
+              withPngAxis: !RECOVERY_ONLY && engineName === 'chromium',
               pngTargetSweep: PNG_TARGET_SWEEP,
+              recoveryOnly: RECOVERY_ONLY,
             }),
           )
           still.push(measurement)
           const jpeg = measurement.formats.find((row) => row.format === 'jpeg')
           const d1 = jpeg?.runs.find((run) => run.id === 'd1-150kb')
-          console.log(
-            `${measurement.width}x${measurement.height}, ` +
-              `JPEG 150 KB in ${d1 ? `${d1.iterations} iterations / ${d1.ms} ms` : 'n/a'} ` +
-              `(${Math.round((Date.now() - started) / 1000)} s total)`,
-          )
+          const detail = RECOVERY_ONLY
+            ? `recovery corpus (${Math.round((Date.now() - started) / 1000)} s total)`
+            : `JPEG 150 KB in ${d1 ? `${d1.iterations} iterations / ${d1.ms} ms` : 'n/a'} (${Math.round((Date.now() - started) / 1000)} s total)`
+          console.log(`${measurement.width}x${measurement.height}, ${detail}`)
         } catch (error) {
           console.log(`FAILED — ${String(error && error.message ? error.message : error)}`)
           still.push({ id: subject.id, failed: String(error) })
@@ -643,7 +711,7 @@ async function main() {
       }
 
       const animated = []
-      for (const subject of animatedSubjects) {
+      for (const subject of RECOVERY_ONLY ? [] : animatedSubjects) {
         process.stdout.write(`  animated ${subject.id} ... `)
         try {
           const measurement = await withPage((page) =>
@@ -668,7 +736,7 @@ async function main() {
 
       results.engines[engineName] = { still, animated }
 
-      if (engineName === 'chromium') {
+      if (engineName === 'chromium' && !RECOVERY_ONLY) {
         process.stdout.write('  avif speed comparison ... ')
         try {
           results.avifSpeed = await withPage((page) =>
@@ -712,7 +780,7 @@ async function main() {
             ms: run?.ms ?? null,
             keptBytes: run?.keptBytes ?? null,
             slider: run?.slider ?? null,
-            reachedTarget: run?.reachedTarget ?? null,
+            outcome: run?.outcome ?? null,
           }
         }),
     ),
@@ -761,9 +829,23 @@ async function main() {
         return [format, counts]
       }),
     ),
+    dimensionRecovery: Object.fromEntries(
+      STILL_FORMATS.map((format) => {
+        const rows = []
+        for (const [engineName, engine] of Object.entries(results.engines)) {
+          for (const subject of engine.still ?? []) {
+            const recovery = subject.formats?.find((row) => row.format === format)?.dimensionRecovery
+            if (recovery && !recovery.failed) rows.push({ engine: engineName, subject: subject.id, ...recovery })
+          }
+        }
+        const worst = rows.reduce((current, row) =>
+          current === null || row.ms > current.ms ? row : current, null)
+        return [format, { measurements: rows.length, worst }]
+      }),
+    ),
     // §7.5's PNG recommendation, answered: is `target` a monotone axis?
     pngTargetAxis: chromium
-      .filter((subject) => subject.pngAxis)
+      .filter((subject) => subject.pngAxis?.points)
       .map((subject) => {
         const points = subject.pngAxis.points.filter((point) => typeof point.bytes === 'number')
         const monotone = points.every(
@@ -796,8 +878,9 @@ async function main() {
       ),
   }
 
-  writeFileSync(join(__dirname, 'results.json'), `${JSON.stringify(results, null, 2)}\n`)
-  console.log('\nWrote results.json')
+  const resultName = RECOVERY_ONLY ? 'recovery-results.json' : 'results.json'
+  writeFileSync(join(__dirname, resultName), `${JSON.stringify(results, null, 2)}\n`)
+  console.log(`\nWrote ${resultName}`)
 
   console.log('\n--- §7.5, at D1’s 150 KB target ---')
   for (const row of results.summary.d1) {
@@ -805,7 +888,7 @@ async function main() {
       `  ${row.subject.padEnd(16)} ${String(row.format).padEnd(5)} ` +
         `${String(row.iterations).padStart(2)} iterations  ${String(row.ms).padStart(6)} ms  ` +
         `${String(row.keptBytes).padStart(8)} B  slider ${row.slider}` +
-        `${row.reachedTarget ? '' : '  (target not reached)'}`,
+        `${row.outcome === 'fit' ? '' : '  (target not reached)'}`,
     )
   }
 

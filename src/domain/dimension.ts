@@ -57,6 +57,11 @@ export function resolveResizedSize(size: PixelSize, dimension: ResolvedDimension
         width: derivedEdge(size.width, size.height, dimension.pixels),
         height: dimension.pixels,
       }
+    case 'exact':
+      assertPixelValue(dimension.width)
+      assertPixelValue(dimension.height)
+
+      return { width: dimension.width, height: dimension.height }
     default: {
       const unknown: never = dimension
       throw new RangeError(`unsupported dimension rule: ${JSON.stringify(unknown)}`)

@@ -98,7 +98,7 @@ function oracleSteps(source: PixelSize, ops: readonly EditOp[], alpha: AlphaHand
     if (op.kind === 'rotate') {
       steps.push({ kind: 'rotate', quarterTurns: op.quarterTurns, input: size })
       size = rotateSize(size, op.quarterTurns)
-    } else {
+    } else if (op.kind === 'crop') {
       const output = resolveCropOutput(op.rect, size)
       steps.push({
         kind: 'crop',
@@ -108,6 +108,8 @@ function oracleSteps(source: PixelSize, ops: readonly EditOp[], alpha: AlphaHand
         fill: fillBytes(op.background, alpha),
       })
       size = output.size
+    } else {
+      throw new Error('recovery resize is not a geometry edit operation')
     }
   }
 

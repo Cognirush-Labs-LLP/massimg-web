@@ -82,6 +82,7 @@ describe('ingestSelectedFiles', () => {
       edit: null,
       status: 'ready',
       failure: null,
+      skipReason: null,
     })
     expect(record?.id).toBeTruthy()
     expect(hasSourceFile(record!.id)).toBe(true)

@@ -2,7 +2,7 @@
   "name": "t30-size",
   "private": true,
   "type": "module",
-  "description": "Throwaway harness for T30 — settles D1 by running the shipped size-target search (pipeline/stages/size.ts) over every output format, still and animated, in three browsers, and re-measures AVIF at §7.3's speed 9 against the library default so R-Q4's exclusion list is decided from data. See docs/task-notes/T30.md and docs/assumptions.md D1.",
+  "description": "Throwaway harness for T30 and T36-A — measures the shipped size-target and bounded dimension-recovery searches over every output format in three browsers. See docs/task-notes/T30.md, docs/task-notes/T36-A.md, and docs/assumptions.md D1/D10.",
   "scripts": {
     "test": "node run.mjs"
   }

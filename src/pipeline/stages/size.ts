@@ -19,7 +19,7 @@
 // Imports `codecs/loader.ts` transitively, so nothing here runs under Vitest (T22). The decisions are
 // next door; what is proven here is proven in `tests/e2e/size.spec.ts` and `tests/e2e/pool.spec.ts`.
 
-import { qualityForSlider } from '@/domain/job'
+import { QUALITY_SLIDER_MIN, qualityForSlider } from '@/domain/job'
 import type { EncodableFormat } from '@/domain/types'
 import { encodeAnimatedWebp, encodeApng } from './animation-encode'
 import { encodeFrame } from './encode'
@@ -29,13 +29,33 @@ import type { Animation, Frame } from './frame'
 import { encodeGif } from './gif'
 import { encodePng } from './png'
 import { runSizeSearch, sizeSearchBand } from './size-plan'
-import type { SizeSearchResult } from './size-plan'
+import type { SizeCandidate, SizeSearchResult } from './size-plan'
 
 /**
  * The three formats that can carry an animation (R-F6). `executeJob` has already substituted WebP
  * for the two that cannot, so nothing else reaches the animated search.
  */
 export type AnimatedFormat = Extract<EncodableFormat, 'png' | 'webp' | 'gif'>
+
+/** One ordinary still encode at a slider position, shared by target and dimension recovery. */
+export async function encodeStillAtSlider(
+  frame: Frame,
+  format: EncodableFormat,
+  slider: number,
+): Promise<SizeCandidate> {
+  if (format === 'png') {
+    return await encodePng(frame, qualityForSlider(slider, format))
+  }
+
+  if (format === 'gif') {
+    return await encodeGif(singleFrameAnimation(frame), qualityForSlider(slider, format))
+  }
+
+  const still: StillFormat = format
+  const encoded = await encodeFrame(frame, still, qualityForSlider(slider, still))
+
+  return { bytes: encoded.bytes, caveats: [] }
+}
 
 /**
  * Searches the slider for the best-quality still image that fits `targetBytes` (R-Q3).
@@ -46,32 +66,14 @@ export async function encodeStillToSize(
   frame: Frame,
   format: EncodableFormat,
   targetBytes: number,
+  minimumSlider = QUALITY_SLIDER_MIN,
 ): Promise<SizeSearchResult> {
-  const band = sizeSearchBand(format, false)
+  const baseBand = sizeSearchBand(format, false)
+  const band = { ...baseBand, low: Math.max(baseBand.low, minimumSlider) }
 
-  if (format === 'png') {
-    return await runSizeSearch({ targetBytes, band }, async (slider) =>
-      encodePng(frame, qualityForSlider(slider, format)),
-    )
-  }
-
-  if (format === 'gif') {
-    // Wrapped once rather than per probe: `singleFrameAnimation` wraps the frame without copying its
-    // pixels, and a still GIF is an animation of one frame for the reason §4.2 gives GIF one row.
-    const single = singleFrameAnimation(frame)
-
-    return await runSizeSearch({ targetBytes, band }, async (slider) =>
-      encodeGif(single, qualityForSlider(slider, format)),
-    )
-  }
-
-  const still: StillFormat = format
-
-  return await runSizeSearch({ targetBytes, band }, async (slider) => {
-    const encoded = await encodeFrame(frame, still, qualityForSlider(slider, still))
-
-    return { bytes: encoded.bytes, caveats: [] }
-  })
+  return await runSizeSearch({ targetBytes, band }, async (slider) =>
+    encodeStillAtSlider(frame, format, slider),
+  )
 }
 
 /**

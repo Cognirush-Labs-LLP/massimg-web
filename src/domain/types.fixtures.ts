@@ -49,6 +49,7 @@ export const imageRecordFixture = {
   edit: editRecordFixture,
   status: 'ready',
   failure: null,
+  skipReason: null,
 } satisfies ImageRecord
 
 export const resolvedSettingsFixture = {
@@ -74,7 +75,6 @@ export const caveatFixtures = [
   { kind: 'metadata-removed', gpsDataRemoved: true },
   { kind: 'original-kept' },
   { kind: 'output-larger-than-input', inputBytes: 100, outputBytes: 120 },
-  { kind: 'size-target-not-reached', targetBytes: 50, achievedBytes: 60 },
   { kind: 'png-quantized' },
   { kind: 'colour-converted' },
   { kind: 'auxiliary-images-dropped' },

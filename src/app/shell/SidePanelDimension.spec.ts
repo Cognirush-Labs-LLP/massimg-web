@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import SidePanelDimension from './SidePanelDimension.vue'
@@ -25,6 +26,7 @@ function image(overrides: Partial<ImageRecord> = {}): ImageRecord {
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
     ...overrides,
   }
 }
@@ -99,6 +101,17 @@ describe('SidePanelDimension', () => {
     expect(
       wrapper.find<HTMLInputElement>('[data-testid="dimension-field-fixed-width"]').element.value,
     ).toBe('1200')
+  })
+
+  it('shows an exact long-edge value written externally by a recovery action', async () => {
+    const wrapper = mount(SidePanelDimension)
+
+    useSettingsStore().dimension = { kind: 'fit-long-edge', pixels: 2997 }
+    await nextTick()
+
+    expect(
+      wrapper.find<HTMLInputElement>('[data-testid="dimension-field-fit-long-edge"]').element.value,
+    ).toBe('2997')
   })
 
   it('switching back to a previously visited row keeps its last typed value', async () => {

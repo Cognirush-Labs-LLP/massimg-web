@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Caveat, FailureReason, ImageId } from '@/domain/types'
+import type { Caveat, FailureReason, ImageId, SizeTargetSkipReason } from '@/domain/types'
+import { useBatchStore } from './batch'
 
 export interface RunProgress {
   pending: number
   succeeded: number
   failed: number
+  skipped: number
 }
 
 export interface RunFailureEntry {
@@ -18,10 +20,15 @@ export interface RunCaveatEntry {
   caveats: Caveat[]
 }
 
+export interface RunSkippedEntry {
+  imageId: ImageId
+  reason: SizeTargetSkipReason
+}
+
 /**
  * Run progress (Technical Design §3.3): counts by state, accumulated input/output bytes,
- * failures and caveats. Exists only during and immediately after a Processing run — `startRun`
- * resets every field, so a store instance never carries a stale run into the next one.
+ * failures, skips and caveats. The completed result remains available after returning to Gallery;
+ * `startRun` resets every field and clears prior per-image run statuses before the next run.
  *
  * Populated by worker result messages as they arrive. `recordResult`'s parameter shape is
  * intentionally minimal here — T38 (Processing view) is what wires this store to the real
@@ -32,19 +39,22 @@ export interface RunCaveatEntry {
  * confirmation to be built against later — this store does not build that confirmation itself.
  */
 export const useRunStore = defineStore('run', () => {
-  const progress = ref<RunProgress>({ pending: 0, succeeded: 0, failed: 0 })
+  const progress = ref<RunProgress>({ pending: 0, succeeded: 0, failed: 0, skipped: 0 })
   const inputBytes = ref(0)
   const outputBytes = ref(0)
   const failures = ref<RunFailureEntry[]>([])
+  const skipped = ref<RunSkippedEntry[]>([])
   const caveats = ref<RunCaveatEntry[]>([])
   const finished = ref(false)
   const downloaded = ref(false)
 
   function startRun(totalPending: number): void {
-    progress.value = { pending: totalPending, succeeded: 0, failed: 0 }
+    useBatchStore().clearRunStatuses()
+    progress.value = { pending: totalPending, succeeded: 0, failed: 0, skipped: 0 }
     inputBytes.value = 0
     outputBytes.value = 0
     failures.value = []
+    skipped.value = []
     caveats.value = []
     finished.value = false
     downloaded.value = false
@@ -54,7 +64,8 @@ export const useRunStore = defineStore('run', () => {
     imageId: ImageId,
     outcome:
       | { kind: 'succeeded'; inputBytes: number; outputBytes: number; caveats: Caveat[] }
-      | { kind: 'failed'; reason: FailureReason },
+      | { kind: 'failed'; reason: FailureReason }
+      | { kind: 'skipped'; reason: SizeTargetSkipReason },
   ): void {
     progress.value.pending -= 1
 
@@ -66,9 +77,14 @@ export const useRunStore = defineStore('run', () => {
       if (outcome.caveats.length > 0) {
         caveats.value.push({ imageId, caveats: outcome.caveats })
       }
-    } else {
+    } else if (outcome.kind === 'failed') {
       progress.value.failed += 1
       failures.value.push({ imageId, reason: outcome.reason })
+      useBatchStore().markFailed(imageId, outcome.reason)
+    } else {
+      progress.value.skipped += 1
+      skipped.value.push({ imageId, reason: outcome.reason })
+      useBatchStore().markSkipped(imageId, outcome.reason)
     }
   }
 
@@ -85,6 +101,7 @@ export const useRunStore = defineStore('run', () => {
     inputBytes,
     outputBytes,
     failures,
+    skipped,
     caveats,
     finished,
     downloaded,

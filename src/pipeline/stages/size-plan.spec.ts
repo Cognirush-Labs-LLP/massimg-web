@@ -6,7 +6,6 @@ import {
   runSizeSearch,
   sizeSearchBand,
   sizeSearchOutcome,
-  sizeTargetCaveats,
   type SizeCandidate,
   type SizeProbe,
 } from './size-plan'
@@ -229,19 +228,6 @@ describe('sizeSearchOutcome', () => {
   })
 })
 
-describe('sizeTargetCaveats', () => {
-  it('records nothing when the target was reached', () => {
-    expect(sizeTargetCaveats(20_000, { kind: 'fit', slider: 55, bytes: 19_000 })).toEqual([])
-  })
-
-  // R-X46's row states the target and what was achieved.
-  it('states both numbers when the target was not reached', () => {
-    expect(sizeTargetCaveats(1_000, { kind: 'unreachable', slider: 10, bytes: 9_000 })).toEqual([
-      { kind: 'size-target-not-reached', targetBytes: 1_000, achievedBytes: 9_000 },
-    ])
-  })
-})
-
 describe('runSizeSearch', () => {
   it('returns the highest-quality file that fits, and counts its probes', async () => {
     const asked: number[] = []
@@ -255,7 +241,7 @@ describe('runSizeSearch', () => {
 
     expect(asked).toEqual([10, 100, 55, 77, 66, 60, 63, 61])
     expect(result.probes.length).toBe(8)
-    expect(result.reachedTarget).toBe(true)
+    expect(result.kind).toBe('fit')
     expect(result.slider).toBe(60)
     expect(result.bytes.byteLength).toBe(smoothCurve(60))
     expect(result.caveats).toEqual([])
@@ -272,9 +258,9 @@ describe('runSizeSearch', () => {
     expect(result.caveats).toEqual([quantized])
   })
 
-  // R-Q3, end to end: the smallest achieved result is kept, the image is not failed, and the caveat
-  // carries both numbers.
-  it('keeps the smallest achieved file and records R-Q3’s caveat when the target is out of reach', async () => {
+  // R-Q3, end to end: the smallest achieved result is retained as an explicitly unreachable
+  // attempt, never disguised as an output or report caveat.
+  it('keeps the smallest achieved attempt as a typed unreachable result', async () => {
     const asked: number[] = []
     const result = await runSizeSearch(
       { targetBytes: 1_000, band: WHOLE_SLIDER },
@@ -285,11 +271,9 @@ describe('runSizeSearch', () => {
     )
 
     expect(asked).toEqual([10])
-    expect(result.reachedTarget).toBe(false)
+    expect(result.kind).toBe('unreachable')
     expect(result.bytes.byteLength).toBe(smoothCurve(10))
-    expect(result.caveats).toEqual([
-      { kind: 'size-target-not-reached', targetBytes: 1_000, achievedBytes: smoothCurve(10) },
-    ])
+    expect(result.caveats).toEqual([])
   })
 
   it('runs one encode for a single-position band', async () => {
@@ -304,7 +288,7 @@ describe('runSizeSearch', () => {
 
     expect(asked).toEqual([100])
     expect(result.slider).toBe(100)
-    expect(result.reachedTarget).toBe(true)
+    expect(result.kind).toBe('fit')
   })
 
   // The memory note in `runSizeSearch`: the result refers to one candidate, the answer's, and holds

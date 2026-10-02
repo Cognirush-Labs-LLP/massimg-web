@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { FormatSetting } from '@/domain/format'
 import type { QualitySetting } from '@/domain/job'
-import type { ResolvedDimension } from '@/domain/types'
+import type { BatchDimension } from '@/domain/types'
 
 /**
  * Batch-wide settings (Technical Design §3.2): quality mode and value, dimension rule and value,
@@ -27,7 +27,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // "Original size" is the only dimension row with no stated alternative default
   // (functional-design.md §4.2, docs/ui-design.md §9).
-  const dimension = ref<ResolvedDimension>({ kind: 'original' })
+  const dimension = ref<BatchDimension>({ kind: 'original' })
 
   // R-F1: "Don't change" is the explicit default.
   const format = ref<FormatSetting>('dont-change')

@@ -43,10 +43,22 @@ import { encodeGif } from './stages/gif'
 import { encodePng } from './stages/png'
 import { optimisePngBytesKeepingSmaller } from './stages/png-optimise'
 import { applyResize } from './stages/resize'
-import { encodeAnimatedToSize, encodeStillToSize } from './stages/size'
+import { encodeAnimatedToSize, encodeStillAtSlider, encodeStillToSize } from './stages/size'
 import type { AnimatedFormat } from './stages/size'
+import {
+  DIMENSION_RECOVERY_MIN_SLIDER,
+  searchSmallerDimensions,
+} from './stages/dimension-recovery-plan'
 import { requestIsSatisfiedBySource } from '@/domain/job'
-import type { Caveat, EncodableFormat, Job } from '@/domain/types'
+import { geometryEdit, trailingResizeOp } from '@/domain/edit'
+import type {
+  Caveat,
+  DimensionRecoveryJob,
+  EncodableFormat,
+  Job,
+  JpegRecoveryJob,
+  PipelineJob,
+} from '@/domain/types'
 
 export class JobExecutionError extends Error {
   constructor(readonly detail: string) {
@@ -93,6 +105,7 @@ export async function executeJob(job: Job): Promise<JobResult> {
     const originalKept = bytes === job.source
 
     return {
+      kind: 'output',
       bytes,
       format: settings.format,
       caveats:
@@ -119,8 +132,13 @@ export async function executeJob(job: Job): Promise<JobResult> {
     throw new UnsupportedColourError(unsupported)
   }
 
-  const edited = applyEdit(frame, job.edit, settings.alpha)
-  const resized = await applyResize(edited.frame, settings.dimension)
+  const edited = applyEdit(frame, geometryEdit(job.edit), settings.alpha)
+  const recovered = trailingResizeOp(job.edit?.ops ?? [])
+  const dimension =
+    recovered === null
+      ? settings.dimension
+      : ({ kind: 'exact', width: recovered.width, height: recovered.height } as const)
+  const resized = await applyResize(edited.frame, dimension)
 
   // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
   // `job.caveats` first: whatever `resolveSettings` already decided (R-F6's `animation-substituted`
@@ -133,7 +151,19 @@ export async function executeJob(job: Job): Promise<JobResult> {
   if (settings.quality.kind === 'size') {
     const searched = await encodeStillToSize(resized, settings.format, settings.quality.targetBytes)
 
+    if (searched.kind === 'unreachable') {
+      return {
+        kind: 'size-target-unreachable',
+        targetBytes: settings.quality.targetBytes,
+        achievedBytes: searched.bytes.byteLength,
+        format: settings.format,
+        width: resized.width,
+        height: resized.height,
+      }
+    }
+
     return {
+      kind: 'output',
       bytes: searched.bytes,
       format: settings.format,
       caveats: report(searched.caveats),
@@ -143,7 +173,7 @@ export async function executeJob(job: Job): Promise<JobResult> {
   if (settings.format === 'png') {
     const encoded = await encodePng(resized, settings.quality)
 
-    return { bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
+    return { kind: 'output', bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
   }
 
   // A still GIF is an animation of one frame (R-Q8 and §4.2 give GIF one row, not two) — see
@@ -151,12 +181,110 @@ export async function executeJob(job: Job): Promise<JobResult> {
   if (settings.format === 'gif') {
     const encoded = await encodeGif(singleFrameAnimation(resized), settings.quality)
 
-    return { bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
+    return { kind: 'output', bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
   }
 
   const encoded = await encodeFrame(resized, settings.format, settings.quality)
 
-  return { bytes: encoded.bytes, format: settings.format, caveats: report([]) }
+  return { kind: 'output', bytes: encoded.bytes, format: settings.format, caveats: report([]) }
+}
+
+async function executeJpegRecovery(job: JpegRecoveryJob): Promise<JobResult> {
+  const result = await executeJob({
+    ...job,
+    kind: 'encode',
+    intent: 'run',
+  })
+
+  if (result.kind !== 'output') {
+    return { kind: 'jpeg-recovery', suggestion: null }
+  }
+
+  const flattened = result.caveats.find(
+    (caveat): caveat is Extract<Caveat, { kind: 'transparency-flattened' }> =>
+      caveat.kind === 'transparency-flattened',
+  )
+
+  return {
+    kind: 'jpeg-recovery',
+    suggestion: {
+      outputBytes: result.bytes.byteLength,
+      flattenedFill: flattened?.fill ?? null,
+    },
+  }
+}
+
+async function executeDimensionRecovery(job: DimensionRecoveryJob): Promise<JobResult> {
+  if (job.settings.isAnimated) {
+    return { kind: 'dimension-recovery', suggestion: null }
+  }
+
+  await ensureCodecsForJob(job.settings)
+  const frame = await decodeSource(job.source)
+  const unsupported = unsupportedColour(frame.colour, job.settings.format)
+
+  if (unsupported !== null) {
+    throw new UnsupportedColourError(unsupported)
+  }
+
+  const edited = applyEdit(frame, geometryEdit(job.edit), job.settings.alpha)
+  const fit = await searchSmallerDimensions(
+    {
+      current: { width: job.width, height: job.height },
+      targetBytes: job.targetBytes,
+      achievedBytes: job.achievedBytes,
+    },
+    async (size) => {
+      const resized = await applyResize(edited.frame, { kind: 'exact', ...size })
+      const encoded = await encodeStillAtSlider(
+        resized,
+        job.settings.format,
+        DIMENSION_RECOVERY_MIN_SLIDER,
+      )
+
+      return encoded.bytes.byteLength
+    },
+  )
+
+  if (fit === null) {
+    return { kind: 'dimension-recovery', suggestion: null }
+  }
+
+  const resized = await applyResize(edited.frame, {
+    kind: 'exact',
+    width: fit.width,
+    height: fit.height,
+  })
+  const final = await encodeStillToSize(
+    resized,
+    job.settings.format,
+    job.targetBytes,
+    DIMENSION_RECOVERY_MIN_SLIDER,
+  )
+
+  return final.kind === 'fit'
+    ? {
+        kind: 'dimension-recovery',
+        suggestion: {
+          outputBytes: final.bytes.byteLength,
+          width: fit.width,
+          height: fit.height,
+          probes: fit.probes.length,
+        },
+      }
+    : { kind: 'dimension-recovery', suggestion: null }
+}
+
+/** Dispatches the ordinary encode and the two Preview-only recovery operations. */
+export async function executePipelineJob(job: PipelineJob): Promise<JobResult> {
+  switch (job.kind) {
+    case 'jpeg-recovery':
+      return await executeJpegRecovery(job)
+    case 'dimension-recovery':
+      return await executeDimensionRecovery(job)
+    default:
+      return await executeJob(job)
+  }
 }
 
 /**
@@ -230,7 +358,25 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
   if (settings.quality.kind === 'size') {
     const searched = await encodeAnimatedToSize(resized, animated, settings.quality.targetBytes)
 
-    return { bytes: searched.bytes, format: animated, caveats: report(searched.caveats) }
+    if (searched.kind === 'unreachable') {
+      const outputFrame = resized.frames[0]!
+
+      return {
+        kind: 'size-target-unreachable',
+        targetBytes: settings.quality.targetBytes,
+        achievedBytes: searched.bytes.byteLength,
+        format: animated,
+        width: outputFrame.width,
+        height: outputFrame.height,
+      }
+    }
+
+    return {
+      kind: 'output',
+      bytes: searched.bytes,
+      format: animated,
+      caveats: report(searched.caveats),
+    }
   }
 
   if (format === 'png') {
@@ -240,16 +386,16 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
     // `encodeApng`. The still path below still reads quality in full.
     const encoded = await encodeApng(resized)
 
-    return { bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
+    return { kind: 'output', bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
   }
 
   if (format === 'gif') {
     const encoded = await encodeGif(resized, settings.quality)
 
-    return { bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
+    return { kind: 'output', bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
   }
 
   const encoded = await encodeAnimatedWebp(resized, settings.quality)
 
-  return { bytes: encoded.bytes, format: 'webp', caveats: report(encoded.caveats) }
+  return { kind: 'output', bytes: encoded.bytes, format: 'webp', caveats: report(encoded.caveats) }
 }

@@ -88,6 +88,7 @@ async function seedBatch(page: Page, count: number): Promise<void> {
           edit: null,
           status: 'ready',
           failure: null,
+          skipReason: null,
         })
       }
       useBatchStore().addImages(records)
@@ -122,6 +123,7 @@ async function seedBatchWithNames(page: Page, names: string[]): Promise<void> {
           edit: null,
           status: 'ready',
           failure: null,
+          skipReason: null,
         })
       }
       useBatchStore().addImages(records)

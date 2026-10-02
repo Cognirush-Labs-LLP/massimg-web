@@ -264,7 +264,7 @@ Pure logic. No DOM, no Vue, no browser APIs. Every task here is fully unit-testa
 
 `domain/report.ts`. The model, and YAML serialisation to the shape in §9.3.
 
-- The caveat set is fixed and closed. Implement exactly the nine conditions in R-X46, no more and no fewer.
+- The caveat set is fixed and closed. Implement exactly the eight conditions in R-X46, no more and no fewer; T36-A moved an unreachable size ceiling to structured Skipped reporting.
 - Ordinary successes counted, not listed. Non-image files never mentioned. Relative paths throughout.
 - Exact bytes on summary totals only.
 
@@ -582,7 +582,7 @@ mode becomes `processing`.
 **Depends on:** T33-A
 
 Virtualized thumbnail grid body, plugged into T33-A's empty state/toolbar/ingest. Tiles with
-thumbnails, badges (`EDITED`/`ANIMATED`/`FAILED`) and remove.
+thumbnails, badges (`EDITED`/`ANIMATED`/`SKIPPED`/`FAILED`) and remove.
 
 **Done when:** 500 fixture images scroll smoothly, thumbnails generate only for visible or near-visible
 tiles, the source-read and retained-Blob counts never exceed the injected runtime limit, tiles outside the
@@ -622,6 +622,34 @@ Real encode on entry, Compressed tab by default, comparison toggle, transform li
 
 **Done when:** dragging the quality slider produces one encode rather than many, the size shown is measured rather than estimated, and stepping releases the outgoing working set before decoding the next.
 
+### T36-A — Hard size ceiling and recovery
+
+**Functional Design:** R-Q3, §3.2, §3.3, §6.3 to §6.6, §10
+**Technical Design:** §3.1, §3.3, §3.5, §4, §5.3, §7.5.1
+**Depends on:** T36
+
+Turn Size into a hard per-image ceiling. Replace oversized successes and the old caveat with a typed
+`size-target-unreachable` metadata result; Preview replaces the image frame with its warning, while
+run/packaging skips it.
+
+- For one still image, use the Preview pool to check verified PNG→JPEG and smaller-dimension
+  alternatives in order. After a verified dimension fit, derive one free next-lower standard-edge
+  action without another probe. Dimension recovery must fit at quality 30 or better, and its
+  standard-edge ladder extends through 4096 px. Results are metadata-only and actions remain
+  advisory until clicked.
+- Cancel the Preview pool queue on mode exit and resume it on re-entry; in-flight WASM may finish
+  and be discarded, but repeated Gallery/Preview navigation must not accumulate queued recovery.
+- Add the bounded eight-probe dimension planner and the trailing post-crop resize edit operation.
+- Add skipped run/image/report state and the `SKIPPED` Gallery badge. Do not reuse the worker
+  protocol's cancellation-time `skipped` message.
+- Update Functional, Technical and UI Design, the existing FAQ answers, D10 and downstream tasks.
+
+**Done when:** every emitted size-targeted output is at or below its target; unreachable run jobs
+carry no output bytes; single-still actions appear only after verified fits at the recovery quality
+floor; batches and animations dispatch no recovery jobs; crop composition survives a recovery resize;
+skipped totals/reporting exclude their bytes; and the bounded-search, Preview, pool and three-engine
+regression tests pass.
+
 ### T37 — Edit mode
 
 **Functional Design:** R-C1 to R-C17, R-K4
@@ -631,6 +659,8 @@ Rotation buttons, crop rectangle with handles, ratio row, zoom slider, backgroun
 
 - Background control is swatches plus a colour picker. No numeric RGBA fields.
 - Keyboard: move and resize the rectangle, Escape cancels, Enter applies.
+- Consume T36-A's trailing resize operation: Cancel preserves it, applying changed crop geometry
+  removes it, and Remove edit clears it with the other operations.
 
 **Done when:** the on-screen output dimensions match `domain/edit.ts` exactly, Cancel restores every value including rotation, and the background row appears only on spill.
 
@@ -639,10 +669,13 @@ Rotation buttons, crop rectangle with handles, ratio row, zoom slider, backgroun
 **Functional Design:** §6.1 to §6.4, R-X26, R-X27
 **Technical Design:** §5.3
 
-Counter, donut, running reduction total, failure list, Cancel, then Download and Back to images.
+Counter, donut, running reduction total, skipped/failure lists, Cancel, then conditional Download and Back to images.
 
 - Every number in the donut also present as text. No information exists only inside it.
 - Cancel reads Stopping after being pressed, and the run halts after at most one more image.
+- Consume T36-A's result union. Count unreachable accepted images as Skipped, set structured
+  `skipReason`, exclude them from output/savings, clear prior failed/skipped states at run start,
+  and omit Download when no image succeeds.
 
 **Done when:** a run with deliberate failures continues to completion, reports correct counts, and the donut's data is fully readable as text with the chart hidden.
 
@@ -654,6 +687,7 @@ Selection-time rejection list, per-image failure marking, and every condition in
 
 - One dismissible list, not one alert per file.
 - Every message names the file and states what to do next. "Something went wrong" appears nowhere.
+- Keep the size-ceiling skip message and badge distinct from decode/encode/memory failures.
 
 **Done when:** each row of the §10 table has a test that triggers it and asserts the message content.
 
@@ -671,6 +705,7 @@ Selection-time rejection list, per-image failure marking, and every condition in
 
 - Entries stored rather than deflated for already-compressed formats, per entry.
 - Compression starts on the primary action, not on Download, unless T01 forced the Chrome fallback.
+- Accept only T36-A `output` variants as entries; skipped images never enter a direct output or ZIP.
 
 **Done when:** a 200-image run holds memory near one entry, the preflight rejects an oversized batch before starting, and the archive opens correctly with its directory structure intact.
 
@@ -682,6 +717,9 @@ Selection-time rejection list, per-image failure marking, and every condition in
 
 Wire the report model to real run data and write it into the archive.
 
+- Serialize T36-A's structured unreachable reason under Skipped; it is not a success caveat and its
+  bytes do not contribute to output or savings totals.
+
 **Done when:** a run producing failures, skips and caveats writes a report whose totals reconcile against the exact byte counts, and which parses as YAML.
 
 ### T42 — Download and leaving
@@ -689,6 +727,9 @@ Wire the report model to real run data and write it into the archive.
 **Functional Design:** R-X15 to R-X20, R-X41, R-X42, R-K9
 
 Explicit Download. Single image downloads directly with no ZIP and no report. The three-way confirmation on leaving with undownloaded results. Cleanup.
+
+- A zero-success completion (all skipped and/or failed) has no downloadable artifact and no Download
+  action. A single success still downloads directly even when other images were skipped.
 
 **Done when:** a single-image run downloads one image file, a multi-image run downloads a ZIP, the confirmation offers all three actions with Stay focused by default, and no OPFS file survives any exit path.
 

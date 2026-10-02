@@ -157,6 +157,8 @@ function applyOp(frame: Frame, op: EditOp, alpha: AlphaHandling): Frame {
       return rotate(frame, op.quarterTurns)
     case 'crop':
       return crop(frame, op, alpha)
+    case 'resize':
+      throw new EditError('a recovery resize must be resolved after geometry editing')
     default: {
       const unknown: never = op
       throw new EditError(`unsupported edit operation: ${JSON.stringify(unknown)}`)

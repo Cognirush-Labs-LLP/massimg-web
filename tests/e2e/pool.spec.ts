@@ -85,7 +85,7 @@ test.beforeEach(async ({ page }) => {
         setTimeout(() => {
           const bytes = new Uint8Array([token & 255])
           self.postMessage(
-            { kind: 'result', token, imageId, result: { bytes, format: 'jpeg', caveats: [] } },
+            { kind: 'result', token, imageId, result: { kind: 'output', bytes, format: 'jpeg', caveats: [] } },
             [bytes.buffer],
           )
         }, delayMs)
@@ -567,10 +567,16 @@ interface ShippedOutcome {
   inputByteLength: number
   reason?: { kind: string; detail?: string }
   result?: {
+    kind: string
     format: string
     caveats: { kind: string }[]
     head: number[]
     byteLength: number
+    hasOutputBytes: boolean
+    targetBytes?: number
+    achievedBytes?: number
+    width?: number
+    height?: number
     /** The whole output, only for jobs that asked — T29 reads animated output back in the page. */
     bytes?: number[]
   }
@@ -694,7 +700,16 @@ function runShipped(
       const outcomes = []
       for (const handle of handles) {
         const done = (await handle.done) as ShippedOutcome & {
-          result?: { bytes: Uint8Array; format: string; caveats: { kind: string }[] }
+          result?: {
+            kind: string
+            bytes?: Uint8Array
+            format: string
+            caveats?: { kind: string }[]
+            targetBytes?: number
+            achievedBytes?: number
+            width?: number
+            height?: number
+          }
         }
         outcomes.push({
           outcome: done.outcome,
@@ -702,13 +717,31 @@ function runShipped(
           imageId: done.imageId,
           inputByteLength: inputByteLengths[outcomes.length]!,
           reason: done.reason,
-          result: done.result && {
-            format: done.result.format,
-            caveats: done.result.caveats,
-            head: Array.from(done.result.bytes.subarray(0, 12)),
-            byteLength: done.result.bytes.byteLength,
-            ...(jobs[outcomes.length]?.keepBytes ? { bytes: Array.from(done.result.bytes) } : {}),
-          },
+          result:
+            done.result?.kind === 'output' && done.result.bytes
+              ? {
+                  kind: done.result.kind,
+                  format: done.result.format,
+                  caveats: done.result.caveats,
+                  head: Array.from(done.result.bytes.subarray(0, 12)),
+                  byteLength: done.result.bytes.byteLength,
+                  hasOutputBytes: true,
+                  ...(jobs[outcomes.length]?.keepBytes
+                    ? { bytes: Array.from(done.result.bytes) }
+                    : {}),
+                }
+              : done.result && {
+                  kind: done.result.kind,
+                  format: done.result.format,
+                  caveats: [],
+                  head: [],
+                  byteLength: 0,
+                  hasOutputBytes: false,
+                  targetBytes: done.result.targetBytes,
+                  achievedBytes: done.result.achievedBytes,
+                  width: done.result.width,
+                  height: done.result.height,
+                },
         })
       }
 
@@ -946,6 +979,9 @@ test('the shipped worker runs a size target and answers under it', async ({ page
         format: 'png',
         quality: { kind: 'size', targetBytes: 200 },
         sourceFormat: 'png',
+        // Reproduces the reported bug: Fixed width enlarges the requested raster, but cannot turn
+        // the hard ceiling back into a successful oversized output.
+        dimension: { kind: 'fixed-width', pixels: 800 },
       },
       intent: 'run',
     },
@@ -975,18 +1011,14 @@ test('the shipped worker runs a size target and answers under it', async ({ page
   expect(jpeg!.result!.byteLength).toBeLessThanOrEqual(700)
   expect(jpeg!.result?.caveats).toEqual([])
 
-  // R-Q3 and R-X46: the image is produced, marked, and the caveat states both numbers. The kept
-  // candidate is the quantized one, so the report carries its caveat too — R-Q3's marking is added
-  // to what the encode already had to say, not substituted for it.
-  expect(unreachable!.result!.byteLength).toBeGreaterThan(200)
-  expect(unreachable!.result?.caveats).toEqual([
-    { kind: 'png-quantized' },
-    {
-      kind: 'size-target-not-reached',
-      targetBytes: 200,
-      achievedBytes: unreachable!.result!.byteLength,
-    },
-  ])
+  // R-Q3: a run carries no oversized output bytes. It returns a typed, reportable skip instead.
+  expect(unreachable!.result).toMatchObject({
+    kind: 'size-target-unreachable',
+    targetBytes: 200,
+    format: 'png',
+  })
+  expect(unreachable!.result!.achievedBytes).toBeGreaterThan(200)
+  expect(unreachable!.result!.hasOutputBytes).toBe(false)
 
   expect(String.fromCharCode(...animated!.result!.head.slice(8, 12))).toBe('WEBP')
   expect(animated!.result!.byteLength).toBeLessThanOrEqual(20_000)

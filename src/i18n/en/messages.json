@@ -27,6 +27,7 @@
   "gallery.badge.edited": "EDITED",
   "gallery.badge.animated": "ANIMATED",
   "gallery.badge.failed": "FAILED",
+  "gallery.badge.skipped": "SKIPPED",
   "gallery.tile.dimensionPending": "–×–",
   "gallery.tile.dimensionError": "Error",
   "gallery.tile.meta": "{dimensions} · {size}",
@@ -95,5 +96,17 @@
   "preview.toolbar.stepper": "{index} / {total}",
   "preview.toolbar.previous": "Previous image",
   "preview.toolbar.next": "Next image",
-  "preview.error.animatedAvif": "{filename} is an animated AVIF, which this app cannot compress. Remove it and use a different file."
+  "preview.error.animatedAvif": "{filename} is an animated AVIF, which this app cannot compress. Remove it and use a different file.",
+  "preview.size.unreachable": "Couldn’t reach {target} as {width}×{height} {format}. Smallest possible at these settings: {achieved}. This image will be skipped.",
+  "preview.size.batch": "The size setting applies to all {count} images.",
+  "preview.size.checking": "Checking JPEG and smaller dimensions…",
+  "preview.size.useJpeg": "Use JPEG · {size}",
+  "preview.size.useJpegFlattened": "Use JPEG with {color} background · {size}",
+  "preview.size.useDimensions": "Reduce to {width}×{height} · {size}",
+  "preview.size.useSmallerDimensions": "Try {width}×{height} · higher quality",
+  "preview.size.noAlternative": "No verified automatic alternative was found.",
+  "preview.size.animationNoRecovery": "Automatic alternatives aren’t checked for animated images. This image will be skipped.",
+  "preview.size.colorWhite": "white",
+  "preview.size.colorBlack": "black",
+  "preview.size.colorRgb": "rgb({red}, {green}, {blue})"
 }

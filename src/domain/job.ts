@@ -1,4 +1,4 @@
-import { hasCropOp, resolveEditedSize, type PixelSize } from './edit'
+import { hasCropOp, resolveEditedSize, trailingResizeOp, type PixelSize } from './edit'
 import { resolveResizedSize } from './dimension'
 import { resolveFormat, supportsAlpha, type FormatSetting, type FormatResolution } from './format'
 import type {
@@ -7,6 +7,7 @@ import type {
   EncodableFormat,
   Format,
   ImageRecord,
+  BatchDimension,
   ResolvedDimension,
   ResolvedQuality,
   ResolvedSettings,
@@ -18,8 +19,85 @@ export type QualitySetting =
 
 export interface BatchSettings {
   quality: QualitySetting
-  dimension: ResolvedDimension
+  dimension: BatchDimension
   format: FormatSetting
+}
+
+/** Familiar lower output edges offered beside a measured dimension recovery, smallest first. */
+export const RECOVERY_STANDARD_EDGES = [
+  240, 360, 480, 640, 720, 800, 1024, 1080, 1280, 1440, 1600, 1920, 2048, 2160, 2560, 2880, 3200,
+  3840, 4096,
+] as const
+
+/** Maps a verified exact recovery size back onto the user's batch-facing dimension mode. */
+export function dimensionSettingForRecovery(
+  current: BatchDimension,
+  size: PixelSize,
+): BatchDimension {
+  switch (current.kind) {
+    case 'fixed-width':
+      return { kind: 'fixed-width', pixels: size.width }
+    case 'fixed-height':
+      return { kind: 'fixed-height', pixels: size.height }
+    case 'fit-long-edge':
+    case 'original':
+      return { kind: 'fit-long-edge', pixels: Math.max(size.width, size.height) }
+  }
+}
+
+/**
+ * Derives one free lower-dimension choice from a verified recovery size. It performs no encode:
+ * applying the choice runs the ordinary hard-ceiling Preview pipeline, which remains authoritative.
+ *
+ * Fixed width/height keep their user-selected axis. Exact post-edit recovery uses the long edge so
+ * the trailing resize remains a uniform scale of the edited composition.
+ */
+export function standardSmallerRecoveryDimensions(
+  current: BatchDimension,
+  verified: PixelSize,
+  exactPostEdit = false,
+): PixelSize | null {
+  const axis = exactPostEdit
+    ? 'long-edge'
+    : current.kind === 'fixed-width'
+      ? 'width'
+      : current.kind === 'fixed-height'
+        ? 'height'
+        : 'long-edge'
+  const controlledEdge =
+    axis === 'width'
+      ? verified.width
+      : axis === 'height'
+        ? verified.height
+        : Math.max(verified.width, verified.height)
+
+  let standardEdge: number | null = null
+  for (const edge of RECOVERY_STANDARD_EDGES) {
+    if (edge >= controlledEdge) break
+    standardEdge = edge
+  }
+
+  if (standardEdge === null) return null
+
+  const scale = standardEdge / controlledEdge
+
+  if (axis === 'width') {
+    return {
+      width: standardEdge,
+      height: Math.max(1, Math.round(verified.height * scale)),
+    }
+  }
+
+  if (axis === 'height') {
+    return {
+      width: Math.max(1, Math.round(verified.width * scale)),
+      height: standardEdge,
+    }
+  }
+
+  return verified.width >= verified.height
+    ? { width: standardEdge, height: Math.max(1, Math.round(verified.height * scale)) }
+    : { width: Math.max(1, Math.round(verified.width * scale)), height: standardEdge }
 }
 
 export interface SettingsImage {
@@ -82,10 +160,13 @@ function resolveQuality(
   return qualityForSlider(setting.value, format)
 }
 
-function resolveDimension(
-  dimension: ResolvedDimension,
-  edit: EditRecord | null,
-): ResolvedDimension {
+function resolveDimension(dimension: BatchDimension, edit: EditRecord | null): ResolvedDimension {
+  const recovered = trailingResizeOp(edit?.ops ?? [])
+
+  if (recovered !== null) {
+    return { kind: 'exact', width: recovered.width, height: recovered.height }
+  }
+
   return edit !== null && hasCropOp(edit.ops) ? { kind: 'original' } : dimension
 }
 
@@ -185,7 +266,7 @@ export type PrimaryActionSummary =
  */
 export function singleImageDimensions(
   image: ImageRecord,
-  dimension: ResolvedDimension,
+  dimension: BatchDimension,
 ): PixelSize | null {
   if (image.width === 0 || image.height === 0) {
     return null

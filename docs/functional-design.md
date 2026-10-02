@@ -159,6 +159,7 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
 | --- | --- |
 | `EDITED` | A rotation or crop is stored for this image |
 | `ANIMATED` | Multi-frame source, will be written as an animated format |
+| `SKIPPED` | The most recent completed run omitted this image because its size ceiling was unreachable |
 | `FAILED` | Processing failed for this image (see §10) |
 
 **Requirements**
@@ -180,7 +181,7 @@ Shows one image fitted inside the available stage area, with the side panel stil
 
 **Encoding on entry.** Opening Preview runs a real encode of that image at the current settings. There is no estimation.
 
-- R-P1 On entering Preview, the app immediately begins encoding and shows a "Creating preview" state in the frame.
+- R-P1 On entering Preview, the app immediately begins encoding and shows a "Creating preview" state with a visible animated progress indicator in the frame.
 - R-P2 The **Compressed** tab is selected by default when the encode completes.
 - R-P3 Changing any setting that affects output (quality, size target, dimension rule and its value, format, rotation, crop) supersedes any in-flight encode and starts a new one, debounced so that a dragged slider produces one encode after the drag settles, not one per step. Superseding is defined in R-X28: the in-flight result is discarded on arrival rather than interrupted.
 - R-P4 While an encode is in flight, the comparison figures are hidden rather than showing stale values.
@@ -279,7 +280,10 @@ Target selector, segmented, two options.
 - Numeric text box plus a `KB` and `MB` unit toggle.
 - The encoder targets that file size per image, not for the batch total.
 - R-Q2 If an image is already smaller than the size target, it is not re-encoded up to the target. Non-PNG files are passed through unchanged. A PNG or animated PNG is still run through the lossless PNG optimiser, and the smaller of that result and the original is kept. The same rule applies when "Don't change" resolves to PNG. The tool never increases file size to meet a target.
-- R-Q3 If the size target cannot be reached at the lowest acceptable quality, the app produces the smallest result it achieved and marks that image in Preview and on its tile. It does not fail the image and does not silently pretend the target was met.
+- R-Q3 A size target is a hard per-image ceiling: every downloadable size-targeted output is no larger than the requested bytes. If the ceiling cannot be reached at the requested format and dimensions, the pipeline returns a typed `size-target-unreachable` outcome containing the target, effective format, requested output dimensions and smallest achieved size. Preview replaces the image frame with the warning rather than displaying the oversized attempt; Processing skips the image, and no oversized bytes enter the UI, a direct download or a ZIP. This constraint outcome is not an encode failure and is not a success caveat.
+- For exactly one still image, Preview shows the R-Q3 warning immediately and then checks verified recovery alternatives in order. A still PNG source whose effective output is PNG is first tested as JPEG and offered only if it fits; if real transparency was flattened, the action names the fill color (opaque white outside Edit by default). The current format is then searched at smaller dimensions and the largest measured fitting dimensions that fit at quality 30 or better, followed by the highest fitting quality at those dimensions, are offered. Once that fit exists, Preview also offers the next lower standard controlled edge from the ladder `[240, 360, 480, 640, 720, 800, 1024, 1080, 1280, 1440, 1600, 1920, 2048, 2160, 2560, 2880, 3200, 3840, 4096]` without another recovery probe; its action states no byte size, and the ordinary hard-ceiling Preview encode verifies it after selection. No alternative is applied without a click.
+- Multi-image batches and animations receive no automatic recovery search. The warning explains that the size setting applies to the whole batch, or that repeated multi-frame searches are too expensive. If no single-image alternative is verified, Preview says so without disabled or speculative actions.
+- Leaving Preview cancels queued recovery jobs and prevents a completed step from dispatching the next one. A codec call already executing in WASM may finish, but its result is discarded; returning to Preview resumes the same worker pool without accumulating an unbounded recovery queue.
 - R-Q4 Size targeting requires repeated encodes. Where the cost is prohibitive for a format, the Size option is disabled with a stated reason when that format is selected. Which formats those are is determined in the Technical Design.
 
 ### 4.2 Dimension
@@ -343,6 +347,7 @@ APNG is not a separate entry. An animated source written as PNG produces an anim
 - R-A2 No aggregate output size is claimed before compression runs.
 - R-A3 The button is disabled when the batch is empty.
 - R-A4 Pressing it enters Processing mode (§6). It does not download anything directly. Download is an explicit action in the Processing view.
+- A known single-image R-Q3 miss does not disable Compress. Running it produces the same authoritative skip and a zero-output completion, which explains why no Download action exists.
 
 ### 4.5 Architectural note on editing
 
@@ -457,7 +462,7 @@ A full stage mode, entered by the primary action. It owns the screen: the settin
 - R-X1 The run covers every image in the batch, in grid order.
 - R-X2 The run re-encodes every image from its source file, including any image previewed earlier. Nothing is reused, per §9.
 - R-X3 The view shows a counter in mono, `2 / 10 processed`, as the primary status.
-- R-X4 A donut chart shows the proportion of succeeded, failed and pending. It is a progress indicator and decoration. Every number it encodes is also present as text beside it. No information exists only inside the donut.
+- R-X4 A donut chart shows the proportion of succeeded, skipped, failed and pending. It is a progress indicator and decoration. Every number it encodes is also present as text beside it. No information exists only inside the donut.
 - R-X5 A running total of size reduction is shown, updated as images complete, expressed as bytes saved and as a percentage of the input processed so far. These are measured figures, not projections.
 - R-X6 The current file name is not required. Per-image identity matters only for failures.
 - R-X7 A **Cancel** action is available throughout.
@@ -473,16 +478,19 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 - R-X28 A settings change during Preview does not interrupt the encode in flight. The result is discarded on arrival and a new encode starts. Debouncing (R-P3) keeps the number of discarded encodes small.
 - R-X29 Where a single job exceeds a duration threshold and the user is waiting, the worker may be terminated and recreated. This costs a full codec re-initialisation and is an escape hatch, not the normal path.
 
-### 6.3 Failures within a run
+### 6.3 Failures and skips within a run
 
 - R-X10 A failure on one image does not abort the run. The image is counted as failed and the run continues.
 - R-X11 Failed images are listed by file name with their reasons, in the view, as text.
 - R-X12 Failed images are excluded from the output. The output is built from the successes.
 - R-X13 If every image failed, no output is produced and the failure list is the whole result.
+- An accepted image with a `size-target-unreachable` result is counted and listed as **Skipped**, separately from technical failures. Its reason includes the target, smallest achieved size, effective format and requested dimensions. It contributes no output bytes or savings and is absent from output assembly.
+- Starting a run clears previous `FAILED` and `SKIPPED` image states. Its completed statuses persist when returning to Gallery until another run starts; settings changes alone do not rewrite the prior run result. A Preview-time miss is local and does not set `SKIPPED`.
+- If there are no successes, no output and no Download action are produced. Processing lists all skipped and failed images with their reasons; this includes a known single-image miss when the user presses Compress.
 
 ### 6.4 On completion
 
-- R-X14 The view shows final counts, the total size reduction, the failure list if any, and two actions: **Download** and **Back to images**.
+- R-X14 The view shows final succeeded/skipped/failed counts, the total size reduction from successes, the skipped and failure lists if any, and **Back to images**. **Download** is also shown when at least one output succeeded.
 - R-X15 **Download** is explicit. The run never downloads automatically, because an automatic download can trigger a browser warning and gives the user no clear moment at which the file arrived.
 - R-X17 **Back to images** returns to Gallery with the batch, settings and edits intact, so the user can adjust and run again.
 
@@ -500,7 +508,7 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 
 - R-X32 Sizes are human-readable and rounded to two decimal places, using 1024 bytes to the kilobyte: `12.33 MB`, not `12.332332 MB` and not `12931283`.
 - R-X33 The run summary additionally carries exact byte counts for total input, total output and total saved, so the arithmetic can be checked. Per-file entries do not repeat them.
-- R-X34 The report lists: the run summary, settings used, files that failed with the reason, files skipped because the format is an image we cannot handle, and every success that carried a caveat.
+- R-X34 The report lists: the run summary, settings used, files that failed with the reason, files skipped because the format is an image we cannot handle or because R-Q3's size ceiling was unreachable, and every success that carried a caveat. An R-Q3 skipped reason is structured and contains target bytes, best achieved bytes, effective format and requested output dimensions.
 - R-X46 A caveat is anything the user did not explicitly ask for and would not expect. The set is fixed, not open to judgement at implementation time:
 
 | Caveat | Recorded when |
@@ -510,7 +518,6 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 | Metadata removed | EXIF, IPTC or XMP was present and has been stripped. States whether GPS data was among it. |
 | Original kept | R-X24 applied. |
 | Output larger than input | R-X45 applied. States both sizes. |
-| Size target not reached | R-Q3 applied. States the target and what was achieved. |
 | PNG quantized | PNG output below a slider value of 85. States that PNG was not written losslessly. |
 | Colour converted | Colour information could not be carried by the output format and pixels were converted to sRGB. |
 | Auxiliary images dropped | A Live Photo or depth-carrying HEIC was processed to its primary image only. |
@@ -632,7 +639,7 @@ Every condition below has a defined surface and message. No condition may fail s
 | Batch exceeds file count | Selection | Rejection list, count stated |
 | Corrupt or undecodable file | Decode | Marked failed, reason in the failure list |
 | Encode failure | Run or preview | Marked failed; in Preview, an inline error in the frame with a retry |
-| Size target unreachable | Run or preview | Best achieved result kept, marked per R-Q3 |
+| Size target unreachable | Run or preview | Preview replaces the image frame with the warning, verified single-still recovery actions and the derived lower standard-size choice; Processing records Skipped and emits no output for that image, per R-Q3 |
 | Out of memory | Any | Run halts, partial results discarded, message recommends fewer or smaller images, and mentions the desktop application |
 | ZIP assembly failure | Packaging | Error shown, no partial ZIP delivered |
 | Download blocked by browser | Download | Message explaining the browser blocked it, with a retry |
@@ -642,7 +649,7 @@ Every condition below has a defined surface and message. No condition may fail s
 | Storage quota insufficient for predicted archive | Before run | Batch rejected, both figures named |
 | Origin-private storage unavailable | Startup | Reduced cap applied silently; stated only when a batch is blocked by it |
 | Storage write failure mid-run | Run | Run halts, stored archive deleted, message states no partial file was kept |
-| Every image in a run failed | End of run | No output produced, failures listed |
+| Every image in a run failed or was skipped | End of run | No output or Download action; failures and skips listed with reasons |
 
 **Requirements**
 

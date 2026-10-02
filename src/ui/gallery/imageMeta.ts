@@ -6,15 +6,16 @@ import { formatUiSize } from '@/domain/sizes'
 import type { ImageRecord } from '@/domain/types'
 import { dimensionErrors } from './ingest'
 
-export type BadgeKind = 'edited' | 'animated' | 'failed'
+export type BadgeKind = 'edited' | 'animated' | 'failed' | 'skipped'
 
 export const badgeLabel: Record<BadgeKind, string> = {
   edited: t('gallery.badge.edited'),
   animated: t('gallery.badge.animated'),
   failed: t('gallery.badge.failed'),
+  skipped: t('gallery.badge.skipped'),
 }
 
-// Fixed order per docs/ui-design.md §6/§7: EDITED -> ANIMATED -> FAILED.
+// Fixed order per docs/ui-design.md §6/§7: EDITED -> ANIMATED -> SKIPPED/FAILED.
 export function badgesFor(image: ImageRecord): BadgeKind[] {
   const list: BadgeKind[] = []
   if (image.edit) {
@@ -25,6 +26,9 @@ export function badgesFor(image: ImageRecord): BadgeKind[] {
   }
   if (image.status === 'failed') {
     list.push('failed')
+  }
+  if (image.status === 'skipped') {
+    list.push('skipped')
   }
   return list
 }

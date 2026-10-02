@@ -230,32 +230,17 @@ export function sizeSearchOutcome(
   return { kind: 'unreachable', slider: smallest.slider, bytes: smallest.bytes }
 }
 
-/**
- * R-Q3's caveat, or none (Functional Design §6.6, R-X46).
- *
- * The caveat states both numbers, because "we could not get there" without saying how close it got
- * is the silent pretence R-Q3 forbids.
- */
-export function sizeTargetCaveats(targetBytes: number, outcome: SizeSearchOutcome): Caveat[] {
-  return outcome.kind === 'fit'
-    ? []
-    : [{ kind: 'size-target-not-reached', targetBytes, achievedBytes: outcome.bytes }]
-}
-
 /** What one probe produced. The caveats are the encoder's own — `png-quantized`, and so on. */
 export interface SizeCandidate {
   bytes: Uint8Array
   caveats: Caveat[]
 }
 
-export interface SizeSearchResult extends SizeCandidate {
-  /** The slider position whose file was kept. */
-  slider: number
-  /** Whether the kept file is at or under the target (R-Q3 is the `false` case). */
-  reachedTarget: boolean
-  /** Every probe taken, in the order taken. `length` is the iteration count §7.5 caps at eight. */
-  probes: SizeProbe[]
-}
+export type SizeSearchResult = SizeCandidate &
+  (
+    | { kind: 'fit'; slider: number; probes: SizeProbe[] }
+    | { kind: 'unreachable'; slider: number; probes: SizeProbe[] }
+  )
 
 /**
  * Runs the search, one encode per probe, and returns the file that is kept.
@@ -301,10 +286,10 @@ export async function runSizeSearch(
   }
 
   return {
+    kind: outcome.kind,
     bytes: kept.bytes,
-    caveats: [...kept.caveats, ...sizeTargetCaveats(targetBytes, outcome)],
+    caveats: kept.caveats,
     slider: outcome.slider,
-    reachedTarget: outcome.kind === 'fit',
     probes,
   }
 }

@@ -46,6 +46,11 @@ declare const WheelEvent: new (
     cancelable?: boolean
   },
 ) => Event
+declare function getComputedStyle(element: unknown): {
+  animationName: string
+  backgroundColor: string
+  color: string
+}
 
 interface SeedImage {
   id: string
@@ -133,6 +138,7 @@ async function seed(page: Page, images: SeedImage[]): Promise<void> {
           edit: null,
           status: 'ready',
           failure: null,
+          skipReason: null,
         })
       }
 
@@ -204,6 +210,12 @@ test('encodes on entry and shows the measured size of what it rendered (R-P1, R-
   await seed(page, [{ id: 'one', name: 'photo.jpeg' }])
   await expect(page.getByTestId('preview-root')).toBeVisible()
   await expect(page.getByTestId('preview-creating')).toBeVisible()
+  const loadingAnimation = await page
+    .getByTestId('loading-indicator')
+    .locator('span')
+    .first()
+    .evaluate((dot) => getComputedStyle(dot).animationName)
+  expect(loadingAnimation).not.toBe('none')
 
   await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
   await expect(page.getByTestId('preview-creating')).toHaveCount(0)
@@ -236,6 +248,32 @@ test('encodes on entry and shows the measured size of what it rendered (R-P1, R-
   )
   await expect(page.getByTestId('preview-transform-line')).toContainText('photo.jpeg 400×300')
 
+  expect(errors).toEqual([])
+})
+
+test('an unreachable size uses a dark notice and never renders the oversized attempt', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+  await seed(page, [{ id: 'one', name: 'photo.jpeg' }])
+  await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
+
+  await page.getByTestId('quality-target-size').click()
+  await page.getByTestId('quality-size-field').fill('0.1')
+
+  const notice = page.getByTestId('preview-size-unreachable')
+  await expect(notice).toBeVisible({ timeout: 120_000 })
+  await expect(notice).toContainText('This image will be skipped.')
+  await expect(page.getByTestId('preview-frame')).toHaveCount(0)
+  await expect(page.getByTestId('preview-image')).toHaveCount(0)
+  await expect(page.getByTestId('preview-comparison')).toHaveCount(0)
+
+  const colors = await notice.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, text: style.color }
+  })
+  expect(colors).toEqual({ background: 'rgb(18, 18, 18)', text: 'rgb(255, 255, 255)' })
   expect(errors).toEqual([])
 })
 

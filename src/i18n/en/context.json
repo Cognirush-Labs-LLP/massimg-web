@@ -125,7 +125,7 @@
     "maxLength": 80
   },
   "gallery.badge.edited": {
-    "situation": "Tile/row badge shown when an image has a stored rotation or crop (R-G4). Appears first when more than one badge applies (docs/ui-design.md §6: EDITED → ANIMATED → FAILED).",
+    "situation": "Tile/row badge shown when an image has a stored rotation, crop, or applied recovery resize (R-G4). Appears first when more than one badge applies (docs/ui-design.md §6: EDITED → ANIMATED → terminal run status).",
     "control": "Small text label with its own background, not a colour-only indicator (R-K10's colour-never-alone rule). Not interactive.",
     "maxLength": 12
   },
@@ -137,6 +137,11 @@
   "gallery.badge.failed": {
     "situation": "Tile/row badge shown when processing failed for this image (Functional Design §10). Last in display order when more than one badge applies.",
     "control": "Small text label with its own background, same treatment as gallery.badge.edited. Not interactive.",
+    "maxLength": 12
+  },
+  "gallery.badge.skipped": {
+    "situation": "Tile/row badge shown after a completed compression run omitted this accepted image because its hard size ceiling could not be reached. It is distinct from a technical failure and persists until the next run starts.",
+    "control": "Small text status badge, in the same visual family as EDITED, ANIMATED, and FAILED. Not interactive.",
     "maxLength": 12
   },
   "gallery.tile.dimensionPending": {
@@ -325,7 +330,7 @@
     "maxLength": 16
   },
   "preview.frame.creating": {
-    "situation": "Shown in the Preview frame, in place of the compressed image, while a real encode of the current image is running (R-P1: \"the app immediately begins encoding and shows a Creating preview state in the frame\"). Also appears on every settings change, because the previous result is discarded at that moment rather than left on screen as a stale picture (R-B1). Announced to assistive technology as a live status (R-K5).",
+    "situation": "Shown beside an animated progress indicator in the Preview frame, in place of the compressed image, while a real encode of the current image is running (R-P1). Also appears on every settings change, because the previous result is discarded at that moment rather than left on screen as a stale picture (R-B1). Announced to assistive technology as a live status (R-K5).",
     "control": "Status text centred in the stage frame. Not interactive.",
     "maxLength": 30
   },
@@ -483,5 +488,65 @@
     "situation": "Inline error in the Preview frame for an animated AVIF, which has no encode path at all (R-F7, R-F8). R-F8 wants this rejected at selection time with the reason named, and that rejection list is T39's work — until it exists, such a file can still reach Preview, and this message is what keeps that from being a silent failure. Names the file and what to do next (R-E1).",
     "control": "Error text inside the stage frame. No retry is offered with it, because retrying cannot change the outcome.",
     "maxLength": 140
+  },
+  "preview.size.unreachable": {
+    "situation": "Warning shown as soon as Preview proves that an image cannot fit the selected hard size ceiling. {target} and {achieved} are formatted byte sizes; {width}, {height}, and {format} describe the requested output.",
+    "control": "Status text in a dark warning card that replaces the preview frame. It remains visible while verified recovery alternatives are checked.",
+    "maxLength": 220
+  },
+  "preview.size.batch": {
+    "situation": "Additional warning for an unreachable Preview when more than one image is selected. {count} is the batch count; no per-image recovery is calculated for a batch.",
+    "control": "Inline explanatory text. Not interactive.",
+    "maxLength": 80
+  },
+  "preview.size.checking": {
+    "situation": "Progress text beside an animated indicator while a single still image is being tested for verified JPEG and smaller-dimension alternatives after its size ceiling was unreachable.",
+    "control": "Inline loading status. Actions may appear progressively while it remains visible.",
+    "maxLength": 60
+  },
+  "preview.size.useJpeg": {
+    "situation": "Verified recovery action for an opaque PNG whose tested JPEG fits the target. {size} is the measured JPEG size.",
+    "control": "Button that changes the output format to JPEG and triggers an ordinary fresh Preview encode.",
+    "maxLength": 40
+  },
+  "preview.size.useJpegFlattened": {
+    "situation": "Verified recovery action for a PNG whose tested JPEG fits only by flattening actual transparency. {color} names the measured fill and {size} is the measured JPEG size.",
+    "control": "Button that changes the output format to JPEG and triggers an ordinary fresh Preview encode.",
+    "maxLength": 70
+  },
+  "preview.size.useDimensions": {
+    "situation": "Verified recovery action whose tested smaller dimensions fit the target. {width} and {height} are pixels; {size} is the measured output size.",
+    "control": "Button that applies the suggested size and triggers an ordinary fresh Preview encode.",
+    "maxLength": 60
+  },
+  "preview.size.useSmallerDimensions": {
+    "situation": "Second dimension-recovery action derived without another encode from the next lower entry in the shared standard-edge ladder (240 through 4096) below a verified fitting size. {width} and {height} are pixels. It offers more pixel-level quality at a lower resolution; clicking it runs the ordinary hard-ceiling Preview encode, so this label deliberately states no byte size.",
+    "control": "Button that applies the lower standard dimensions and triggers an ordinary fresh Preview encode.",
+    "maxLength": 60
+  },
+  "preview.size.noAlternative": {
+    "situation": "Shown after every eligible automatic recovery check for a single still image completed without finding a measured result under the hard ceiling.",
+    "control": "Inline explanatory text. No disabled or speculative actions accompany it.",
+    "maxLength": 70
+  },
+  "preview.size.animationNoRecovery": {
+    "situation": "Shown for an animated image that cannot reach its size ceiling. Repeated multi-frame dimension searches are deliberately not run.",
+    "control": "Inline explanatory text. Not interactive.",
+    "maxLength": 120
+  },
+  "preview.size.colorWhite": {
+    "situation": "Colour name interpolated into the verified JPEG recovery action when transparent pixels were flattened onto opaque white.",
+    "control": "A lower-case colour name inside a button label.",
+    "maxLength": 16
+  },
+  "preview.size.colorBlack": {
+    "situation": "Colour name interpolated into the verified JPEG recovery action when transparent pixels were flattened onto opaque black.",
+    "control": "A lower-case colour name inside a button label.",
+    "maxLength": 16
+  },
+  "preview.size.colorRgb": {
+    "situation": "Fallback colour description interpolated into the verified JPEG recovery action for a non-standard fill. {red}, {green}, and {blue} are byte values from 0 to 255.",
+    "control": "A compact technical colour value inside a button label.",
+    "maxLength": 24
   }
 }

@@ -286,8 +286,8 @@ the consumer that reacts to it via the debounce/token mechanism in §11.
 
 ### `useRunStore`
 Exists only during and immediately after a Processing run. Holds progress counts
-by state (pending/succeeded/failed), accumulated input and output bytes, the
-failure list, and caveats collected per image. Populated by worker result
+by state (pending/succeeded/skipped/failed), accumulated input and output bytes from
+successes, the failure and structured skip lists, and caveats collected per image. Populated by worker result
 messages as they arrive; reset when a new run starts.
 
 ### `useUiStore`
@@ -385,8 +385,9 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
 - Filename, truncated with ellipsis.
 - `W×H · size` on one line, using the UI size formatter.
 - Badges, top-left, in this fixed order when more than one applies:
-  **EDITED** (rotation or crop stored) → **ANIMATED** (multi-frame source written
-  as an animated format) → **FAILED** (processing failed, §14). Badges are text
+  **EDITED** (rotation, crop, or recovery resize stored) → **ANIMATED** (multi-frame source written
+  as an animated format) → **SKIPPED** (the last completed run could not meet its size ceiling)
+  or **FAILED** (processing failed, §14). Badges are text
   labels with their own background, not colour-only indicators (§1's
   colour-never-alone rule).
 - Remove control, top-right, a small × button; clicking it does not open the
@@ -439,7 +440,7 @@ and decodes nothing at all (R-G9):
 
 - Relative path (only present for folder-sourced images) + filename.
 - `W×H · size`, same UI size formatter as grid.
-- Same badge set and order as grid tiles (EDITED → ANIMATED → FAILED).
+- Same badge set and order as grid tiles (EDITED → ANIMATED → SKIPPED/FAILED).
 - Remove control, same behaviour as grid (no effect on other rows).
 
 ### Grouping
@@ -492,14 +493,15 @@ type is active per batch.
 
 - A numeric text field plus a `KB`/`MB` unit toggle, segmented like the quality
   chips.
-- The encoder targets this size **per image**, never a batch total.
+- The value is a hard **per-image maximum**, never an exact byte request and never a batch total.
 - Behavioural notes the panel's microcopy and Preview/Processing surfaces must
   honour, so implementers don't accidentally re-encode against these:
   - **R-Q2:** an image already smaller than the target passes through
     **unchanged** — never re-encoded upward to approach the target from below.
   - **R-Q3:** if the target can't be reached even at the lowest acceptable
-    quality, the smallest result actually achieved is kept and the image is
-    marked (tile badge + Preview note, per §11/§14) — this is not a failure.
+    quality, Preview replaces the image frame with the warning and the run skips
+    the image. Oversized bytes never reach the UI, Download or a ZIP; this is a
+    constraint outcome, not a technical failure or success caveat.
 - **R-Q4 hook:** where repeated encoding to hit a size target is prohibitively
   expensive for a given format, the Size option must be **disabled with a stated
   reason** when that format is selected. As of T30's measurements, no format is
@@ -603,6 +605,8 @@ Six entries, in this exact order — **the sample mockup ships only four
 - **R-A2:** no aggregate output size is ever shown before the run — it isn't
   knowable until images are actually encoded (functional-design §14.3).
 - **R-A3:** disabled whenever the batch is empty.
+- A known single-image hard-ceiling miss does not disable it; Processing remains the
+  authoritative run and completes with that image under Skipped and no Download action.
 - **R-A4:** pressing it always enters Processing (§13); it never downloads
   directly — Download is an explicit action inside Processing, after the run
   completes.
@@ -621,7 +625,8 @@ changed without leaving Preview.
 
 - **R-P1:** opening Preview (from Gallery, or by being the sole image on add)
   immediately starts a **real encode** at current settings — never an estimate —
-  and the frame shows a "Creating preview" state until it completes.
+  and the frame shows a "Creating preview" state with an animated progress
+  indicator until it completes. The indicator respects reduced-motion preferences.
 - **R-P2:** the **Compressed** tab is selected by default once the encode
   finishes.
 - **R-P3/R-X28:** changing any setting that affects output — quality, size
@@ -662,6 +667,39 @@ abc.jpeg  1000×1000  →  abc.webp  500×500
 
 Under "Don't change," the output extension matches the input extension exactly
 (including case, per R-X43).
+
+### Hard size ceiling and recovery
+
+An unreachable Size setting is visible before any recovery analysis finishes:
+“Couldn’t reach {target} as {width}×{height} {format}. Smallest possible at these
+settings: {achieved}. This image will be skipped.” The warning replaces the image
+frame; an oversized attempt is never shown as a Preview result.
+
+For exactly one still image, the status then reads “Checking JPEG and smaller
+dimensions…” beside a visible animated progress indicator, and verified actions
+appear progressively as their tests complete:
+
+- `Use JPEG · {size}` only for PNG→PNG when the tested JPEG fits.
+- `Use JPEG with {color} background · {size}` when that JPEG test actually flattened
+  transparency; outside Edit the existing white default applies.
+- `Reduce to {width}×{height} · {size}` for the largest tested current-format
+  dimensions that fit at quality 30 or better, after choosing the highest fitting
+  quality at those dimensions.
+- `Try {width}×{height} · higher quality` for the next lower standard controlled
+  edge from the ladder 240, 360, 480, 640, 720, 800, 1024, 1080, 1280, 1440,
+  1600, 1920, 2048, 2160, 2560, 2880, 3200, 3840 and 4096 pixels. This second dimension action costs
+  no recovery probe and shows no unmeasured byte claim; selecting it runs the
+  ordinary hard-ceiling Preview encode.
+
+Every action is advisory until clicked. A click changes settings or appends/replaces
+the image's single post-crop recovery resize, bumps the edit version, and triggers a
+fresh ordinary Preview encode. No recovery bytes are reused. If no action is verified,
+the status says so and shows no disabled alternatives. A batch instead says “The size
+setting applies to all {count} images” and dispatches no recovery jobs. An animation
+explains that automatic alternatives are not checked and it will be skipped.
+Leaving Preview cancels queued recovery work and prevents its next step from being
+dispatched. A codec operation already inside WASM may finish and be discarded;
+returning resumes the warmed pool, so rapid navigation does not grow a work queue.
 
 ### Toolbar
 
@@ -730,14 +768,17 @@ Restated in control terms, not formulas:
 - **Rotate left / Rotate right** — 90° steps only; free-angle rotation is out of
   scope (R-C1).
 - **Remove edit** — only rendered when this image already has a stored edit;
-  clears rotation and crop together and returns to Preview (R-C5).
+  clears rotation, crop and any trailing recovery resize together and returns to Preview (R-C5).
 - **Cancel** — restores rotation, crop rectangle, locked ratio, zoom and
-  background **all** to their values on entering Edit mode, then returns to
+  background **all** to their values on entering Edit mode, preserving any trailing
+  recovery resize, then returns to
   Preview (R-C10). Rotation is included — a common mistake is to only restore the
   crop rectangle.
 - **Apply** — stores the current rotation + crop as this image's edit, even if
   the user only rotated and never touched the rectangle (a rotate-only edit is
-  still a real, storable edit covering the whole rotated image, R-C4).
+  still a real, storable edit covering the whole rotated image, R-C4). Applying
+  changed crop geometry removes any prior recovery resize; Preview may offer a
+  newly verified size for the new composition.
 
 ### Background row — resolves a direct sample-vs-spec conflict
 
@@ -808,7 +849,7 @@ even on desktop — Processing does not attempt a two-column layout.
   grid order, including any image already previewed — nothing from Preview is
   reused.
 - **R-X3:** the counter is the primary status, mono: `2 / 10 processed`.
-- **R-X4:** a donut shows the proportion succeeded/failed/pending, but it is
+- **R-X4:** a donut shows the proportion succeeded/skipped/failed/pending, but it is
   **decoration** — every number it encodes is also written out as text beside
   it. No information exists only inside the chart (so it can be hidden entirely
   under reduced motion or for accessibility without losing information, R-K8).
@@ -844,20 +885,26 @@ even on desktop — Processing does not attempt a two-column layout.
   silently hangs forever on one pathological image as a known, accepted gap
   rather than something to paper over with an arbitrary timeout.
 
-### Failures mid-run
+### Failures and skips mid-run
 
 - **R-X10:** a failure on one image does not abort the run — it's counted
   failed, and the run continues to the next image.
 - **R-X11:** failed images are listed by file name with their failure reason, as
   plain text in the view.
-- **R-X12/R-X13:** output is built only from successes; if **every** image
-  failed, no output is produced at all and the failure list is the entire
-  visible result.
+- **R-X12/R-X13:** output is built only from successes. A technically failed image
+  appears under **Failed**; an accepted image whose size ceiling was unreachable
+  appears under **Skipped**, with target, smallest achieved size, effective format
+  and requested dimensions. Skips add no output bytes or savings and never enter
+  direct output or ZIP assembly. If there are no successes, no output or Download
+  action exists and both lists form the visible result.
+- A completed run's `SKIPPED`/`FAILED` tile state persists after Back to images.
+  Starting the next run clears it; settings changes and Preview-time misses do not.
 
 ### On completion
 
-- **R-X14:** the view shows final counts, total size reduction, the failure list
-  (if any), and exactly two actions: **Download** and **Back to images**.
+- **R-X14:** the view shows final succeeded/skipped/failed counts, total size
+  reduction from successes, both issue lists, and **Back to images**. **Download**
+  appears only when at least one image succeeded.
 - **R-X15:** Download is always explicit — the run never downloads
   automatically (an automatic download can trigger a browser warning and gives
   the user no clear moment of "it's done, here it is").
@@ -904,14 +951,14 @@ here, grouped by the surface that renders them, so no row is discovered late:
 | Folder depth or file count exceeded | Selection | Rejection with actual figure and cap |
 | Corrupt or undecodable file | Decode | Marked failed, reason in the failure list |
 | Encode failure | Run or preview | Marked failed; in Preview, an inline error in the frame with a retry |
-| Size target unreachable | Run or preview | Best achieved result kept, marked per R-Q3 |
+| Size target unreachable | Run or preview | Preview shows the warning, verified single-still actions and the derived lower standard-size choice; Processing lists Skipped and emits no bytes for it |
 | Out of memory | Any | Run halts, partial results discarded, message recommends fewer or smaller images and mentions the desktop application |
 | ZIP assembly failure | Packaging | Error shown, no partial ZIP delivered |
 | Download blocked by browser | Download | Message explaining the browser blocked it, with a retry |
 | Storage quota insufficient for predicted archive | Before run | Batch rejected, both figures named |
 | Origin-private storage unavailable | Startup | Reduced cap applied silently; stated only when a batch is blocked by it |
 | Storage write failure mid-run | Run | Run halts, stored archive deleted, message states no partial file was kept |
-| Every image in a run failed | End of run | No output produced, failures listed |
+| Every image in a run failed or was skipped | End of run | No output or Download action; failures and skips listed |
 
 Four of these need a surface that isn't the selection-time list or a tile badge,
 and are easy to miss because they only appear under conditions that are awkward

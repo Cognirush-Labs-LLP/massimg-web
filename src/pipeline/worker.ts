@@ -6,7 +6,7 @@
 // protocol is `protocol.ts`, so the pool can speak the protocol without importing this module and
 // the stages can be unit-tested without a worker.
 
-import { JobExecutionError, executeJob } from './execute'
+import { JobExecutionError, executePipelineJob } from './execute'
 import type { JobFailure, WorkerRequest, WorkerResponse } from './protocol'
 import { DecodeError } from './stages/decode'
 import { UnsupportedColourError } from './stages/encode'
@@ -57,14 +57,13 @@ scope.addEventListener('message', (event) => {
     return
   }
 
-  void executeJob(job).then(
+  void executePipelineJob(job).then(
     (result) => {
       // The result bytes are transferred, not copied: the worker has no further use for them, and a
       // copy here would double the encoded output's cost at exactly the moment the next decode is
       // about to allocate.
-      scope.postMessage({ kind: 'result', token, imageId: job.imageId, result }, [
-        result.bytes.buffer as ArrayBuffer,
-      ])
+      const transfer = result.kind === 'output' ? [result.bytes.buffer as ArrayBuffer] : []
+      scope.postMessage({ kind: 'result', token, imageId: job.imageId, result }, transfer)
     },
     (error: unknown) => {
       scope.postMessage({ kind: 'error', token, imageId: job.imageId, reason: reasonFor(error) })

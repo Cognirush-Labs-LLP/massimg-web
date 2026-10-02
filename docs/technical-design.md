@@ -97,8 +97,9 @@ interface ImageRecord {
   frameCount: number | null
   hasTransparency: boolean | null   // null until tested (R-C13, D5)
   edit: EditRecord | null
-  status: 'ready' | 'failed'
+  status: 'ready' | 'failed' | 'skipped'
   failure: FailureReason | null
+  skipReason: SizeTargetSkipReason | null
 }
 ```
 
@@ -110,7 +111,7 @@ Batch-wide settings: quality mode and value, dimension rule and value, format. T
 
 ### 3.3 `useRunStore`
 
-Run progress: counts by state, accumulated input and output bytes, failures, caveats. Populated by worker messages. Exists only during and immediately after a run.
+Run progress: counts by state (including skipped separately from failed), accumulated input and output bytes from successes only, failures, structured skip reasons and caveats. Populated by worker messages. Starting a run clears prior failed/skipped image states; completed status persists on return to Gallery until the next run.
 
 ### 3.4 `useUiStore`
 
@@ -124,6 +125,7 @@ R-C4 makes rotation part of the edit, and §4.5 requires the structure to accept
 type EditOp =
   | { kind: 'rotate'; quarterTurns: 0 | 1 | 2 | 3 }
   | { kind: 'crop'; rect: NormalisedRect; zoom: number; background: Rgba }
+  | { kind: 'resize'; width: number; height: number }
 
 interface EditRecord {
   ops: EditOp[]        // ordered, applied in sequence
@@ -131,7 +133,7 @@ interface EditRecord {
 }
 ```
 
-Ops are an ordered list rather than named fields. Adding an operation later means adding a variant and a stage, not changing every consumer. The pipeline walks `ops` in order; the UI in this version only ever produces a rotate followed by a crop, but nothing in the pipeline assumes that.
+Ops are an ordered list rather than named fields. Normal editing produces rotation followed by at most one crop. An applied dimension recovery may append or replace one trailing `resize`, interpreted as a uniform exact-size scale after crop. Job resolution removes that trailing operation from the geometry edit list and supplies its dimensions to the resize stage. It never changes crop coordinates. Reapplying a changed crop or using Remove edit removes it; Edit Cancel restores it.
 
 `rect` is normalised to fractions of the source image rather than pixels, so it survives a change of display size, a different viewport, or a resize of the browser window.
 
@@ -144,16 +146,27 @@ Ops are an ordered list rather than named fields. Adding an operation later mean
 **One pipeline serves preview and run.** This is the single most important structural rule in the document. A job is a pure description; executing it is a pure function of that description.
 
 ```ts
-interface Job {
+interface EncodeJob {
+  kind?: 'encode'
   imageId: ImageId
   source: File                 // or the raw bytes, posted to the worker
   edit: EditRecord | null
   settings: ResolvedSettings   // batch settings resolved for this one image
   intent: 'preview' | 'run'
 }
+
+interface JpegRecoveryJob { kind: 'jpeg-recovery'; /* source, edit, resolved JPEG settings */ }
+interface DimensionRecoveryJob {
+  kind: 'dimension-recovery'
+  /* source, edit, resolved settings, target/achieved bytes and current dimensions */
+}
+
+type PipelineJob = EncodeJob | JpegRecoveryJob | DimensionRecoveryJob
 ```
 
-`intent` affects only what is returned. A preview returns the encoded bytes plus measured size; a run returns the same plus the caveat list for the report. It never affects how the image is processed. This gives R-X2 for free and eliminates the class of bug where the preview does not match the download.
+Ordinary encode results are also discriminated. Only `{ kind: 'output' }` owns bytes. An unreachable hard ceiling returns metadata only: `{ kind: 'size-target-unreachable', targetBytes, achievedBytes, format, width, height }`. Preview replaces the image frame with its warning, so oversized attempt bytes remain inside the worker and are discarded rather than transferred to the UI. Packaging accepts only `output`. The worker protocol's existing `skipped` message remains reserved for cancellation before execution and cannot be confused with this completed constraint outcome.
+
+`intent` affects only the caveats attached to a successful output: Preview's are empty and a run's feed the report. It never affects encode decisions, and an unreachable result is metadata-only for both intents. Recovery jobs also return metadata only. Clicking a recovery action changes settings/edit state and runs an ordinary Preview encode; Processing always re-reads and re-encodes the source.
 
 ### 4.1 Settings resolution
 
@@ -161,7 +174,7 @@ Batch settings become per-image settings before the job is built, in `domain/job
 
 - Format resolution under "Don't change" (R-F1, R-F2).
 - Animated substitution when a still-only format is chosen (R-F6).
-- Crop overriding the dimension rule (R-D1); rotation not overriding it (R-D4).
+- Crop overriding the batch dimension rule (R-D1); rotation not overriding it (R-D4); a trailing applied recovery resize resolving to an internal exact dimension after the crop.
 - PNG quality rescale and lossless threshold (R-Q11, R-Q12).
 - Lossless selection above 95 (R-Q5).
 - Alpha flattening decision and fill colour (R-C17).
@@ -398,13 +411,13 @@ Implements Functional Design §7.1. The mapping is pure and lives in `domain/job
 
 ### 7.5 Size targeting
 
-A binary search over the quality **slider**, capped at eight iterations. `pipeline/stages/size-plan.ts` holds the decisions — where to probe next, when to stop, which candidate to keep, R-Q3's caveat — and `size.ts` binds them to the encoders. **Measured in T30** across three engines, five still subjects and three animations: `verification/t30-size/results.json`.
+A binary search over the quality **slider**, capped at eight iterations. `pipeline/stages/size-plan.ts` holds the decisions — where to probe next, when to stop and which measured candidate is best — and returns a discriminated `fit | unreachable` result. It never promotes an oversized candidate to output and R-Q3 is no longer a caveat. `size.ts` binds the plan to the encoders. **Measured in T30** across three engines, five still subjects and three animations: `verification/t30-size/results.json`.
 
 **The search moves the slider, not a codec's own parameter.** Every probe maps its position through `domain/job.ts`'s `qualityForSlider` and then runs the same stage the quality path runs, so the file a size target produces is the file that slider position produces by hand — asserted byte for byte in `tests/e2e/size.spec.ts`. Everything §7.4 and §7.6 decide therefore still holds under a target: R-Q6's comparison and its content gate, R-Q11's floor, R-Q12's lossless point, R-Q14's pick and R-Q15's lossless animation. It is also how PNG and GIF are searched at all without a second set of format rules, since §7.4's mapping already makes the slider libimagequant's `minimum` and gifsicle's `--lossy`.
 
 **The probe order is the bottom of the slider, then the top, then the interior**, and each of the first two can end the search on its own:
 
-- *The bottom misses the target.* Nothing above it can be smaller, so R-Q3 applies after **one** encode: the smallest achieved result is kept and the caveat recorded.
+- *The bottom misses the target.* Nothing above it can be smaller, so R-Q3 applies after **one** encode: both Preview and run receive only the attempt's metadata; Preview replaces the image frame with its warning, and a run skips the image.
 - *The top fits.* The best quality the slider offers is affordable, in **two** encodes. R-Q2's other half is structural here — the target is a ceiling, and the search never encodes above slider 100 to fill it.
 - *Both ends return the same size.* The axis does nothing, so the top fits whenever the bottom did and the search has already stopped at two. **Nothing in the code detects an unresponsive axis; the probe order makes detecting one unnecessary.** T28 measured `--lossy` to be byte-identical from 1 to 200 on flat animations, which is the case this exists for.
 
@@ -478,6 +491,18 @@ So it is a real axis on two subjects of five, **inverted on a third**, and absen
 **Animated PNG never searches at all**, because R-Q15 leaves it no axis: `sizeSearchBand` gives it a single position and it encodes once. That matters most where it costs most — apng-optimizer is the most expensive animated encoder here, at about 2 s for a 16-frame 400×400 animation.
 
 **R-Q2 is decided before the decode.** An image whose *source file* is already at or under the target is not re-encoded — but only when the job asks nothing else of it: same format, no dimension rule, no rotation or crop. That is R-X45's test, applied to R-Q2 (`requestIsSatisfiedBySource` in `domain/job.ts`, which R-X24 will reuse), and returning the original when a resize was requested would return the wrong file. Non-PNG bytes are returned unchanged and record `original-kept`. PNG and APNG source bytes instead run directly through `optimisePngBytesKeepingSmaller`; if oxipng wins, the result is a losslessly compressed output rather than an original-kept substitution, and if it does not, the original and its caveat remain. **Both variants preserve whatever metadata the source carried**, which remains the known tension with R-I17 recorded in docs/task-notes/T30.md.
+
+#### 7.5.1 Preview recovery after an unreachable ceiling
+
+Recovery uses the existing Preview worker pool and runs only for exactly one still image. The initial warning replaces the image frame before analysis begins; the oversized attempt is not rendered or transferred out of the worker. A still PNG whose effective output is PNG dispatches a separate JPEG recovery job first; the action appears only if the measured JPEG is within the ceiling, and reports the fill colour only when transparent pixels were actually flattened. A dimension recovery job follows in the current format. Source bytes are read afresh for every job, candidate bytes are never cached, and only recovery metadata crosses back to the UI.
+
+Dimension recovery seeds its first smaller long edge as `currentEdge × sqrt(target / achieved)`, preserving aspect ratio. It performs at most eight additional probes at quality-slider position 30, keeps the largest dimension actually measured at or below the ceiling, and reserves the final probe for dimensions bounded to `1×1` if no fit is known. Remaining probes refine between measured fit and miss bounds; correctness never assumes encoded size is monotonic. The ordinary quality/size search then runs once at the selected dimensions with its lower bound raised to 30, and the measured action is exposed only if that final encode still fits. Thus the primary dimension suggestion never relies on the visibly poor quality-10 endpoint. Fixed width and height retain their mode, fit-long-edge retains its mode, and original becomes fit-long-edge. A crop instead receives the trailing exact resize operation described in §3.5.
+
+After a verified dimension fit, the UI derives one additional lower choice without an encode from the ascending standard-edge list `[240, 360, 480, 640, 720, 800, 1024, 1080, 1280, 1440, 1600, 1920, 2048, 2160, 2560, 2880, 3200, 3840, 4096]`. It selects the greatest entry strictly below the verified controlled edge, preserves aspect ratio, and preserves fixed-width/fixed-height semantics; exact post-edit recovery uses the long edge. Because this action is not measured, it states no byte size. Clicking it still triggers the ordinary Preview pipeline, whose hard-ceiling result is authoritative. No choice appears when the verified controlled edge is already at or below 240 pixels.
+
+Generation checks cover the image ID, edit version and settings. Any change discards later recovery results. Applying an early JPEG action therefore supersedes a dimension analysis already in flight. Animations and batches dispatch no recovery jobs. Unmounting Preview also calls the pool's between-jobs cancellation: queued work is cancelled and a completed recovery step cannot dispatch its successor. An encode already inside WASM is allowed to finish and be discarded rather than paying the worker-termination and codec-reload cost; remount resumes the same pool. Repeated Gallery/Preview navigation is therefore bounded by the pool's active worker count, not by the number of visits.
+
+**D10 measured the quality-30 bound** on T30's five-subject still corpus in all three engines: every one of the 75 format/subject/engine searches found a verified fit in 5–8 dimension probes. Worst complete wall times (dimension probes plus the final quality-30-to-100 search) were JPEG 2.0 s, WebP 7.0 s, AVIF 1.4 s, PNG 20.5 s and GIF 7.5 s. The PNG result reinforces the single-still-only boundary; it does not justify broadening recovery to batches or animations.
 
 ### 7.6 The two comparison rules
 

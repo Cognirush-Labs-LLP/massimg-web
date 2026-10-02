@@ -15,10 +15,13 @@ import {
   resolveCropInput,
   resolveCropOutput,
   resolveEditedSize,
+  geometryEdit,
+  trailingResizeOp,
   rotateCropInput,
   rotateSize,
   toFrameRect,
   toNormalisedRect,
+  withTrailingResize,
   type CropGeometryInput,
   type FrameRect,
   type PixelSize,
@@ -432,6 +435,34 @@ describe('crop and rotation arithmetic', () => {
     const fast = { kind: 'crop', rect, zoom: 4, background: OPAQUE_WHITE } as const
 
     expect(resolveEditedSize(SOURCE, [slow])).toEqual(resolveEditedSize(SOURCE, [fast]))
+  })
+
+  it('treats a trailing recovery resize as a uniform post-crop size', () => {
+    const crop = {
+      kind: 'crop',
+      rect: { x: 0, y: 0, width: 0.5, height: 0.5 },
+      zoom: 1,
+      background: OPAQUE_WHITE,
+    } as const satisfies EditOp
+    const edit = withTrailingResize({ ops: [crop], version: 4 }, { width: 800, height: 600 })
+
+    expect(resolveEditedSize(SOURCE, edit.ops)).toEqual({ width: 800, height: 600 })
+    expect(trailingResizeOp(edit.ops)).toEqual({ kind: 'resize', width: 800, height: 600 })
+    expect(geometryEdit(edit)).toEqual({ ops: [crop], version: 5 })
+    expect(edit.version).toBe(5)
+  })
+
+  it('replaces one trailing recovery resize and validates its dimensions', () => {
+    const edit = withTrailingResize(
+      { ops: [{ kind: 'resize', width: 800, height: 600 }], version: 1 },
+      { width: 400, height: 300 },
+    )
+
+    expect(edit.ops).toEqual([{ kind: 'resize', width: 400, height: 300 }])
+    expect(() => withTrailingResize(edit, { width: 0, height: 1 })).toThrow(RangeError)
+    expect(() =>
+      resolveEditedSize(SOURCE, [{ kind: 'resize', width: Number.NaN, height: 1 }]),
+    ).toThrow(RangeError)
   })
 
   it('stores rotation before crop and omits an unturned rotation', () => {

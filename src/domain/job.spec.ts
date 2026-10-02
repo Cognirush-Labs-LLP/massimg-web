@@ -7,6 +7,7 @@ import {
   type PixelSize,
 } from './edit'
 import {
+  dimensionSettingForRecovery,
   describePrimaryActionOutput,
   QUALITY_SLIDER_MAX,
   QUALITY_SLIDER_MIN,
@@ -14,6 +15,7 @@ import {
   requestIsSatisfiedBySource,
   resolveSettings,
   singleImageDimensions,
+  standardSmallerRecoveryDimensions,
   type BatchSettings,
   type SettingsImage,
 } from './job'
@@ -39,6 +41,86 @@ const ROTATE_EDIT = {
 } as const satisfies EditRecord
 
 const CROP_BACKGROUND = { r: 12, g: 34, b: 56, a: 0.25 } as const satisfies Rgba
+
+describe('dimensionSettingForRecovery', () => {
+  const size = { width: 800, height: 600 }
+
+  it('preserves fixed-axis modes and converts original to a long-edge bound', () => {
+    expect(dimensionSettingForRecovery({ kind: 'fixed-width', pixels: 2000 }, size)).toEqual({
+      kind: 'fixed-width',
+      pixels: 800,
+    })
+    expect(dimensionSettingForRecovery({ kind: 'fixed-height', pixels: 2000 }, size)).toEqual({
+      kind: 'fixed-height',
+      pixels: 600,
+    })
+    expect(dimensionSettingForRecovery({ kind: 'fit-long-edge', pixels: 2000 }, size)).toEqual({
+      kind: 'fit-long-edge',
+      pixels: 800,
+    })
+    expect(dimensionSettingForRecovery({ kind: 'original' }, size)).toEqual({
+      kind: 'fit-long-edge',
+      pixels: 800,
+    })
+  })
+
+  it('uses the exact verified long edge instead of the previous panel value', () => {
+    expect(
+      dimensionSettingForRecovery(
+        { kind: 'fit-long-edge', pixels: 4000 },
+        { width: 2000, height: 2997 },
+      ),
+    ).toEqual({ kind: 'fit-long-edge', pixels: 2997 })
+  })
+})
+
+describe('standardSmallerRecoveryDimensions', () => {
+  it('chooses the next lower standard edge and preserves aspect ratio', () => {
+    expect(
+      standardSmallerRecoveryDimensions({ kind: 'original' }, { width: 1000, height: 750 }),
+    ).toEqual({ width: 800, height: 600 })
+    expect(
+      standardSmallerRecoveryDimensions(
+        { kind: 'fit-long-edge', pixels: 1600 },
+        { width: 600, height: 900 },
+      ),
+    ).toEqual({ width: 533, height: 800 })
+    expect(
+      standardSmallerRecoveryDimensions(
+        { kind: 'fit-long-edge', pixels: 4000 },
+        { width: 2000, height: 2997 },
+      ),
+    ).toEqual({ width: 1922, height: 2880 })
+  })
+
+  it('preserves a fixed width or fixed height axis', () => {
+    expect(
+      standardSmallerRecoveryDimensions(
+        { kind: 'fixed-width', pixels: 1200 },
+        { width: 700, height: 1050 },
+      ),
+    ).toEqual({ width: 640, height: 960 })
+    expect(
+      standardSmallerRecoveryDimensions(
+        { kind: 'fixed-height', pixels: 1200 },
+        { width: 1050, height: 700 },
+      ),
+    ).toEqual({ width: 960, height: 640 })
+  })
+
+  it('uses the long edge for exact post-edit recovery and returns nothing below 240', () => {
+    expect(
+      standardSmallerRecoveryDimensions(
+        { kind: 'fixed-width', pixels: 1200 },
+        { width: 600, height: 900 },
+        true,
+      ),
+    ).toEqual({ width: 533, height: 800 })
+    expect(
+      standardSmallerRecoveryDimensions({ kind: 'original' }, { width: 200, height: 150 }),
+    ).toBeNull()
+  })
+})
 
 const CROP_EDIT = {
   ops: [
@@ -204,6 +286,19 @@ describe('settings resolution', () => {
         expect(result.settings.dimension).toEqual({ kind: 'original' })
       },
     )
+
+    it('lets a trailing verified resize override both crop and batch dimensions exactly', () => {
+      const edit: EditRecord = {
+        ops: [...CROP_EDIT.ops, { kind: 'resize', width: 640, height: 480 }],
+        version: 2,
+      }
+      const result = resolved(
+        { ...BASE_IMAGE, edit },
+        { ...BASE_BATCH, dimension: { kind: 'fixed-width', pixels: 3000 } },
+      )
+
+      expect(result.settings.dimension).toEqual({ kind: 'exact', width: 640, height: 480 })
+    })
   })
 
   describe('format and alpha handling', () => {
@@ -382,6 +477,7 @@ describe('describePrimaryActionOutput', () => {
       edit: null,
       status: 'ready',
       failure: null,
+      skipReason: null,
       ...overrides,
     }
   }

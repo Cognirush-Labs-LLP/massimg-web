@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import type { ImageId, ImageRecord, Job } from '@/domain/types'
+import type { ImageId, ImageRecord, PipelineJob } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
 import type { JobToken } from '@/pipeline/protocol'
 import { useBatchStore } from '@/stores/batch'
@@ -10,12 +10,14 @@ import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 
 interface PendingRun {
-  job: Job
+  job: PipelineJob
   settle: (outcome: JobOutcome) => void
 }
 
 const runs: PendingRun[] = []
-const run = vi.fn((job: Job) => {
+const cancel = vi.fn()
+const resume = vi.fn()
+const run = vi.fn((job: PipelineJob) => {
   let settle!: (outcome: JobOutcome) => void
   const done = new Promise<JobOutcome>((resolve) => {
     settle = resolve
@@ -26,7 +28,7 @@ const run = vi.fn((job: Job) => {
   return { token: runs.length as JobToken, done }
 })
 
-vi.mock('./preview-pool', () => ({ getPreviewPool: () => ({ run }) }))
+vi.mock('./preview-pool', () => ({ getPreviewPool: () => ({ run, cancel, resume }) }))
 
 const sourceFiles = new Map<ImageId, File>()
 vi.mock('@/platform/source-files', () => ({
@@ -53,6 +55,7 @@ function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
     ...overrides,
   }
 }
@@ -79,7 +82,23 @@ function completed(bytes: number, imageId: string): JobOutcome {
     token: 1 as JobToken,
     imageId: imageId as ImageId,
     outcome: 'completed',
-    result: { bytes: new Uint8Array(bytes), format: 'jpeg', caveats: [] },
+    result: { kind: 'output', bytes: new Uint8Array(bytes), format: 'jpeg', caveats: [] },
+  }
+}
+
+function unreachable(imageId: string, format: 'jpeg' | 'png' = 'png'): JobOutcome {
+  return {
+    token: 1 as JobToken,
+    imageId: imageId as ImageId,
+    outcome: 'completed',
+    result: {
+      kind: 'size-target-unreachable',
+      targetBytes: 1000,
+      achievedBytes: 1500,
+      format,
+      width: 4000,
+      height: 3000,
+    },
   }
 }
 
@@ -93,6 +112,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   runs.length = 0
   run.mockClear()
+  cancel.mockClear()
+  resume.mockClear()
   ingestDrop.mockReset()
   sourceFiles.clear()
   urlCounter = 0
@@ -122,6 +143,11 @@ describe('Preview', () => {
 
     expect(wrapper.find('[data-testid="preview-comparison"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="preview-creating"]').exists()).toBe(true)
+    expect(
+      wrapper
+        .get('[data-testid="preview-creating"]')
+        .findAll('[data-testid="loading-indicator"] span'),
+    ).toHaveLength(3)
 
     runs[0]?.settle(completed(256_000, 'a'))
     await flushPromises()
@@ -231,5 +257,129 @@ describe('Preview', () => {
     await wrapper.find('[data-testid="preview-root"]').trigger('drop', { dataTransfer })
 
     expect(ingestDrop).toHaveBeenCalledWith(dataTransfer)
+  })
+
+  it('shows the hard-ceiling warning before recovery finishes and reveals verified actions progressively', async () => {
+    seed(['a'], 'a', { sourceFormat: 'png', name: 'a.png' })
+    const settingsStore = useSettingsStore()
+    settingsStore.quality = { kind: 'size', targetBytes: 1000 }
+    const wrapper = await mountPreview()
+
+    runs[0]?.settle(unreachable('a'))
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="preview-size-unreachable"]').text()).toContain(
+      'Smallest possible at these settings: 1.50 KB',
+    )
+    expect(wrapper.find('[data-testid="preview-recovery-loading"]').exists()).toBe(true)
+    expect(
+      wrapper
+        .get('[data-testid="preview-recovery-loading"]')
+        .findAll('[data-testid="loading-indicator"] span'),
+    ).toHaveLength(3)
+    expect(wrapper.find('[data-testid="preview-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="preview-image"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="preview-comparison"]').exists()).toBe(false)
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+    expect(runs[1]?.job.kind).toBe('jpeg-recovery')
+
+    runs[1]?.settle({
+      token: 2 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'jpeg-recovery',
+        suggestion: {
+          outputBytes: 900,
+          flattenedFill: { r: 255, g: 255, b: 255, a: 1 },
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="preview-use-jpeg"]').text()).toContain(
+      'Use JPEG with white background',
+    )
+    expect(runs[2]?.job.kind).toBe('dimension-recovery')
+
+    await wrapper.get('[data-testid="preview-use-jpeg"]').trigger('click')
+    expect(settingsStore.format).toBe('jpeg')
+  })
+
+  it('does not dispatch recovery jobs for a batch', async () => {
+    seed(['a', 'b'], 'a', { sourceFormat: 'png' })
+    useSettingsStore().quality = { kind: 'size', targetBytes: 1000 }
+    const wrapper = await mountPreview()
+
+    runs[0]?.settle(unreachable('a'))
+    await flushPromises()
+
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="preview-size-unreachable"]').text()).toContain(
+      'The size setting applies to all 2 images.',
+    )
+  })
+
+  it('applies verified dimensions as a trailing post-crop resize', async () => {
+    seed(['a'], 'a', {
+      edit: {
+        ops: [
+          {
+            kind: 'crop',
+            rect: { x: 0, y: 0, width: 0.5, height: 0.5 },
+            zoom: 1,
+            background: { r: 255, g: 255, b: 255, a: 1 },
+          },
+        ],
+        version: 3,
+      },
+    })
+    useSettingsStore().quality = { kind: 'size', targetBytes: 1000 }
+    const wrapper = await mountPreview()
+    runs[0]?.settle(unreachable('a', 'jpeg'))
+    await flushPromises()
+    expect(runs[1]?.job.kind).toBe('dimension-recovery')
+
+    runs[1]?.settle({
+      token: 2 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'dimension-recovery',
+        suggestion: { width: 800, height: 600, outputBytes: 900, probes: 4 },
+      },
+    })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="preview-use-smaller-dimensions"]').text()).toBe(
+      'Try 720×540 · higher quality',
+    )
+    await wrapper.get('[data-testid="preview-use-dimensions"]').trigger('click')
+
+    expect(useBatchStore().images[0]?.edit).toEqual({
+      ops: [expect.objectContaining({ kind: 'crop' }), { kind: 'resize', width: 800, height: 600 }],
+      version: 4,
+    })
+  })
+
+  it('applies the free lower standard size through the same fresh Preview path', async () => {
+    seed(['a'])
+    useSettingsStore().quality = { kind: 'size', targetBytes: 1000 }
+    const wrapper = await mountPreview()
+    runs[0]?.settle(unreachable('a', 'jpeg'))
+    await flushPromises()
+
+    runs[1]?.settle({
+      token: 2 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'dimension-recovery',
+        suggestion: { width: 800, height: 600, outputBytes: 900, probes: 4 },
+      },
+    })
+    await flushPromises()
+    await wrapper.get('[data-testid="preview-use-smaller-dimensions"]').trigger('click')
+
+    expect(useSettingsStore().dimension).toEqual({ kind: 'fit-long-edge', pixels: 720 })
   })
 })

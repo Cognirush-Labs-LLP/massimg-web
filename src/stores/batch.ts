@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ImageId, ImageRecord } from '@/domain/types'
+import type { FailureReason, ImageId, ImageRecord, SizeTargetSkipReason } from '@/domain/types'
 import { useUiStore } from './ui'
 
 /**
@@ -49,6 +49,29 @@ export const useBatchStore = defineStore('batch', () => {
     Object.assign(target, patch)
   }
 
+  function clearRunStatuses(): void {
+    images.value = images.value.map((image) => ({
+      ...image,
+      status: 'ready',
+      failure: null,
+      skipReason: null,
+    }))
+  }
+
+  function markFailed(id: ImageId, failure: FailureReason): void {
+    const index = images.value.findIndex((image) => image.id === id)
+    const image = images.value[index]
+    if (image === undefined) return
+    images.value[index] = { ...image, status: 'failed', failure, skipReason: null }
+  }
+
+  function markSkipped(id: ImageId, skipReason: SizeTargetSkipReason): void {
+    const index = images.value.findIndex((image) => image.id === id)
+    const image = images.value[index]
+    if (image === undefined) return
+    images.value[index] = { ...image, status: 'skipped', failure: null, skipReason }
+  }
+
   // R-G6: no confirmation, since re-selecting files is cheap. Routed through the same
   // count-boundary transition addImages/removeImage already use, rather than a bespoke
   // "go to empty state" call, so there is exactly one place that decides what a count of zero
@@ -58,5 +81,14 @@ export const useBatchStore = defineStore('batch', () => {
     useUiStore().onBatchCountChanged(0, [])
   }
 
-  return { images, addImages, removeImage, updateImage, clearAll }
+  return {
+    images,
+    addImages,
+    removeImage,
+    updateImage,
+    clearRunStatuses,
+    markFailed,
+    markSkipped,
+    clearAll,
+  }
 })

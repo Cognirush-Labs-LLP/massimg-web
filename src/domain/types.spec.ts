@@ -20,7 +20,7 @@ describe('core type fixtures', () => {
     expect(imageRecordFixture.id).toBe(imageIdFixture)
     expect(resolvedSettingsFixture.format).toBe('webp')
     expect(jobFixture.settings).toBe(resolvedSettingsFixture)
-    expect(caveatFixtures).toHaveLength(9)
+    expect(caveatFixtures).toHaveLength(8)
   })
 
   it('keeps edit operations as an ordered discriminated union', () => {

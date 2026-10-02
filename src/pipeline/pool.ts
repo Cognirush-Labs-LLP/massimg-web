@@ -15,7 +15,7 @@
 import { resolveWorkerPoolSize, runtimeLimits } from '@/config/limits'
 import { nextToken } from './protocol'
 import type { JobFailure, JobResult, JobToken, WorkerRequest, WorkerResponse } from './protocol'
-import type { ImageId, Job } from '@/domain/types'
+import type { ImageId, PipelineJob } from '@/domain/types'
 import type { RuntimeLimits } from '@/config/limits'
 
 interface OutcomeIdentity {
@@ -96,7 +96,7 @@ export interface WorkerPool {
   /** Ceiling on concurrent workers (§5.1). */
   readonly size: number
   /** Queues one job. Its `done` promise always settles, with an outcome; it never rejects. */
-  run(job: Job): JobHandle
+  run(job: PipelineJob): JobHandle
   /**
    * R-X26. Nothing further is dispatched and every queued job resolves `cancelled`; jobs already in
    * a worker run to completion and deliver their results, so the wait is bounded by one image per
@@ -122,7 +122,7 @@ interface Slot {
 
 interface Entry {
   token: JobToken
-  job: Job
+  job: PipelineJob
   settle: (outcome: JobOutcome) => void
   /** The promise has been resolved. The job may still occupy a worker — that is the R-X28 case. */
   settled: boolean

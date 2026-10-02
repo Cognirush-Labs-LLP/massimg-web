@@ -26,6 +26,7 @@ import {
   type FramePoint,
 } from '@/domain/viewport'
 import type { EditRecord, EncodableFormat, ImageId } from '@/domain/types'
+import LoadingStatus from './LoadingStatus.vue'
 import { usePreviewViewport, type ComparisonTab } from './usePreviewViewport'
 import type { PreviewEncodeError, PreviewPhase } from './usePreviewEncode'
 
@@ -437,9 +438,12 @@ defineExpose({ viewport })
         @error="onImageError"
       />
 
-      <p v-if="showsCreating" class="frame-state" data-testid="preview-creating">
-        {{ t('preview.frame.creating') }}
-      </p>
+      <LoadingStatus
+        v-if="showsCreating"
+        class="frame-state"
+        :message="t('preview.frame.creating')"
+        data-testid="preview-creating"
+      />
 
       <div v-else-if="showsError" class="frame-state frame-error" data-testid="preview-error">
         <p class="error-message">{{ errorMessage }}</p>

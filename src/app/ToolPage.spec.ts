@@ -175,6 +175,7 @@ function image(overrides: Partial<ImageRecord> = {}): ImageRecord {
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
     ...overrides,
   }
 }

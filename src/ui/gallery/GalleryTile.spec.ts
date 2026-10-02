@@ -56,6 +56,30 @@ describe('GalleryTile', () => {
     expect(badgeTexts).toEqual(['EDITED', 'ANIMATED', 'FAILED'])
   })
 
+  it('shows a completed size-ceiling skip distinctly from failure', () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        image: {
+          ...imageRecordFixture,
+          status: 'skipped',
+          skipReason: {
+            kind: 'size-target-unreachable',
+            targetBytes: 100,
+            achievedBytes: 150,
+            format: 'png',
+            width: 1000,
+            height: 750,
+          },
+        },
+        thumbnailUrl: null,
+        thumbSize: 200,
+      },
+    })
+
+    expect(wrapper.findAll('.badge').map((badge) => badge.text())).toContain('SKIPPED')
+    expect(wrapper.text()).not.toContain('FAILED')
+  })
+
   it('shows no badges for a plain, unedited, non-animated, successful image', () => {
     const wrapper = mount(GalleryTile, {
       props: {

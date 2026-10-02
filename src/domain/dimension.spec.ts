@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { needsResize, resolveResizedSize } from './dimension'
 import { resolveEditedSize } from './edit'
 import { resolveSettings, type BatchSettings, type SettingsImage } from './job'
-import type { EditRecord, ResolvedDimension } from './types'
+import type { BatchDimension, EditRecord, ResolvedDimension } from './types'
 
 const fit = (pixels: number) => ({ kind: 'fit-long-edge', pixels }) as const
 const width = (pixels: number) => ({ kind: 'fixed-width', pixels }) as const
@@ -136,7 +136,7 @@ describe('dimension rule and edits', () => {
     isAnimated: false,
     edit,
   })
-  const batch = (dimension: ResolvedDimension): BatchSettings => ({
+  const batch = (dimension: BatchDimension): BatchSettings => ({
     quality: { kind: 'quality', value: 70 },
     dimension,
     format: 'jpeg',
@@ -145,7 +145,7 @@ describe('dimension rule and edits', () => {
   function outputSize(
     source: { width: number; height: number },
     edit: EditRecord | null,
-    rule: ResolvedDimension,
+    rule: BatchDimension,
   ) {
     const result = resolveSettings(image(edit), batch(rule))
     if (result.kind !== 'resolved') {

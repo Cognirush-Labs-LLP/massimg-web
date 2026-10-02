@@ -535,6 +535,22 @@ describe('viewportEditGeometry', () => {
     ).toEqual({ kind: 'projectable', quarterTurns: 1, cropRect: rect })
   })
 
+  it('ignores a single trailing recovery resize because it does not change crop coordinates', () => {
+    const rect = { x: 0.1, y: 0.2, width: 0.5, height: 0.5 } satisfies NormalisedRect
+
+    expect(
+      viewportEditGeometry(editRecord([cropOp(rect), { kind: 'resize', width: 500, height: 500 }])),
+    ).toEqual({ kind: 'projectable', quarterTurns: 0, cropRect: rect })
+    expect(
+      viewportEditGeometry(
+        editRecord([
+          { kind: 'resize', width: 500, height: 500 },
+          { kind: 'rotate', quarterTurns: 1 },
+        ]),
+      ),
+    ).toEqual({ kind: 'unprojectable', reason: 'resize-before-final-operation' })
+  })
+
   it('refuses an op order it cannot summarise rather than mis-projecting it', () => {
     const rect = { x: 0.1, y: 0.2, width: 0.5, height: 0.5 } satisfies NormalisedRect
 

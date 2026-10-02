@@ -101,6 +101,7 @@ async function buildImageRecord(item: SelectedFile): Promise<ImageRecord | null>
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
   }
 }
 

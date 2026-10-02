@@ -55,6 +55,28 @@ describe('GalleryListRow', () => {
     expect(badgeTexts).toEqual(['EDITED', 'ANIMATED', 'FAILED'])
   })
 
+  it('shows SKIPPED for an unreachable completed run rather than FAILED', () => {
+    const wrapper = mount(GalleryListRow, {
+      props: {
+        image: {
+          ...imageRecordFixture,
+          status: 'skipped',
+          skipReason: {
+            kind: 'size-target-unreachable',
+            targetBytes: 100,
+            achievedBytes: 150,
+            format: 'png',
+            width: 1000,
+            height: 750,
+          },
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('SKIPPED')
+    expect(wrapper.text()).not.toContain('FAILED')
+  })
+
   it('shows the pending placeholder for width/height still at 0', () => {
     const wrapper = mount(GalleryListRow, {
       props: { image: { ...imageRecordFixture, width: 0, height: 0 } },

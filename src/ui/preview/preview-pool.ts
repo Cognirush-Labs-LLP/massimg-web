@@ -7,6 +7,10 @@
 // (R-B1, R-B4) — which `usePreviewEncode` does. Same lazy-module-singleton shape, and the same
 // reasoning, as `ui/gallery/thumbnail-service.ts`.
 //
+// Leaving Preview also calls `cancel()`, which empties queued work but deliberately lets one active
+// codec call per busy worker finish. Re-entering calls `resume()` before submitting its entry encode.
+// This bounds rapid navigation without paying the codec reload cost of terminating the pool.
+//
 // **Its own pool, not a shared one**, and this is structural rather than a convention. `pool.ts`'s
 // `supersede()` keys on `imageId` alone and is blind to `intent` (T21's handover note flags it): a
 // `preview` job submitted while a `run` job for the same image is in flight would silently supersede

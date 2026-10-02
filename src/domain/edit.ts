@@ -1,4 +1,4 @@
-import type { EditOp, NormalisedRect, Rgba } from './types'
+import type { EditOp, EditRecord, NormalisedRect, Rgba } from './types'
 
 /** Pixel dimensions of a source image, a frame, or an output raster. */
 export interface PixelSize {
@@ -238,6 +238,19 @@ function applyOp(size: PixelSize, op: EditOp): PixelSize {
 
   if (op.kind === 'crop') {
     return resolveCropOutput(op.rect, size).size
+  }
+
+  if (op.kind === 'resize') {
+    if (
+      !Number.isInteger(op.width) ||
+      !Number.isInteger(op.height) ||
+      op.width < 1 ||
+      op.height < 1
+    ) {
+      throw new RangeError('resize dimensions must be positive whole pixels')
+    }
+
+    return { width: op.width, height: op.height }
   }
 
   assertExhaustive(op)
@@ -500,4 +513,41 @@ export function resolveEditedSize(source: PixelSize, ops: readonly EditOp[]): Pi
 /** Reports whether an operation list crops, which is what overrides the batch dimension rule. */
 export function hasCropOp(ops: readonly EditOp[]): boolean {
   return ops.some((op) => op.kind === 'crop')
+}
+
+/** Returns the one trailing recovery resize, if present. Earlier resize ops remain invalid edits. */
+export function trailingResizeOp(
+  ops: readonly EditOp[],
+): Extract<EditOp, { kind: 'resize' }> | null {
+  const last = ops.at(-1)
+
+  return last?.kind === 'resize' ? last : null
+}
+
+/** Geometry operations executed before the pipeline's ordinary resize stage. */
+export function geometryEdit(edit: EditRecord | null): EditRecord | null {
+  if (edit === null || trailingResizeOp(edit.ops) === null) {
+    return edit
+  }
+
+  return { ...edit, ops: edit.ops.slice(0, -1) }
+}
+
+/** Adds or replaces the single trailing post-crop resize and bumps preview invalidation. */
+export function withTrailingResize(edit: EditRecord, size: PixelSize): EditRecord {
+  if (
+    !Number.isInteger(size.width) ||
+    !Number.isInteger(size.height) ||
+    size.width < 1 ||
+    size.height < 1
+  ) {
+    throw new RangeError('resize dimensions must be positive whole pixels')
+  }
+
+  const ops = trailingResizeOp(edit.ops) === null ? edit.ops : edit.ops.slice(0, -1)
+
+  return {
+    ops: [...ops, { kind: 'resize', width: size.width, height: size.height }],
+    version: edit.version + 1,
+  }
 }

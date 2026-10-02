@@ -89,4 +89,10 @@ describe('thumbnailSize', () => {
     // 4000x3000 -> rotate -> 3000x4000 -> crop to half the height -> 3000x2000.
     expect(thumbnailSize(source, ops, 384)).toEqual({ width: 384, height: 256 })
   })
+
+  it('uses a trailing recovery resize as the edited thumbnail aspect and size bound', () => {
+    const ops: EditOp[] = [{ kind: 'resize', width: 200, height: 100 }]
+
+    expect(thumbnailSize(source, ops, 384)).toEqual({ width: 200, height: 100 })
+  })
 })

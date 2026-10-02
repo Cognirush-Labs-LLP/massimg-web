@@ -159,11 +159,21 @@ export async function render(request: ThumbnailJobRequest): Promise<RenderedThum
 
   try {
     let drawable: Drawable = bitmap
+    let logicalSize = source
     for (const op of ops) {
       if (op.kind === 'rotate') {
         drawable = drawRotated(drawable, op.quarterTurns)
+        logicalSize = { width: logicalSize.height, height: logicalSize.width }
       } else if (op.kind === 'crop') {
         drawable = drawCropped(drawable, op)
+        logicalSize = resolveEditedSize(logicalSize, [op])
+      } else if (op.kind === 'resize') {
+        const width = Math.max(1, Math.round((drawable.width * op.width) / logicalSize.width))
+        const height = Math.max(1, Math.round((drawable.height * op.height) / logicalSize.height))
+        const canvas = canvasOf({ width, height })
+        contextOf(canvas).drawImage(drawable, 0, 0, width, height)
+        drawable = canvas
+        logicalSize = { width: op.width, height: op.height }
       } else {
         // An operation this build does not understand must not yield a silently wrong thumbnail.
         throw new Error('unsupported edit operation')

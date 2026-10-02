@@ -1,0 +1,1935 @@
+{
+  "measuredAt": "2026-10-02T15:24:02.404Z",
+  "quick": false,
+  "machine": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpus": 8,
+    "totalMemoryBytes": 17179869184
+  },
+  "plan": {
+    "stillFormats": [
+      "jpeg",
+      "webp",
+      "avif",
+      "png",
+      "gif"
+    ],
+    "animatedFormats": [
+      "webp",
+      "png",
+      "gif"
+    ],
+    "d1TargetBytes": 153600,
+    "pngTargetSweep": [
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100
+    ]
+  },
+  "photographs": "2 real photographs, fitted to 1600 px, selected by size rank from 359",
+  "engines": {
+    "chromium": {
+      "still": [
+        {
+          "id": "photo-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 14834,
+                "high": 14834
+              },
+              "endsMs": 166,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7417,
+                "width": 760,
+                "height": 570,
+                "outputBytes": 7353,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1450
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 63072,
+                "high": 63072
+              },
+              "endsMs": 318,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 31536,
+                "width": 1156,
+                "height": 867,
+                "outputBytes": 31452,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 4448
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1593,
+                "high": 1593
+              },
+              "endsMs": 181,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 797,
+                "width": 447,
+                "height": 335,
+                "outputBytes": 790,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1164
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 2639098,
+                "high": 2639098
+              },
+              "endsMs": 2100,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1319549,
+                "width": 1105,
+                "height": 829,
+                "outputBytes": 1317916,
+                "dimensionProbes": 7,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 10253
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 375759,
+                "high": 375759
+              },
+              "endsMs": 593,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 187880,
+                "width": 1152,
+                "height": 864,
+                "outputBytes": 186901,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5954
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "shaded-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 12606,
+                "high": 12606
+              },
+              "endsMs": 144,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 6303,
+                "width": 960,
+                "height": 720,
+                "outputBytes": 6301,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1644
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 6112,
+                "high": 6112
+              },
+              "endsMs": 983,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3056,
+                "width": 979,
+                "height": 734,
+                "outputBytes": 3044,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 6310
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 2453,
+                "high": 2453
+              },
+              "endsMs": 147,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1227,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 286,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 979
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 57066,
+                "high": 57066
+              },
+              "endsMs": 3225,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 28533,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 6798
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 34857,
+                "high": 34857
+              },
+              "endsMs": 420,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 17429,
+                "width": 868,
+                "height": 651,
+                "outputBytes": 17118,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 2980
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "flat-600",
+          "width": 600,
+          "height": 450,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 2602,
+                "high": 2602
+              },
+              "endsMs": 70,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1301,
+                "width": 193,
+                "height": 145,
+                "outputBytes": 1297,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 181
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 140,
+                "high": 140
+              },
+              "endsMs": 57,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 70,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 38,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 121
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1403,
+                "high": 1403
+              },
+              "endsMs": 43,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 702,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 284,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 135
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 708,
+                "high": 708
+              },
+              "endsMs": 251,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 354,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 276
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 4079,
+                "high": 4079
+              },
+              "endsMs": 85,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 2040,
+                "width": 146,
+                "height": 110,
+                "outputBytes": 1932,
+                "dimensionProbes": 8,
+                "qualityProbes": 6,
+                "fit": true,
+                "ms": 433
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-1",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 2750348,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 21475,
+                "high": 21475
+              },
+              "endsMs": 59,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 10738,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 285,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 778
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 16356,
+                "high": 16356
+              },
+              "endsMs": 226,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8178,
+                "width": 472,
+                "height": 708,
+                "outputBytes": 8112,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 2119
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 10030,
+                "high": 10030
+              },
+              "endsMs": 159,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 5015,
+                "width": 373,
+                "height": 560,
+                "outputBytes": 5003,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1201
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 626021,
+                "high": 626021
+              },
+              "endsMs": 4857,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 313011,
+                "width": 747,
+                "height": 1120,
+                "outputBytes": 312589,
+                "dimensionProbes": 6,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 19743
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 213513,
+                "high": 213513
+              },
+              "endsMs": 491,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 106757,
+                "width": 633,
+                "height": 949,
+                "outputBytes": 106618,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 3436
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-2",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 5594077,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 17963,
+                "high": 17963
+              },
+              "endsMs": 59,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8982,
+                "width": 421,
+                "height": 632,
+                "outputBytes": 8974,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 911
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 14626,
+                "high": 14626
+              },
+              "endsMs": 236,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7313,
+                "width": 509,
+                "height": 764,
+                "outputBytes": 7246,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5757
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 7534,
+                "high": 7534
+              },
+              "endsMs": 154,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3767,
+                "width": 362,
+                "height": 543,
+                "outputBytes": 3760,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1180
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 800098,
+                "high": 800098
+              },
+              "endsMs": 4729,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 400049,
+                "width": 751,
+                "height": 1126,
+                "outputBytes": 399429,
+                "dimensionProbes": 5,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 16997
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 125714,
+                "high": 125714
+              },
+              "endsMs": 530,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 62857,
+                "width": 652,
+                "height": 977,
+                "outputBytes": 62820,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 3598
+              }
+            }
+          ],
+          "pngAxis": null
+        }
+      ],
+      "animated": []
+    },
+    "firefox": {
+      "still": [
+        {
+          "id": "photo-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 14834,
+                "high": 14834
+              },
+              "endsMs": 315,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7417,
+                "width": 760,
+                "height": 570,
+                "outputBytes": 7353,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1988
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 63072,
+                "high": 63072
+              },
+              "endsMs": 369,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 31536,
+                "width": 1156,
+                "height": 867,
+                "outputBytes": 31452,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5393
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1593,
+                "high": 1593
+              },
+              "endsMs": 222,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 797,
+                "width": 447,
+                "height": 335,
+                "outputBytes": 790,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1378
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 2639098,
+                "high": 2639098
+              },
+              "endsMs": 2460,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1319549,
+                "width": 1105,
+                "height": 829,
+                "outputBytes": 1317916,
+                "dimensionProbes": 7,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 11251
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 375759,
+                "high": 375759
+              },
+              "endsMs": 752,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 187880,
+                "width": 1152,
+                "height": 864,
+                "outputBytes": 186901,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 7548
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "shaded-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 12606,
+                "high": 12606
+              },
+              "endsMs": 333,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 6303,
+                "width": 960,
+                "height": 720,
+                "outputBytes": 6301,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 2031
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 6112,
+                "high": 6112
+              },
+              "endsMs": 1103,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3056,
+                "width": 979,
+                "height": 734,
+                "outputBytes": 3044,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 7033
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 2453,
+                "high": 2453
+              },
+              "endsMs": 175,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1227,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 286,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 1135
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 57066,
+                "high": 57066
+              },
+              "endsMs": 4000,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 28533,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 7562
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 34857,
+                "high": 34857
+              },
+              "endsMs": 554,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 17429,
+                "width": 868,
+                "height": 651,
+                "outputBytes": 17118,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 3670
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "flat-600",
+          "width": 600,
+          "height": 450,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 2602,
+                "high": 2602
+              },
+              "endsMs": 227,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1301,
+                "width": 193,
+                "height": 145,
+                "outputBytes": 1297,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 235
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 140,
+                "high": 140
+              },
+              "endsMs": 65,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 70,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 38,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 162
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1403,
+                "high": 1403
+              },
+              "endsMs": 30,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 702,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 284,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 177
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 708,
+                "high": 708
+              },
+              "endsMs": 308,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 354,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 413
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 4079,
+                "high": 4079
+              },
+              "endsMs": 105,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 2040,
+                "width": 146,
+                "height": 110,
+                "outputBytes": 1932,
+                "dimensionProbes": 8,
+                "qualityProbes": 6,
+                "fit": true,
+                "ms": 570
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-1",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 2750348,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 21475,
+                "high": 21475
+              },
+              "endsMs": 73,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 10738,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 285,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 978
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 16356,
+                "high": 16356
+              },
+              "endsMs": 259,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8178,
+                "width": 472,
+                "height": 708,
+                "outputBytes": 8112,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 2380
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 10030,
+                "high": 10030
+              },
+              "endsMs": 191,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 5015,
+                "width": 373,
+                "height": 560,
+                "outputBytes": 5003,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1432
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 626021,
+                "high": 626021
+              },
+              "endsMs": 5362,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 313011,
+                "width": 747,
+                "height": 1120,
+                "outputBytes": 312589,
+                "dimensionProbes": 6,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 20494
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 213513,
+                "high": 213513
+              },
+              "endsMs": 643,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 106757,
+                "width": 633,
+                "height": 949,
+                "outputBytes": 106618,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 4172
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-2",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 5594077,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 17963,
+                "high": 17963
+              },
+              "endsMs": 73,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8982,
+                "width": 421,
+                "height": 632,
+                "outputBytes": 8974,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1091
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 14626,
+                "high": 14626
+              },
+              "endsMs": 272,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7313,
+                "width": 509,
+                "height": 764,
+                "outputBytes": 7246,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 6553
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 7534,
+                "high": 7534
+              },
+              "endsMs": 171,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3767,
+                "width": 362,
+                "height": 543,
+                "outputBytes": 3760,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1334
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 800098,
+                "high": 800098
+              },
+              "endsMs": 5093,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 400049,
+                "width": 751,
+                "height": 1126,
+                "outputBytes": 399429,
+                "dimensionProbes": 5,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 17747
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 125714,
+                "high": 125714
+              },
+              "endsMs": 663,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 62857,
+                "width": 652,
+                "height": 977,
+                "outputBytes": 62820,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 4330
+              }
+            }
+          ],
+          "pngAxis": null
+        }
+      ],
+      "animated": []
+    },
+    "webkit": {
+      "still": [
+        {
+          "id": "photo-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 14834,
+                "high": 14834
+              },
+              "endsMs": 208,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7417,
+                "width": 760,
+                "height": 570,
+                "outputBytes": 7353,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1182
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 63072,
+                "high": 63072
+              },
+              "endsMs": 310,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 31536,
+                "width": 1156,
+                "height": 867,
+                "outputBytes": 31452,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 4090
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1593,
+                "high": 1593
+              },
+              "endsMs": 172,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 797,
+                "width": 447,
+                "height": 335,
+                "outputBytes": 790,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1060
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 2639098,
+                "high": 2639098
+              },
+              "endsMs": 1907,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1319549,
+                "width": 1105,
+                "height": 829,
+                "outputBytes": 1317916,
+                "dimensionProbes": 7,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 10148
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 375759,
+                "high": 375759
+              },
+              "endsMs": 562,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 187880,
+                "width": 1152,
+                "height": 864,
+                "outputBytes": 186901,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5809
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "shaded-1600",
+          "width": 1600,
+          "height": 1200,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 12606,
+                "high": 12606
+              },
+              "endsMs": 173,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 6303,
+                "width": 960,
+                "height": 720,
+                "outputBytes": 6301,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1325
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 6112,
+                "high": 6112
+              },
+              "endsMs": 891,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3056,
+                "width": 979,
+                "height": 734,
+                "outputBytes": 3044,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5981
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 2453,
+                "high": 2453
+              },
+              "endsMs": 215,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1227,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 286,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 928
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 57066,
+                "high": 57066
+              },
+              "endsMs": 2860,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 28533,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 6933
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 34857,
+                "high": 34857
+              },
+              "endsMs": 437,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 17429,
+                "width": 868,
+                "height": 651,
+                "outputBytes": 17118,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 2852
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "flat-600",
+          "width": 600,
+          "height": 450,
+          "sourceBytes": null,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 2602,
+                "high": 2602
+              },
+              "endsMs": 151,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 1301,
+                "width": 193,
+                "height": 145,
+                "outputBytes": 1297,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 210
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 140,
+                "high": 140
+              },
+              "endsMs": 68,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 70,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 38,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 127
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 1403,
+                "high": 1403
+              },
+              "endsMs": 35,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 702,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 284,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 135
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 708,
+                "high": 708
+              },
+              "endsMs": 299,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 354,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 82,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 299
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 4079,
+                "high": 4079
+              },
+              "endsMs": 90,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 2040,
+                "width": 146,
+                "height": 110,
+                "outputBytes": 1932,
+                "dimensionProbes": 8,
+                "qualityProbes": 6,
+                "fit": true,
+                "ms": 398
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-1",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 2750348,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 21475,
+                "high": 21475
+              },
+              "endsMs": 65,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 10738,
+                "width": 1,
+                "height": 1,
+                "outputBytes": 285,
+                "dimensionProbes": 8,
+                "qualityProbes": 2,
+                "fit": true,
+                "ms": 693
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 16356,
+                "high": 16356
+              },
+              "endsMs": 220,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8178,
+                "width": 472,
+                "height": 708,
+                "outputBytes": 8112,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1867
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 10030,
+                "high": 10030
+              },
+              "endsMs": 151,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 5015,
+                "width": 373,
+                "height": 560,
+                "outputBytes": 5003,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1084
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 626021,
+                "high": 626021
+              },
+              "endsMs": 4590,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 313011,
+                "width": 747,
+                "height": 1120,
+                "outputBytes": 312589,
+                "dimensionProbes": 6,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 19374
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 213513,
+                "high": 213513
+              },
+              "endsMs": 477,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 106757,
+                "width": 633,
+                "height": 949,
+                "outputBytes": 106618,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 3205
+              }
+            }
+          ],
+          "pngAxis": null
+        },
+        {
+          "id": "photo-real-2",
+          "width": 1067,
+          "height": 1600,
+          "sourceBytes": 5594077,
+          "formats": [
+            {
+              "format": "jpeg",
+              "endBytes": {
+                "low": 17963,
+                "high": 17963
+              },
+              "endsMs": 68,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 8982,
+                "width": 421,
+                "height": 632,
+                "outputBytes": 8974,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 810
+              }
+            },
+            {
+              "format": "webp",
+              "endBytes": {
+                "low": 14626,
+                "high": 14626
+              },
+              "endsMs": 224,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 7313,
+                "width": 509,
+                "height": 764,
+                "outputBytes": 7246,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 5239
+              }
+            },
+            {
+              "format": "avif",
+              "endBytes": {
+                "low": 7534,
+                "high": 7534
+              },
+              "endsMs": 143,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 3767,
+                "width": 362,
+                "height": 543,
+                "outputBytes": 3760,
+                "dimensionProbes": 8,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 1037
+              }
+            },
+            {
+              "format": "png",
+              "endBytes": {
+                "low": 800098,
+                "high": 800098
+              },
+              "endsMs": 4367,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 400049,
+                "width": 751,
+                "height": 1126,
+                "outputBytes": 399429,
+                "dimensionProbes": 5,
+                "qualityProbes": 3,
+                "fit": true,
+                "ms": 16542
+              }
+            },
+            {
+              "format": "gif",
+              "endBytes": {
+                "low": 125714,
+                "high": 125714
+              },
+              "endsMs": 484,
+              "runs": [],
+              "dimensionRecovery": {
+                "targetBytes": 62857,
+                "width": 652,
+                "height": 977,
+                "outputBytes": 62820,
+                "dimensionProbes": 7,
+                "qualityProbes": 8,
+                "fit": true,
+                "ms": 3384
+              }
+            }
+          ],
+          "pngAxis": null
+        }
+      ],
+      "animated": []
+    }
+  },
+  "avifSpeed": null,
+  "summary": {
+    "d1": [
+      {
+        "subject": "photo-1600",
+        "format": "jpeg",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-1600",
+        "format": "webp",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-1600",
+        "format": "avif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-1600",
+        "format": "png",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-1600",
+        "format": "gif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "shaded-1600",
+        "format": "jpeg",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "shaded-1600",
+        "format": "webp",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "shaded-1600",
+        "format": "avif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "shaded-1600",
+        "format": "png",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "shaded-1600",
+        "format": "gif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "flat-600",
+        "format": "jpeg",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "flat-600",
+        "format": "webp",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "flat-600",
+        "format": "avif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "flat-600",
+        "format": "png",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "flat-600",
+        "format": "gif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-1",
+        "format": "jpeg",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-1",
+        "format": "webp",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-1",
+        "format": "avif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-1",
+        "format": "png",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-1",
+        "format": "gif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-2",
+        "format": "jpeg",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-2",
+        "format": "webp",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-2",
+        "format": "avif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-2",
+        "format": "png",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      },
+      {
+        "subject": "photo-real-2",
+        "format": "gif",
+        "iterations": null,
+        "ms": null,
+        "keptBytes": null,
+        "slider": null,
+        "outcome": null
+      }
+    ],
+    "worstCase": {
+      "jpeg": null,
+      "webp": null,
+      "avif": null,
+      "png": null,
+      "gif": null
+    },
+    "iterationCounts": {
+      "jpeg": {},
+      "webp": {},
+      "avif": {},
+      "png": {},
+      "gif": {}
+    },
+    "dimensionRecovery": {
+      "jpeg": {
+        "measurements": 15,
+        "worst": {
+          "engine": "firefox",
+          "subject": "shaded-1600",
+          "targetBytes": 6303,
+          "width": 960,
+          "height": 720,
+          "outputBytes": 6301,
+          "dimensionProbes": 8,
+          "qualityProbes": 8,
+          "fit": true,
+          "ms": 2031
+        }
+      },
+      "webp": {
+        "measurements": 15,
+        "worst": {
+          "engine": "firefox",
+          "subject": "shaded-1600",
+          "targetBytes": 3056,
+          "width": 979,
+          "height": 734,
+          "outputBytes": 3044,
+          "dimensionProbes": 7,
+          "qualityProbes": 8,
+          "fit": true,
+          "ms": 7033
+        }
+      },
+      "avif": {
+        "measurements": 15,
+        "worst": {
+          "engine": "firefox",
+          "subject": "photo-real-1",
+          "targetBytes": 5015,
+          "width": 373,
+          "height": 560,
+          "outputBytes": 5003,
+          "dimensionProbes": 8,
+          "qualityProbes": 8,
+          "fit": true,
+          "ms": 1432
+        }
+      },
+      "png": {
+        "measurements": 15,
+        "worst": {
+          "engine": "firefox",
+          "subject": "photo-real-1",
+          "targetBytes": 313011,
+          "width": 747,
+          "height": 1120,
+          "outputBytes": 312589,
+          "dimensionProbes": 6,
+          "qualityProbes": 3,
+          "fit": true,
+          "ms": 20494
+        }
+      },
+      "gif": {
+        "measurements": 15,
+        "worst": {
+          "engine": "firefox",
+          "subject": "photo-1600",
+          "targetBytes": 187880,
+          "width": 1152,
+          "height": 864,
+          "outputBytes": 186901,
+          "dimensionProbes": 8,
+          "qualityProbes": 8,
+          "fit": true,
+          "ms": 7548
+        }
+      }
+    },
+    "pngTargetAxis": [],
+    "animatedCost": []
+  }
+}

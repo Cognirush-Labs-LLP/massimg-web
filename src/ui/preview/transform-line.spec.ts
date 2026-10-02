@@ -37,6 +37,7 @@ function image(overrides: Partial<ImageRecord> = {}): ImageRecord {
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
     ...overrides,
   }
 }
@@ -134,9 +135,8 @@ describe('describeTransformLine', () => {
 
   it('discloses flattening when the output format has no alpha (R-C17)', () => {
     expect(
-      described(
-        describeTransformLine(image({ sourceFormat: 'png' }), batch({ format: 'jpeg' })),
-      ).notes,
+      described(describeTransformLine(image({ sourceFormat: 'png' }), batch({ format: 'jpeg' })))
+        .notes,
     ).toEqual(['alpha-flattened'])
   })
 

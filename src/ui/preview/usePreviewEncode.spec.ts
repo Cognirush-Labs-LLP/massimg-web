@@ -13,6 +13,8 @@ interface PendingRun {
 }
 
 const runs: PendingRun[] = []
+const cancel = vi.fn()
+const resume = vi.fn()
 /** Every object-URL and pool event in order, so the release-before-decode ordering is assertable. */
 const events: string[] = []
 
@@ -28,7 +30,7 @@ const run = vi.fn((job: Job) => {
   return { token: runs.length as JobToken, done }
 })
 
-const pool = { run }
+const pool = { run, cancel, resume }
 vi.mock('./preview-pool', () => ({ getPreviewPool: () => pool }))
 
 const sourceFiles = new Map<ImageId, File>()
@@ -51,6 +53,7 @@ function imageRecord(id: string, overrides: Partial<ImageRecord> = {}): ImageRec
     edit: null,
     status: 'ready',
     failure: null,
+    skipReason: null,
     ...overrides,
   }
 }
@@ -69,7 +72,7 @@ function completed(bytes: number, imageId: string, token = 1): JobOutcome {
     token: token as JobToken,
     imageId: imageId as ImageId,
     outcome: 'completed',
-    result: { bytes: new Uint8Array(bytes), format: 'png', caveats: [] },
+    result: { kind: 'output', bytes: new Uint8Array(bytes), format: 'png', caveats: [] },
   }
 }
 
@@ -81,16 +84,20 @@ interface Harness {
   unmount: () => void
 }
 
-function mountEncode(initial: ImageRecord | null = imageRecord('a')): Harness {
+function mountEncode(
+  initial: ImageRecord | null = imageRecord('a'),
+  initialSettings: BatchSettings = batchSettings(),
+): Harness {
   const image = ref<ImageRecord | null>(initial)
-  const settings = ref<BatchSettings>(batchSettings())
+  const settings = ref<BatchSettings>(initialSettings)
   const wantsOriginal = ref(false)
+  const allowRecovery = ref(true)
   let state: PreviewEncodeState | null = null
 
   const wrapper = mount(
     defineComponent({
       setup() {
-        state = usePreviewEncode({ image, settings, wantsOriginal })
+        state = usePreviewEncode({ image, settings, wantsOriginal, allowRecovery })
 
         return () => h('div')
       },
@@ -110,6 +117,8 @@ beforeEach(() => {
   runs.length = 0
   events.length = 0
   run.mockClear()
+  cancel.mockClear()
+  resume.mockClear()
   sourceFiles.clear()
   sourceFiles.set('a' as ImageId, new File([new Uint8Array([1, 2, 3])], 'a.png'))
   sourceFiles.set('b' as ImageId, new File([new Uint8Array([4, 5, 6])], 'b.png'))
@@ -138,6 +147,7 @@ describe('usePreviewEncode', () => {
   it('encodes immediately on entry, with no debounce (R-P1)', async () => {
     const harness = mountEncode()
 
+    expect(resume).toHaveBeenCalledOnce()
     expect(harness.state.phase.value).toBe('encoding')
     await flushPromises()
 
@@ -157,6 +167,74 @@ describe('usePreviewEncode', () => {
     expect(harness.state.phase.value).toBe('ready')
     expect(harness.state.compressedBytes.value).toBe(1234)
     expect(harness.state.compressedUrl.value).toBe('blob:preview/1')
+  })
+
+  it('discards a recovery result after the settings generation changes', async () => {
+    const harness = mountEncode(
+      imageRecord('a'),
+      batchSettings({ quality: { kind: 'size', targetBytes: 1000 } }),
+    )
+    await flushPromises()
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'size-target-unreachable',
+        targetBytes: 1000,
+        achievedBytes: 1500,
+        format: 'png',
+        width: 64,
+        height: 48,
+      },
+    })
+    await flushPromises()
+    expect(harness.state.phase.value).toBe('unreachable')
+    expect(harness.state.compressedUrl.value).toBeNull()
+    expect(harness.state.compressedBytes.value).toBeNull()
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+    expect(runs[1]?.job.kind).toBe('jpeg-recovery')
+
+    harness.settings.value = batchSettings({ quality: { kind: 'size', targetBytes: 1100 } })
+    await flushPromises()
+    runs[1]?.settle({
+      token: 2 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'jpeg-recovery',
+        suggestion: { outputBytes: 900, flattenedFill: null },
+      },
+    })
+    await flushPromises()
+
+    expect(harness.state.jpegSuggestion.value).toBeNull()
+    expect(harness.state.unreachable.value).toBeNull()
+  })
+
+  it('does not start automatic recovery for animation', async () => {
+    const harness = mountEncode(
+      imageRecord('a', { isAnimated: true, frameCount: 2 }),
+      batchSettings({ quality: { kind: 'size', targetBytes: 1000 } }),
+    )
+    await flushPromises()
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'size-target-unreachable',
+        targetBytes: 1000,
+        achievedBytes: 1500,
+        format: 'png',
+        width: 64,
+        height: 48,
+      },
+    })
+    await flushPromises()
+
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(harness.state.recoveryPhase.value).toBe('done')
   })
 
   it('produces one encode for a burst of settings changes (R-P3)', async () => {
@@ -420,5 +498,44 @@ describe('usePreviewEncode', () => {
     }
     // The debounced encode never fires after the mode has been left.
     expect(run).toHaveBeenCalledTimes(1)
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('does not dispatch the next recovery step after Preview is left', async () => {
+    const harness = mountEncode(
+      imageRecord('a'),
+      batchSettings({ quality: { kind: 'size', targetBytes: 1000 } }),
+    )
+    await flushPromises()
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'size-target-unreachable',
+        targetBytes: 1000,
+        achievedBytes: 1500,
+        format: 'png',
+        width: 64,
+        height: 48,
+      },
+    })
+    await flushPromises()
+    expect(runs[1]?.job.kind).toBe('jpeg-recovery')
+
+    harness.unmount()
+    runs[1]?.settle({
+      token: 2 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'completed',
+      result: {
+        kind: 'jpeg-recovery',
+        suggestion: { outputBytes: 900, flattenedFill: null },
+      },
+    })
+    await flushPromises()
+
+    expect(cancel).toHaveBeenCalledOnce()
+    expect(runs).toHaveLength(2)
   })
 })

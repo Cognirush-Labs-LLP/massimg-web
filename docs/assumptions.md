@@ -841,6 +841,38 @@ The count is a property of the *axis*, not of the content or the engine: it is i
 
 ---
 
+### D10 `TESTED` `98%` `P2` Bounded dimension-recovery cost
+
+**Measured in T36-A on the existing T30 still-image corpus**, using the shipped recovery planner and
+encoders in Chromium, Firefox and WebKit (`verification/t30-size/recovery-results.json`). The corpus
+is the three generated T30 subjects plus its two real photographs, fitted to a 1600 px long edge.
+Each of the five formats therefore has 15 measurements (five subjects × three engines). Each row
+starts from a target at half the format's measured quality-10 size, runs the at-most-eight dimension
+probes at quality 30, then runs one bounded quality search from 30 to 100 at the selected dimensions.
+
+| Format | Dimension-probe counts across 15 runs | Final quality probes | Worst complete recovery |
+| --- | --- | --- | --- |
+| JPEG | 7 (3 runs), 8 (12) | 2 (3), 8 (12) | **2,031 ms**, Firefox, shaded graphic |
+| WebP | 7 (3), 8 (12) | 2 (3), 8 (12) | **7,033 ms**, Firefox, shaded graphic |
+| AVIF | 8 (15) | 2 (6), 8 (9) | **1,432 ms**, Firefox, real photo 1 |
+| PNG | 5 (3), 6 (3), 7 (3), 8 (6) | 2 (9), 3 (6) | **20,494 ms**, Firefox, real photo 1 |
+| GIF | 7 (9), 8 (6) | 6 (3), 8 (12) | **7,548 ms**, Firefox, generated photo |
+
+All 75 searches found a verified fitting dimension and every final ordinary search remained within
+the target. The planner never exceeded eight dimension probes; the observed counts were 5–8. The
+final quality search retained T30's eight-probe cap while using the recovery floor of 30. PNG is the
+worst case because each dimension probe runs its full quantize/optimize/compare stage, and its
+20.5 s worst case is why this
+work remains single-image Preview advice rather than batch or animation analysis. It does not change
+the algorithm or R-Q4's ordinary size-target availability.
+
+**Why not 100.** This is full three-engine coverage of every format and the exact existing corpus,
+including the two local photographs, through the shipped code. It remains desktop macOS on Apple
+silicon, and five subjects cannot bound every pathological encoder surface. The wall times transfer
+as relative costs, not mobile guarantees.
+
+---
+
 ### D2 `TESTED` `98%` `P2` WebP lossless wins on graphics and loses on photographs
 
 **Measured**, 1600×1200:

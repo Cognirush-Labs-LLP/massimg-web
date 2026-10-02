@@ -141,11 +141,18 @@ describe('report model and YAML serialization', () => {
           outputBytes: 120,
           caveats: [{ kind: 'output-larger-than-input', inputBytes: 100, outputBytes: 120 }],
         },
+      ],
+      skippedImages: [
         {
           file: file('target.jpg', 'holiday/target.jpg'),
-          inputBytes: 200,
-          outputBytes: 150,
-          caveats: [{ kind: 'size-target-not-reached', targetBytes: 100, achievedBytes: 150 }],
+          reason: {
+            kind: 'size-target-unreachable',
+            targetBytes: 100,
+            achievedBytes: 150,
+            format: 'jpeg',
+            width: 400,
+            height: 300,
+          },
         },
       ],
     } satisfies ReportSource
@@ -159,23 +166,25 @@ describe('report model and YAML serialization', () => {
         file: 'holiday/larger.jpg',
         note: 'Output larger than input; input 100.00 B, output 120.00 B',
       },
+    ])
+    expect(report.Skipped).toEqual([
       {
         file: 'holiday/target.jpg',
-        note: 'Size target not reached; target 100.00 B, achieved 150.00 B',
+        reason:
+          'Size target not reached; target 100.00 B, smallest achieved 150.00 B, 400×300 JPEG',
       },
     ])
   })
 })
 
 describe('the closed R-X46 caveat set', () => {
-  it('formats all nine and only the nine caveat variants', () => {
+  it('formats all eight and only the eight caveat variants', () => {
     expect(caveatFixtures.map(formatCaveat)).toEqual([
       'Transparency flattened to white; output format has no alpha channel',
       'Animation substituted; output written as WebP because the chosen format cannot animate',
       'Metadata removed, including GPS data',
       'Original kept; re-encoding produced a larger file',
       'Output larger than input; input 100.00 B, output 120.00 B',
-      'Size target not reached; target 50.00 B, achieved 60.00 B',
       'PNG quantized; PNG was not written losslessly',
       'Colour converted to sRGB; output format could not carry the source colour information',
       'Auxiliary images dropped; only the primary image was processed',
