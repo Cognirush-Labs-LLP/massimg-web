@@ -58,7 +58,7 @@ Both are offered. You can either pick a quality level (a simple slider) or ask f
 Not quite. For JPEG, WebP and AVIF, it works as you'd expect — a straightforward visual-quality dial. For PNG, since PNG is expected to be lossless, the slider mostly decides *whether* the image is compressed with some quality loss at all, staying conservative at the low end so you never see visible banding. At the top of the range, several formats switch to a perfect, pixel-for-pixel lossless copy instead of a lossy one: PNG does so from 85 upward, and the others above 95.
 
 **If I ask for an exact file size, will it always hit that exact number?**
-It gets as close as it can with a bounded search, and if your target genuinely can't be reached, it keeps the smallest result it managed to produce rather than failing outright. It will never make a file larger just to reach a size target.
+It gets as close as it can with a bounded search, and if your target genuinely can't be reached, it keeps the smallest result it managed to produce rather than failing outright. It will never make a file larger just to reach a size target. When a PNG is already smaller than your target, the app still tries lossless PNG optimization and keeps whichever file is smaller; other formats are left unchanged when they already fit.
 
 **Can I target a specific file size for any format, or only some?**
 Right now, every output format supports size targeting.
@@ -112,7 +112,7 @@ Very close, but not always exact. GIF can only store frame timing in hundredths 
 ## 7. Metadata & color
 
 **Does the app preserve EXIF metadata, like camera info or GPS location?**
-By default, no — EXIF, IPTC and XMP metadata, including GPS location, is stripped from every image the app compresses, both for privacy and to save space. There's one current exception: if your original file is already smaller than the size you asked for, the app returns that original file completely untouched rather than re-encoding it — which means its original metadata, including any GPS location, is still there in that case. This inconsistency is a known issue the project intends to resolve, either by stripping metadata even on that pass-through path or by clearly telling you when it happens. Until then, treat images that were "already small enough" as not having had their metadata removed.
+By default, no — EXIF, IPTC and XMP metadata, including GPS location, is stripped from every image the app compresses, both for privacy and to save space. There's one current exception: if your original file is already smaller than the size you asked for, the app takes a shortcut that does not strip its metadata. A PNG may still be compressed losslessly on that path, while other formats are returned completely untouched, but either result can retain the original metadata, including GPS location. This inconsistency is a known issue the project intends to resolve, either by stripping metadata on that shortcut or by clearly telling you when it happens. Until then, treat images that were "already small enough" as not having had their metadata removed.
 
 **Does rotating an image add a rotation tag, like phone cameras do, or does it actually turn the pixels?**
 The rotation is applied directly to the pixels, not stored as a tag. This means the output looks correctly rotated in every viewer, including ones that don't read rotation tags.

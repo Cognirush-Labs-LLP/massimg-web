@@ -17,6 +17,7 @@ export default tseslint.config(
       'verification/**',
       'playwright-report/**',
       'test-results/**',
+      'src/pipeline/codecs/oxipng-wasm.generated.*',
     ],
   },
   eslint.configs.recommended,

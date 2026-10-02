@@ -844,7 +844,7 @@ test('no metadata reaches the output, from the source or from ImageMagick itself
   expect([0, 1]).toContain(result.read.orientation)
 })
 
-test('oxipng runs at level 2 and picks the single-threaded build inside a Worker (§7.3, §8)', async ({
+test('oxipng runs at level 2 in the single-threaded worker baseline (§7.3, §8)', async ({
   page,
 }) => {
   const result = await page.evaluate(
@@ -876,8 +876,9 @@ test('oxipng runs at level 2 and picks the single-threaded build inside a Worker
       ) as Uint8Array
       const stripped = plan.rewritePngChunks(written, { kind: 'drop' })
 
-      // `@jsquash/oxipng`'s own `init()` predicate, reproduced inside a real Worker: it takes the
-      // multi-threaded build only when `SharedArrayBuffer` can be posted, which needs COOP/COEP.
+      // T27's old dual-build wrapper chose threads only when SharedArrayBuffer could be posted.
+      // The compatibility-fixed APNG build now ships only the baseline that predicate selected,
+      // but the deployment fact behind the choice remains observable here.
       const source = `self.addEventListener('message', () => {
         let postable = false
         try { new MessageChannel().port1.postMessage(new SharedArrayBuffer(1)); postable = true } catch {}
@@ -934,24 +935,20 @@ test('oxipng runs at level 2 and picks the single-threaded build inside a Worker
   // oxipng really ran: the shipped file is smaller than the same PNG straight out of ImageMagick.
   expect(result.optimised).toBeLessThan(result.unoptimised)
 
-  // Context for the assertion in the next test, not the assertion itself: the pipeline runs inside a
-  // Worker with more than one core, so the only thing that can decide which oxipng build initialises
-  // is `threads()` — and that needs `SharedArrayBuffer` to be postable, which needs cross-origin
-  // isolation the app does not have.
+  // Context for the assertion in the next test: the pipeline runs inside a Worker with more than one
+  // core, but SharedArrayBuffer is unavailable without cross-origin isolation. This is why the
+  // APNG-compatible rebuild deliberately bundles only the single-threaded baseline.
   expect(result.probe.isWorker).toBe(true)
   expect(result.probe.concurrency).toBeGreaterThan(1)
   expect(result.crossOriginIsolated).toBe(false)
   expect(result.probe.threadsPredicate).toBe(false)
 })
 
-test('the pipeline worker fetches oxipng’s single-threaded wasm, and never the parallel one (§8.1, B6)', async ({
+test('the pipeline worker fetches only the compatibility-fixed single-threaded oxipng wasm (§8.1, B6)', async ({
   page,
 }) => {
-  // Observed, not inferred. The test above reproduces `@jsquash/oxipng`'s `init()` predicate, which
-  // would keep passing if the library changed the predicate — and §8.1's "N oxipng heaps, not
-  // N x cores" and B6's conclusion would quietly become false. The two builds live at distinct URLs
-  // (`codec/pkg/` and `codec/pkg-parallel/`), so what the page actually requests settles it. Same
-  // technique as codecs.spec.ts, which watches the network to prove which codecs a job loads.
+  // Observed, not inferred. Watching the real worker's request proves the old package binaries did
+  // not leak into the build and that the APNG-compatible 9.1.5 core is the one actually fetched.
   const requested: string[] = []
   page.on('request', (request) => requested.push(request.url()))
 
@@ -970,6 +967,7 @@ test('the pipeline worker fetches oxipng’s single-threaded wasm, and never the
           quality: quality(10),
           dimension: { kind: 'original' },
           format: 'png',
+          sourceFormat: 'png',
           isAnimated: false,
           alpha: { kind: 'preserve' },
         },
@@ -980,16 +978,11 @@ test('the pipeline worker fetches oxipng’s single-threaded wasm, and never the
     { poolPath: POOL_MODULE_PATH },
   )
 
-  const oxipngWasm = requested.filter((url) => /squoosh_oxipng.*\.wasm$/.test(url))
+  const oxipngWasm = requested.filter((url) => /oxipng.*\.wasm$/.test(url))
 
-  expect(
-    oxipngWasm.length,
-    `oxipng wasm requests: ${JSON.stringify(requested.slice(-8))}`,
-  ).toBeGreaterThan(0)
-  for (const url of oxipngWasm) {
-    expect(url, 'the single-threaded build lives under codec/pkg/').toContain('/codec/pkg/')
-    expect(url, 'the parallel build must not be fetched').not.toContain('pkg-parallel')
-  }
+  expect(oxipngWasm, `oxipng wasm requests: ${JSON.stringify(requested.slice(-8))}`).toHaveLength(1)
+  expect(oxipngWasm[0]).toContain('oxipng-9.1.5')
+  expect(requested.some((url) => url.includes('pkg-parallel'))).toBe(false)
 })
 
 test('the R-Q12 boundary lands on slider 85, and the floor holds all the way down (R-Q11)', async ({

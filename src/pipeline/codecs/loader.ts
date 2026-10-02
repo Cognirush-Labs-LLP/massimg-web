@@ -12,9 +12,10 @@
 //   | ImageMagick           | First image added, or idle after first paint    |
 //   | gifsicle               | First job resolves to GIF output                |
 //   | oxipng, quantizer      | First job resolves to still PNG output          |
-//   | UPNG, apng-optimizer   | First job resolves to animated PNG output       |
+//   | UPNG, apng-optimizer, oxipng | First job resolves to animated PNG output  |
 //
-// §7.1's package choices: `@imagemagick/magick-wasm` (A1), `gifsicle-wasm-browser`, `@jsquash/oxipng`,
+// §7.1's package choices: `@imagemagick/magick-wasm` (A1), `gifsicle-wasm-browser`, oxipng through
+// jSquash's WASM wrapper,
 // `imagequant` (the libimagequant wrapper — GPL v3, matching §7.2's licensing analysis exactly),
 // `upng-js` (pure JS, no WASM) and `apng-optimizer`. See docs/task-notes/T22.md, "Decisions made", for
 // why each was chosen over its alternatives.
@@ -103,15 +104,21 @@ function defineElementForGifsicle(): void {
   }
 }
 
-let oxipngPromise: Promise<typeof import('@jsquash/oxipng/optimise.js')> | null = null
+let oxipngPromise: Promise<typeof import('./oxipng')> | null = null
 
-/** `optimise.js`'s exported `init()` does the real WASM fetch and instantiation; `index.js` only
- * re-exports `optimise`, which needs real pixel bytes T22 does not have, so the deep import reaches
- * `init` directly. */
-export function ensureOxipng(): Promise<typeof import('@jsquash/oxipng/optimise.js')> {
+/**
+ * `oxipng.ts`'s exported init does the real WASM fetch and instantiation. The generated glue stays
+ * isolated next to it and is excluded from lint/format passes as a generated third-party file.
+ *
+ * The package's published WASM resolves oxipng 9.1.1. APNG support arrived in 9.0, but 9.1.2 fixed
+ * an upstream compatibility bug in files it produced. The local binary is the same jSquash wrapper
+ * rebuilt against oxipng 9.1.5, the final 9.x maintenance release, so APNG output never uses the
+ * affected core while the wrapper API and measured level-2 behaviour stay unchanged.
+ */
+export function ensureOxipng(): Promise<typeof import('./oxipng')> {
   if (!oxipngPromise) {
-    oxipngPromise = import('@jsquash/oxipng/optimise.js').then(async (module) => {
-      await module.init()
+    oxipngPromise = import('./oxipng').then(async (module) => {
+      await module.initOxipng()
       return module
     })
   }

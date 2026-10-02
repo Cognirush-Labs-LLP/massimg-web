@@ -18,9 +18,9 @@
 // **A size target (T30) is the same chain with the encoder run several times** (§7.5): `stages/size.ts`
 // walks the quality slider, and each probe is the whole encode stage the quality path would have run,
 // so R-Q6, R-Q11, R-Q14 and R-Q15 all still hold under a target. Decode, edit and resize happen once,
-// before the search, because none of them depends on quality. R-Q2's pass-through is decided before
-// any of that: an image already under the target that the job asks nothing else of is returned as it
-// stands rather than re-encoded.
+// before the search, because none of them depends on quality. R-Q2's shortcut is decided before any
+// of that: an image already under the target that the job asks nothing else of is not decoded or
+// re-encoded. PNG/APNG bytes still receive their lossless raw-byte optimisation pass.
 //
 // The codec load stays first, ahead of every check (T22): §5.2's "a worker that needs a module it
 // has not loaded loads it and then proceeds" is keyed off the job's resolved settings, and
@@ -41,6 +41,7 @@ import type { ColourFormat } from './stages/encode-plan'
 import { singleFrameAnimation } from './stages/frame'
 import { encodeGif } from './stages/gif'
 import { encodePng } from './stages/png'
+import { optimisePngBytesKeepingSmaller } from './stages/png-optimise'
 import { applyResize } from './stages/resize'
 import { encodeAnimatedToSize, encodeStillToSize } from './stages/size'
 import type { AnimatedFormat } from './stages/size'
@@ -75,19 +76,32 @@ export async function executeJob(job: Job): Promise<JobResult> {
 
   // R-Q2, before anything is decoded: an image already smaller than the target is passed through
   // rather than re-encoded up to it, and the tool never increases a file's size to meet a target.
+  // PNG is the one deliberate exception to byte-for-byte pass-through: its source bytes receive a
+  // lossless oxipng pass, and the smaller of that result and the original is returned. This applies
+  // to both a literal PNG selection and "Don't change", since both resolve to `format: 'png'` here.
   // Only when the job asks nothing else of it — R-X45's test, in `requestIsSatisfiedBySource` —
   // because returning the original when a resize or a format change was asked for returns the wrong
-  // file. The bytes are the source's own, so this path also keeps whatever metadata the source
-  // carried, exactly as R-X24's substitution does.
+  // file. Both direct pass-through and lossless PNG recompression preserve whatever metadata the
+  // source carried, exactly as R-X24's substitution does.
   if (
     settings.quality.kind === 'size' &&
     job.source.byteLength <= settings.quality.targetBytes &&
     requestIsSatisfiedBySource(settings, job.edit)
   ) {
+    const bytes =
+      settings.format === 'png' ? await optimisePngBytesKeepingSmaller(job.source) : job.source
+    const originalKept = bytes === job.source
+
     return {
-      bytes: job.source,
+      bytes,
       format: settings.format,
-      caveats: job.intent === 'run' ? [...(job.caveats ?? []), { kind: 'original-kept' }] : [],
+      caveats:
+        job.intent === 'run'
+          ? [
+              ...(job.caveats ?? []),
+              ...(originalKept ? ([{ kind: 'original-kept' }] as const) : []),
+            ]
+          : [],
     }
   }
 

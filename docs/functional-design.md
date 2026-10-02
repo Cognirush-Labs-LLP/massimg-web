@@ -278,7 +278,7 @@ Target selector, segmented, two options.
 
 - Numeric text box plus a `KB` and `MB` unit toggle.
 - The encoder targets that file size per image, not for the batch total.
-- R-Q2 If an image is already smaller than the size target, it is passed through unchanged rather than re-encoded up to the target. The tool never increases file size to meet a target.
+- R-Q2 If an image is already smaller than the size target, it is not re-encoded up to the target. Non-PNG files are passed through unchanged. A PNG or animated PNG is still run through the lossless PNG optimiser, and the smaller of that result and the original is kept. The same rule applies when "Don't change" resolves to PNG. The tool never increases file size to meet a target.
 - R-Q3 If the size target cannot be reached at the lowest acceptable quality, the app produces the smallest result it achieved and marks that image in Preview and on its tile. It does not fail the image and does not silently pretend the target was met.
 - R-Q4 Size targeting requires repeated encodes. Where the cost is prohibitive for a format, the Size option is disabled with a stated reason when that format is selected. Which formats those are is determined in the Technical Design.
 
@@ -541,7 +541,7 @@ The archive is streamed to browser-owned storage as the run proceeds, rather tha
 - R-X44 When the format does change, the canonical extension for the chosen format is used: `.jpg`, `.png`, `.webp`, `.avif`, `.gif`.
 - R-X22 When two outputs would collide within the same directory of the ZIP, later entries get a numeric suffix: `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`. Collisions are possible even without duplicate input names, because format conversion can map two different inputs onto one output name. Files in different directories never collide.
 - R-X23 The ZIP file name includes a timestamp so repeated runs do not overwrite each other in the downloads folder.
-- R-X24 When the output of an image is larger than its input, and the format is unchanged, and no dimension rule, rotation or crop applies to it, the original file is written to the output instead of the larger re-encode. This is recorded in the report (P5).
+- R-X24 When the output of an image is larger than its input, and the format is unchanged, and no dimension rule, rotation or crop applies to it, the original file is written to the output instead of the larger re-encode. For PNG, the original candidate first receives the same lossless PNG optimisation as every other PNG output, and the smaller candidate is used; it is only reported as `Original kept` when the original bytes actually win. This is recorded in the report (P5).
 - R-X45 The substitution in R-X24 does not happen when the user asked for a change that the original does not satisfy. A request to fit within 800px is honoured even if the 800px re-encode is larger in bytes, because returning the original would return the wrong dimensions. The size increase is recorded in the report as a warning instead.
 - R-X25 Results are retained only until download or until the user leaves the Processing view. They are not carried back to Gallery.
 
@@ -573,7 +573,7 @@ Verified against ImageMagick 7.1.2-30 Q8 wasm32 (`@imagemagick/magick-wasm` 0.0.
 - R-Q12 PNG becomes lossless at a slider value of 85, where the mapped value reaches 95. This is earlier than the 96 threshold that applies to other formats, and it is a consequence of the rescale rather than a special case. It errs in the safe direction: PNG is a lossless format by reputation, and reaching losslessness sooner is the conservative failure.
 - R-Q13 The 70 floor is a starting value, not a measured one, and is subject to verification against real images.
 - R-Q14 For still PNG below the lossless point, the app compares the quantized result against a lossless encode and keeps whichever is smaller. An image that already has few colours gains nothing from quantization and can lose a little. This mirrors R-Q6 for WebP and costs one extra encode of a format that is cheap to encode.
-- R-Q15 Animated PNG is always written losslessly, at every slider value, and R-Q11, R-Q12 and R-Q14 do not apply to it. R-Q11's floor is only a guarantee because the still path's quantizer refuses to produce anything it cannot reach; the animated PNG optimiser wraps the same library but exposes no such refusal, so a quantized animation would be quantized to an unknown quality at every setting, with no way to detect that the floor had been missed. Writing losslessly keeps R-Q11's intent — no banding the user did not ask for — by removing the only path that could violate it (P1). Measured in T29; the slider still governs animated WebP, which is where an animated source goes when the user asks for a smaller file.
+- R-Q15 Animated PNG is always written losslessly, at every slider value, and R-Q11, R-Q12 and R-Q14 do not apply to it. R-Q11's floor is only a guarantee because the still path's quantizer refuses to produce anything it cannot reach; the animated PNG optimiser wraps the same library but exposes no such refusal, so a quantized animation would be quantized to an unknown quality at every setting, with no way to detect that the floor had been missed. Writing losslessly keeps R-Q11's intent — no banding the user did not ask for — by removing the only path that could violate it (P1). Its structural APNG optimisation is followed by lossless oxipng refiltering and recompression, with the smaller candidate retained. Measured in T29 and the later PNG pass; the slider still governs animated WebP, which is where an animated source goes when the user asks for a smaller file.
 
 ### 7.2 Animated output
 
@@ -844,6 +844,7 @@ Recorded so they are not relitigated.
 | APNG is not a format choice; animated PNG output is just PNG | The user picked PNG. Whether it animates is a property of their source, not a decision to put in front of them. |
 | Animated AVIF dropped, still AVIF kept | Still AVIF is why people want the format. Animated AVIF is slow, often larger, and rejecting it honestly beats supporting it badly. |
 | PNG quality rescaled to a 70 to 95 floor | PNG means lossless to most people. A slider at 10 would produce banding they did not ask for. |
+| Every PNG output receives lossless oxipng optimisation | A generous size target is a ceiling, not a reason to skip compression; the smaller candidate means the pass cannot make the file grow. |
 | Extension reproduced exactly under Don't change | Changing `.JPG` to `.jpg` is a change the user did not request. |
 | R-X24 does not override an explicit instruction | Returning the original when a resize was asked for returns the wrong dimensions. |
 | No numeric RGBA fields | Four numeric inputs are expert controls in a tool for casual users. |

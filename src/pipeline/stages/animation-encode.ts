@@ -1,5 +1,5 @@
 // The animated output stages (Technical Design §4.2's `WebP animated` and `PNG animated` rows;
-// Functional Design R-F5, R-Q9, R-Q10, R-Q12, R-Q14, R-I12, R-I14, R-I17). One `Animation` in, the
+// Functional Design R-F5, R-Q9, R-Q10, R-Q15, R-I12, R-I14, R-I17). One `Animation` in, the
 // output file's bytes out.
 //
 // What to ask each library for is decided in `animation-plan.ts`, which is unit-tested. This module
@@ -7,7 +7,7 @@
 // engines, because it imports `codecs/loader.ts` (T22's Vitest constraint).
 //
 //   WebP animated   ImageMagick writes the collection -> put the real frame durations back
-//   PNG animated    UPNG assembles -> patch the loop count -> apng-optimizer, twice -> attach iCCP
+//   PNG animated    UPNG assembles -> patch loop/delays -> apng-optimizer -> attach iCCP -> oxipng
 //
 // Properties this module is responsible for:
 //
@@ -15,11 +15,11 @@
 //      and both encoders are checked against `animation-plan.ts`'s own readers before returning.
 //      Neither library can be trusted with all three: ImageMagick's WebP writer replaces any delay
 //      under 10 ms with 100 ms, and UPNG hardcodes `acTL.num_plays` to 0 whatever it is asked for.
-//   2. **R-Q14 keeps the smaller PNG**, through the same `pickSmaller` the still path uses, with a
-//      tie keeping lossless. On animated content that comparison is doing much more than saving a
-//      few bytes — see `apngOptimizerOptions`.
+//   2. **R-Q15 stays lossless throughout.** apng-optimizer's quantizer is disabled; oxipng only
+//      refilters and recompresses APNG frames, and the pre-oxipng candidate is kept on a tie or loss.
 //   3. **Colour is carried, never converted** (R-I12, R-I14, R-I15). The APNG profile is attached
-//      *after* the optimiser, which strips one attached before it (D3, confirmed in T29).
+//      *after* apng-optimizer, which strips one attached before it, and before oxipng, which keeps it
+//      (D3, confirmed in T29 and the later APNG recompression pass).
 //   4. **No metadata reaches the output** (R-I10, R-I17). Both writers build from raw pixels, and
 //      `attachApngIccp` removes anything UPNG or the optimiser added that would contradict the
 //      profile or republish a timestamp.
@@ -50,6 +50,7 @@ import {
 import type { EncodeMode, QualitySettings } from './encode-plan'
 import { ownsWholeBuffer } from './frame'
 import type { Animation } from './frame'
+import { optimisePngBytesKeepingSmaller } from './png-optimise'
 import { findIccpChunk } from './png-plan'
 import type { PngBranch } from './png-plan'
 
@@ -357,8 +358,10 @@ function iccpChunkFor(magick: Magick, profile: Uint8Array): Uint8Array {
  * Decided with the user, T29. R-Q11 and R-Q12 still govern the **still** PNG path unchanged.
  *
  * The remaining order is forced by measurement at both ends. The loop count is patched **before**
- * the optimiser because `optAPNG` carries `acTL` through unchanged (measured: 3 in, 3 out), and the
- * profile is attached **after** it because it strips one that is there beforehand (D3, confirmed).
+ * the APNG-specific optimiser because `optAPNG` carries `acTL` through unchanged (measured: 3 in,
+ * 3 out), the profile is attached **after** it because it strips one that is there beforehand, and
+ * oxipng runs last because its APNG support preserves the finished control/profile chunk set while
+ * losslessly refiltering and recompressing frame payloads.
  */
 export async function encodeApng(animation: Animation): Promise<ApngEncodeResult> {
   const first = animation.frames[0]
@@ -422,8 +425,11 @@ export async function encodeApng(animation: Animation): Promise<ApngEncodeResult
     throw new EncodeError('apng-optimizer produced no bytes')
   }
 
-  // After the optimiser, never before: it strips an `iCCP` from the file it is given.
-  const bytes = attachApngIccp(optimised, iccp)
+  // After the APNG-specific optimiser, never before: it strips an `iCCP` from the file it is given.
+  // Oxipng goes last. Its APNG support is intentionally limited to lossless refiltering and
+  // recompression, which complements rather than replaces the structural optimiser above.
+  const profiled = attachApngIccp(optimised, iccp)
+  const bytes = await optimisePngBytesKeepingSmaller(profiled)
 
   assertApng(bytes, animation)
 

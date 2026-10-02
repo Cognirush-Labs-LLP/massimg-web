@@ -34,7 +34,7 @@ export function codecsForSettings(
     codecs.push('gifsicle')
   } else if (settings.format === 'png') {
     if (settings.isAnimated) {
-      codecs.push('upng', 'apngOptimizer')
+      codecs.push('upng', 'apngOptimizer', 'oxipng')
     } else {
       codecs.push('oxipng', 'quantizer')
     }

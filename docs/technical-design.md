@@ -180,16 +180,16 @@ Output paths differ in shape, and three of them leave ImageMagick partway throug
 | PNG still | decode, orient, edit, resize, quantize, optimise, compare against lossless (R-Q14) |
 | GIF, still or animated | decode (frames), orient, edit, resize, encode-gif, gifsicle, keep the smaller (T28) |
 | WebP animated | decode-frames, edit-frames, resize-frames, encode, second-encode compare (R-Q6), restore frame durations (T29) |
-| PNG animated | decode-frames, edit-frames, resize-frames, assemble-apng, patch loop count, optimise-apng, attach `iCCP` (T29). Always lossless, R-Q15 — no quantize and no compare |
+| PNG animated | decode-frames, edit-frames, resize-frames, assemble-apng, patch loop count, optimise-apng, attach `iCCP`, oxipng, keep the smaller pre/post-oxipng candidate (T29, R-Q15). Always lossless — no quantize |
 | Any output, size target | the matching row above, with everything from its first encode onward repeated over the quality slider until the target is met or eight iterations are spent (§7.5, T30). Decode, orient, edit and resize run once |
 
 Stages share one intermediate representation, an RGBA frame buffer with dimensions and an optional ICC profile. Without this, the GIF and animated paths each grow their own copy of the resize and edit logic, which is how the two drift apart. An animation is that same `Frame`, in a list, with a delay per frame and a loop count (`Animation` in `pipeline/stages/frame.ts`), so `edit-frames` and `resize-frames` are the still stages mapped rather than reimplemented.
 
 **GIF is one row for both still and animated** (T28). A still image reaches `stages/gif.ts` as an animation of one frame (`singleFrameAnimation`), because gifsicle takes a GIF and returns a GIF whether or not it moves and ImageMagick writes a one-image collection the same way it writes a many-image one. Two rows would have meant two copies of the colour handling, the gifsicle call and every assertion made about the result. The row ends in a comparison rather than an encode because gifsicle is not always the winner: it is 69–83% smaller where frames share content, and **larger** on a still photograph (A7).
 
-**A size target repeats the encode stages and nothing else** (§7.5). Decode, orient, edit and resize do not depend on the quality asked for, so they run once and the search re-encodes the frame — or every frame — it left behind. Each probe is the whole of its format's encode row, not one codec call, which is why a PNG probe is two candidates and a GIF probe is an ImageMagick write plus a gifsicle pass. R-Q2's pass-through is decided before the decode: an image already under the target that the job asks nothing else of never enters the chain at all.
+**A size target repeats the encode stages and nothing else** (§7.5). Decode, orient, edit and resize do not depend on the quality asked for, so they run once and the search re-encodes the frame — or every frame — it left behind. Each probe is the whole of its format's encode row, not one codec call, which is why a PNG probe is two candidates and a GIF probe is an ImageMagick write plus a gifsicle pass. R-Q2's shortcut is decided before the decode: an image already under the target that the job asks nothing else of never enters the frame pipeline. Non-PNG bytes pass through; PNG and APNG bytes still receive a raw, lossless oxipng pass and keep the smaller result.
 
-**Both animated rows end in byte surgery, and neither ending is optional.** ImageMagick's WebP writer replaces any frame delay under 10 ms with 100 ms, and UPNG hardcodes `acTL.num_plays` to 0 whatever it is asked for — so the durations are put back into the `ANMF` chunks and the loop count into `acTL` after each encoder has run (T29). The `iCCP` goes on last of all, because apng-optimizer strips one attached before it (D3).
+**Both animated rows end in byte surgery, and neither ending is optional.** ImageMagick's WebP writer replaces any frame delay under 10 ms with 100 ms, and UPNG hardcodes `acTL.num_plays` to 0 whatever it is asked for — so the durations are put back into the `ANMF` chunks and the loop count into `acTL` after each encoder has run (T29). The `iCCP` goes after apng-optimizer because that component strips one attached before it (D3), then oxipng performs the final lossless APNG refilter/recompression pass. The pre-oxipng candidate remains available so the final pass can never increase size.
 
 ---
 
@@ -209,8 +209,8 @@ ImageMagick's WASM is 14.8 MB uncompressed (A1), before gifsicle, oxipng and the
 | --- | --- |
 | ImageMagick | First image is added, or on idle after first paint |
 | gifsicle | First job resolves to GIF output |
-| oxipng, quantizer | First job resolves to PNG output |
-| UPNG, apng-optimizer | First job resolves to animated PNG |
+| oxipng, quantizer | First job resolves to still PNG output |
+| UPNG, apng-optimizer, oxipng | First job resolves to animated PNG output |
 | UPNG | **Also** whenever the *source* is an animated PNG, whatever the output format |
 
 The last row is not symmetry for its own sake. **ImageMagick's WASM build cannot decode an APNG**: `readCollection` returns one frame from a six-frame file and raises nothing (measured in T29; D6 recorded the same of the still reader at A5, which is why R-I4 exists). So UPNG is the *decoder* on that path as well as the assembler, and an APNG going to animated WebP needs it although the output has nothing to do with PNG. `codecsForSettings` therefore reads `ResolvedSettings.sourceFormat`, not only `format`.
@@ -284,7 +284,7 @@ All of this is pure arithmetic in `domain/edit.ts`, so the table above is litera
 | --- | --- | --- | --- |
 | `@imagemagick/magick-wasm` 0.0.43 | Decode, orient, edit, resize, colour, most encoding | Apache-2.0 | 14.8 MB |
 | `gifsicle-wasm-browser` | GIF compression | MIT wrapper, **GPL v2-only** inside, see §7.2 | ~368 KB |
-| `@jsquash/oxipng` 2.3.0 | PNG lossless optimisation | Apache-2.0 | 164 KB |
+| oxipng 9.1.5 through jSquash's WASM wrapper | PNG/APNG lossless optimisation | MIT core, Apache-2.0 wrapper | 171 KB |
 | libimagequant, as `imagequant` 0.1.2 | PNG quantization | GPL v3, compatible with AGPL v3 | 347 KB, 153 KB gzipped (T22, T27) |
 | `upng-js` | Animated PNG assembly | MIT | small, pure JS |
 | `apng-optimizer` | Animated PNG optimisation | ISC | 276 KB |
@@ -301,7 +301,7 @@ AGPL is the deliberate choice for a web tool: anyone may host a modified clone, 
 | Dependency | Licence | Compatible with AGPL v3 |
 | --- | --- | --- |
 | ImageMagick WASM | Apache-2.0 | Yes, one-way |
-| `@jsquash/oxipng` | Apache-2.0 | Yes, one-way |
+| oxipng / jSquash WASM wrapper | MIT / Apache-2.0 | Yes |
 | libimagequant | GPL v3 | Yes, see below |
 | `upng-js`, `client-zip` | MIT | Yes |
 | `apng-optimizer` | ISC | Yes |
@@ -326,7 +326,7 @@ A second question sits underneath: whether separately compiled WASM modules exch
   libjpeg-turbo/      LICENSE
   libpng/             LICENSE
   gifsicle/           COPYING, README licence section
-  oxipng/             LICENSE
+  oxipng/             LICENSE, LICENSE-jsquash-wrapper
   libimagequant/      COPYING
   upng-js/            LICENSE
   apng-optimizer/     LICENSE
@@ -357,7 +357,9 @@ No codec runs at maximum effort. The measured returns are small and the time cos
 | PNG deflate | Default, no zopfli | apng-optimizer's zopfli setting stays low for the same reason |
 | apng-optimizer | `deflateMethod` 1, the library default (7zip), not 2 (zopfli); `iter` 5, not the default 15 | **T29.** Measured on an 8-frame 200×200 photographic APNG and a 16-frame 400×400 flat one. **Method 2 is out on time alone:** 11,696 ms and 49,162 ms against method 1's 821 and 1,962, for 3.1% and 10.1% of size — 49 s for a single 16-frame animation, before a batch multiplies it. **Method 0 against method 1 is genuinely close and points both ways:** method 1 is 5.4% smaller on the photograph (42,411 B against 44,820) and 5.5% *larger* on the flat animation (11,038 against 10,459), while being 4×–10× slower on both. Two subjects cannot settle that, so the default stays; method 0 is the lever if this proves too slow in a real batch. These figures were taken when the path still ran the optimiser twice per animation (a quantized candidate as well as a lossless one); R-Q15 has since removed the second run, so the wall times above are now paid once rather than twice, and the relative comparison between methods is unaffected. **`iter` 5 is past the knee:** on the photograph, 1 gives 42,660 B in 343 ms, 3 gives 42,417 in 580, 5 gives 42,412 in 619, 10 gives 42,401 in 719, 15 gives 42,411 in 813 and 30 gives 42,401 in 1,105 — everything from 3 up is within 16 bytes, and the default 15 is not even the smallest of them |
 
-**oxipng runs single-threaded, and that is not a choice.** `@jsquash/oxipng` ships both builds and picks the multi-threaded one only inside a Worker with `hardwareConcurrency > 1` and `wasm-feature-detect`'s `threads()` passing — which needs `SharedArrayBuffer`, which needs COOP and COEP. Measured in a real Worker on all three engines with no such headers (T27, B6): the single-threaded build initialises everywhere. So oxipng spawns no thread pool, and a pool of *N* pipeline workers costs *N* oxipng heaps rather than *N* × cores (§8.1).
+**oxipng runs single-threaded, deliberately.** T27 measured that the published jSquash package selected its single-threaded build on every supported engine because this site has no COOP/COEP isolation and therefore no `SharedArrayBuffer` (B6). When APNG support was added, the wrapper was rebuilt against oxipng 9.1.5: 9.0 introduced APNG support and 9.1.2 fixed an upstream compatibility defect in optimized APNGs. Only the single-threaded binary is shipped, preserving the measured runtime behavior while avoiding two unreachable WASM assets. A pool of *N* pipeline workers therefore costs *N* oxipng heaps rather than *N* × cores (§8.1).
+
+**Binary provenance.** `src/pipeline/codecs/oxipng-9.1.5.wasm` and its generated glue were built from jSquash's oxipng wrapper at commit `da47a2b`, with its Rust dependency updated to oxipng 9.1.5, using wasm-pack 0.13.1. The shipped WASM's SHA-256 is `ba1c4db734a50aac845ba98cc356c82f83ddf1d3d22d02e3a54deaa35e3bafb1`. Keeping this record beside the version choice makes the checked-in binary independently identifiable even though it no longer comes from the published npm package.
 
 **`optimiseAlpha` stays off on both PNG branches** (`results.json`, `effort.optimiseAlpha`). It rewrites the colour beneath fully transparent pixels so the rows compress better, and it is worth real bytes — **28,330 down to 1,488** on a 1000×750 frame whose fully transparent field held noise, a 19x saving for a change nobody can see. It stays off on the lossless branch because that branch exists to be lossless and R-Q12 makes PNG lossless early precisely for that reputation: measured on the same frame, with the option off the decoded pixels match the source exactly, visible and hidden alike, and with it on they differ by up to 255 under the transparent field. It stays off on the quantized branch because it buys nothing there — libimagequant has already collapsed every fully transparent pixel onto one palette entry, and oxipng measured the same 1,488 bytes either way. **This is a size win being declined on principle, and the numbers are here so it can be overruled.**
 
@@ -475,7 +477,7 @@ So it is a real axis on two subjects of five, **inverted on a third**, and absen
 
 **Animated PNG never searches at all**, because R-Q15 leaves it no axis: `sizeSearchBand` gives it a single position and it encodes once. That matters most where it costs most — apng-optimizer is the most expensive animated encoder here, at about 2 s for a 16-frame 400×400 animation.
 
-**R-Q2 is decided before the decode.** An image whose *source file* is already at or under the target is returned unchanged rather than re-encoded — but only when the job asks nothing else of it: same format, no dimension rule, no rotation or crop. That is R-X45's test, applied to R-Q2 (`requestIsSatisfiedBySource` in `domain/job.ts`, which R-X24 will reuse), and returning the original when a resize was requested would return the wrong file. The report records `original-kept`. **The passed-through file keeps whatever metadata it carried**, exactly as R-X24's substitution does, which is a known tension with R-I17 and is recorded in docs/task-notes/T30.md for the user rather than resolved here.
+**R-Q2 is decided before the decode.** An image whose *source file* is already at or under the target is not re-encoded — but only when the job asks nothing else of it: same format, no dimension rule, no rotation or crop. That is R-X45's test, applied to R-Q2 (`requestIsSatisfiedBySource` in `domain/job.ts`, which R-X24 will reuse), and returning the original when a resize was requested would return the wrong file. Non-PNG bytes are returned unchanged and record `original-kept`. PNG and APNG source bytes instead run directly through `optimisePngBytesKeepingSmaller`; if oxipng wins, the result is a losslessly compressed output rather than an original-kept substitution, and if it does not, the original and its caveat remain. **Both variants preserve whatever metadata the source carried**, which remains the known tension with R-I17 recorded in docs/task-notes/T30.md.
 
 ### 7.6 The two comparison rules
 
@@ -522,7 +524,7 @@ A quantized candidate would therefore be quantized to an unknown quality at ever
 - **apng-optimizer** strips a valid `iCCP` from the APNG it is given.
 - Attaching the profile **after** the optimiser has run preserves it exactly.
 
-So the animated PNG path is assembled as *UPNG → apng-optimizer → attach `iCCP`, dropping the `sRGB` chunk*, and the contingency this section previously named — converting to sRGB for animated PNG only and recording a `colour-converted` caveat — **is not needed**. It remains the fallback if a future optimiser version defeats the ordering.
+So the animated PNG path is assembled as *UPNG → apng-optimizer → attach `iCCP`, dropping the `sRGB` chunk → oxipng*, and the contingency this section previously named — converting to sRGB for animated PNG only and recording a `colour-converted` caveat — **is not needed**. Oxipng 9.1.5 preserves the profile and animation control chunks while losslessly refiltering and recompressing every frame; the pre-oxipng file is retained when it is no larger. The contingency remains the fallback if a future optimiser version defeats the ordering.
 
 **CICP, not just ICC (A13) — settled, and worse than assumed.** The frame representation carries colour as either an ICC profile or a set of CICP values, because HEIC and AVIF commonly signal colour with an `nclx` box and no profile at all. A13's open half is answered: **ImageMagick neither applies nor reports CICP on decode.** For a CICP-only HEIC it returns no profile, no attribute carrying the values, and its own default BT.709 primaries from `image.chromaticity` — the same default it returns for a Display P3 file — so there is no way to recover the signal by asking ImageMagick harder. `heic:preserve-cicp` governs writing, not reading.
 
@@ -819,9 +821,9 @@ Which sections change if an entry fails.
 | **C7** | 95 | §8.1, §4.2 | **Refuted in T29.** Peak memory is linear in frame count *and* in frame area, at a marginal 2.29×–2.73× the coalesced frame data and up to **2.80×** measured total, on all three engines. No structural change — coalescing is forced by R-Q9 and by resize correctness — but §5.7's animated frame budget is set from this rather than guessed, and it binds before the pixel cap does |
 | **C8** | 80 | §5.2 | Codecs split across workers; pool becomes heterogeneous. Measured in T22 for one worker on desktop; the 3-concurrent-worker case is the residual risk |
 | **B5** | 75 | §10.1 | Folder input hidden on platforms that cannot do it |
-| **B9**, **B6** | 70, 90 | §12 | Threaded build unavailable; single-threaded baseline. **Measured in T27**: with no COOP/COEP, all three engines refuse `SharedArrayBuffer` and oxipng takes its single-threaded build, which is the baseline this design already assumes |
+| **B9**, **B6** | 70, 95 | §12 | Threaded build unavailable; single-threaded baseline. **Measured in T27**: with no COOP/COEP, all three engines refuse `SharedArrayBuffer`; the later APNG-compatible build now ships only the measured single-threaded baseline |
 | **C5** | 85 | §10.4 | List view becomes the default at a lower threshold. Measured in T20: the threshold is `maximumThumbnails`, and no fallback was needed |
-| **D3** | 90 | §7.7 | Measured in T23: every path preserves the profile except apng-optimizer, which is avoided by attaching `iCCP` after it runs. The sRGB-conversion contingency is no longer needed |
+| **D3** | 90 | §7.7 | Measured in T23 and the APNG recompression pass: attach `iCCP` after apng-optimizer strips its input profile; oxipng 9.1.5 then preserves it. The sRGB-conversion contingency is no longer needed |
 | **E1** | 76 | §9.1 | Batch caps tighten |
 
 **B4 is now settled** (T01, 90%): it held on Chromium, Firefox and desktop WebKit, so no fallback and no structural change are needed for those engines. iOS Safari is untested and deferred to T50, but that no longer blocks starting implementation the way an open B4 would have. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.

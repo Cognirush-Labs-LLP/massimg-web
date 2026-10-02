@@ -9,3 +9,4 @@ AGENTS.md
 CLAUDE.md
 NOTICE.txt
 LICENSE
+src/pipeline/codecs/oxipng-wasm.generated.*

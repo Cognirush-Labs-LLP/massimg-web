@@ -49,10 +49,9 @@ describe('codecsForSettings', () => {
     ])
   })
 
-  it('needs UPNG and apng-optimizer for animated PNG output, not oxipng or the quantizer', () => {
+  it('needs UPNG, apng-optimizer and oxipng for animated PNG output, but not the quantizer', () => {
     const codecs = codecsForSettings({ format: 'png', sourceFormat: 'gif', isAnimated: true })
-    expect(codecs).toEqual(['imagemagick', 'upng', 'apngOptimizer'])
-    expect(codecs).not.toContain('oxipng')
+    expect(codecs).toEqual(['imagemagick', 'upng', 'apngOptimizer', 'oxipng'])
     expect(codecs).not.toContain('quantizer')
   })
 
@@ -68,7 +67,7 @@ describe('codecsForSettings', () => {
   it('does not add UPNG twice when the source and the output are both animated PNG', () => {
     const codecs = codecsForSettings({ format: 'png', sourceFormat: 'png', isAnimated: true })
 
-    expect(codecs).toEqual(['imagemagick', 'upng', 'apngOptimizer'])
+    expect(codecs).toEqual(['imagemagick', 'upng', 'apngOptimizer', 'oxipng'])
     expect(codecs.filter((name) => name === 'upng')).toHaveLength(1)
   })
 

@@ -31,7 +31,7 @@
 //      `pipeline/worker.ts` transfers the result.
 
 import type { Caveat } from '@/domain/types'
-import { ensureImageMagick, ensureOxipng, ensureQuantizer } from '@/pipeline/codecs/loader'
+import { ensureImageMagick, ensureQuantizer } from '@/pipeline/codecs/loader'
 import { EncodeError, UnsupportedColourError } from './encode'
 import { colourPlan, isOpaque, pickSmaller } from './encode-plan'
 import type { ColourPlan, QualitySettings } from './encode-plan'
@@ -40,7 +40,6 @@ import type { Frame } from './frame'
 import {
   findIccpChunk,
   isQuantizerAbort,
-  oxipngOptions,
   pngBranches,
   pngCaveats,
   quantizerSettings,
@@ -48,6 +47,7 @@ import {
   rewritePngChunks,
 } from './png-plan'
 import type { IccpPlan, PngBranch } from './png-plan'
+import { optimisePngBytes } from './png-optimise'
 
 export interface PngEncodeResult {
   bytes: Uint8Array
@@ -150,24 +150,8 @@ export async function encodePng(frame: Frame, quality: QualitySettings): Promise
   }
 
   const branches = pngBranches(quality)
-  const [magick, oxipng] = await Promise.all([ensureImageMagick(), ensureOxipng()])
+  const magick = await ensureImageMagick()
   const opaque = isOpaque(frame.pixels)
-  const options = oxipngOptions()
-
-  const optimise = async (png: Uint8Array): Promise<Uint8Array> => {
-    const optimised = new Uint8Array(
-      await oxipng.default(
-        png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength) as ArrayBuffer,
-        options,
-      ),
-    )
-
-    if (optimised.byteLength === 0) {
-      throw new EncodeError('oxipng produced no bytes')
-    }
-
-    return optimised
-  }
 
   const written = writeLosslessPng(magick, frame, plan, opaque)
 
@@ -183,7 +167,7 @@ export async function encodePng(frame: Frame, quality: QualitySettings): Promise
     throw new EncodeError('ImageMagick wrote no iCCP chunk for a frame that carries a profile')
   }
 
-  const lossless = await optimise(
+  const lossless = await optimisePngBytes(
     rewritePngChunks(written, plan.kind === 'profile' ? { kind: 'keep' } : { kind: 'drop' }),
   )
 
@@ -223,7 +207,7 @@ export async function encodePng(frame: Frame, quality: QualitySettings): Promise
   }
 
   const attach: IccpPlan = iccp === null ? { kind: 'drop' } : { kind: 'attach', chunk: iccp }
-  const quantized = await optimise(rewritePngChunks(quantizedRaw, attach))
+  const quantized = await optimisePngBytes(rewritePngChunks(quantizedRaw, attach))
 
   // R-Q14, through the same function R-Q6 uses: the smaller is kept, and a tie keeps lossless.
   const keepLossless = pickSmaller(quantized.byteLength, lossless.byteLength) === 'lossless'

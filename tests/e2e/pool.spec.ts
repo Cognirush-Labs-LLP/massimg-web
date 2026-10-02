@@ -19,6 +19,7 @@ const POOL_MODULE_PATH = '/src/pipeline/pool.ts'
 const LIMITS_MODULE_PATH = '/src/config/limits.ts'
 const WORKER_MODULE_PATH = '/src/pipeline/worker.ts'
 const LOADER_MODULE_PATH = '/src/pipeline/codecs/loader.ts'
+const ANIMATION_MODULE_PATH = '/src/pipeline/stages/animation.ts'
 
 function fixture(name: string): number[] {
   return Array.from(
@@ -563,6 +564,7 @@ interface ShippedOutcome {
   outcome: string
   token: number
   imageId: string
+  inputByteLength: number
   reason?: { kind: string; detail?: string }
   result?: {
     format: string
@@ -592,6 +594,7 @@ function runShipped(
       | 'cicp-avif'
       | 'animated-gif'
       | 'animated-webp'
+      | 'animated-png'
     settings?: Record<string, unknown>
     intent?: 'preview' | 'run'
     /** A resolution-time caveat, as `resolveSettings` would attach to the job (CORE-006). */
@@ -601,7 +604,16 @@ function runShipped(
   }[],
 ): Promise<{ tokens: number[]; outcomes: ShippedOutcome[]; settled: Stats }> {
   return page.evaluate(
-    async ({ poolPath, loaderPath, fixture, cicpFixture, animatedGif, animatedWebp, jobs }) => {
+    async ({
+      poolPath,
+      loaderPath,
+      fixture,
+      cicpFixture,
+      animatedGif,
+      animatedWebp,
+      animatedPng,
+      jobs,
+    }) => {
       const mod = await import(/* @vite-ignore */ poolPath)
       // The default factory — the real module worker, no probe.
       const instance = mod.createWorkerPool({ size: 1 })
@@ -640,6 +652,7 @@ function runShipped(
         })
 
       const handles = []
+      const inputByteLengths: number[] = []
       for (const spec of jobs) {
         const source =
           spec.source === 'fixture'
@@ -650,12 +663,15 @@ function runShipped(
                 ? new Uint8Array(animatedGif)
                 : spec.source === 'animated-webp'
                   ? new Uint8Array(animatedWebp)
-                  : spec.source === 'garbage'
-                    ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
-                    : spec.source === 'shaded-png'
-                      ? await shadedPng()
-                      : await transparentPng()
+                  : spec.source === 'animated-png'
+                    ? new Uint8Array(animatedPng)
+                    : spec.source === 'garbage'
+                      ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+                      : spec.source === 'shaded-png'
+                        ? await shadedPng()
+                        : await transparentPng()
 
+        inputByteLengths.push(source.byteLength)
         handles.push(
           instance.run({
             imageId: spec.imageId,
@@ -684,6 +700,7 @@ function runShipped(
           outcome: done.outcome,
           token: done.token,
           imageId: done.imageId,
+          inputByteLength: inputByteLengths[outcomes.length]!,
           reason: done.reason,
           result: done.result && {
             format: done.result.format,
@@ -707,6 +724,7 @@ function runShipped(
       cicpFixture: fixture('cicp-p3.avif'),
       animatedGif: animatedFixture('anim-6f.gif'),
       animatedWebp: animatedFixture('anim-6f.webp'),
+      animatedPng: animatedFixture('anim-6f.png'),
       jobs,
     },
   )
@@ -974,9 +992,9 @@ test('the shipped worker runs a size target and answers under it', async ({ page
   expect(animated!.result!.byteLength).toBeLessThanOrEqual(20_000)
 })
 
-// R-Q2: an image already smaller than the target is passed through unchanged rather than re-encoded
-// up to it — but only when the job asks nothing else of it, which is R-X45's test.
-test('the shipped worker passes an already-small image through untouched, unless something else was asked for', async ({
+// R-Q2: an image already smaller than the target is not re-encoded up to it. Non-PNG is passed
+// through byte for byte; PNG gets the lossless oxipng pass every PNG output promises.
+test('the shipped worker passes an already-small non-PNG through and losslessly optimises PNG', async ({
   page,
 }) => {
   await page.goto('/')
@@ -1011,9 +1029,33 @@ test('the shipped worker passes an already-small image through untouched, unless
       },
       intent: 'run',
     },
+    // This is the resolved shape of both an explicit PNG selection and "Don't change" on PNG.
+    {
+      imageId: 'png-optimised',
+      source: 'shaded-png',
+      settings: {
+        format: 'png',
+        sourceFormat: 'png',
+        quality: { kind: 'size', targetBytes: 10_000_000 },
+      },
+      intent: 'run',
+      keepBytes: true,
+    },
+    {
+      imageId: 'apng-optimised',
+      source: 'animated-png',
+      settings: {
+        format: 'png',
+        sourceFormat: 'png',
+        isAnimated: true,
+        quality: { kind: 'size', targetBytes: 10_000_000 },
+      },
+      intent: 'run',
+      keepBytes: true,
+    },
   ])
 
-  const [passthrough, formatChanged, resized] = outcomes
+  const [passthrough, formatChanged, resized, png, apng] = outcomes
 
   // Byte for byte the file that went in, and the report says the original was kept.
   expect(passthrough!.outcome).toBe('completed')
@@ -1027,6 +1069,65 @@ test('the shipped worker passes an already-small image through untouched, unless
   expect(resized!.result?.format).toBe('jpeg')
   expect(resized!.result!.byteLength).toBeLessThan(source.length)
   expect(resized!.result?.caveats).toEqual([])
+
+  for (const outcome of [png!, apng!]) {
+    expect(outcome.outcome, outcome.imageId).toBe('completed')
+    expect(outcome.result?.format, outcome.imageId).toBe('png')
+    expect(outcome.result!.byteLength, outcome.imageId).toBeLessThan(outcome.inputByteLength)
+    expect(outcome.result?.caveats, outcome.imageId).toEqual([])
+  }
+
+  // Oxipng recompresses APNG frame payloads but may not rewrite its animation semantics.
+  const controls = (bytes: readonly number[]) => {
+    const chunks: { type: string; payload: number[] }[] = []
+    let at = 8
+
+    while (at + 12 <= bytes.length) {
+      const length =
+        bytes[at]! * 0x1000000 + bytes[at + 1]! * 0x10000 + bytes[at + 2]! * 0x100 + bytes[at + 3]!
+      const type = String.fromCharCode(...bytes.slice(at + 4, at + 8))
+
+      if (type === 'acTL' || type === 'fcTL') {
+        chunks.push({ type, payload: bytes.slice(at + 8, at + 8 + length) })
+      }
+
+      at += 12 + length
+      if (type === 'IEND') break
+    }
+
+    return chunks
+  }
+
+  expect(controls(apng!.result!.bytes!)).toEqual(controls(animatedFixture('anim-6f.png')))
+
+  const apngPixelsMatch = await page.evaluate(
+    async ({ animationPath, sourceBytes, outputBytes }) => {
+      const { decodeAnimation } = await import(/* @vite-ignore */ animationPath)
+      const before = await decodeAnimation(new Uint8Array(sourceBytes))
+      const after = await decodeAnimation(new Uint8Array(outputBytes))
+
+      return (
+        before.loops === after.loops &&
+        JSON.stringify(before.delaysMs) === JSON.stringify(after.delaysMs) &&
+        before.frames.length === after.frames.length &&
+        before.frames.every((frame: { pixels: Uint8Array }, index: number) => {
+          const other = after.frames[index]?.pixels as Uint8Array | undefined
+          return (
+            other !== undefined &&
+            frame.pixels.length === other.length &&
+            frame.pixels.every((value, pixel) => value === other[pixel])
+          )
+        })
+      )
+    },
+    {
+      animationPath: ANIMATION_MODULE_PATH,
+      sourceBytes: animatedFixture('anim-6f.png'),
+      outputBytes: apng!.result!.bytes!,
+    },
+  )
+
+  expect(apngPixelsMatch).toBe(true)
 })
 
 test('the shipped worker reports undecodable bytes as decode-failed and unbuilt paths as unimplemented', async ({

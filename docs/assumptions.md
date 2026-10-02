@@ -349,11 +349,11 @@ Pass condition ("peak stays far below file size") held on all three engines: pea
 
 ---
 
-### B6 `OPEN` `90%` `P2` Cross-origin isolation required for threads
+### B6 `TESTED` `95%` `P2` Cross-origin isolation required for threads
 
 A threaded WASM build needs `SharedArrayBuffer`, which needs COOP and COEP.
 
-**Half of this is now measured (T27), on the one shipped module that has a threaded build.** `@jsquash/oxipng` carries both builds and chooses between them at `init()`: it takes the multi-threaded one only inside a Worker, with `hardwareConcurrency > 1`, and when `wasm-feature-detect`'s `threads()` passes — and `threads()` is `new MessageChannel().port1.postMessage(new SharedArrayBuffer(1))` inside a `try`. Reproduced inside a real Worker on all three engines with no COOP/COEP headers set (`verification/t27-png/results.json`, and asserted in `tests/e2e/png.spec.ts`):
+**Measured in T27, when the published jSquash package still carried both oxipng builds.** It selected the multi-threaded one only inside a Worker, with `hardwareConcurrency > 1`, and when `wasm-feature-detect`'s `threads()` passed — and `threads()` is `new MessageChannel().port1.postMessage(new SharedArrayBuffer(1))` inside a `try`. Reproduced inside a real Worker on all three engines with no COOP/COEP headers set (`verification/t27-png/results.json`, and asserted in `tests/e2e/png.spec.ts` at the time):
 
 | Engine | In a Worker | Cores | `new SharedArrayBuffer(1)` | postMessage of it | Threaded wasm validates | Build chosen |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -361,11 +361,11 @@ A threaded WASM build needs `SharedArrayBuffer`, which needs COOP and COEP.
 | Firefox | yes | 8 | throws | throws | yes | single-threaded |
 | WebKit | yes | 8 | throws | throws | yes | single-threaded |
 
-The "build chosen" column is **observed, not inferred**: the two builds are served from distinct URLs, and `tests/e2e/png.spec.ts` dispatches a real PNG job through the pipeline worker and asserts that the wasm it fetches is `@jsquash/oxipng`'s `codec/pkg/squoosh_oxipng_bg.wasm` and never `codec/pkg-parallel/`. The predicate reproduction above explains *why* that is the one chosen; the request is what shows that it is. (The distinction matters because a reimplemented predicate would keep passing if the library changed its own.)
+The "build chosen" column was **observed, not inferred**: the two builds were served from distinct URLs, and the browser test dispatched a real PNG job through the pipeline worker and observed the single-threaded URL rather than `codec/pkg-parallel/`. The predicate reproduction explains *why* that was the one chosen; the request showed that it really was.
 
-So the claim's direction holds exactly: the engines all support threaded WebAssembly and all refuse `SharedArrayBuffer` without isolation, and the shipped code silently takes the single-threaded path. **A consequence for §8.1:** oxipng spawns no thread pool, so a pool of *N* pipeline workers costs *N* oxipng heaps rather than *N* × cores.
+So the claim's direction holds exactly: the engines all support threaded WebAssembly and all refuse `SharedArrayBuffer` without isolation. **The later APNG-compatible oxipng rebuild makes the measured outcome structural:** only the single-threaded 9.1.5 binary is bundled, instead of also shipping a parallel asset no supported deployment can select. A pool of *N* pipeline workers costs *N* oxipng heaps rather than *N* × cores.
 
-**Why not higher, and what is still open.** The second half of the Method — deploy with and without the headers and record what breaks — is untested, and so is whether the threaded build is worth having. oxipng at level 2 is 31–138 ms on the images measured, which is not where the time goes, so nothing in this project currently wants the headers.
+**Why not 100.** A deployment with COOP/COEP remains untested, so the browser half of the claim is measured only in the configuration this product actually ships. Whether threads would be worth reintroducing is likewise unmeasured. Oxipng at level 2 was 31–138 ms on the original still-image measurements, which is not where the time went; the APNG pass increases the breadth of work but does not justify shipping an unreachable second binary.
 
 **Method for the rest.** Serve the built app with COOP/COEP set and confirm the multi-threaded build initialises, that cross-origin resources still load, and what it costs in memory.
 
@@ -706,7 +706,7 @@ sessions never touch a GIF or PNG at all).
 | Module | Bytes | Notes |
 | --- | --- | --- |
 | ImageMagick (x86/wasm32) | 14.8 MB | Matches A1 exactly — confirms the build identity assumption from a second angle |
-| oxipng (`@jsquash/oxipng`) | 399 KB | |
+| oxipng 9.1.5 plus generated jSquash wrapper | 174 KB | Single-threaded only; the old dual-build package was replaced when APNG support was enabled |
 | quantizer (`imagequant`) | 347 KB | |
 | apng-optimizer | 218 KB | |
 | gifsicle + UPNG (JS-only chunk, see Surprises) | 719 KB | Neither emits a separate `.wasm` asset |
@@ -921,7 +921,7 @@ A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all t
 | UPNG (animated PNG) | **gone** | — |
 | UPNG + spliced `iCCP` | present | yes |
 | UPNG + `iCCP` → apng-optimizer | **gone** | — |
-| UPNG → apng-optimizer → spliced `iCCP` | present | yes |
+| UPNG → apng-optimizer → spliced `iCCP` → oxipng | present | yes |
 
 **The weak point was correctly identified but is in the wrong component, and it is avoidable.** §7.7 predicted the animated PNG path would lose the profile because it leaves ImageMagick and passes through UPNG. UPNG does indeed write no `iCCP` — it takes raw RGBA and emits `IHDR sRGB PLTE tRNS IDAT IEND`, and that `sRGB` chunk actively declares the output sRGB. But an `iCCP` chunk spliced into its output is read back byte-identically, so UPNG is not the obstacle. **apng-optimizer is**: given an APNG that carries a valid `iCCP`, it strips it. Attaching the profile *after* the optimiser has run preserves it exactly.
 
@@ -929,7 +929,7 @@ A lossy 4:4:4 AVIF (`heic:chroma 444`, no CICP define) decodes within 1 in all t
 
 **The animated *WebP* half of this entry is weaker than the table suggests.** "ImageMagick → WebP: present, identical" was measured on a **still** WebP. T29 measured the animated case and ImageMagick's WebP coder does not report `ICCP` or `EXIF` for an animated file at all — through `readCollection` or `read` — so the decoder reads the profile out of the RIFF container itself. On the *writing* side the profile is set on every frame and libwebp writes one `ICCP` for the file, which `tests/e2e/animation.spec.ts` checks byte-for-byte against the source profile on all three engines.
 
-**Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It can be avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk*. Whichever task builds animated PNG output (T29) should take this ordering as measured rather than re-deriving it, and must drop the `sRGB` chunk when it attaches the profile: `sRGB` and `iCCP` are mutually exclusive in the PNG specification, and leaving both produces a file libpng warns about and whose colour two readers may disagree about.
+**Consequence: §7.7's contingency is not needed.** The fallback it names — "convert to sRGB for animated PNG only and record the caveat" — costs a real colour conversion and a `colour-converted` caveat on every wide-gamut animated PNG. It is avoided by ordering the animated-PNG assembly as *UPNG → apng-optimizer → attach `iCCP`, dropping any `sRGB` chunk → oxipng*. The APNG-specific optimiser still has to precede the profile because it strips one it receives; oxipng 9.1.5 accepts the finished profiled APNG and preserves its `iCCP`, `acTL` and `fcTL` chunks while recompressing frame data. `sRGB` and `iCCP` remain mutually exclusive, so the attachment step still drops `sRGB`.
 
 **Extended by T27, for the still PNG path, and one sentence of the paragraph below was wrong.** §4.2's "quantize" step does *not* merely transform pixels: `Imagequant.process()` returns a **finished PNG**, and that PNG carries `IHDR PLTE tRNS IDAT IEND` and no `iCCP` at all — so the still PNG path has the same profile problem the animated one has, and the same fix. Measured on all three engines (`verification/t27-png/`, `tests/e2e/png.spec.ts`): ImageMagick's own `iCCP` chunk, moved whole into libimagequant's output, reads back byte-identical to the profile embedded in the source, before or after oxipng — the two orderings produce byte-identical files. Two things beyond T23's table came out of it: libimagequant writes no `sRGB` or `gAMA` either, so there is nothing to contradict the spliced profile; and **ImageMagick's PNG writer adds chunks of its own** — `cHRM`, `tIME`, three `tEXt` timestamps, and, for a profiled image, a second copy of the profile as a `zTXt` "Raw profile type icc" (3,441 bytes against the 2,381-byte `iCCP` on an image whose pixel data was 95 bytes). Neither `png:exclude-chunk` nor `image.strip()` removes them without removing the `iCCP` too, so the pipeline rewrites the chunk list itself. These byte figures are a one-off observation on a small test image rather than part of `results.json`; what the committed evidence asserts is the *presence* of the chunks — `tests/e2e/png.spec.ts` writes the same frame through ImageMagick with nothing stripped and checks `tEXt` and `tIME` are there, and that neither reaches the shipped file.
 

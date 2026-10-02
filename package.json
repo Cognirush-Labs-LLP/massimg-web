@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@imagemagick/magick-wasm": "0.0.43",
-    "@jsquash/oxipng": "2.3.0",
     "apng-optimizer": "1.2.0",
     "gifsicle-wasm-browser": "1.5.19",
     "imagequant": "0.1.2",

@@ -144,14 +144,16 @@ test('a still PNG job loads oxipng and the quantizer, not UPNG or apng-optimizer
   expect(urls.some((url) => url.includes('apng-optimizer'))).toBe(false)
 })
 
-test('an animated PNG job loads apng-optimizer, not oxipng or the quantizer', async ({ page }) => {
+test('an animated PNG job loads apng-optimizer and oxipng, but not the quantizer', async ({
+  page,
+}) => {
   const urls = requestUrls(page)
   await page.goto('/')
 
   await runJob(page, 'png', true)
 
   expect(urls.some((url) => url.includes('apng-optimizer'))).toBe(true)
-  expect(urls.some((url) => url.includes('oxipng') || url.includes('squoosh_oxipng'))).toBe(false)
+  expect(urls.some((url) => url.includes('oxipng') || url.includes('squoosh_oxipng'))).toBe(true)
   expect(urls.some((url) => url.includes('imagequant'))).toBe(false)
 })
 
