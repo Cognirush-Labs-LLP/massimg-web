@@ -14,6 +14,9 @@ import { badgeLabel, badgesFor, metaTextFor } from './imageMeta'
 const props = defineProps<{
   image: ImageRecord
   thumbnailUrl: string | null
+  /** The thumbnail box's rendered size in px — GalleryGrid.vue's layout.thumbSize (gridWindow.ts),
+   * kept in sync with the virtualization row-height math rather than capped independently here. */
+  thumbSize: number
 }>()
 
 const uiStore = useUiStore()
@@ -49,7 +52,11 @@ function remove(event: MouseEvent): void {
       ×
     </button>
     <button type="button" class="open-button" data-testid="gallery-tile-open" @click="open">
-      <span class="thumb" :class="{ placeholder: !thumbnailUrl }">
+      <span
+        class="thumb"
+        :class="{ placeholder: !thumbnailUrl }"
+        :style="{ inlineSize: `${thumbSize}px`, blockSize: `${thumbSize}px` }"
+      >
         <img v-if="thumbnailUrl" :src="thumbnailUrl" alt="" loading="lazy" />
       </span>
       <span class="filename">{{ image.name }}</span>
@@ -61,6 +68,11 @@ function remove(event: MouseEvent): void {
 <style scoped>
 .tile {
   position: relative;
+  /* Grid items default to a min-inline-size of their content's min-content width, which for an
+     unbroken filename (no spaces) is the full text width regardless of the wrapping below — that
+     would widen this tile's grid column past what gridWindow.ts computed. Overriding it to 0 is
+     what lets the filename actually wrap within the fixed column instead of stretching it. */
+  min-inline-size: 0;
 }
 
 .badges {
@@ -117,7 +129,7 @@ function remove(event: MouseEvent): void {
 .thumb {
   display: block;
   overflow: hidden;
-  aspect-ratio: 1;
+  align-self: center;
   background: var(--color-surface-control);
   border-radius: var(--radius-md);
 }
@@ -125,16 +137,24 @@ function remove(event: MouseEvent): void {
 .thumb img {
   inline-size: 100%;
   block-size: 100%;
-  object-fit: cover;
+  /* Fits the whole image inside the box without cropping; never upscales a source smaller than
+     the box (resolves to `contain` when larger, native size centered when smaller). */
+  object-fit: scale-down;
 }
 
 .filename {
+  display: -webkit-box;
   margin-block-start: 6px;
   overflow: hidden;
   color: var(--color-primary);
   font-size: 12.5px;
+  line-clamp: 2;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Wraps across up to 2 lines instead of growing the tile — a filename with no spaces has no
+     natural break point, so `anywhere` allows breaking mid-word rather than overflowing. */
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .meta {

@@ -663,14 +663,22 @@ browser cannot decode natively, use ImageMagick's thumbnail operation as a fallb
 processing pipeline. Both paths are generated lazily for visible and near-visible tiles only, with
 virtualization (R-G10). In list mode, none at all (R-G9).
 
-The thumbnail service owns two batch-scoped, non-reactive structures: the encoded Blob cache and a count
-of source-read attempts. Both ceilings read the same `maximumThumbnails` value from the runtime limits
-configuration; neither the service, UI nor tests hard-code the number. The shipped default is 100.
-Starting a read consumes one attempt, including a read that later fails or is cancelled. There is no LRU
-replacement: after either ceiling is reached, uncached tiles render a neutral placeholder instead of
-evicting an entry and rereading sources as the user scrolls. Completed entries persist across
-Gallery/Preview/Edit mode changes and are released on image removal, edit invalidation, or batch clear;
-every release also revokes the corresponding object URL.
+The thumbnail service owns one batch-scoped, non-reactive structure: the encoded Blob cache, capped at
+`maximumThumbnails` retained entries (the same runtime-limits value the UI's grid/list threshold reads;
+neither the service, UI nor tests hard-code the number — shipped default 100). It is an LRU cache: once
+the cap is reached, generating a newly-visible, not-yet-cached tile evicts the least-recently-used
+entry — "used" meaning passed to `setVisible()`, so every tile currently on screen is always fresher
+than one that scrolled out of view, and is never the eviction candidate. A revisited tile that was
+evicted is simply regenerated; nothing is permanently stuck as a placeholder once its source is still
+reachable.
+
+An earlier revision instead treated `maximumThumbnails` as a one-shot lifetime ceiling on read attempts
+with no eviction: any tile scrolled past before its turn stayed a placeholder for the rest of the
+session no matter how long the user waited or how often they scrolled back to it. That was a correctness
+bug, not a throughput trade-off, and is why this moved to the LRU model above instead of staying as
+originally designed. Completed entries persist across Gallery/Preview/Edit mode changes and are released
+on image removal, edit invalidation, or batch clear; every release (including an LRU eviction) also
+revokes the corresponding object URL.
 
 The generation queue and its execution context belong to the mounted Gallery grid. Unmounting Gallery or
 switching to list mode clears the queue and stops the active job. Where the decoding primitive cannot be

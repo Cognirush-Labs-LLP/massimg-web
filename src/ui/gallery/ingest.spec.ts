@@ -4,6 +4,7 @@ import type { Classification } from '@/domain/classify'
 import type { FolderSelection } from '@/platform/folder'
 import type { SelectedFile } from '@/platform/picker'
 import { useBatchStore } from '@/stores/batch'
+import { useUiStore } from '@/stores/ui'
 import { clearSourceFiles, getSourceFile, hasSourceFile } from '@/platform/source-files'
 
 const classifyMock = vi.fn<(bytes: Uint8Array) => Classification>()
@@ -91,6 +92,38 @@ describe('ingestSelectedFiles', () => {
     await ingestSelectedFiles([])
     expect(useBatchStore().images).toHaveLength(0)
     expect(classifyMock).not.toHaveBeenCalled()
+  })
+
+  it('auto-switches to list view for a one-shot selection over the threshold, even though it is flushed to the store in chunks (R-G8)', async () => {
+    // FLUSH_CHUNK_SIZE (25) is well under maximumThumbnails (100, the default R-G8 threshold) —
+    // a batch this size crosses the threshold only once every chunk has landed, not within the
+    // first one, which is exactly what this test is guarding.
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    const files = Array.from({ length: 150 }, (_, i) => selectedFile(`img-${i}.jpg`))
+
+    await ingestSelectedFiles(files)
+
+    expect(useBatchStore().images).toHaveLength(150)
+    expect(useUiStore().galleryView).toBe('list')
+  })
+
+  it('stays on grid view for a one-shot selection under the threshold (sanity check)', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    const files = Array.from({ length: 10 }, (_, i) => selectedFile(`img-${i}.jpg`))
+
+    await ingestSelectedFiles(files)
+
+    expect(useUiStore().galleryView).toBe('grid')
+  })
+
+  it('does not override a view the user already picked by hand mid-selection', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    useUiStore().setGalleryView('grid')
+    const files = Array.from({ length: 150 }, (_, i) => selectedFile(`img-${i}.jpg`))
+
+    await ingestSelectedFiles(files)
+
+    expect(useUiStore().galleryView).toBe('grid')
   })
 })
 

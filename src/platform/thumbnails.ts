@@ -1,9 +1,17 @@
 // Batch-scoped thumbnail generation for Gallery grid mode (Technical Design §10.4, §8.1).
 //
-// A factory rather than a module singleton: the cache and the read budget are scoped to one batch,
-// and the limit is injected rather than looked up, so changing `maximumThumbnails` needs no change
-// here (R-G3, R-G10). Gallery grid owns an instance; entering list mode or leaving Gallery calls
-// stop(), clearing the batch calls clear() (R-G9, R-G12).
+// A factory rather than a module singleton: the cache is scoped to one batch, and its size cap is
+// injected rather than looked up, so changing `maximumThumbnails` needs no change here (R-G3,
+// R-G10). Gallery grid owns an instance; entering list mode or leaving Gallery calls stop(),
+// clearing the batch calls clear() (R-G9, R-G12).
+//
+// LRU, not a one-shot budget: earlier revisions stopped generating entirely once `maximumThumbnails`
+// reads had ever been attempted, so any image scrolled past before its turn stayed a placeholder
+// for the rest of the session, however long the user waited or however often they scrolled back to
+// it. The cache is now capped at `maximumThumbnails` *retained* entries, evicting the
+// least-recently-used one to make room for a newly visible image rather than refusing to generate
+// it — "least-recently-used" meaning least recently part of a `setVisible()` call, so anything
+// currently on screen is always the freshest entry and is never the eviction candidate.
 
 import { runtimeLimits } from '@/config/limits'
 import type { PixelSize } from '@/domain/edit'
@@ -37,7 +45,7 @@ export const DEFAULT_QUALITY = 0.75
 
 export interface ThumbnailSource {
   id: ImageId
-  /** The source file. Reading it is what the budget counts. */
+  /** The source file to decode. */
   blob: Blob
   /** From ImageRecord.width/height — lets both axes be bounded without a probe decode. */
   source: PixelSize
@@ -45,9 +53,9 @@ export interface ThumbnailSource {
 }
 
 export interface ThumbnailStats {
-  /** Charged when a read starts. Never refunded on failure or cancellation, never replenished. */
+  /** Lifetime count of reads started, including ones later evicted — a metric, not a ceiling. */
   readsStarted: number
-  /** Live cache entries. Bounded from above by readsStarted, so never exceeds the budget. */
+  /** Live cache entries. Never exceeds `budget`: the oldest entry is evicted to stay at the cap. */
   retained: number
   budget: number
   /** A job is in flight. */
@@ -94,12 +102,12 @@ export interface ThumbnailService {
   /**
    * The visible and near-visible window, in priority order. Replaces the pending queue rather than
    * appending to it, which is what keeps a fast scroll from queueing work for every tile it passes
-   * (R-G10). Already-cached ids are ignored.
+   * (R-G10). An id already cached is marked fresh (see the LRU note above) rather than queued.
    */
   setVisible(sources: readonly ThumbnailSource[]): void
   /** The object URL for a generated thumbnail, or null — a null means "render a placeholder". */
   urlFor(id: ImageId): string | null
-  /** Releases one entry: image removed, or its edit changed. Does not refund budget. */
+  /** Releases one entry: image removed, or its edit changed. */
   invalidate(id: ImageId): void
   /** Releases every entry and stops generation. The batch was cleared. */
   clear(): void
@@ -174,7 +182,36 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
     return worker
   }
 
+  function release(id: ImageId): void {
+    const entry = cache.get(id)
+    if (entry) {
+      URL.revokeObjectURL(entry.url)
+      cache.delete(id)
+    }
+  }
+
+  // Re-inserting into a Map moves its key to the end of iteration order — this is the entirety of
+  // the LRU bookkeeping, no separate linked list or timestamp needed. `cache.keys().next().value`
+  // is therefore always the least-recently-touched entry.
+  function touch(id: ImageId): void {
+    const entry = cache.get(id)
+    if (entry) {
+      cache.delete(id)
+      cache.set(id, entry)
+    }
+  }
+
+  function evictLeastRecentlyUsed(): void {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) {
+      release(oldest)
+    }
+  }
+
   function store(id: ImageId, blob: Blob): void {
+    while (cache.size >= budget) {
+      evictLeastRecentlyUsed()
+    }
     cache.set(id, { blob, url: URL.createObjectURL(blob) })
     onReady?.(id)
   }
@@ -220,13 +257,6 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
         continue
       }
 
-      if (readsStarted >= budget) {
-        // The budget is spent. Uncached tiles stay placeholders; nothing is evicted to make room,
-        // because that would reread sources as the user scrolls (R-G10).
-        queue = []
-        break
-      }
-
       const context = ensureWorker()
       if (!context) {
         queue = []
@@ -256,14 +286,6 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
     releaseWaiters()
   }
 
-  function release(id: ImageId): void {
-    const entry = cache.get(id)
-    if (entry) {
-      URL.revokeObjectURL(entry.url)
-      cache.delete(id)
-    }
-  }
-
   function halt(): void {
     generation += 1
     queue = []
@@ -279,7 +301,16 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
 
   return {
     setVisible(sources) {
-      queue = sources.filter((source) => !cache.has(source.id))
+      queue = []
+      for (const source of sources) {
+        if (cache.has(source.id)) {
+          // Already generated: touch it so it reads as the freshest entry, not the next eviction
+          // candidate, for as long as it keeps showing up in a visible window.
+          touch(source.id)
+        } else {
+          queue.push(source)
+        }
+      }
       pump()
     },
 
@@ -291,7 +322,7 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
       release(id)
       queue = queue.filter((source) => source.id !== id)
       if (active?.id === id) {
-        // Its completion must not repopulate what was just invalidated. Budget is already spent.
+        // Its completion must not repopulate what was just invalidated.
         activeDropped = true
       }
     },

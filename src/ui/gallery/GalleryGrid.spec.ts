@@ -66,6 +66,37 @@ describe('GalleryGrid', () => {
     expect(requested.map((source) => source.id).sort()).toEqual(['a', 'b'])
   })
 
+  it('omits an image whose dimensions have not been probed yet (R-G3)', async () => {
+    // width/height at 0 is dimension-probe's own "not yet known" placeholder (ingest.ts). Sending
+    // that straight through would hand the thumbnail service a 0x0 source, which caches a
+    // permanent 1x1 degenerate thumbnail with no retry once the real dimensions arrive.
+    useBatchStore().addImages([image('a'), { ...image('b'), width: 0, height: 0 }])
+    sourceFiles.set('a' as ImageId, new File(['x'], 'a.jpg'))
+    sourceFiles.set('b' as ImageId, new File(['x'], 'b.jpg'))
+
+    mount(GalleryGrid)
+    await vi.runAllTimersAsync()
+
+    const requested = serviceMock.setVisible.mock.calls.at(-1)?.[0] as { id: ImageId }[]
+    expect(requested.map((source) => source.id)).toEqual(['a'])
+  })
+
+  it("requests a thumbnail once a skipped image's dimensions resolve, with no further scrolling", async () => {
+    useBatchStore().addImages([{ ...image('a'), width: 0, height: 0 }])
+    sourceFiles.set('a' as ImageId, new File(['x'], 'a.jpg'))
+
+    mount(GalleryGrid)
+    await vi.runAllTimersAsync()
+    expect(serviceMock.setVisible.mock.calls.at(-1)?.[0]).toEqual([])
+
+    // The dimension probe resolving is exactly `updateImage` patching width/height in place.
+    useBatchStore().updateImage('a' as ImageId, { width: 1600, height: 1200 })
+    await vi.runAllTimersAsync()
+
+    const requested = serviceMock.setVisible.mock.calls.at(-1)?.[0] as { id: ImageId }[]
+    expect(requested.map((source) => source.id)).toEqual(['a'])
+  })
+
   it('omits images with no source file from the thumbnail request', async () => {
     useBatchStore().addImages([image('a'), image('b')])
     sourceFiles.set('a' as ImageId, new File(['x'], 'a.jpg'))

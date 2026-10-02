@@ -17,6 +17,7 @@ import { expect, test, type Page } from '@playwright/test'
 const BATCH_MODULE_PATH = '/src/stores/batch.ts'
 const SOURCE_FILES_MODULE_PATH = '/src/platform/source-files.ts'
 const THUMBNAIL_SERVICE_MODULE_PATH = '/src/ui/gallery/thumbnail-service.ts'
+const GRID_WINDOW_MODULE_PATH = '/src/ui/gallery/gridWindow.ts'
 
 interface ThumbnailStats {
   readsStarted: number
@@ -95,6 +96,40 @@ async function seedBatch(page: Page, count: number): Promise<void> {
   )
 }
 
+async function seedBatchWithNames(page: Page, names: string[]): Promise<void> {
+  await page.evaluate(
+    async ({ names, batchPath, sourceFilesPath }) => {
+      const { useBatchStore } = await import(/* @vite-ignore */ batchPath)
+      const { setSourceFile } = await import(/* @vite-ignore */ sourceFilesPath)
+
+      const records = []
+      for (const [i, name] of names.entries()) {
+        const id = `seed-${i}`
+        const blob = await makeBlob(64, 48)
+        const file = new File([blob], name, { type: 'image/png' })
+        setSourceFile(id, file)
+        records.push({
+          id,
+          name,
+          relativePath: null,
+          sizeBytes: file.size,
+          width: 64,
+          height: 48,
+          sourceFormat: 'png',
+          isAnimated: false,
+          frameCount: null,
+          hasTransparency: null,
+          edit: null,
+          status: 'ready',
+          failure: null,
+        })
+      }
+      useBatchStore().addImages(records)
+    },
+    { names, batchPath: BATCH_MODULE_PATH, sourceFilesPath: SOURCE_FILES_MODULE_PATH },
+  )
+}
+
 async function getStats(page: Page): Promise<ThumbnailStats> {
   return page.evaluate(async (path) => {
     const { getThumbnailService } = await import(/* @vite-ignore */ path)
@@ -106,6 +141,25 @@ async function scrollStageBody(page: Page, top: number): Promise<void> {
   await page
     .locator('.stage-body')
     .evaluate((el, scrollTop) => el.scrollTo({ top: scrollTop }), top)
+}
+
+/** The real layout math (gridWindow.ts), evaluated against the grid's actual measured width — so
+ * expectations track real behavior instead of a hand-computed, scrollbar/browser-dependent guess. */
+async function computeExpectedLayout(
+  page: Page,
+  itemCount: number,
+): Promise<{ containerWidth: number; tileWidth: number; thumbSize: number }> {
+  const containerWidth = await page
+    .locator('[data-testid="gallery-grid"]')
+    .evaluate((el) => el.clientWidth)
+  const { tileWidth, thumbSize } = await page.evaluate(
+    async ({ path, containerWidth, itemCount }) => {
+      const { computeGridLayout } = await import(/* @vite-ignore */ path)
+      return computeGridLayout(containerWidth, itemCount)
+    },
+    { path: GRID_WINDOW_MODULE_PATH, containerWidth, itemCount },
+  )
+  return { containerWidth, tileWidth, thumbSize }
 }
 
 test('renders only a bounded window of tiles for a 500-image batch, at any scroll position (R-G10)', async ({
@@ -192,5 +246,74 @@ test('removing one tile releases only its own thumbnail, leaving the others cach
   await expect(page.getByTestId('gallery-tile')).toHaveCount(2)
   const stats = await getStats(page)
   expect(stats.retained).toBe(2)
+  expect(errors).toEqual([])
+})
+
+test('scrolling a large batch does not drift from scroll anchoring correcting the virtualized spacers', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+  // Under maximumThumbnails (100): above it, Gallery auto-switches to list mode (R-G8), which has
+  // no spacers to drift in the first place — this test wants grid mode's virtualized spacers.
+  await seedBatch(page, 80)
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  const scrollHeight = await page.locator('.stage-body').evaluate((el) => el.scrollHeight)
+  const target = Math.floor(scrollHeight / 2)
+  await scrollStageBody(page, target)
+  // Give the windowing watcher, the resulting spacer-height DOM update, and any scroll-anchoring
+  // correction it could provoke time to settle before reading the final position.
+  await page.waitForTimeout(300)
+
+  const actual = await page.locator('.stage-body').evaluate((el) => el.scrollTop)
+  expect(Math.abs(actual - target)).toBeLessThanOrEqual(1)
+  expect(errors).toEqual([])
+})
+
+test('the thumbnail box is capped and square even once the tile stretches past the cap (R-G3)', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  // Narrow enough to land on a small column count, wide enough that each column's tile stretches
+  // past MAX_THUMBNAIL_SIZE (200px) — the scenario the cap exists for.
+  await page.setViewportSize({ width: 700, height: 800 })
+  await page.goto('/')
+  await seedBatch(page, 5)
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  const expected = await computeExpectedLayout(page, 5)
+  expect(expected.tileWidth).toBeGreaterThan(200) // sanity: this viewport does exercise the cap
+  expect(expected.thumbSize).toBe(200)
+
+  const box = await page.getByTestId('gallery-tile').first().locator('.thumb').boundingBox()
+  expect(box).not.toBeNull()
+  expect(box?.width).toBeCloseTo(200, 0)
+  expect(box?.height).toBeCloseTo(200, 0)
+  expect(errors).toEqual([])
+})
+
+test('a long filename wraps across tiles instead of widening its tile (R-G1)', async ({ page }) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+  const longName = 'a'.repeat(40) + '_a_filename_with_no_natural_break_points_whatsoever.png'
+  await seedBatchWithNames(page, ['img-0.png', longName, 'img-2.png'])
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  const tiles = page.getByTestId('gallery-tile')
+  const widths = await tiles.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width))
+  // All tiles share one grid row at this width, so a widened tile would show up as unequal widths.
+  expect(widths[0]).toBeCloseTo(widths[1], 0)
+  expect(widths[0]).toBeCloseTo(widths[2], 0)
+
+  // A short filename's own box is one line's worth of height — use it as the reference instead of
+  // a hard-coded line-height, so the assertion doesn't depend on font metrics.
+  const oneLineHeight = (await tiles.nth(0).locator('.filename').boundingBox())?.height ?? 15
+  const longFilenameBox = await tiles.nth(1).locator('.filename').boundingBox()
+  expect(longFilenameBox).not.toBeNull()
+  // Wraps past one line (it's genuinely using the fix), but clamped to 2 — not growing without
+  // bound for an arbitrarily long name.
+  expect(longFilenameBox?.height ?? 0).toBeGreaterThan(oneLineHeight * 1.3)
+  expect(longFilenameBox?.height ?? 0).toBeLessThanOrEqual(oneLineHeight * 2.2)
   expect(errors).toEqual([])
 })

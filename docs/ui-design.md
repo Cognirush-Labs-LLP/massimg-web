@@ -392,19 +392,19 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
 - Remove control, top-right, a small × button; clicking it does not open the
   tile's Preview (stop propagation) and does not affect any other tile (R-G2).
 
-### Thumbnail generation — lazy, bounded, non-evicting
+### Thumbnail generation — lazy, bounded, LRU
 
 - Generation targets **visible and near-visible tiles only**; the grid is
   virtualized so scrolling quickly through a large batch does not queue work for
   every tile it passes over (R-G10).
-- The batch shares one budget, read from the runtime limits config
-  (`maximumThumbnails`, shipped default **100**) across **two counters**: source-read
-  attempts started, and thumbnail Blobs retained. **Starting** a read consumes one
-  attempt even if it later fails or is cancelled — the attempt is not refunded.
-- **No eviction.** Once either counter hits the budget, tiles that haven't been
-  read yet show a **neutral placeholder** — this is not an error state, not a
-  spinner, not a retry loop. Cached thumbnails are never evicted to make room for
-  another tile's thumbnail (that would cause repeated re-reads while scrolling).
+- The batch retains at most `maximumThumbnails` thumbnail Blobs (shipped default
+  **100**, read from the runtime limits config) as an **LRU cache**. A tile
+  currently in a visible window is always the freshest entry; once the cap is
+  reached, generating a newly-visible, not-yet-cached tile evicts the
+  least-recently-visible one instead of refusing to generate at all. A **neutral
+  placeholder** — not an error state, not a spinner — shows only for the
+  instant between a tile becoming visible and its (re)generation finishing, never
+  permanently. Every eviction revokes the evicted thumbnail's object URL.
 - **Lifecycle is strictly tied to the mounted Gallery grid component:**
   - Entering Gallery in grid mode starts the generation queue.
   - Leaving Gallery (any other mode), or switching to **list** view within
@@ -417,10 +417,11 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
     (§13), applied here to thumbnail generation.
 - Thumbnails are the **only** per-image pixel data retained for Gallery, bounded
   in both dimensions and encoded size (R-G3). Completed cache entries **persist
-  across mode changes** (§3's stated exception) and are released only on: image
+  across mode changes** (§3's stated exception) and are released on: image
   removal, edit invalidation (a crop/rotate changes what the thumbnail should
-  show), or batch clear. Every release also revokes the thumbnail's object URL
-  (R-G3).
+  show), batch clear, or LRU eviction once the cache is at capacity and a
+  different tile needs generating. Every release also revokes the thumbnail's
+  object URL (R-G3).
 - Thumbnails reflect stored rotation and crop (R-G4) — an edited image's tile
   shows the edited framing, not the raw source.
 

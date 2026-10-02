@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { computeGridLayout, computeGridWindow, TILE_GAP, TILE_META_HEIGHT } from './gridWindow'
+import {
+  computeGridLayout,
+  computeGridWindow,
+  MAX_THUMBNAIL_SIZE,
+  TILE_GAP,
+  TILE_META_HEIGHT,
+} from './gridWindow'
 
 describe('computeGridLayout', () => {
   it('fits as many columns of at least the minimum tile width as the container allows', () => {
@@ -18,6 +24,22 @@ describe('computeGridLayout', () => {
   it('derives row height from tile width plus the fixed meta block and one gap', () => {
     const layout = computeGridLayout(400, 10)
     expect(layout.rowHeight).toBeCloseTo(layout.tileWidth + TILE_META_HEIGHT + TILE_GAP)
+  })
+
+  it('leaves thumbSize equal to tileWidth when the tile is narrower than the cap', () => {
+    const layout = computeGridLayout(400, 10)
+    expect(layout.tileWidth).toBeLessThan(MAX_THUMBNAIL_SIZE)
+    expect(layout.thumbSize).toBeCloseTo(layout.tileWidth)
+  })
+
+  it('clamps thumbSize (and therefore row height) once the tile stretches past the cap', () => {
+    // 3 columns of 168px + 2 gaps of 10px = 524px; 700px stretches each of those 3 columns well
+    // past MAX_THUMBNAIL_SIZE, so the thumbnail box must clamp while the tile itself does not.
+    const layout = computeGridLayout(700, 10)
+    expect(layout.columns).toBe(3)
+    expect(layout.tileWidth).toBeGreaterThan(MAX_THUMBNAIL_SIZE)
+    expect(layout.thumbSize).toBe(MAX_THUMBNAIL_SIZE)
+    expect(layout.rowHeight).toBeCloseTo(MAX_THUMBNAIL_SIZE + TILE_META_HEIGHT + TILE_GAP)
   })
 
   it('computes row count from item count and column count, and zero for an empty batch', () => {

@@ -98,7 +98,9 @@ function watchForErrors(page: Page): string[] {
   return errors
 }
 
-test('spends at most the injected budget and leaves the rest as placeholders', async ({ page }) => {
+test('generates every requested tile, retaining only the most recently visible up to the budget (LRU)', async ({
+  page,
+}) => {
   const errors = watchForErrors(page)
   await page.goto('/')
 
@@ -129,19 +131,21 @@ test('spends at most the injected budget and leaves the rest as placeholders', a
     { path: THUMBNAILS_MODULE_PATH, budget: 3, count: 10 },
   )
 
-  expect(result.stats.readsStarted).toBe(3)
+  // Nothing is refused generation any more — every one of the 10 gets a real attempt.
+  expect(result.stats.readsStarted).toBe(10)
+  expect(result.readyIds).toHaveLength(10)
+  // But only the 3 most recently generated stay retained; the rest were evicted to make room.
   expect(result.stats.retained).toBe(3)
   expect(result.stats.budget).toBe(3)
   expect(result.stats.running).toBe(false)
   expect(result.cached).toBe(3)
   expect(result.placeholders).toBe(7)
-  // Uncached tiles are placeholders, not failures: nothing threw and onReady fired only for the
-  // three that were actually generated.
-  expect(result.readyIds).toHaveLength(3)
   expect(errors).toEqual([])
 })
 
-test('the budget is injected, not baked into the service', async ({ page }) => {
+test('the budget caps retained thumbnails and is injected, not baked into the service', async ({
+  page,
+}) => {
   await page.goto('/')
 
   const result = await page.evaluate(
@@ -149,12 +153,12 @@ test('the budget is injected, not baked into the service', async ({ page }) => {
       const mod = await import(/* @vite-ignore */ path)
       const limits = await import(/* @vite-ignore */ limitsPath)
 
-      const spent: number[] = []
+      const retained: number[] = []
       for (const budget of budgets) {
         const service = mod.createThumbnailService({ maximumThumbnails: budget })
         service.setVisible(await makeSources(count))
         await service.whenIdle()
-        spent.push((service.stats() as Stats).readsStarted)
+        retained.push((service.stats() as Stats).retained)
         service.clear()
       }
 
@@ -162,15 +166,85 @@ test('the budget is injected, not baked into the service', async ({ page }) => {
       const defaultBudget = (unconfigured.stats() as Stats).budget
       unconfigured.clear()
 
-      return { spent, defaultBudget, configured: limits.runtimeLimits.maximumThumbnails as number }
+      return {
+        retained,
+        defaultBudget,
+        configured: limits.runtimeLimits.maximumThumbnails as number,
+      }
     },
     { path: THUMBNAILS_MODULE_PATH, limitsPath: LIMITS_MODULE_PATH, budgets: [3, 5], count: 8 },
   )
 
   // Two different limits against one unmodified service: changing the limit needs no service change,
   // and the unconfigured default is whatever the runtime limits module says, not a local constant.
-  expect(result.spent).toEqual([3, 5])
+  expect(result.retained).toEqual([3, 5])
   expect(result.defaultBudget).toBe(result.configured)
+})
+
+test('a tile evicted by LRU is regenerated once it becomes visible again', async ({ page }) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+
+  const result = await page.evaluate(
+    async ({ path, budget, count }) => {
+      const mod = await import(/* @vite-ignore */ path)
+      const service = mod.createThumbnailService({ maximumThumbnails: budget })
+      const sources = await makeSources(count)
+      const [first] = sources as [FixtureSource]
+
+      // Scroll through everything once — by the end, the first tile has long since been evicted.
+      service.setVisible(sources)
+      await service.whenIdle()
+      const evicted = service.urlFor(first.id) as string | null
+      const readsAfterFirstPass = (service.stats() as Stats).readsStarted
+
+      // Scroll back up to it.
+      service.setVisible([first])
+      await service.whenIdle()
+      const regenerated = service.urlFor(first.id) as string | null
+      const readsAfterRevisit = (service.stats() as Stats).readsStarted
+
+      service.clear()
+      return { evicted, regenerated, readsAfterFirstPass, readsAfterRevisit }
+    },
+    { path: THUMBNAILS_MODULE_PATH, budget: 3, count: 10 },
+  )
+
+  expect(result.evicted).toBeNull()
+  expect(result.regenerated).not.toBeNull()
+  // The revisit is a genuine second read of the same source, not a cache hit — that's the cost of
+  // choosing to regenerate rather than permanently give up.
+  expect(result.readsAfterRevisit).toBe(result.readsAfterFirstPass + 1)
+  expect(errors).toEqual([])
+})
+
+test('a tile kept in every visible window is never evicted, even once more distinct tiles than the budget have been requested', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const result = await page.evaluate(
+    async ({ path, budget, count }) => {
+      const mod = await import(/* @vite-ignore */ path)
+      const service = mod.createThumbnailService({ maximumThumbnails: budget })
+      const sources = await makeSources(count)
+      const [pinned] = sources as [FixtureSource]
+
+      // Each window keeps the first tile alongside a different one-tile-at-a-time sweep through the
+      // rest — like a pinned header tile that never scrolls out while everything else does.
+      for (const source of sources.slice(1)) {
+        service.setVisible([pinned, source])
+        await service.whenIdle()
+      }
+
+      const pinnedUrl = service.urlFor(pinned.id) as string | null
+      service.clear()
+      return { pinnedUrl }
+    },
+    { path: THUMBNAILS_MODULE_PATH, budget: 3, count: 10 },
+  )
+
+  expect(result.pinnedUrl).not.toBeNull()
 })
 
 test('revisiting cached tiles causes no reread and reuses the same object URL', async ({

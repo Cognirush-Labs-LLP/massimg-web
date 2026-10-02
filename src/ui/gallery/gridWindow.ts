@@ -8,8 +8,20 @@
 
 /** docs/ui-design.md §6's mockup minimum grid tile width. */
 export const MIN_TILE_WIDTH = 168
-/** Filename line + "W×H · size" line beneath the square thumbnail. */
-export const TILE_META_HEIGHT = 44
+/**
+ * Cap on the thumbnail box's displayed size, in px, regardless of how wide the tile itself
+ * stretches — a presentation detail, configurable here. GalleryTile.vue fits the whole image
+ * inside a box of this size (never upscaling a smaller source) instead of letting the box grow
+ * unbounded with the tile and cropping to fill it.
+ */
+export const MAX_THUMBNAIL_SIZE = 200
+/**
+ * Filename (wrapped up to 2 lines, GalleryTile.vue's `-webkit-line-clamp: 2`) + "W×H · size" line
+ * beneath the thumbnail. Measured against the real rendered 2-line case (51px) plus a small margin
+ * — this must cover the worst case, a single-line filename would under-measure it and the next
+ * row would overlap.
+ */
+export const TILE_META_HEIGHT = 60
 export const TILE_GAP = 10
 /** Extra rows rendered beyond the viewport on each side, to avoid a blank flash while scrolling. */
 export const RENDER_BUFFER_ROWS = 1
@@ -19,6 +31,8 @@ export const REQUEST_BUFFER_ROWS = 1
 export interface GridLayout {
   columns: number
   tileWidth: number
+  /** The thumbnail box's actual rendered size — `tileWidth` clamped to `MAX_THUMBNAIL_SIZE`. */
+  thumbSize: number
   rowHeight: number
   rowCount: number
 }
@@ -28,10 +42,13 @@ export function computeGridLayout(containerWidth: number, itemCount: number): Gr
   const safeWidth = Math.max(containerWidth, MIN_TILE_WIDTH)
   const columns = Math.max(1, Math.floor((safeWidth + TILE_GAP) / (MIN_TILE_WIDTH + TILE_GAP)))
   const tileWidth = (safeWidth - TILE_GAP * (columns - 1)) / columns
-  const rowHeight = tileWidth + TILE_META_HEIGHT + TILE_GAP
+  const thumbSize = Math.min(tileWidth, MAX_THUMBNAIL_SIZE)
+  // rowHeight must track thumbSize, not the raw tileWidth, so the virtualization math never
+  // disagrees with what GalleryTile actually renders once the thumbnail box is capped.
+  const rowHeight = thumbSize + TILE_META_HEIGHT + TILE_GAP
   const rowCount = itemCount === 0 ? 0 : Math.ceil(itemCount / columns)
 
-  return { columns, tileWidth, rowHeight, rowCount }
+  return { columns, tileWidth, thumbSize, rowHeight, rowCount }
 }
 
 export interface GridWindow {

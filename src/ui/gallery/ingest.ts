@@ -115,6 +115,14 @@ export async function ingestSelectedFiles(selected: readonly SelectedFile[]): Pr
 
   const service = getDimensionProbeService()
   const batchStore = useBatchStore()
+  // Captured once, before any chunk lands: `addImages()` re-derives R-G8's grid/list choice from
+  // *its own* "was the store empty before this call" each time it's invoked, which is correct for
+  // genuinely separate additions but wrong here — FLUSH_CHUNK_SIZE splits one selection into
+  // several `addImages()` calls purely to avoid hundreds of individual store mutations, and only
+  // the first of those chunks would ever see the store empty. Without this, a single 200-image
+  // folder selection is evaluated against its first 25-image chunk, always lands under the
+  // threshold, and never gets the automatic switch to list view that a batch this size needs.
+  const wasEmptyAtStart = batchStore.images.length === 0
   let pending: ImageRecord[] = []
 
   for (const item of selected) {
@@ -137,6 +145,14 @@ export async function ingestSelectedFiles(selected: readonly SelectedFile[]): Pr
 
   if (pending.length > 0) {
     batchStore.addImages(pending)
+  }
+
+  // Re-apply R-G8 against the selection's true final size now that every chunk has landed —
+  // overriding whatever the first chunk's own (too-small) call already decided. A no-op if the
+  // user toggled the view mode by hand while this was still running (applyAutomaticGalleryView's
+  // own `galleryViewOverridden` guard), same as any other call to it.
+  if (wasEmptyAtStart) {
+    useUiStore().applyAutomaticGalleryView(true, batchStore.images)
   }
 }
 

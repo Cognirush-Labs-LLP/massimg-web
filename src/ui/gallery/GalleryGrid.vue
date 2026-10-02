@@ -78,13 +78,28 @@ function onScroll(): void {
   })
 }
 
-function requestThumbnails(): void {
-  settleTimer = null
+// A computed, not a plain function read off windowInfo: reading image.width/height here (even to
+// decide the skip below) registers them as reactive dependencies, so this recomputes — and the
+// watcher below re-requests — the moment the dimension probe resolves an image that was skipped.
+// Without that, a width-0 image would never be retried once its real size became known.
+const thumbnailSources = computed<ThumbnailSource[]>(() => {
   const window_ = windowInfo.value
   const sources: ThumbnailSource[] = []
   for (let index = window_.requestFirstIndex; index <= window_.requestLastIndex; index += 1) {
     const image = images.value[index]
     if (!image) {
+      continue
+    }
+    // Dimensions not yet probed (dimension-probe.ts resolves them separately and can lag well
+    // behind the visible window for a large batch). Requesting now would hand the thumbnail
+    // service a 0x0 source; createImageBitmap clamps that to a 1x1 resize, which "succeeds" and
+    // gets cached — the service has no correctness check on a cached entry, only an LRU recency
+    // one, so that degenerate thumbnail would keep being treated as done (and, while it keeps
+    // showing up in a visible window, kept fresh rather than evicted) even once the real
+    // dimensions arrive. Skipping until they're known, and relying on this computed's reactive
+    // dependency on image.width/height to retry once they are, avoids ever generating that
+    // degenerate result in the first place.
+    if (image.width === 0 || image.height === 0) {
       continue
     }
     const file = getSourceFile(image.id)
@@ -98,7 +113,12 @@ function requestThumbnails(): void {
       edit: image.edit,
     })
   }
-  getThumbnailService().setVisible(sources)
+  return sources
+})
+
+function requestThumbnails(): void {
+  settleTimer = null
+  getThumbnailService().setVisible(thumbnailSources.value)
 }
 
 function scheduleThumbnailRequest(): void {
@@ -111,7 +131,7 @@ function scheduleThumbnailRequest(): void {
 // immediate: true so the very first window (before anything has changed) is requested too, not
 // only subsequent ones — a bare `watch` only fires on a value change, and on first render nothing
 // has changed yet.
-watch(windowInfo, scheduleThumbnailRequest, { immediate: true })
+watch(thumbnailSources, scheduleThumbnailRequest, { immediate: true })
 
 onMounted(async () => {
   await nextTick()
@@ -169,6 +189,7 @@ onUnmounted(() => {
         :key="image.id"
         :image="image"
         :thumbnail-url="urlFor(image.id)"
+        :thumb-size="layout.thumbSize"
       />
       <div
         class="spacer"
@@ -179,6 +200,15 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.gallery-grid {
+  /* The windowing above resizes the top/bottom spacers on every scroll tick as the rendered row
+     range shifts. Without this, the browser's scroll anchoring treats that resize as content
+     moving above the viewport and "corrects" scrollTop to compensate, which fires another scroll
+     event and feeds back into itself — the reported flicker/jump. Scoped to this subtree (not the
+     shared .stage-body scroll host) so other stage modes keep native anchoring. */
+  overflow-anchor: none;
+}
+
 .grid-track {
   display: grid;
   gap: 10px;

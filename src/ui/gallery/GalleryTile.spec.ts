@@ -20,7 +20,7 @@ beforeEach(() => {
 describe('GalleryTile', () => {
   it('renders the thumbnail image when a URL is available', () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: imageRecordFixture, thumbnailUrl: 'blob:thumb' },
+      props: { image: imageRecordFixture, thumbnailUrl: 'blob:thumb', thumbSize: 200 },
     })
     const img = wrapper.find('img')
     expect(img.exists()).toBe(true)
@@ -28,9 +28,17 @@ describe('GalleryTile', () => {
     expect(wrapper.find('.thumb').classes()).not.toContain('placeholder')
   })
 
+  it('sizes the thumbnail box from the thumbSize prop, not the tile width', () => {
+    const wrapper = mount(GalleryTile, {
+      props: { image: imageRecordFixture, thumbnailUrl: 'blob:thumb', thumbSize: 150 },
+    })
+    const style = wrapper.find('.thumb').attributes('style') ?? ''
+    expect(style).toContain('150px')
+  })
+
   it('renders a neutral placeholder, not an error, when no thumbnail URL is available', () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: imageRecordFixture, thumbnailUrl: null },
+      props: { image: imageRecordFixture, thumbnailUrl: null, thumbSize: 200 },
     })
     expect(wrapper.find('img').exists()).toBe(false)
     expect(wrapper.find('.thumb').classes()).toContain('placeholder')
@@ -41,6 +49,7 @@ describe('GalleryTile', () => {
       props: {
         image: { ...imageRecordFixture, isAnimated: true, status: 'failed' },
         thumbnailUrl: null,
+        thumbSize: 200,
       },
     })
     const badgeTexts = wrapper.findAll('.badge').map((badge) => badge.text())
@@ -52,6 +61,7 @@ describe('GalleryTile', () => {
       props: {
         image: { ...imageRecordFixture, edit: null, isAnimated: false },
         thumbnailUrl: null,
+        thumbSize: 200,
       },
     })
     expect(wrapper.findAll('.badge')).toHaveLength(0)
@@ -59,7 +69,11 @@ describe('GalleryTile', () => {
 
   it('shows the pending placeholder for width/height still at 0', () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: { ...imageRecordFixture, width: 0, height: 0 }, thumbnailUrl: null },
+      props: {
+        image: { ...imageRecordFixture, width: 0, height: 0 },
+        thumbnailUrl: null,
+        thumbSize: 200,
+      },
     })
     expect(wrapper.find('.meta').text()).toContain('–×–')
   })
@@ -67,21 +81,25 @@ describe('GalleryTile', () => {
   it('shows an error in place of dimensions when the probe failed for this image', () => {
     dimensionErrors.add(imageRecordFixture.id)
     const wrapper = mount(GalleryTile, {
-      props: { image: imageRecordFixture, thumbnailUrl: null },
+      props: { image: imageRecordFixture, thumbnailUrl: null, thumbSize: 200 },
     })
     expect(wrapper.find('.meta').text()).toContain('Error')
   })
 
   it('shows real W×H and the UI-formatted size once resolved', () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: { ...imageRecordFixture, width: 1600, height: 1200 }, thumbnailUrl: null },
+      props: {
+        image: { ...imageRecordFixture, width: 1600, height: 1200 },
+        thumbnailUrl: null,
+        thumbSize: 200,
+      },
     })
     expect(wrapper.find('.meta').text()).toContain('1600×1200')
   })
 
   it('clicking the tile opens Preview for that image (R-G1)', async () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: imageRecordFixture, thumbnailUrl: null },
+      props: { image: imageRecordFixture, thumbnailUrl: null, thumbSize: 200 },
     })
     await wrapper.find('.open-button').trigger('click')
 
@@ -92,7 +110,7 @@ describe('GalleryTile', () => {
 
   it('clicking remove calls removeIngestedImage and does not open Preview (R-G2)', async () => {
     const wrapper = mount(GalleryTile, {
-      props: { image: imageRecordFixture, thumbnailUrl: null },
+      props: { image: imageRecordFixture, thumbnailUrl: null, thumbSize: 200 },
     })
     await wrapper.find('[data-testid="gallery-tile-remove"]').trigger('click')
 
