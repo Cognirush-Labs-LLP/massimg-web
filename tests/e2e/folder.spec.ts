@@ -111,6 +111,28 @@ test.describe('pickFolder()', () => {
 })
 
 test.describe('readDroppedFolder()', () => {
+  test('captures every top-level item before the drop payload becomes inaccessible', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    const selection = await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+      const dataTransfer = buildExpiringLooseFileDrop(['one.jpg', 'two.jpg', 'three.jpg'])
+      const result = await mod.readDroppedFolder(dataTransfer)
+      return serializeSelection(result)
+    }, FOLDER_MODULE_PATH)
+
+    expect(selection).toEqual({
+      ok: true,
+      files: [
+        { name: 'one.jpg', relativePath: 'one.jpg' },
+        { name: 'two.jpg', relativePath: 'two.jpg' },
+        { name: 'three.jpg', relativePath: 'three.jpg' },
+      ],
+    })
+  })
+
   test('traverses a mock nested folder, skipping hidden and system entries', async ({ page }) => {
     await page.goto('/')
 
@@ -242,6 +264,7 @@ async function callFolderFn(
 // globals installed by `page.addInitScript` before each test — see beforeEach below.
 declare function serializeSelection(result: unknown): SerializedSelection
 declare function buildMockDrop(root: string, files: string[]): unknown
+declare function buildExpiringLooseFileDrop(files: string[]): unknown
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -302,6 +325,35 @@ test.beforeEach(async ({ page }) => {
       }
     }
 
+    function buildExpiringLooseFileDrop(files: string[]) {
+      let readable = true
+      const entries = files.map((name) => ({
+        name,
+        isFile: true,
+        isDirectory: false,
+        file: (resolve: (file: File) => void, reject: (error: Error) => void) => {
+          if (readable) {
+            resolve(new File(['x'], name))
+          } else {
+            reject(new Error('drop payload is no longer readable'))
+          }
+        },
+      }))
+
+      // Models the HTML drag-data lifecycle: access is available during the synchronous drop
+      // handler, then protected as soon as that handler yields back to the browser.
+      queueMicrotask(() => {
+        readable = false
+      })
+
+      return {
+        items: entries.map((entry) => ({
+          kind: 'file',
+          webkitGetAsEntry: () => (readable ? entry : null),
+        })),
+      }
+    }
+
     function serializeSelection(result: {
       ok: boolean
       files?: { file: { name: string }; relativePath: string | null }[]
@@ -321,6 +373,8 @@ test.beforeEach(async ({ page }) => {
       }
     }
     ;(globalThis as unknown as Record<string, unknown>).buildMockDrop = buildMockDrop
+    ;(globalThis as unknown as Record<string, unknown>).buildExpiringLooseFileDrop =
+      buildExpiringLooseFileDrop
     ;(globalThis as unknown as Record<string, unknown>).serializeSelection = serializeSelection
   })
 })

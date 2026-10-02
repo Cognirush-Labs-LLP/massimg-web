@@ -91,26 +91,42 @@ function resolvePickedFolder(files: File[]): FolderSelection {
 }
 
 export async function readDroppedFolder(dataTransfer: DataTransfer): Promise<FolderSelection> {
-  const files: SelectedFile[] = []
+  const traversals: Promise<SelectedFile[]>[] = []
 
   try {
+    // A browser-created DataTransfer is readable only while the drop event is being dispatched.
+    // Start every top-level traversal before the first await; walking one entry to completion
+    // before asking the DataTransfer for the next makes every item after the first inaccessible
+    // on a real OS drop. Promise.all preserves top-level insertion order even when roots finish in
+    // a different order.
     for (const item of dataTransfer.items) {
       if (item.kind !== 'file' || typeof item.webkitGetAsEntry !== 'function') {
         continue
       }
       const entry = item.webkitGetAsEntry()
       if (entry) {
-        await walk(entry, entry.name, 0, files)
+        const rootFiles: SelectedFile[] = []
+        traversals.push(walk(entry, entry.name, 0, rootFiles).then(() => rootFiles))
       }
     }
+
+    const files = (await Promise.all(traversals)).flat()
+    if (files.length > MAX_TRAVERSAL_FILES) {
+      return {
+        ok: false,
+        reason: 'file-count-exceeded',
+        actual: files.length,
+        cap: MAX_TRAVERSAL_FILES,
+      }
+    }
+
+    return { ok: true, files }
   } catch (error) {
     if (error instanceof TraversalBreach) {
       return { ok: false, reason: error.reason, actual: error.actual, cap: error.cap }
     }
     throw error
   }
-
-  return { ok: true, files }
 }
 
 // Depth 0 is the root entry itself (never filtered); its descendants start at depth 1.
