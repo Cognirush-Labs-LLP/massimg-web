@@ -71,9 +71,9 @@ describe('report model and YAML serialization', () => {
       Succeeded: 5,
       Failed: 1,
       Skipped: 1,
-      'Input size': '31.00 KB',
-      'Output size': '23.50 KB',
-      Saved: '7.50 KB (24.2%)',
+      'Input size': '31.74 KB',
+      'Output size': '24.06 KB',
+      Saved: '7.68 KB (24.2%)',
       'Exact bytes': {
         Input: 31_744,
         Output: 24_064,

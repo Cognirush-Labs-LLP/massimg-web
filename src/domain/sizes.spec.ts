@@ -8,12 +8,12 @@ describe('size formatting', () => {
 
   it.each([
     [0, '0.00 B'],
-    [1023, '1023.00 B'],
-    [1024, '1.00 KB'],
-    [12.334 * 1024 ** 2, '12.33 MB'],
-    [12.336 * 1024 ** 2, '12.34 MB'],
-    [2.5 * 1024 ** 3, '2.50 GB'],
-    [1.25 * 1024 ** 4, '1.25 TB'],
+    [999, '999.00 B'],
+    [1000, '1.00 KB'],
+    [12.334 * 1000 ** 2, '12.33 MB'],
+    [12.336 * 1000 ** 2, '12.34 MB'],
+    [2.5 * 1000 ** 3, '2.50 GB'],
+    [1.25 * 1000 ** 4, '1.25 TB'],
   ])('formats %d bytes for the report as %s', (bytes, expected) => {
     expect(formatReportSize(bytes)).toBe(expected)
   })
@@ -21,14 +21,14 @@ describe('size formatting', () => {
   it('keeps report numbers dot-decimal regardless of the interface locale', () => {
     const numberFormatSpy = vi.spyOn(Intl, 'NumberFormat')
     const locales = ['en-US', 'de-DE', 'hi-IN'] as const
-    const reportOutputs = locales.map(() => formatReportSize(12.334 * 1024 ** 2))
+    const reportOutputs = locales.map(() => formatReportSize(12.334 * 1000 ** 2))
 
     expect(reportOutputs).toEqual(['12.33 MB', '12.33 MB', '12.33 MB'])
     expect(numberFormatSpy).not.toHaveBeenCalled()
   })
 
   it('formats interface numbers through Intl.NumberFormat for the requested locale', () => {
-    const bytes = 12.334 * 1024 ** 2
+    const bytes = 12.334 * 1000 ** 2
     const uiOutputs = {
       'en-US': formatUiSize(bytes, 'en-US'),
       'de-DE': formatUiSize(bytes, 'de-DE'),

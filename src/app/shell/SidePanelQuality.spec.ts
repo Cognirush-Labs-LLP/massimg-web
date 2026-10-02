@@ -55,7 +55,7 @@ describe('SidePanelQuality', () => {
 
     await wrapper.find('[data-testid="quality-size-field"]').setValue('500')
 
-    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 500 * 1024 })
+    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 500 * 1000 })
   })
 
   it('switching the unit recomputes bytes from the same displayed number, not the stored bytes', async () => {
@@ -65,7 +65,7 @@ describe('SidePanelQuality', () => {
 
     await wrapper.find('[data-testid="quality-unit-mb"]').trigger('click')
 
-    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 500 * 1024 * 1024 })
+    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 500 * 1000 * 1000 })
     expect(wrapper.find<HTMLInputElement>('[data-testid="quality-size-field"]').element.value).toBe(
       '500',
     )

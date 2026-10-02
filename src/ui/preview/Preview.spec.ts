@@ -122,7 +122,7 @@ describe('Preview', () => {
     runs[0]?.settle(completed(256_000, 'a'))
     await flushPromises()
 
-    expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('250.00 KB')
+    expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('256.00 KB')
     expect(wrapper.get('[data-testid="preview-size-change"]').text()).toBe('50% ↓')
   })
 

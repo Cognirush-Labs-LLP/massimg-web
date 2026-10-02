@@ -8,8 +8,8 @@ describe('PreviewComparisonPill', () => {
       props: { tab: 'compressed', originalBytes: 512_000, compressedBytes: 256_000 },
     })
 
-    expect(wrapper.get('[data-testid="preview-original-size"]').text()).toBe('500.00 KB')
-    expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('250.00 KB')
+    expect(wrapper.get('[data-testid="preview-original-size"]').text()).toBe('512.00 KB')
+    expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('256.00 KB')
     expect(wrapper.get('[data-testid="preview-size-change"]').text()).toBe('50% ↓')
   })
 

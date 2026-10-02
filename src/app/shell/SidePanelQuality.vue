@@ -7,6 +7,7 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { sizeTargetDisabledReason } from '@/domain/format'
+import { BYTES_PER_UNIT } from '@/domain/sizes'
 import { useSettingsStore } from '@/stores/settings'
 
 type SizeUnit = 'KB' | 'MB'
@@ -17,8 +18,10 @@ const QUALITY_CHIPS = [
   { key: 'panel.quality.chipHigh', value: 90, testId: 'quality-chip-high' },
 ] as const
 
-const BYTES_PER_KB = 1024
-const BYTES_PER_MB = 1024 * 1024
+// Shares `domain/sizes.ts`'s BYTES_PER_UNIT so the target-size parser and the
+// display formatter can never drift out of sync.
+const BYTES_PER_KB = BYTES_PER_UNIT
+const BYTES_PER_MB = BYTES_PER_UNIT ** 2
 // No design document states a default Size-target value; 500 KB is chosen as the
 // least-surprising starting point (docs/task-notes/T35.md, Decisions made).
 const DEFAULT_SIZE_VALUE = 500
@@ -28,7 +31,7 @@ const settings = useSettingsStore()
 const { quality, format } = storeToRefs(settings)
 
 // The store only ever holds `targetBytes` (Technical Design §3.2's ResolvedSettings shape), which
-// can't be split back into a unique value+unit pair (512000 bytes is both "500 KB" and "0.49 MB").
+// can't be split back into a unique value+unit pair (500000 bytes is both "500 KB" and "0.5 MB").
 // These two refs are the field's own display state, independent of the store, so toggling KB/MB
 // back and forth never drifts the displayed number through repeated byte<->unit conversions.
 const sizeValue = ref(

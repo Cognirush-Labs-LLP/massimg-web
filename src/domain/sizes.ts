@@ -1,4 +1,4 @@
-const BYTES_PER_UNIT = 1024
+export const BYTES_PER_UNIT = 1000
 const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const
 
 interface ScaledSize {
