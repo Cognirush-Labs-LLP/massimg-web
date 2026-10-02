@@ -54,12 +54,12 @@ function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
   }
 }
 
-function seed(ids: string[], current = ids[0]): void {
+function seed(ids: string[], current = ids[0], overrides: Partial<ImageRecord> = {}): void {
   for (const id of ids) {
     sourceFiles.set(id as ImageId, new File([new Uint8Array([1, 2, 3])], `${id}.jpeg`))
   }
 
-  useBatchStore().addImages(ids.map((id) => image(id)))
+  useBatchStore().addImages(ids.map((id) => image(id, overrides)))
   useUiStore().openPreview(current as ImageId)
 }
 
@@ -137,13 +137,21 @@ describe('Preview', () => {
   })
 
   it('discloses flattening on the line when the chosen format has no alpha (R-C17)', async () => {
-    seed(['a'])
+    seed(['a'], 'a', { sourceFormat: 'png' })
     useSettingsStore().format = 'jpeg'
     const wrapper = await mountPreview()
 
     expect(wrapper.get('[data-testid="preview-transform-note"]').text()).toContain(
       'JPEG has no transparency',
     )
+  })
+
+  it('stays silent about flattening for a JPEG source, which can never carry transparency', async () => {
+    seed(['a'])
+    useSettingsStore().format = 'jpeg'
+    const wrapper = await mountPreview()
+
+    expect(wrapper.find('[data-testid="preview-transform-note"]').exists()).toBe(false)
   })
 
   it('flips the stored comparison tab from anywhere on the pill (R-P2)', async () => {

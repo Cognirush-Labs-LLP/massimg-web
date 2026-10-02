@@ -133,9 +133,23 @@ describe('describeTransformLine', () => {
   })
 
   it('discloses flattening when the output format has no alpha (R-C17)', () => {
-    expect(described(describeTransformLine(image(), batch({ format: 'jpeg' }))).notes).toEqual([
-      'alpha-flattened',
-    ])
+    expect(
+      described(
+        describeTransformLine(image({ sourceFormat: 'png' }), batch({ format: 'jpeg' })),
+      ).notes,
+    ).toEqual(['alpha-flattened'])
+  })
+
+  it('stays silent about flattening for a JPEG source, which can never carry transparency', () => {
+    const line = described(describeTransformLine(image(), batch({ format: 'jpeg' })))
+
+    expect(line.notes).toEqual([])
+  })
+
+  it('stays silent for a JPEG source re-encoded to AVIF, the other alpha-less output', () => {
+    const line = described(describeTransformLine(image(), batch({ format: 'avif' })))
+
+    expect(line.notes).toEqual([])
   })
 
   it('discloses flattening when transparency has never been tested, which is every image today', () => {

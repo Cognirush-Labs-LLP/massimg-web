@@ -61,10 +61,18 @@ export function describeTransformLine(image: ImageRecord, batch: BatchSettings):
   // `false` (measured, opaque) or `null` (never tested — which is every image today, because nothing
   // probes it yet). Flattening is disclosed in the first and third, and the wording the component
   // renders is conditional ("transparent areas will be filled") precisely so that it is true in the
-  // untested case as well. Only a measured `false` suppresses it. The report's own
-  // `transparency-flattened` caveat is the measured, past-tense claim, and the pipeline makes it from
-  // real pixels — Preview never sees it, because `intent: 'preview'` returns no caveats.
-  if (settings.alpha.kind === 'flatten' && image.hasTransparency !== false) {
+  // untested case as well. Only a measured `false` suppresses it.
+  //
+  // A JPEG source is a fourth case the type doesn't model: the format itself has no alpha channel, so
+  // `hasTransparency` can never truthfully be anything but `false` for it, probe or no probe. Without
+  // this, every JPEG-to-JPEG job would disclose flattening it structurally cannot be doing. The report's
+  // own `transparency-flattened` caveat is the measured, past-tense claim, and the pipeline makes it
+  // from real pixels — Preview never sees it, because `intent: 'preview'` returns no caveats.
+  if (
+    settings.alpha.kind === 'flatten' &&
+    image.sourceFormat !== 'jpeg' &&
+    image.hasTransparency !== false
+  ) {
     notes.push('alpha-flattened')
   }
 
