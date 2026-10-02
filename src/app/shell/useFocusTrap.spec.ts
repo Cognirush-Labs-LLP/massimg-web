@@ -36,6 +36,16 @@ async function flush(): Promise<void> {
 }
 
 describe('useFocusTrap', () => {
+  it('moves focus into the container when already active on the very first render', async () => {
+    const onEscape = vi.fn()
+    const wrapper = mount(makeHost(onEscape), { props: { active: true }, attachTo: document.body })
+
+    await flush()
+    expect(document.activeElement?.id).toBe('first')
+
+    wrapper.unmount()
+  })
+
   it('moves focus into the container on activate and back out on deactivate', async () => {
     const onEscape = vi.fn()
     const wrapper = mount(makeHost(onEscape), {

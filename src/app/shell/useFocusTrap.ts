@@ -1,4 +1,4 @@
-import { onBeforeUnmount, watch, type Ref } from 'vue'
+import { nextTick, onBeforeUnmount, watch, type Ref } from 'vue'
 
 // Hand-rolled rather than a dependency (docs/task-notes/T31.md, Decisions made): the behaviour
 // R-K3 needs — Tab/Shift+Tab cycling inside a container, Escape, focus-restore-on-close — is
@@ -32,11 +32,10 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
  * Traps Tab/Shift+Tab focus cycling inside `container` while `active` is true, calls `onEscape`
  * on Escape, and returns focus to `returnFocusTo` when `active` transitions back to false.
  *
- * Only ever set up from a component that is itself conditionally mounted on the client breakpoint
- * (docs/ui-design.md §2's mobile drawer) — see `useBreakpoint`'s doc comment for why that already
- * keeps this SSR-safe without an extra guard here: during vite-ssg's Node prerender pass,
- * `isDesktop` defaults to `true`, so the drawer component this composable lives in is never
- * rendered there in the first place.
+ * SSR safety: each caller must only ever be rendered client-side. Drawer.vue relies on
+ * `isDesktop` defaulting to `true` during vite-ssg's Node prerender pass (see `useBreakpoint`'s
+ * doc comment); ConfirmDialog.vue (R-M9/R-X18's confirmations) is only ever mounted from inside
+ * `useBackNavigationGuard`, itself only invoked from `ToolPage.vue`'s client-only `onMounted`.
  */
 export function useFocusTrap(options: UseFocusTrapOptions): void {
   const { container, active, returnFocusTo, onEscape } = options
@@ -89,6 +88,17 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
         const root = container.value
         if (root) {
           focusableElements(root)[0]?.focus()
+        } else {
+          // The immediate invocation below runs synchronously when this composable is called
+          // during setup(), before the caller's own first render — reached whenever `active` is
+          // already true at creation (rather than becoming true later, as Drawer.vue's own usage
+          // does), so `container.value` isn't bound to the DOM yet. Defer one tick and retry.
+          void nextTick(() => {
+            const mountedRoot = container.value
+            if (mountedRoot) {
+              focusableElements(mountedRoot)[0]?.focus()
+            }
+          })
         }
       } else if (!isActive && wasActive) {
         document.removeEventListener('keydown', handleKeydown)
@@ -96,11 +106,11 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
       }
     },
     // `immediate: true` so a container that is already active on its very first render (not
-    // just one that becomes active later) still gets trapped — without it, `wasActive` never
-    // exists to compare against and the trap silently never engages. Safe during vite-ssg's
-    // Node prerender pass regardless: Drawer.vue (this composable's only caller) is itself only
-    // ever rendered client-side (see useBreakpoint's doc comment), so this callback never runs
-    // where `document` wouldn't exist.
+    // just one that becomes active later, e.g. ConfirmDialog.vue, which never toggles `active`
+    // after creation) still gets trapped — without it, `wasActive` never exists to compare
+    // against and the trap silently never engages. Safe during vite-ssg's Node prerender pass:
+    // every caller is only ever rendered client-side (see doc comment above), so this callback
+    // never runs where `document` wouldn't exist.
     { flush: 'post', immediate: true },
   )
 

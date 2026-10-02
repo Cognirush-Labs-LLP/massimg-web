@@ -64,6 +64,51 @@
     "control": "Plain paragraph text inside the stage body.",
     "maxLength": null
   },
+  "shell.leaveConfirm.title": {
+    "situation": "Heading of the confirmation dialog (R-M9) raised by a second browser back-button press once already at Gallery — the app's one route has no further internal state to unwind, so this press is genuine leave intent.",
+    "control": "Dialog heading text, focus-trapped (R-K12).",
+    "maxLength": 40
+  },
+  "shell.leaveConfirm.body": {
+    "situation": "Body copy of the R-M9 leave-intent dialog, explaining what a further back press (Leave) does.",
+    "control": "Plain dialog body text.",
+    "maxLength": 100
+  },
+  "shell.leaveConfirm.stay": {
+    "situation": "Default-focused action (R-K12) in the R-M9 leave-intent dialog that re-arms the guard and keeps the user on Gallery.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 12
+  },
+  "shell.leaveConfirm.leave": {
+    "situation": "Action in the R-M9 leave-intent dialog that lets the browser's own back navigation proceed.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 12
+  },
+  "processing.leaveConfirm.title": {
+    "situation": "Heading of R-X18's three-way confirmation, raised when navigating away (including via browser back, R-M8) from a completed Processing run whose results haven't been downloaded yet.",
+    "control": "Dialog heading text, focus-trapped (R-K9).",
+    "maxLength": 40
+  },
+  "processing.leaveConfirm.body": {
+    "situation": "Body copy of the R-X18 dialog, stating that the results will be discarded if the user leaves without downloading.",
+    "control": "Plain dialog body text.",
+    "maxLength": 120
+  },
+  "processing.leaveConfirm.stay": {
+    "situation": "Default-focused action (R-K9) in the R-X18 dialog that re-arms the guard and keeps the user on Processing.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 12
+  },
+  "processing.leaveConfirm.leaveWithoutDownloading": {
+    "situation": "Action in the R-X18 dialog that discards the undownloaded results and returns to Gallery.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 28
+  },
+  "processing.leaveConfirm.downloadAndLeave": {
+    "situation": "Action in the R-X18 dialog that downloads the finished run's output before returning to Gallery.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 20
+  },
   "gallery.emptyState.headline": {
     "situation": "The large headline inside the empty-state drop zone that covers the whole stage when the batch has no images (Functional Design §3.2). Shown alongside the formats line and two Select buttons.",
     "control": "Large, bold display text, centred. Not interactive.",

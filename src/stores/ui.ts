@@ -187,3 +187,30 @@ export const useUiStore = defineStore('ui', () => {
     retargetAfterRemoval,
   }
 })
+
+export type UiStore = ReturnType<typeof useUiStore>
+
+// Gallery is the app's one root stage; every other stage — including any added in the future —
+// counts as "nested" automatically, so the browser-back-button guard (useBackNavigationGuard)
+// never needs updating when a new StageMode is introduced.
+export function isNestedStage(mode: StageMode): boolean {
+  return mode !== 'gallery'
+}
+
+// What a first back-button press does by default for each nested stage, overriding the
+// backToGallery fallback only where that default is wrong (Edit's back goes to Preview, matching
+// its on-screen Cancel semantics at closeEdit() above). 'processing' is deliberately absent here:
+// its back behaviour depends on run state and can raise a dialog, so useBackNavigationGuard
+// special-cases it directly instead of going through this table.
+const STAGE_BACK_ACTIONS: Partial<Record<StageMode, (ui: UiStore) => void>> = {
+  edit: (ui) => ui.closeEdit(),
+}
+
+export function performStageBackAction(ui: UiStore): void {
+  const action = STAGE_BACK_ACTIONS[ui.stageMode]
+  if (action) {
+    action(ui)
+  } else {
+    ui.backToGallery()
+  }
+}

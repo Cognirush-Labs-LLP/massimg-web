@@ -202,7 +202,7 @@ mapping (R-L1/R-L5).
 
 ## 3. Mode state machine
 
-**Satisfies:** R-M1–R-M5, functional-design §3.1.
+**Satisfies:** R-M1–R-M9, functional-design §3.1.
 
 Four stage modes: **Gallery**, **Preview**, **Edit**, **Processing**. Exactly one is
 mounted at a time.
@@ -247,6 +247,23 @@ Two rules worth calling out because they're easy to get backwards:
 - **R-M2:** if the batch *grows past one* while Preview is open (via "Add more
   images", R-M3), the app returns to **Gallery** rather than staying on the image
   that was being previewed.
+
+### Browser back button
+
+Gallery is the app's one route (§3's own framing, R-S1) — these four modes never become URLs, so
+without extra handling a physical back-button press would simply leave the app from wherever it's
+pressed.
+
+- **R-M6:** one synthetic history entry is pushed per nested mode (Preview, Edit, Processing),
+  plus one base guard entry for Gallery pushed once at app start.
+- **R-M7:** a first back press in a nested mode performs that mode's own default back transition —
+  the same one its on-screen back control performs (Preview → Gallery, Edit → Preview) — silently.
+  A mode added later only needs an explicit entry in that transition table if its default isn't
+  "return to Gallery"; nothing about back-button handling itself needs to change.
+- **R-M8:** a back press in Processing instead follows R-X18/R-X19 (§14) — a plain Cancel raises
+  no confirmation, but a completed, undownloaded run raises that three-way dialog.
+- **R-M9:** a second back press, once already at Gallery, raises a Stay/Leave confirmation (§14)
+  rather than exiting immediately — see "Leaving the app from the back button" in §14.
 
 ---
 
@@ -1022,6 +1039,20 @@ choice, and the user should know there's a way around it if they need one.
   action — leaving is never the path of least resistance.
 - Restated from §13: this dialog is **not** shown after a plain Cancel (R-X19) —
   only after a completed run with results still sitting undownloaded.
+- A physical browser back-button press while Processing is mounted follows this same rule
+  (R-M8): still running, or already downloaded → Cancel, no dialog; completed and undownloaded →
+  this three-way dialog, with **Stay** re-arming the back-button guard rather than transitioning.
+
+### Leaving the app from the back button
+
+- **R-M9:** the app's one route (§3) has no second level of its own history beyond Gallery, so a
+  second back press once already at Gallery — after a first press has already unwound any nested
+  stage (Preview, Edit) back to it per R-M7 — is genuine leave intent, not a mode transition. It
+  raises a confirmation with exactly two actions: **Stay**, **Leave**.
+- **R-K12:** same pattern as R-K9 — focus-trapped, **Stay** default-focused — for this distinct
+  dialog.
+- Choosing **Leave** allows the browser's own back navigation to proceed; **Stay** re-arms the
+  guard and keeps the user on Gallery.
 
 ### Toasts
 

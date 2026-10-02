@@ -724,14 +724,19 @@ Wire the report model to real run data and write it into the archive.
 
 ### T42 — Download and leaving
 
-**Functional Design:** R-X15 to R-X20, R-X41, R-X42, R-K9
+**Functional Design:** R-X15 to R-X20, R-X41, R-X42, R-K9, R-M6 to R-M9, R-K12
 
-Explicit Download. Single image downloads directly with no ZIP and no report. The three-way confirmation on leaving with undownloaded results. Cleanup.
+Explicit Download. Single image downloads directly with no ZIP and no report. The three-way confirmation on leaving with undownloaded results. Cleanup. Physical back-button navigation is integrated with the mode state machine: a first back press performs each nested stage's default transition (Processing following R-X18/R-X19 instead), and a second back press at Gallery raises a Stay/Leave confirmation.
 
 - A zero-success completion (all skipped and/or failed) has no downloadable artifact and no Download
   action. A single success still downloads directly even when other images were skipped.
+- The back-button guard and its two dialogs (`useBackNavigationGuard`, `ConfirmDialog.vue`) land
+  ahead of the rest of this task's download/report wiring — `downloadFinishedRun()`
+  (`src/pipeline/run-download.ts`) is a scoped-out stub until this task's own run-output retention
+  and archive assembly exist; wire the explicit Download button to that same function rather than
+  duplicating its single-vs-ZIP logic.
 
-**Done when:** a single-image run downloads one image file, a multi-image run downloads a ZIP, the confirmation offers all three actions with Stay focused by default, and no OPFS file survives any exit path.
+**Done when:** a single-image run downloads one image file, a multi-image run downloads a ZIP, the confirmation offers all three actions with Stay focused by default, no OPFS file survives any exit path, a back press from Preview/Edit silently performs their default transition, a back press from a finished-undownloaded Processing run raises the three-way dialog, and a second back press at Gallery raises a Stay/Leave confirmation that genuinely blocks navigation when Stay is chosen.
 
 ---
 

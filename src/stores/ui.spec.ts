@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { ImageId, ImageRecord } from '@/domain/types'
 import { imageRecordFixture } from '@/domain/types.fixtures'
-import { useUiStore } from './ui'
+import { isNestedStage, performStageBackAction, useUiStore } from './ui'
 
 const idA = 'image-a' as ImageId
 const idB = 'image-b' as ImageId
@@ -181,6 +181,37 @@ describe('useUiStore.onBatchCountChanged', () => {
     ui.onBatchCountChanged(2, [])
 
     expect(ui.stageMode).toBe('edit')
+  })
+})
+
+describe('isNestedStage', () => {
+  it('is false only for gallery', () => {
+    expect(isNestedStage('gallery')).toBe(false)
+    expect(isNestedStage('preview')).toBe(true)
+    expect(isNestedStage('edit')).toBe(true)
+    expect(isNestedStage('processing')).toBe(true)
+  })
+})
+
+describe('performStageBackAction', () => {
+  it('returns Edit to Preview, matching closeEdit', () => {
+    const ui = useUiStore()
+    ui.openEdit(idA)
+
+    performStageBackAction(ui)
+
+    expect(ui.stageMode).toBe('preview')
+    expect(ui.currentImageId).toBe(idA)
+  })
+
+  it('falls back to backToGallery for stages with no table entry', () => {
+    const ui = useUiStore()
+    ui.openPreview(idA)
+
+    performStageBackAction(ui)
+
+    expect(ui.stageMode).toBe('gallery')
+    expect(ui.currentImageId).toBeNull()
   })
 })
 

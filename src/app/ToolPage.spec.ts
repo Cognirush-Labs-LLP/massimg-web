@@ -232,6 +232,37 @@ describe('ToolPage primary action meta line (R-A2, R-F4, T35)', () => {
   })
 })
 
+describe('ToolPage browser-back navigation guard (R-M6-R-M9, R-X18/R-X19)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('wires the guard on mount, pushing one base history entry', async () => {
+    // Other tests in this file mount ToolPage too, each leaving history.state sitting on the
+    // guard's own marker — reset it so this mount is evaluated as a genuinely fresh load, not
+    // one of the reload cases useBackNavigationGuard is specifically meant to not double-push for.
+    history.replaceState(null, '')
+    const pushStateSpy = vi.spyOn(history, 'pushState')
+
+    const wrapper = await mountToolPage()
+
+    expect(pushStateSpy).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('does not render the confirm dialog until a back-button press triggers one', async () => {
+    const wrapper = await mountToolPage()
+
+    expect(wrapper.find('[data-testid="confirm-dialog"]').exists()).toBe(false)
+
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="confirm-dialog"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})
+
 describe('ToolPage stage toolbars and breadcrumb (T36)', () => {
   beforeEach(() => {
     nextId = 0

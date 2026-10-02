@@ -5,7 +5,7 @@
 // separate from App.vue (the thin vite-ssg root) because T43 wraps App.vue with an outer site
 // header/footer later; this page's own chrome must already live inside the routed page, not the
 // app root.
-import { computed, onMounted, ref, type Component } from 'vue'
+import { computed, onMounted, ref, shallowRef, type Component } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
@@ -19,6 +19,7 @@ import Header from './shell/Header.vue'
 import StageContainer from './shell/StageContainer.vue'
 import SidePanel from './shell/SidePanel.vue'
 import Drawer from './shell/Drawer.vue'
+import ConfirmDialog from './shell/ConfirmDialog.vue'
 import PrimaryActionButton from './shell/PrimaryActionButton.vue'
 import { useUiStore, type StageMode } from '@/stores/ui'
 import { useBatchStore } from '@/stores/batch'
@@ -26,6 +27,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { describePrimaryActionOutput } from '@/domain/job'
 import type { EncodableFormat } from '@/domain/types'
 import { useBreakpoint } from './shell/useBreakpoint'
+import { useBackNavigationGuard } from './shell/useBackNavigationGuard'
 
 const uiStore = useUiStore()
 const { stageMode, drawerOpen } = storeToRefs(uiStore)
@@ -132,11 +134,21 @@ function openPanel(opener: HTMLElement): void {
   uiStore.openDrawer()
 }
 
+// Populated client-only below (R-M6-R-M9). `shallowRef`, not `ref`: a plain `ref` would deep-
+// convert the assigned object via `reactive()`, which auto-unwraps its nested `dialog` ComputedRef
+// on property access — turning `backGuard.value.dialog` into `dialog`'s *current value* (already
+// unwrapped once) rather than the ComputedRef itself, so a second `.value` below would then
+// explode once that value is `null`. `shallowRef` keeps the returned object as-is; only the
+// top-level assignment needs to be reactive, to re-render once this is populated.
+const backGuard = shallowRef<ReturnType<typeof useBackNavigationGuard> | null>(null)
+const activeDialog = computed(() => backGuard.value?.dialog.value ?? null)
+
 // Client-only: vite-ssg runs this component once in Node at build time, where `window`, WASM
 // and workers don't exist (Technical Design §12.1/§12.3). `onMounted` never fires during that
 // pass, which is what makes this safe — moved here from the old src/app/main.ts module scope.
 onMounted(() => {
   scheduleImageMagickPreload()
+  backGuard.value = useBackNavigationGuard()
 })
 </script>
 
@@ -179,6 +191,12 @@ onMounted(() => {
         <SidePanel />
       </Drawer>
     </div>
+
+    <ConfirmDialog
+      v-if="activeDialog"
+      v-bind="activeDialog"
+      @action="backGuard?.handleDialogAction"
+    />
 
     <div v-if="!isDesktop && showPanel" class="mobile-action-bar">
       <PrimaryActionButton

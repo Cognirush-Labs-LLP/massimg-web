@@ -116,6 +116,19 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
   to Gallery does not reread large source files; R-G12 still stops all thumbnail generation outside
   Gallery.
 - R-M5 Leaving Processing with undownloaded results is governed by R-X18.
+- R-M6 The physical browser back button is integrated with this mode state machine: one synthetic
+  history entry is pushed per nested stage mode (Preview, Edit, Processing), plus one base guard
+  entry for Gallery pushed once at app start — Gallery is the app's only route (R-S1) and otherwise
+  has no history entry of its own. A back press never exits the app outright while either is live.
+- R-M7 A first back press while in a nested stage performs that stage's own default back
+  transition — the same transition its on-screen back control performs (Preview → Gallery, Edit →
+  Preview) — silently, with no confirmation. Extensible to any stage mode added in the future
+  without new navigation-handling code: a stage needs an explicit entry only when its default back
+  transition isn't "return to Gallery."
+- R-M8 A back press while in Processing is governed by R-X18/R-X19 instead of R-M7's default.
+- R-M9 A second back press, once already at Gallery (the base guard entry), is treated as leave
+  intent: a confirmation offers **Stay** and **Leave**. Stay re-arms the guard; Leave allows the
+  browser's own back navigation to proceed.
 
 ### 3.2 Gallery view
 
@@ -687,6 +700,7 @@ Every condition below has a defined surface and message. No condition may fail s
 - R-K9 The confirmation in R-X18 is a focus-trapped dialog with **Stay** as the default focused action.
 - R-K10 An accessible name is added only to a control that has no visible text label. A control that already has one is not given a separate accessible-name attribute, because its visible text is already its accessible name, and duplicating it doubles the translation burden for no accessibility gain. An accessible-name string is a key in the same message catalogue as visible text (R-L1) and carries the same context entry (R-L2). It is translated content, not a separate mechanism.
 - R-K11 No text, visible or invisible, is added anywhere in the interface or the public site (§15) for a search engine or an AI crawler rather than for a person. A markup comment addressed to a crawler is not read by one, and text hidden from sighted users with no assistive-technology purpose is a dark pattern rather than an SEO technique, whatever benefit is claimed for it.
+- R-K12 The confirmation in R-M9 is a focus-trapped dialog with **Stay** as the default focused action, the same pattern as R-K9 for its own, distinct dialog.
 
 ---
 
