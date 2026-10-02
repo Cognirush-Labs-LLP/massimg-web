@@ -13,6 +13,7 @@ import {
   qualityForSlider,
   requestIsSatisfiedBySource,
   resolveSettings,
+  singleImageDimensions,
   type BatchSettings,
   type SettingsImage,
 } from './job'
@@ -468,6 +469,33 @@ describe('describePrimaryActionOutput', () => {
       kind: 'single',
       formatLabel: 'original',
       dimensions: null,
+    })
+  })
+
+  // Exported since T36 so the Preview transform line shows the same figure as the meta line above.
+  describe('singleImageDimensions', () => {
+    it('returns the batch rule applied to the source for an unedited image', () => {
+      expect(singleImageDimensions(image(), { kind: 'fit-long-edge', pixels: 2000 })).toEqual({
+        width: 2000,
+        height: 1500,
+      })
+    })
+
+    it('takes the size from the crop, ignoring the batch rule (R-D1)', () => {
+      expect(
+        singleImageDimensions(image({ edit: CROP_EDIT }), { kind: 'fit-long-edge', pixels: 800 }),
+      ).toEqual({ width: 2800, height: 1800 })
+    })
+
+    it('applies the batch rule to the rotated size for a rotation-only edit (R-D4)', () => {
+      expect(singleImageDimensions(image({ edit: ROTATE_EDIT }), { kind: 'original' })).toEqual({
+        width: 3000,
+        height: 4000,
+      })
+    })
+
+    it('is null while the source dimensions are unknown', () => {
+      expect(singleImageDimensions(image({ width: 0, height: 0 }), { kind: 'original' })).toBeNull()
     })
   })
 })

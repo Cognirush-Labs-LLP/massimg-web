@@ -29,6 +29,25 @@ export function supportsAlpha(format: EncodableFormat): boolean {
   return format !== 'jpeg'
 }
 
+const MIME_TYPES = {
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  gif: 'image/gif',
+} as const satisfies Record<EncodableFormat, string>
+
+/**
+ * The media type to give a `Blob` of this format's encoded bytes, so the Preview frame can hand them
+ * to an `<img>` and let the browser apply the embedded colour profile itself (R-I16, T36).
+ *
+ * An animated PNG is `image/png`: APNG has no media type of its own, which is the same reason R-F1
+ * does not offer it as a separate format choice.
+ */
+export function mimeForFormat(format: EncodableFormat): string {
+  return MIME_TYPES[format]
+}
+
 /**
  * R-Q4's disabling mechanism: which formats make repeated size-target encoding prohibitively
  * expensive, and why. T30/assumptions.md D1 measured every format through the shipped search and

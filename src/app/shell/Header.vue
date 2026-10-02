@@ -10,7 +10,7 @@ const props = withDefaults(
     stageMode: StageMode
     isDesktop: boolean
     selectedCount?: number
-    // TODO(T33/T36): bind to the active image's file name once Gallery/Preview carry real data.
+    /** The current image's own file name, for the Preview and Edit breadcrumbs. Wired in T36. */
     activeFileName?: string
   }>(),
   { selectedCount: 0, activeFileName: '' },

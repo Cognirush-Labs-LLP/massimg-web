@@ -12,6 +12,7 @@ import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
 import Preview from '@/ui/preview/Preview.vue'
+import PreviewToolbar from '@/ui/preview/PreviewToolbar.vue'
 import Edit from '@/ui/edit/Edit.vue'
 import Processing from '@/ui/processing/Processing.vue'
 import Header from './shell/Header.vue'
@@ -49,6 +50,12 @@ const showPanel = computed(() => stageMode.value !== 'processing')
 
 const imageCount = computed(() => images.value.length)
 const primaryActionDisabled = computed(() => imageCount.value === 0)
+
+// The breadcrumb's `PREVIEW · abc.jpg` / `EDIT · abc.jpg` forms (docs/ui-design.md §2). Header.vue
+// has computed them since T31; this is the real value its `activeFileName` prop was waiting for.
+const activeFileName = computed(
+  () => images.value.find((image) => image.id === uiStore.currentImageId)?.name ?? '',
+)
 
 // Facts-only meta line beneath the Compress button (R-A2, R-F4, T35). Format acronyms are
 // deliberately not translated (see SidePanelFormat.vue's own note) — only "Original formats" is
@@ -107,6 +114,7 @@ const primaryActionMeta = computed(() => {
 // comment node.
 const STAGE_TOOLBARS: Partial<Record<StageMode, Component>> = {
   gallery: GalleryToolbar,
+  preview: PreviewToolbar,
 }
 const stageToolbar = computed(() =>
   stageMode.value === 'gallery' && imageCount.value === 0
@@ -138,6 +146,7 @@ onMounted(() => {
       :stage-mode="stageMode"
       :is-desktop="isDesktop"
       :selected-count="imageCount"
+      :active-file-name="activeFileName"
       @open-panel="openPanel"
     />
 

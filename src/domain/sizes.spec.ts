@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatReportSize, formatUiSize } from './sizes'
+import { describeSizeComparison, formatReportSize, formatUiSize } from './sizes'
 
 describe('size formatting', () => {
   afterEach(() => {
@@ -45,5 +45,50 @@ describe('size formatting', () => {
 
   it('keeps the report and interface formatters as distinct functions', () => {
     expect(formatReportSize).not.toBe(formatUiSize)
+  })
+})
+
+describe('describeSizeComparison (R-P5)', () => {
+  it.each([
+    [500_000, 250_000, 'reduction', 50, false],
+    [500_000, 400_000, 'reduction', 20, false],
+    [500_000, 600_000, 'increase', 20, false],
+    [500_000, 500_000, 'unchanged', 0, false],
+  ] as const)(
+    'reports %d -> %d as a %s of %d%%',
+    (input, output, direction, percent, belowOnePercent) => {
+      expect(describeSizeComparison(input, output)).toEqual({
+        direction,
+        percent,
+        belowOnePercent,
+      })
+    },
+  )
+
+  it('never reports an increase as zero, however small it is (R-P5)', () => {
+    const comparison = describeSizeComparison(1_000_000, 1_000_100)
+
+    expect(comparison.direction).toBe('increase')
+    expect(comparison.belowOnePercent).toBe(true)
+  })
+
+  it('flags a reduction below one percent the same way, rather than rounding it to nothing', () => {
+    const comparison = describeSizeComparison(1_000_000, 999_900)
+
+    expect(comparison.direction).toBe('reduction')
+    expect(comparison.belowOnePercent).toBe(true)
+  })
+
+  it('reports a percentage as a positive magnitude in both directions', () => {
+    expect(describeSizeComparison(100, 300).percent).toBe(200)
+    expect(describeSizeComparison(300, 100).percent).toBe(67)
+  })
+
+  it('reports unchanged rather than dividing by zero for an input of no bytes', () => {
+    expect(describeSizeComparison(0, 1000)).toEqual({
+      direction: 'unchanged',
+      percent: 0,
+      belowOnePercent: false,
+    })
   })
 })

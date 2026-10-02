@@ -323,5 +323,165 @@
     "situation": "Same as action.meta.singleFormatWithDimensions, but before the single image's dimensions have been probed — the pixel figure is omitted.",
     "control": "Small mono meta text under the primary button, e.g. just 'WEBP'.",
     "maxLength": 16
+  },
+  "preview.frame.creating": {
+    "situation": "Shown in the Preview frame, in place of the compressed image, while a real encode of the current image is running (R-P1: \"the app immediately begins encoding and shows a Creating preview state in the frame\"). Also appears on every settings change, because the previous result is discarded at that moment rather than left on screen as a stale picture (R-B1). Announced to assistive technology as a live status (R-K5).",
+    "control": "Status text centred in the stage frame. Not interactive.",
+    "maxLength": 30
+  },
+  "preview.frame.ready": {
+    "situation": "Announced to screen-reader users the moment an encode finishes, since the change is otherwise only visual: the image appears and the size figures return (R-K5). Never shown to sighted users — the image itself is the visible signal.",
+    "control": "Visually hidden live-region text. Not interactive.",
+    "maxLength": 30
+  },
+  "preview.frame.altOriginal": {
+    "situation": "Alternative text for the Preview frame's image while the Original tab is selected. {filename} is the user's own file name. The image is the content of the screen here, not decoration, so it carries real alternative text rather than an empty alt.",
+    "control": "The alt attribute of the image element in the stage frame.",
+    "maxLength": 60
+  },
+  "preview.frame.altCompressed": {
+    "situation": "Alternative text for the Preview frame's image while the Compressed tab is selected (the default, R-P2). {filename} is the user's own file name — the input name, since this is the same picture rather than a different file.",
+    "control": "The alt attribute of the image element in the stage frame.",
+    "maxLength": 60
+  },
+  "preview.frame.originalUnavailable": {
+    "situation": "Shown in place of the Original tab's image when the browser cannot decode the source file itself — a HEIC on Chromium or Firefox, a TIFF, a JPEG XL. The compressed result is unaffected, because the app decodes those formats itself; only the browser's own rendering of the untouched original is missing. This is deliberately not papered over by transcoding the source to a browser-renderable format just to display it: that would show the user a lossy stand-in and call it 'Original'. Instead this names the file, states the real reason (R-E1), and mentions the desktop application — one of Functional Design §1.3's three named cases ('formats the browser cannot decode') where the limit is the browser's, not this product's, same convention as R-I21.",
+    "control": "Note text centred in the stage frame, in place of the image. Not interactive.",
+    "maxLength": 140
+  },
+  "preview.error.decode": {
+    "situation": "Inline error in the Preview frame when decoding the image fails (Functional Design §10, \"Corrupt or undecodable file\"). Shown with a retry action beside it. Names the file and says what is wrong rather than \"something went wrong\" (R-E1).",
+    "control": "Error text inside the stage frame, above a retry button.",
+    "maxLength": 140
+  },
+  "preview.error.encode": {
+    "situation": "Inline error in the Preview frame when the encode fails (Functional Design §10, \"Encode failure → Run or preview → in Preview, an inline error in the frame with a retry\"). Says what to change, since the settings are reachable without leaving Preview.",
+    "control": "Error text inside the stage frame, above a retry button.",
+    "maxLength": 140
+  },
+  "preview.error.memory": {
+    "situation": "Inline error in the Preview frame when the browser runs out of memory compressing this image (Functional Design §10, \"Out of memory\"). Mentions the desktop application because the limit is the browser's rather than a product decision (R-I21).",
+    "control": "Error text inside the stage frame, above a retry button.",
+    "maxLength": 180
+  },
+  "preview.error.unsupported": {
+    "situation": "Inline error in the Preview frame for a combination the pipeline does not implement yet — today, an image whose colour is signalled only as CICP values going to a format that cannot carry them. {format} is the output format acronym, already uppercased and not itself translated. Says which control to change (R-E1).",
+    "control": "Error text inside the stage frame, above a retry button.",
+    "maxLength": 140
+  },
+  "preview.error.sourceMissing": {
+    "situation": "Inline error in the Preview frame when the image's stored file cannot be found at all — a state no normal interaction produces, kept as a named message so it can never surface as a blank frame or a generic failure (R-E1).",
+    "control": "Error text inside the stage frame, above a retry button.",
+    "maxLength": 140
+  },
+  "preview.error.retry": {
+    "situation": "The retry action beside an inline Preview error, which runs the same encode again (Functional Design §10 requires a retry on a Preview encode failure).",
+    "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
+    "maxLength": 16
+  },
+  "preview.comparison.toggleLabel": {
+    "situation": "Accessible name for the whole Original/Compressed comparison pill, which is one switch rather than two buttons — clicking anywhere on it flips the view (Functional Design §3.3). Read together with its on/off state, this is what tells a screen-reader user which view is active, which the two visible words alone cannot (R-K6).",
+    "control": "The aria-label of a single switch control. Its visible text is the two view names plus the size figures, so a separate name is warranted here (R-K10).",
+    "maxLength": 40
+  },
+  "preview.comparison.original": {
+    "situation": "The left half of the comparison pill in Preview, selected when the frame is showing the untouched source image (Functional Design §3.3).",
+    "control": "Text inside one half of a two-state pill. The halves are not separately clickable; the whole pill toggles.",
+    "maxLength": 14
+  },
+  "preview.comparison.compressed": {
+    "situation": "The right half of the comparison pill in Preview, selected by default once the encode finishes (R-P2).",
+    "control": "Text inside one half of a two-state pill. The halves are not separately clickable; the whole pill toggles.",
+    "maxLength": 14
+  },
+  "preview.comparison.reduction": {
+    "situation": "The trailing figure of the comparison pill when the compressed file is smaller than the original. {percent} is a positive whole number. The down glyph is part of the string because the direction must not be carried by colour alone (R-K8).",
+    "control": "Small mono figure at the end of the comparison pill, in the tint colour (§14.1 reserves tint for the reduction figure).",
+    "maxLength": 12
+  },
+  "preview.comparison.reductionUnderOne": {
+    "situation": "Replaces preview.comparison.reduction when the saving is real but rounds to less than one percent, so the figure is never shown as a flat 0%.",
+    "control": "Small mono figure at the end of the comparison pill, in the tint colour.",
+    "maxLength": 12
+  },
+  "preview.comparison.increase": {
+    "situation": "The trailing figure of the comparison pill when the compressed file is *larger* than the original — a legitimate result of changing format or of lossless settings. R-P5 requires it to be shown as an increase with an up glyph and a non-tint colour, and never suppressed or shown as zero.",
+    "control": "Small mono figure at the end of the comparison pill, in ordinary text colour rather than tint, with the up glyph carrying the direction as well (R-K8).",
+    "maxLength": 12
+  },
+  "preview.comparison.increaseUnderOne": {
+    "situation": "Replaces preview.comparison.increase when the file grew by less than one percent. R-P5 forbids showing an increase as zero, which rounding alone would do.",
+    "control": "Small mono figure at the end of the comparison pill, in ordinary text colour.",
+    "maxLength": 12
+  },
+  "preview.comparison.unchanged": {
+    "situation": "The trailing figure of the comparison pill when the compressed file is exactly the same number of bytes as the original. No glyph, because nothing moved.",
+    "control": "Small mono figure at the end of the comparison pill.",
+    "maxLength": 12
+  },
+  "preview.transform.line": {
+    "situation": "The Preview transform line (Functional Design §3.3), describing this one image: its own name and pixel size, then the output name and pixel size the current settings produce. Driven by the settings rather than by the encode, so it updates while an encode is still being debounced. One whole template rather than assembled parts (R-L5).",
+    "control": "One line of small mono text below the comparison pill. Not interactive.",
+    "maxLength": 90
+  },
+  "preview.transform.lineNoSizes": {
+    "situation": "The transform line before this image's pixel dimensions are known (the background probe has not reached it yet). The names and the output extension are already correct, so the line is shown without the figures rather than with placeholders.",
+    "control": "One line of small mono text below the comparison pill. Not interactive.",
+    "maxLength": 60
+  },
+  "preview.transform.flatten": {
+    "situation": "Shown under the transform line when the chosen output format cannot store transparency, so any transparent pixels will be filled instead (R-C17: \"where transparency will be flattened, the Preview transform line says so\"). {format} is the output format acronym, already uppercased and not itself translated. Worded as something that *will* happen because whether this image actually has transparent pixels is not measured until it is compressed — the report states the measured outcome afterwards.",
+    "control": "Small muted note under the transform line. Not interactive.",
+    "maxLength": 100
+  },
+  "preview.transform.animationSubstituted": {
+    "situation": "Shown under the transform line when the image is animated and the chosen output format cannot hold animation, so WebP is written instead of dropping the frames. R-F6 requires the substitution to be stated on the tile, on this line, and in the report. WebP is a format name and is not translated.",
+    "control": "Small muted note under the transform line. Not interactive.",
+    "maxLength": 120
+  },
+  "preview.toolbar.back": {
+    "situation": "Preview toolbar action returning to the Gallery with the batch and settings intact (Functional Design §3.1's transition table, docs/ui-design.md §11).",
+    "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
+    "maxLength": 20
+  },
+  "preview.toolbar.addMore": {
+    "situation": "Preview toolbar action opening the file picker from inside Preview (R-M3). If the batch then holds more than one image the app returns to the Gallery (R-M2), so this action can take the user off this screen.",
+    "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
+    "maxLength": 20
+  },
+  "preview.toolbar.edit": {
+    "situation": "Preview toolbar action opening Edit mode for the image on screen, shown when that image has no stored rotation or crop yet (docs/ui-design.md §11).",
+    "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
+    "maxLength": 16
+  },
+  "preview.toolbar.editChanges": {
+    "situation": "Replaces preview.toolbar.edit once the image already carries a stored rotation or crop, so the label says the edit will be revisited rather than started (docs/ui-design.md §11).",
+    "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
+    "maxLength": 16
+  },
+  "preview.toolbar.editAnimatedReason": {
+    "situation": "Shown beside a disabled Edit button when the image on screen is animated. R-C16 removes editing for animated sources in this version and requires the reason to be stated inline rather than leaving a control that silently does nothing.",
+    "control": "Small muted note in the Preview toolbar, beside the disabled Edit button.",
+    "maxLength": 90
+  },
+  "preview.toolbar.stepper": {
+    "situation": "The Preview stepper's position readout, between the previous and next controls, shown only when the batch holds more than one image (docs/ui-design.md §11). {index} is 1-based.",
+    "control": "Small mono text with tabular figures so the digits do not jitter when stepping. Not interactive itself.",
+    "maxLength": 12
+  },
+  "preview.toolbar.previous": {
+    "situation": "Accessible name for the Preview stepper's back control, which wraps to the last image from the first (R-P7). The visible glyph alone does not say what it does.",
+    "control": "Icon-only button, so this string is its aria-label (R-K10).",
+    "maxLength": 24
+  },
+  "preview.toolbar.next": {
+    "situation": "Accessible name for the Preview stepper's forward control, which wraps to the first image from the last (R-P7). The visible glyph alone does not say what it does.",
+    "control": "Icon-only button, so this string is its aria-label (R-K10).",
+    "maxLength": 24
+  },
+  "preview.error.animatedAvif": {
+    "situation": "Inline error in the Preview frame for an animated AVIF, which has no encode path at all (R-F7, R-F8). R-F8 wants this rejected at selection time with the reason named, and that rejection list is T39's work — until it exists, such a file can still reach Preview, and this message is what keeps that from being a silent failure. Names the file and what to do next (R-E1).",
+    "control": "Error text inside the stage frame. No retry is offered with it, because retrying cannot change the outcome.",
+    "maxLength": 140
   }
 }

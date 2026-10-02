@@ -178,8 +178,15 @@ export type PrimaryActionSummary =
  * follows the batch rule, applied to the rotated size (R-D4). `null` when the source's own
  * dimensions haven't been probed yet (`ImageRecord.width`/`height` still 0, `imageMeta.ts`'s same
  * "pending" convention) — the meta line omits the figure rather than inventing one.
+ *
+ * Exported since T36: the Preview transform line (R-P's `abc.jpeg 1000×1000 → abc.webp 500×500`)
+ * shows the same figure for the same image, and two copies of R-D1/R-D4 are two places to get the
+ * crop override wrong. The size is for display only — nothing is ever encoded from it.
  */
-function singleImageDimensions(image: ImageRecord, dimension: ResolvedDimension): PixelSize | null {
+export function singleImageDimensions(
+  image: ImageRecord,
+  dimension: ResolvedDimension,
+): PixelSize | null {
   if (image.width === 0 || image.height === 0) {
     return null
   }

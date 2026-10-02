@@ -230,3 +230,35 @@ describe('ToolPage primary action meta line (R-A2, R-F4, T35)', () => {
     )
   })
 })
+
+describe('ToolPage stage toolbars and breadcrumb (T36)', () => {
+  beforeEach(() => {
+    nextId = 0
+  })
+
+  it('mounts the Preview toolbar in the stage toolbar slot, in place of the Gallery one', async () => {
+    const wrapper = await mountToolPage()
+    const record = image()
+    useBatchStore().addImages([record, image()])
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="gallery-view-toggle"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="preview-back"]').exists()).toBe(false)
+
+    useUiStore().openPreview(record.id)
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="preview-back"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="gallery-view-toggle"]').exists()).toBe(false)
+  })
+
+  it('names the current image in the breadcrumb once Preview is open', async () => {
+    const wrapper = await mountToolPage()
+    const record = image({ name: 'holiday.jpeg' })
+    useBatchStore().addImages([record, image()])
+    useUiStore().openPreview(record.id)
+    await nextTick()
+
+    expect(wrapper.find('.breadcrumb').text()).toBe('PREVIEW · holiday.jpeg')
+  })
+})

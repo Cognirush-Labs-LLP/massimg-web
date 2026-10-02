@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  mimeForFormat,
   resolveFormat,
   sizeTargetDisabledReason,
   supportsAlpha,
@@ -253,4 +254,21 @@ describe('format routing', () => {
       expect(sizeTargetDisabledReason(format)).toBeNull()
     },
   )
+
+  it.each([
+    ['jpeg', 'image/jpeg'],
+    ['png', 'image/png'],
+    ['webp', 'image/webp'],
+    ['avif', 'image/avif'],
+    ['gif', 'image/gif'],
+  ] as const satisfies readonly (readonly [EncodableFormat, string])[])(
+    'gives %s the media type %s',
+    (format, expected) => {
+      expect(mimeForFormat(format)).toBe(expected)
+    },
+  )
+
+  it('gives an animated PNG the still PNG media type, since APNG has none of its own', () => {
+    expect(mimeForFormat('png')).toBe('image/png')
+  })
 })
