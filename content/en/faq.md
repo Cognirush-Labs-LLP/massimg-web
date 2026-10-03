@@ -156,9 +156,8 @@ A handful of established open-source image libraries handle the actual decoding,
 
 ## 10. What's still being finished
 
-The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above. The parts of the app you'd actually click through are not finished yet, including:
+The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above, and so are the on-screen gallery, preview and rotate/crop editing screens. The parts of the app you'd actually click through are not all finished yet, including:
 
-- The on-screen gallery, preview, and rotate/crop editing screens
 - The compress-and-download flow, including the ZIP file and summary report for multi-image batches
 - Finalized limits on batch size, file size and image dimensions
 - Full keyboard and screen-reader accessibility

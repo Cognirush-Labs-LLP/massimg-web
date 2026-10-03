@@ -1,7 +1,39 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { FailureReason, ImageId, ImageRecord, SizeTargetSkipReason } from '@/domain/types'
+import { ref, toRaw } from 'vue'
+import type {
+  EditOp,
+  EditRecord,
+  FailureReason,
+  ImageId,
+  ImageRecord,
+  SizeTargetSkipReason,
+} from '@/domain/types'
 import { useUiStore } from './ui'
+
+/**
+ * Strips Vue reactivity from a stored edit before it re-enters this reactive array. An `edit`
+ * patch is commonly built by reading another field off this same store (T36-A's
+ * `Preview.vue#useDimensionSuggestion`, T37's `useEditDraftStore#apply`) — a plain `ref`/`reactive`
+ * read returns a Proxy for any object value, and that Proxy is not structured-clonable. Left
+ * unsanitized, it poisons every later `Job` built from this image: the pipeline worker's
+ * `postMessage` throws `DataCloneError` the moment a re-encode is attempted, which is silent here
+ * and only surfaces as a stuck "Creating preview..." in Preview (see docs/task-notes/T37.md,
+ * Surprises). `toRaw` only strips the proxy on the value passed to it, not on values nested
+ * inside it, hence the walk over `ops` and each crop op's `rect`/`background`.
+ */
+function sanitizedEdit(edit: EditRecord | null | undefined): EditRecord | null {
+  if (edit === null || edit === undefined) {
+    return null
+  }
+
+  const raw = toRaw(edit)
+
+  return { ...raw, ops: raw.ops.map((op) => sanitizedOp(toRaw(op))) }
+}
+
+function sanitizedOp(op: EditOp): EditOp {
+  return op.kind === 'crop' ? { ...op, rect: toRaw(op.rect), background: toRaw(op.background) } : op
+}
 
 /**
  * The current batch's per-image metadata (Technical Design §3.1). Binary data — the source
@@ -46,7 +78,7 @@ export const useBatchStore = defineStore('batch', () => {
       return
     }
 
-    Object.assign(target, patch)
+    Object.assign(target, 'edit' in patch ? { ...patch, edit: sanitizedEdit(patch.edit) } : patch)
   }
 
   function clearRunStatuses(): void {

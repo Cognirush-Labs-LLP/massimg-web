@@ -29,6 +29,21 @@ export function supportsAlpha(format: EncodableFormat): boolean {
   return format !== 'jpeg'
 }
 
+/**
+ * Whether an image's *effective* output format supports alpha, for Edit mode's background row
+ * (R-C13/R-C14; T37) and the Edit draft store's default fill on fresh entry. Composes
+ * `resolveFormat`/`supportsAlpha` rather than re-deriving format resolution a second time —
+ * the same path `domain/job.ts`'s `resolveSettings` uses.
+ */
+export function isAlphaCapable(
+  inputFormat: Format,
+  isAnimated: boolean,
+  setting: FormatSetting,
+): boolean {
+  const resolution = resolveFormat(inputFormat, isAnimated, setting)
+  return resolution.kind === 'resolved' && supportsAlpha(resolution.format)
+}
+
 const MIME_TYPES = {
   jpeg: 'image/jpeg',
   png: 'image/png',

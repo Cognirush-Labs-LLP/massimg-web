@@ -19,6 +19,8 @@ import {
   trailingResizeOp,
   rotateCropInput,
   rotateSize,
+  snapMoveToImage,
+  snapResizeToImage,
   toFrameRect,
   toNormalisedRect,
   withTrailingResize,
@@ -27,6 +29,7 @@ import {
   type PixelSize,
   type QuarterTurns,
   type RatioId,
+  type ResizeAnchor,
   type ResolvedCropGeometry,
 } from './edit'
 import type { EditOp, Rgba } from './types'
@@ -528,4 +531,113 @@ describe('crop and rotation arithmetic', () => {
       expect(rotateSize(SOURCE, quarterTurns)).toEqual(expected)
     },
   )
+})
+
+describe('snapMoveToImage', () => {
+  const imageRect = { left: 100, top: 50, width: 400, height: 300 } satisfies FrameRect // right 500, bottom 350
+
+  it('leaves a rect unchanged when no edge is within the threshold', () => {
+    const rect = { left: 200, top: 100, width: 50, height: 50 } satisfies FrameRect
+    expect(snapMoveToImage(rect, imageRect)).toEqual(rect)
+  })
+
+  it('snaps the left edge flush when within the threshold', () => {
+    const rect = { left: 103, top: 200, width: 50, height: 50 } satisfies FrameRect
+    expect(snapMoveToImage(rect, imageRect)).toEqual({ ...rect, left: 100 })
+  })
+
+  it('snaps the right edge flush, deriving left from it, when within the threshold', () => {
+    const rect = { left: 450, top: 200, width: 53, height: 50 } satisfies FrameRect // right 503
+    expect(snapMoveToImage(rect, imageRect)).toEqual({ ...rect, left: 447 }) // right becomes 500
+  })
+
+  it('snaps the top and bottom edges independently of left/right', () => {
+    const atTop = { left: 200, top: 46, width: 50, height: 50 } satisfies FrameRect
+    expect(snapMoveToImage(atTop, imageRect)).toEqual({ ...atTop, top: 50 })
+
+    const atBottom = { left: 200, top: 304, width: 50, height: 44 } satisfies FrameRect // bottom 348
+    expect(snapMoveToImage(atBottom, imageRect)).toEqual({ ...atBottom, top: 306 }) // bottom becomes 350
+  })
+
+  it('does not snap just past the threshold', () => {
+    const rect = { left: 91, top: 200, width: 50, height: 50 } satisfies FrameRect // 9px from left 100
+    expect(snapMoveToImage(rect, imageRect)).toEqual(rect)
+  })
+
+  it('prefers the closer of two edges both within the threshold', () => {
+    // left is 2px from imageRect.left (100); right (left+width) is 6px from imageRect.right (500).
+    const rect = { left: 98, top: 200, width: 396, height: 50 } satisfies FrameRect
+    expect(snapMoveToImage(rect, imageRect).left).toBe(100)
+  })
+})
+
+describe('snapResizeToImage', () => {
+  const imageRect = { left: 100, top: 50, width: 400, height: 300 } satisfies FrameRect // right 500, bottom 350
+
+  it.each([
+    ['top-left', 'bottom-right'],
+    ['top-right', 'bottom-left'],
+    ['bottom-left', 'top-right'],
+    ['bottom-right', 'top-left'],
+  ] as const satisfies readonly (readonly [string, ResizeAnchor])[])(
+    'leaves a rect unchanged when no moving edge is within the threshold (dragging %s)',
+    (_corner, anchor) => {
+      const rect = { left: 200, top: 150, width: 100, height: 80 } satisfies FrameRect
+      expect(snapResizeToImage(rect, anchor, imageRect)).toEqual(rect)
+    },
+  )
+
+  it('dragging top-left (anchor bottom-right): snaps left and top, right and bottom stay fixed', () => {
+    const rect = { left: 104, top: 54, width: 200, height: 150 } satisfies FrameRect
+    const fixedRight = rect.left + rect.width
+    const fixedBottom = rect.top + rect.height
+
+    const snapped = snapResizeToImage(rect, 'bottom-right', imageRect)
+
+    expect(snapped.left).toBe(100)
+    expect(snapped.top).toBe(50)
+    expect(snapped.left + snapped.width).toBe(fixedRight)
+    expect(snapped.top + snapped.height).toBe(fixedBottom)
+  })
+
+  it('dragging bottom-right (anchor top-left): snaps right and bottom, left and top stay fixed', () => {
+    const rect = { left: 300, top: 200, width: 196, height: 146 } satisfies FrameRect // right 496, bottom 346
+    const snapped = snapResizeToImage(rect, 'top-left', imageRect)
+
+    expect(snapped.left).toBe(rect.left)
+    expect(snapped.top).toBe(rect.top)
+    expect(snapped.left + snapped.width).toBe(500)
+    expect(snapped.top + snapped.height).toBe(350)
+  })
+
+  it('dragging top-right (anchor bottom-left): snaps right and top, left and bottom stay fixed', () => {
+    const rect = { left: 300, top: 54, width: 196, height: 146 } satisfies FrameRect // right 496
+    const fixedLeft = rect.left
+    const fixedBottom = rect.top + rect.height
+
+    const snapped = snapResizeToImage(rect, 'bottom-left', imageRect)
+
+    expect(snapped.left).toBe(fixedLeft)
+    expect(snapped.top).toBe(50)
+    expect(snapped.left + snapped.width).toBe(500)
+    expect(snapped.top + snapped.height).toBe(fixedBottom)
+  })
+
+  it('dragging bottom-left (anchor top-right): snaps left and bottom, right and top stay fixed', () => {
+    const rect = { left: 104, top: 200, width: 200, height: 146 } satisfies FrameRect // bottom 346
+    const fixedRight = rect.left + rect.width
+    const fixedTop = rect.top
+
+    const snapped = snapResizeToImage(rect, 'top-right', imageRect)
+
+    expect(snapped.left).toBe(100)
+    expect(snapped.top).toBe(fixedTop)
+    expect(snapped.left + snapped.width).toBe(fixedRight)
+    expect(snapped.top + snapped.height).toBe(350)
+  })
+
+  it('does not snap just past the threshold', () => {
+    const rect = { left: 91, top: 50, width: 200, height: 150 } satisfies FrameRect // 9px from left 100
+    expect(snapResizeToImage(rect, 'bottom-right', imageRect)).toEqual(rect)
+  })
 })

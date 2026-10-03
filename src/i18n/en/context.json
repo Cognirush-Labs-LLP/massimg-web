@@ -588,5 +588,145 @@
     "situation": "Fallback colour description interpolated into the verified JPEG recovery action for a non-standard fill. {red}, {green}, and {blue} are byte values from 0 to 255.",
     "control": "A compact technical colour value inside a button label.",
     "maxLength": 24
+  },
+  "edit.ratio.groupLabel": {
+    "situation": "Accessible group label for the row of aspect-ratio chips above the Edit-mode crop frame (Functional Design R-C1-R-C12, docs/ui-design.md §12).",
+    "control": "ARIA label on a button group, not rendered as visible text.",
+    "maxLength": 40
+  },
+  "edit.ratio.free": {
+    "situation": "First chip in Edit mode's aspect-ratio row: no locked proportion, the crop rectangle can be dragged and resized to any shape.",
+    "control": "Short chip label inside a toggle button.",
+    "maxLength": 10
+  },
+  "edit.ratio.square": {
+    "situation": "Aspect-ratio chip locking the crop rectangle to a 1:1 square.",
+    "control": "Short chip label inside a toggle button. Translators should keep the literal ratio notation (e.g. '1:1') rather than translating it as prose.",
+    "maxLength": 10
+  },
+  "edit.ratio.portrait45": {
+    "situation": "Aspect-ratio chip locking the crop rectangle to a 4:5 portrait proportion.",
+    "control": "Short chip label inside a toggle button. Translators should keep the literal ratio notation.",
+    "maxLength": 10
+  },
+  "edit.ratio.landscape169": {
+    "situation": "Aspect-ratio chip locking the crop rectangle to a 16:9 landscape proportion.",
+    "control": "Short chip label inside a toggle button. Translators should keep the literal ratio notation.",
+    "maxLength": 10
+  },
+  "edit.ratio.portrait916": {
+    "situation": "Aspect-ratio chip locking the crop rectangle to a 9:16 portrait proportion.",
+    "control": "Short chip label inside a toggle button. Translators should keep the literal ratio notation.",
+    "maxLength": 10
+  },
+  "edit.toolbar.rotateGroupLabel": {
+    "situation": "Accessible group label wrapping the Rotate left/Rotate right buttons in Edit mode's toolbar.",
+    "control": "ARIA label on a button group, not rendered as visible text.",
+    "maxLength": 20
+  },
+  "edit.toolbar.rotateLeft": {
+    "situation": "Button in Edit mode's toolbar that rotates the image 90 degrees counter-clockwise (Functional Design R-C1). Rotation is in whole 90-degree steps only; there is no free-angle rotation in this version.",
+    "control": "Icon+label toolbar button (ToolbarButton.vue).",
+    "maxLength": 20
+  },
+  "edit.toolbar.rotateRight": {
+    "situation": "Button in Edit mode's toolbar that rotates the image 90 degrees clockwise (Functional Design R-C1).",
+    "control": "Icon+label toolbar button (ToolbarButton.vue).",
+    "maxLength": 20
+  },
+  "edit.toolbar.widthLabel": {
+    "situation": "Label beside the editable output-width field in Edit mode's toolbar (docs/ui-design.md §12). Also used as the field's own accessible name.",
+    "control": "Short field label and aria-label for a numeric text input showing true output pixels, not on-screen pixels.",
+    "maxLength": 12
+  },
+  "edit.toolbar.heightLabel": {
+    "situation": "Label beside the editable output-height field in Edit mode's toolbar. Also used as the field's own accessible name.",
+    "control": "Short field label and aria-label for a numeric text input showing true output pixels.",
+    "maxLength": 12
+  },
+  "edit.toolbar.apply": {
+    "situation": "Primary action in Edit mode's toolbar: stores the current rotation and crop as this image's edit and returns to Preview (Functional Design R-C4).",
+    "control": "Toolbar button. This is the button's full visible label and accessible name.",
+    "maxLength": 14
+  },
+  "edit.toolbar.cancel": {
+    "situation": "Discards every change made during this Edit session (rotation, crop, ratio, zoom and background) and returns to Preview (Functional Design R-C10).",
+    "control": "Toolbar button. This is the button's full visible label and accessible name.",
+    "maxLength": 14
+  },
+  "edit.toolbar.removeEdit": {
+    "situation": "Clears a previously stored edit (rotation, crop and any pending recovery resize together) and returns to Preview (Functional Design R-C5). Only rendered when this image already has a stored edit.",
+    "control": "Toolbar button. This is the button's full visible label and accessible name.",
+    "maxLength": 20
+  },
+  "edit.zoom.sliderLabel": {
+    "situation": "Label beside and accessible name for Edit mode's zoom slider (Functional Design R-C7-R-C9, docs/ui-design.md §12). Zooming in shrinks the crop's output dimensions for a fixed on-screen rectangle; zooming out grows them, which is also how the user reaches the spill condition that reveals the background row.",
+    "control": "Short label beside a native range slider; also its aria-label.",
+    "maxLength": 10
+  },
+  "edit.background.heading": {
+    "situation": "Section heading above the background-fill swatches and colour picker in Edit mode, shown only when the crop rectangle spills past the image's own edges (Functional Design R-C13-R-C15).",
+    "control": "Static section heading. Not a button.",
+    "maxLength": 16
+  },
+  "edit.background.swatchBlack": {
+    "situation": "Accessible name and visible label for the solid black background-fill swatch.",
+    "control": "Square swatch button; this string is both its visible label (in a tooltip-less, icon-first layout the name still needs to exist as text) and its aria-label.",
+    "maxLength": 10
+  },
+  "edit.background.swatchWhite": {
+    "situation": "Accessible name and visible label for the solid white background-fill swatch.",
+    "control": "Square swatch button, same treatment as the black swatch.",
+    "maxLength": 10
+  },
+  "edit.background.swatchTransparent": {
+    "situation": "Accessible name for the transparent background-fill swatch, shown only when the effective output format supports alpha (Functional Design R-C13).",
+    "control": "Square swatch button rendered over a checkerboard pattern.",
+    "maxLength": 14
+  },
+  "edit.background.colorPickerLabel": {
+    "situation": "Accessible name for the native colour-picker input beside the background swatches, for any fill colour the swatches don't cover.",
+    "control": "ARIA label on a native <input type=\"color\">, not rendered as visible text.",
+    "maxLength": 20
+  },
+  "edit.background.jpegHint": {
+    "situation": "Shown beside the background swatches whenever the effective output format has no alpha channel (JPEG), explaining why the Transparent swatch is missing (Functional Design R-C14).",
+    "control": "Inline explanatory text. Not interactive.",
+    "maxLength": 60
+  },
+  "edit.frame.imageAlt": {
+    "situation": "Alt text for the image being edited inside the Edit-mode crop frame. {filename} is the image's own file name.",
+    "control": "Standard <img> alt attribute.",
+    "maxLength": 80
+  },
+  "edit.frame.badge": {
+    "situation": "Live badge inside the crop rectangle showing the true output pixel dimensions the current rotation/crop/zoom will produce (not the on-screen rectangle size). {width} and {height} are pixels, updated continuously as the user drags, resizes or zooms.",
+    "control": "Small text badge overlaid on the image, not interactive.",
+    "maxLength": 24
+  },
+  "edit.frame.rectLabel": {
+    "situation": "Accessible name for the draggable, keyboard-movable crop rectangle itself (Functional Design R-K4: arrow keys move it, Shift for a coarser step).",
+    "control": "ARIA label on a focusable group element, not rendered as visible text.",
+    "maxLength": 20
+  },
+  "edit.frame.handleTopLeft": {
+    "situation": "Accessible name for the crop rectangle's top-left resize handle (Functional Design R-K4: arrow keys resize from this corner, the opposite corner stays fixed).",
+    "control": "ARIA label on a small focusable handle with no visible text of its own.",
+    "maxLength": 40
+  },
+  "edit.frame.handleTopRight": {
+    "situation": "Accessible name for the crop rectangle's top-right resize handle.",
+    "control": "ARIA label on a small focusable handle with no visible text of its own.",
+    "maxLength": 40
+  },
+  "edit.frame.handleBottomLeft": {
+    "situation": "Accessible name for the crop rectangle's bottom-left resize handle.",
+    "control": "ARIA label on a small focusable handle with no visible text of its own.",
+    "maxLength": 40
+  },
+  "edit.frame.handleBottomRight": {
+    "situation": "Accessible name for the crop rectangle's bottom-right resize handle.",
+    "control": "ARIA label on a small focusable handle with no visible text of its own.",
+    "maxLength": 40
   }
 }

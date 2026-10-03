@@ -15,6 +15,7 @@ import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
 import Preview from '@/ui/preview/Preview.vue'
 import PreviewToolbar from '@/ui/preview/PreviewToolbar.vue'
 import Edit from '@/ui/edit/Edit.vue'
+import EditToolbar from '@/ui/edit/EditToolbar.vue'
 import Processing from '@/ui/processing/Processing.vue'
 import Header from './shell/Header.vue'
 import StageContainer from './shell/StageContainer.vue'
@@ -112,6 +113,7 @@ const primaryActionMeta = computed(() => {
 const STAGE_TOOLBARS: Partial<Record<StageMode, Component>> = {
   gallery: GalleryToolbar,
   preview: PreviewToolbar,
+  edit: EditToolbar,
 }
 const stageToolbar = computed(() =>
   stageMode.value === 'gallery' && imageCount.value === 0

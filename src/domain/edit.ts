@@ -551,3 +551,95 @@ export function withTrailingResize(edit: EditRecord, size: PixelSize): EditRecor
     version: edit.version + 1,
   }
 }
+
+/**
+ * Frame-pixel distance within which the crop rectangle snaps flush to the image's own edge while
+ * being moved or resized. Not a design-document requirement — a usability fix requested directly
+ * by the user while testing T37: without it, a drag intended to stop exactly at the image's edge
+ * routinely lands a few pixels past it, into whatever letterbox margin exists between a
+ * non-matching-aspect frame and the image's own smaller displayed box, triggering spill (and the
+ * background row) by accident rather than by the user's intent. See docs/task-notes/T37.md.
+ */
+export const EDGE_SNAP_THRESHOLD_PX = 8
+
+/** The four corners `snapResizeToImage` can be told are anchored — `constrainCropRect`'s own
+ * `'centre'` anchor describes a different operation (typed-dimension edits) and never applies
+ * here, since only a corner-handle drag calls this. */
+export type ResizeAnchor = Exclude<RectAnchor, 'centre'>
+
+function snappedStart(
+  start: number,
+  length: number,
+  boundStart: number,
+  boundLength: number,
+  threshold: number,
+): number {
+  const end = start + length
+  const boundEnd = boundStart + boundLength
+  const startDistance = Math.abs(start - boundStart)
+  const endDistance = Math.abs(end - boundEnd)
+
+  if (startDistance <= threshold && startDistance <= endDistance) {
+    return boundStart
+  }
+
+  if (endDistance <= threshold) {
+    return boundEnd - length
+  }
+
+  return start
+}
+
+/**
+ * Snaps a moved (position-only) rect's left and/or top edge flush with `imageRect`'s
+ * corresponding edge when within `threshold` frame pixels, preferring whichever of a rect's two
+ * parallel edges (its start or its end) is actually closer. Width and height are never touched —
+ * a move never resizes.
+ */
+export function snapMoveToImage(
+  rect: FrameRect,
+  imageRect: FrameRect,
+  threshold: number = EDGE_SNAP_THRESHOLD_PX,
+): FrameRect {
+  return {
+    left: snappedStart(rect.left, rect.width, imageRect.left, imageRect.width, threshold),
+    top: snappedStart(rect.top, rect.height, imageRect.top, imageRect.height, threshold),
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+/**
+ * Snaps a corner-resized rect's one moving edge per axis flush with `imageRect`'s corresponding
+ * edge when within `threshold` frame pixels, deriving which edges are moving from `anchor` (the
+ * opposite, fixed corner) exactly as `constrainCropRect`'s own anchor parameter does. The
+ * anchored edges are never touched — a resize never moves its own anchor.
+ */
+export function snapResizeToImage(
+  rect: FrameRect,
+  anchor: ResizeAnchor,
+  imageRect: FrameRect,
+  threshold: number = EDGE_SNAP_THRESHOLD_PX,
+): FrameRect {
+  const movesLeft = anchor === 'top-right' || anchor === 'bottom-right'
+  const movesTop = anchor === 'bottom-left' || anchor === 'bottom-right'
+  let { left, top, width, height } = rect
+  const imageRight = imageRect.left + imageRect.width
+  const imageBottom = imageRect.top + imageRect.height
+
+  if (movesLeft && Math.abs(left - imageRect.left) <= threshold) {
+    width += left - imageRect.left
+    left = imageRect.left
+  } else if (!movesLeft && Math.abs(left + width - imageRight) <= threshold) {
+    width = imageRight - left
+  }
+
+  if (movesTop && Math.abs(top - imageRect.top) <= threshold) {
+    height += top - imageRect.top
+    top = imageRect.top
+  } else if (!movesTop && Math.abs(top + height - imageBottom) <= threshold) {
+    height = imageBottom - top
+  }
+
+  return { left, top, width, height }
+}

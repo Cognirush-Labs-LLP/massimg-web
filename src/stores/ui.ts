@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { resolveAutomaticGalleryView } from '@/config/limits'
+import type { RatioId } from '@/domain/edit'
 import type { ImageId, ImageRecord } from '@/domain/types'
 
 // The four stage modes (Functional Design §3.1, docs/ui-design.md §3). Exactly one is mounted
@@ -33,6 +34,12 @@ export const useUiStore = defineStore('ui', () => {
   const drawerOpen = ref(false)
   // R-P2 default: Preview opens on the Compressed tab.
   const comparisonTab = ref<'original' | 'compressed'>('compressed')
+  // T37: a locked ratio persists across images for the session rather than resetting to Free on
+  // every Edit entry — `EditOp['crop']` has no ratio field, so this is the only way R-C11
+  // ("a locked ratio is re-fitted to the next image's own dimensions... and re-entering Edit")
+  // means anything rather than being vacuous. Not named by any design document; see
+  // docs/task-notes/T37.md, Decisions made.
+  const editRatioPreference = ref<RatioId>('free')
 
   function openPreview(id: ImageId): void {
     currentImageId.value = id
@@ -106,6 +113,10 @@ export const useUiStore = defineStore('ui', () => {
     comparisonTab.value = tab
   }
 
+  function setEditRatioPreference(id: RatioId): void {
+    editRatioPreference.value = id
+  }
+
   /**
    * R-M1/R-M2: called by `useBatchStore` after `addImages` changes the batch size. Reaching
    * exactly one image shows Preview for it regardless of route, unless Edit or Processing is
@@ -171,6 +182,7 @@ export const useUiStore = defineStore('ui', () => {
     galleryViewOverridden,
     drawerOpen,
     comparisonTab,
+    editRatioPreference,
     openPreview,
     openEdit,
     closeEdit,
@@ -183,6 +195,7 @@ export const useUiStore = defineStore('ui', () => {
     setGalleryView,
     applyAutomaticGalleryView,
     setComparisonTab,
+    setEditRatioPreference,
     onBatchCountChanged,
     retargetAfterRemoval,
   }
