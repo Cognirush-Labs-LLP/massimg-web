@@ -133,6 +133,7 @@ function remove(event: MouseEvent): void {
 }
 
 .remove-button {
+  position: relative;
   flex-shrink: 0;
   inline-size: 22px;
   block-size: 22px;
@@ -144,5 +145,17 @@ function remove(event: MouseEvent): void {
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
+}
+
+/* Enlarges the tappable area more horizontally than vertically: rows stack with only an 8px
+   block padding and a 1px border between them, so vertical growth risks landing on the next
+   row's own remove button, while the row's own inline padding gives horizontal room to spare. */
+.remove-button::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -5px;
+  inset-block-end: -5px;
+  inset-inline-start: -10px;
+  inset-inline-end: -10px;
 }
 </style>

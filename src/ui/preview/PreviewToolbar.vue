@@ -10,6 +10,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
+import ToolbarButton from '@/app/shell/ToolbarButton.vue'
 import { useBatchStore } from '@/stores/batch'
 import { useUiStore } from '@/stores/ui'
 import { addViaFilePicker } from '@/ui/gallery/ingest'
@@ -47,23 +48,18 @@ function openEdit(): void {
 
 <template>
   <div class="preview-toolbar">
-    <button
-      type="button"
-      class="toolbar-button"
-      data-testid="preview-back"
-      @click="uiStore.backToGallery()"
-    >
+    <ToolbarButton data-testid="preview-back" @click="uiStore.backToGallery()">
       {{ t('preview.toolbar.back') }}
-    </button>
+    </ToolbarButton>
 
-    <button
-      type="button"
-      class="toolbar-button"
-      data-testid="preview-add-more"
-      @click="addViaFilePicker"
-    >
+    <ToolbarButton data-testid="preview-add-more" @click="addViaFilePicker">
+      <template #icon>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+        </svg>
+      </template>
       {{ t('preview.toolbar.addMore') }}
-    </button>
+    </ToolbarButton>
 
     <div v-if="showsStepper" class="stepper" data-testid="preview-stepper">
       <button
@@ -91,15 +87,13 @@ function openEdit(): void {
       <p v-if="animated" class="edit-note" data-testid="preview-edit-animated-note">
         {{ t('preview.toolbar.editAnimatedReason') }}
       </p>
-      <button
-        type="button"
-        class="toolbar-button"
+      <ToolbarButton
         :disabled="animated || image === null"
         data-testid="preview-edit"
         @click="openEdit"
       >
         {{ editLabel }}
-      </button>
+      </ToolbarButton>
     </div>
   </div>
 </template>
@@ -111,24 +105,6 @@ function openEdit(): void {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-
-.toolbar-button {
-  min-block-size: 36px;
-  padding-block: 7px;
-  padding-inline: 12px;
-  background: var(--color-surface-control);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  font-size: 12.5px;
-  font-weight: var(--font-weight-control);
-  cursor: pointer;
-}
-
-.toolbar-button:disabled {
-  color: var(--color-text-muted-quiet);
-  cursor: not-allowed;
 }
 
 .stepper {

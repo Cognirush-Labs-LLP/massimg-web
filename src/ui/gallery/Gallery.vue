@@ -53,8 +53,11 @@ function onDragOver(event: DragEvent): void {
     <GalleryEmptyState v-if="images.length === 0" />
     <div v-else class="gallery-populated">
       <div class="gallery-header">
-        <h2 class="title">{{ t('gallery.title') }}</h2>
-        <p class="meta">{{ metaText }}</p>
+        <div class="title-row">
+          <h2 class="title">{{ t('gallery.title') }}</h2>
+          <span class="divider" aria-hidden="true">·</span>
+          <p class="meta">{{ metaText }}</p>
+        </div>
         <p class="affordance">{{ t('gallery.affordance') }}</p>
       </div>
       <GalleryGrid v-if="galleryView === 'grid'" />
@@ -75,15 +78,28 @@ function onDragOver(event: DragEvent): void {
   gap: 14px;
 }
 
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .title {
   margin: 0;
-  font-size: 20px;
+  color: var(--color-text-muted);
+  font-size: 15px;
   font-weight: var(--font-weight-heading);
+  letter-spacing: 0.02em;
+}
+
+.divider {
+  color: var(--color-text-muted-quiet);
+  font-size: 12px;
 }
 
 .meta {
   margin: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted-quiet);
   font-family: var(--font-family-mono);
   font-size: 12px;
 }

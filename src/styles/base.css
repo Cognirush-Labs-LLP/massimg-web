@@ -35,6 +35,17 @@ textarea {
   color: inherit;
 }
 
+/* Every button in this codebase paints its own background/border/border-radius rather than using
+   the native widget look — but without this reset, the browser still renders native button chrome
+   underneath, which doesn't reliably honour an author border-radius: a pressed/active state can
+   paint as a square highlight, and `overflow: hidden` on a rounded button (ToggleSwitch.vue's
+   `.icons` variant) fails to clip its content to the curve. `appearance: none` makes a <button>
+   render as a plain box, like the <div> a purely-visual control would otherwise need to be. */
+button {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 img,
 svg {
   max-inline-size: 100%;

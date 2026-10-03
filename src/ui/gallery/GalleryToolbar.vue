@@ -7,9 +7,13 @@
 // store and module-scope services, not on anything owned by a particular component instance.
 //
 // The grid/list view toggle (R-G7/R-G8) lives here, between Add folder and Clear per
-// docs/ui-design.md §6's stated toolbar order, wired straight to useUiStore.
+// docs/ui-design.md §6's stated toolbar order, wired straight to useUiStore. It's one switch, not
+// two buttons — clicking anywhere on it flips the view — via ToggleSwitch.vue, shared with
+// PreviewComparisonPill.vue's Original/Compressed switch.
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
+import ToolbarButton from '@/app/shell/ToolbarButton.vue'
+import ToggleSwitch from '@/app/shell/ToggleSwitch.vue'
 import { useUiStore } from '@/stores/ui'
 import { addViaFilePicker, addViaFolderPicker, clearGallery } from './ingest'
 import { useCapabilities } from './useCapabilities'
@@ -21,91 +25,106 @@ const { galleryView } = storeToRefs(uiStore)
 
 <template>
   <div class="gallery-toolbar">
-    <button type="button" class="toolbar-button" @click="addViaFilePicker">
+    <ToolbarButton @click="addViaFilePicker">
+      <template #icon>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            d="M8 2.5v11M2.5 8h11"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+          />
+        </svg>
+      </template>
       {{ t('gallery.toolbar.addImages') }}
-    </button>
-    <button v-if="folderPicker" type="button" class="toolbar-button" @click="addViaFolderPicker">
+    </ToolbarButton>
+    <ToolbarButton v-if="folderPicker" @click="addViaFolderPicker">
+      <template #icon>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            d="M1.5 3.5a1 1 0 0 1 1-1h3.4l1.1 1.3h6.5a1 1 0 0 1 1 1v7.2a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V3.5Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M8 6.8v4M6 8.8h4"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+          />
+        </svg>
+      </template>
       {{ t('gallery.toolbar.addFolder') }}
-    </button>
-    <div
+    </ToolbarButton>
+    <ToggleSwitch
+      variant="icons"
       class="view-toggle"
-      role="group"
-      :aria-label="t('gallery.toolbar.viewToggleLabel')"
+      :checked="galleryView === 'list'"
+      :label="t('gallery.toolbar.viewToggleLabel')"
       data-testid="gallery-view-toggle"
+      @toggle="uiStore.setGalleryView(galleryView === 'grid' ? 'list' : 'grid')"
     >
-      <button
-        type="button"
-        class="view-toggle-button"
-        :class="{ active: galleryView === 'grid' }"
-        :aria-pressed="galleryView === 'grid'"
-        data-testid="gallery-view-toggle-grid"
-        @click="uiStore.setGalleryView('grid')"
-      >
-        {{ t('gallery.toolbar.viewGrid') }}
-      </button>
-      <button
-        type="button"
-        class="view-toggle-button"
-        :class="{ active: galleryView === 'list' }"
-        :aria-pressed="galleryView === 'list'"
-        data-testid="gallery-view-toggle-list"
-        @click="uiStore.setGalleryView('list')"
-      >
-        {{ t('gallery.toolbar.viewList') }}
-      </button>
-    </div>
-    <button type="button" class="toolbar-button clear-button" @click="clearGallery">
+      <template #first>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <rect x="1" y="1" width="6" height="6" rx="1" fill="currentColor" />
+          <rect x="9" y="1" width="6" height="6" rx="1" fill="currentColor" />
+          <rect x="1" y="9" width="6" height="6" rx="1" fill="currentColor" />
+          <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" />
+        </svg>
+      </template>
+      <template #second>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="2.5" rx="1" fill="currentColor" />
+          <rect x="1" y="6.75" width="14" height="2.5" rx="1" fill="currentColor" />
+          <rect x="1" y="11.5" width="14" height="2.5" rx="1" fill="currentColor" />
+        </svg>
+      </template>
+    </ToggleSwitch>
+    <ToolbarButton quiet @click="clearGallery">
+      <template #icon>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            d="M2.5 4.5h11M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6.5 7.5v4M9.5 7.5v4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M3.5 4.5h9l-.6 8.4a1 1 0 0 1-1 .9h-5.8a1 1 0 0 1-1-.9l-.6-8.4Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </template>
       {{ t('gallery.toolbar.clear') }}
-    </button>
+    </ToolbarButton>
   </div>
 </template>
 
 <style scoped>
 .gallery-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.toolbar-button {
-  min-block-size: 36px;
-  padding-block: 7px;
-  padding-inline: 12px;
-  background: var(--color-surface-control);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  font-size: 12.5px;
-  font-weight: var(--font-weight-control);
-  cursor: pointer;
-}
-
 .view-toggle {
-  display: flex;
   margin-inline-start: auto;
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
-.view-toggle-button {
-  min-block-size: 36px;
-  padding-block: 7px;
-  padding-inline: 12px;
-  background: var(--color-surface-control);
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 12.5px;
-  font-weight: var(--font-weight-control);
-  cursor: pointer;
-}
-
-.view-toggle-button.active {
-  background: var(--color-primary);
-  color: var(--color-surface-control);
-}
-
-.clear-button {
-  background: transparent;
-  color: var(--color-text-muted);
+/* Matches StageContainer.vue's own `@media (max-width: 899.98px)` (SIDE_PANEL_BREAKPOINT_PX),
+   also used by ToolbarButton.vue's icon-hiding rule — tightens this row's own gap to match the
+   buttons' own tighter mobile padding, so four items (Add Images, Add Folder, the view toggle,
+   Clear) keep fitting on one line down through narrow phones instead of wrapping Clear alone. */
+@media (max-width: 899.98px) {
+  .gallery-toolbar {
+    gap: 6px;
+  }
 }
 </style>

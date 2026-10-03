@@ -115,6 +115,18 @@ function remove(event: MouseEvent): void {
   cursor: pointer;
 }
 
+/* Enlarges the tappable area well past the visible 22px button without changing its look —
+   skewed toward the tile's own interior (where a near-miss currently opens Preview) and kept
+   tight toward the tile's outer edge (only an 10px gap separates tiles in GalleryGrid.vue). */
+.remove-button::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -8px;
+  inset-inline-end: -8px;
+  inset-block-end: -12px;
+  inset-inline-start: -12px;
+}
+
 .open-button {
   display: flex;
   inline-size: 100%;

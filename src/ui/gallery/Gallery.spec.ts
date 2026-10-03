@@ -63,7 +63,7 @@ describe('Gallery', () => {
     const wrapper = mount(Gallery)
     expect(wrapper.find('[data-testid="gallery-empty-state"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="gallery-grid"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Your Images')
+    expect(wrapper.text()).toContain('SELECTED IMAGES')
   })
 
   it('forwards a drop event to ingestDrop', async () => {

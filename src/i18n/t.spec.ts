@@ -3,7 +3,7 @@ import { t } from './t'
 
 describe('t()', () => {
   it('looks up a plain string key with no interpolation', () => {
-    expect(t('gallery.title')).toBe('Your Images')
+    expect(t('gallery.title')).toBe('SELECTED IMAGES')
   })
 
   it('renders an uppercase section-heading-style key verbatim', () => {

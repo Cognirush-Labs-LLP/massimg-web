@@ -1,7 +1,7 @@
 {
   "gallery.title": {
     "situation": "Heading shown above the image grid/list once the batch is non-empty (Functional Design §3.2, 'Populated state'). Sits above the mono meta line (image count and total input size) and above the toolbar row (Add images / Add folder / Clear / view mode toggle).",
-    "control": "Static heading text, not an interactive control. Reads naturally as a possessive noun phrase in English ('Your Images'); translators are free to restructure into whatever phrasing a section title takes in the target language.",
+    "control": "Static heading text, not an interactive control. Reads as a short label in English ('SELECTED IMAGES'), styled as an unobtrusive section label rather than a prominent page title; translators are free to restructure into whatever phrasing a section label takes in the target language.",
     "maxLength": null
   },
   "action.compressLabel": {
@@ -130,37 +130,27 @@
     "maxLength": 20
   },
   "gallery.toolbar.addImages": {
-    "situation": "Toolbar button in the populated Gallery state (Functional Design §3.2) that adds more individual images to the existing batch via the file picker. Same underlying action as gallery.emptyState.selectImages, different surrounding chrome (a small toolbar button rather than the empty state's large primary button), so it may read more tersely.",
-    "control": "Small outlined toolbar button. Full visible label and accessible name.",
+    "situation": "Toolbar button in the populated Gallery state (Functional Design §3.2) that adds more individual images to the existing batch via the file picker. Same underlying action as gallery.emptyState.selectImages, different surrounding chrome (a small toolbar button rather than the empty state's large primary button), so it may read more tersely. Renders via the shared ToolbarButton.vue (also used by Add Folder, Clear and preview.toolbar.addMore), beside a plus glyph on wide viewports; the icon is dropped below the side-panel breakpoint to keep the toolbar from wrapping, leaving the text as the accessible name either way (R-K10).",
+    "control": "Small outlined toolbar button with a leading icon above the side-panel breakpoint, text-only below it. Full visible label and accessible name.",
     "maxLength": 20
   },
   "gallery.toolbar.addFolder": {
-    "situation": "Toolbar button in the populated Gallery state that adds more images from a folder to the existing batch. Hidden when folder selection is unavailable (R-I31), same as gallery.emptyState.selectFolder.",
-    "control": "Small outlined toolbar button. Full visible label and accessible name.",
+    "situation": "Toolbar button in the populated Gallery state that adds more images from a folder to the existing batch. Hidden when folder selection is unavailable (R-I31), same as gallery.emptyState.selectFolder. Shown beside a folder-with-plus glyph, which carries the \"add\" meaning, so the text itself does not need a \"+\" prefix.",
+    "control": "Toolbar button with a leading icon plus visible text; the text alone is still the accessible name (R-K10).",
     "maxLength": 20
   },
   "gallery.toolbar.clear": {
-    "situation": "Toolbar button that removes every image from the batch and returns to the empty state, with no confirmation prompt (R-G6 — re-selecting files is cheap, and a confirmation dialog costs more on a touch device than the mistake it guards against).",
-    "control": "Small quiet toolbar button, visually de-emphasised relative to Add images/Add folder since it is destructive. Full visible label and accessible name.",
+    "situation": "Toolbar button that removes every image from the batch and returns to the empty state, with no confirmation prompt (R-G6 — re-selecting files is cheap, and a confirmation dialog costs more on a touch device than the mistake it guards against). Shown beside a trash-can glyph.",
+    "control": "Small quiet toolbar button, visually de-emphasised relative to Add Images/Add Folder since it is destructive. Icon plus visible text; the text alone is still the accessible name (R-K10).",
     "maxLength": 12
   },
   "gallery.toolbar.viewToggleLabel": {
-    "situation": "Accessible group label for the grid/list view-mode toggle in the Gallery toolbar (R-G7). The app auto-selects an initial mode by file count and folder origin (R-G8); this control lets the user override it for the session.",
-    "control": "role=\"group\" wrapper around the two toggle buttons. Not itself visible text — an aria-label only.",
+    "situation": "Accessible name for the grid/list view toggle in the Gallery toolbar (R-G7), which is one switch rather than two buttons — clicking anywhere on it flips the view, the same pattern as preview.comparison.toggleLabel. The app auto-selects an initial mode by file count and folder origin (R-G8); this control lets the user override it for the session.",
+    "control": "The aria-label of a single switch control (role=\"switch\"); aria-checked reflects whether list is the active view. Visible content is icon-only (grid/list glyphs), so this name plus the checked state is what tells a screen-reader user which view is showing (R-K10).",
     "maxLength": 40
   },
-  "gallery.toolbar.viewGrid": {
-    "situation": "One of the two grid/list view-mode toggle buttons (R-G7). Selects the thumbnail grid.",
-    "control": "Small toggle button with aria-pressed reflecting whether grid is the active view. Full visible label and accessible name.",
-    "maxLength": 12
-  },
-  "gallery.toolbar.viewList": {
-    "situation": "One of the two grid/list view-mode toggle buttons (R-G7). Selects the no-thumbnail list view (R-G9), grouped by directory for folder input (R-G11).",
-    "control": "Small toggle button with aria-pressed reflecting whether list is the active view. Full visible label and accessible name.",
-    "maxLength": 12
-  },
   "gallery.meta": {
-    "situation": "Mono meta line beneath the 'Your Images' title in the populated Gallery header, shown above both the grid and list views (docs/ui-design.md §6, 'Populated header row'). {count} is the current batch size and {size} is the total input size using the UI size formatter, never a size estimate — nothing has been compressed yet.",
+    "situation": "Mono meta line shown inline alongside the 'SELECTED IMAGES' title (separated by a middot) in the populated Gallery header, shown above both the grid and list views (docs/ui-design.md §6, 'Populated header row'). {count} is the current batch size and {size} is the total input size using the UI size formatter, never a size estimate — nothing has been compressed yet.",
     "control": "Small mono text beneath the title. Not interactive.",
     "maxLength": null
   },
@@ -510,7 +500,7 @@
     "maxLength": 20
   },
   "preview.toolbar.addMore": {
-    "situation": "Preview toolbar action opening the file picker from inside Preview (R-M3). If the batch then holds more than one image the app returns to the Gallery (R-M2), so this action can take the user off this screen. Prefixed with a literal \"+\" so the label stays short.",
+    "situation": "Preview toolbar action opening the file picker from inside Preview (R-M3). If the batch then holds more than one image the app returns to the Gallery (R-M2), so this action can take the user off this screen. Same wording and plus-glyph icon as gallery.toolbar.addImages (both render via ToolbarButton.vue) so the action reads the same way in both toolbars; the icon is dropped below the side-panel breakpoint, same as there.",
     "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
     "maxLength": 20
   },
