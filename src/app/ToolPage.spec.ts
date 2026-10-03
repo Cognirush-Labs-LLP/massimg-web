@@ -276,7 +276,7 @@ describe('ToolPage browser-back navigation guard (R-M6-R-M9, R-X18/R-X19)', () =
   })
 })
 
-describe('ToolPage stage toolbars and breadcrumb (T36)', () => {
+describe('ToolPage stage toolbars (T36)', () => {
   beforeEach(() => {
     nextId = 0
   })
@@ -295,15 +295,5 @@ describe('ToolPage stage toolbars and breadcrumb (T36)', () => {
 
     expect(wrapper.find('[data-testid="preview-back"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="gallery-view-toggle"]').exists()).toBe(false)
-  })
-
-  it('names the current image in the breadcrumb once Preview is open', async () => {
-    const wrapper = await mountToolPage()
-    const record = image({ name: 'holiday.jpeg' })
-    useBatchStore().addImages([record, image()])
-    useUiStore().openPreview(record.id)
-    await nextTick()
-
-    expect(wrapper.find('.breadcrumb').text()).toBe('PREVIEW · holiday.jpeg')
   })
 })

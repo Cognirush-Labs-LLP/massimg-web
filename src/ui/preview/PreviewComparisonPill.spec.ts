@@ -1,6 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import PreviewComparisonPill from './PreviewComparisonPill.vue'
+
+// jsdom has no matchMedia; useBreakpoint.ts reads it in onMounted. Default to desktop so the
+// existing two-fraction-digit assertions below are unaffected — the "mobile" test overrides it.
+let matches = true
+
+beforeEach(() => {
+  matches = true
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches,
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('PreviewComparisonPill', () => {
   it('shows the original size, the measured encoded size and the change', () => {
@@ -11,6 +30,17 @@ describe('PreviewComparisonPill', () => {
     expect(wrapper.get('[data-testid="preview-original-size"]').text()).toBe('512.00 KB')
     expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('256.00 KB')
     expect(wrapper.get('[data-testid="preview-size-change"]').text()).toBe('50% ↓')
+  })
+
+  it('drops to one fraction digit below the side-panel breakpoint', async () => {
+    matches = false
+    const wrapper = mount(PreviewComparisonPill, {
+      props: { tab: 'compressed', originalBytes: 168_600, compressedBytes: 74_530 },
+    })
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="preview-original-size"]').text()).toBe('168.6 KB')
+    expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('74.5 KB')
   })
 
   it('renders nothing at all while no measured result exists (R-P4)', () => {

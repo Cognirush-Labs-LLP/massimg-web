@@ -24,26 +24,6 @@
     "control": "Static section heading, rendered uppercase with wide letter-tracking, same treatment as panel.section.quality. Not a button.",
     "maxLength": 12
   },
-  "shell.breadcrumb.selected": {
-    "situation": "Header breadcrumb (docs/ui-design.md §2) shown while the Gallery stage mode is mounted. {count} is the number of images currently in the batch, including zero for the empty state.",
-    "control": "Mono, uppercase (applied via CSS text-transform, not baked into this string), small text next to the wordmark. Not interactive.",
-    "maxLength": 20
-  },
-  "shell.breadcrumb.preview": {
-    "situation": "Header breadcrumb shown while the Preview stage mode is mounted, for the one image currently being previewed. {filename} is that image's original file name, user data, so it must not be uppercased by this template — CSS text-transform handles the surrounding label text only in visual effect, but since the whole line is one uppercase run, translators should not add casing logic around {filename} either; it renders however the surrounding CSS transform renders the whole string.",
-    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
-    "maxLength": null
-  },
-  "shell.breadcrumb.edit": {
-    "situation": "Header breadcrumb shown while the Edit stage mode is mounted, for the image currently being rotated/cropped. {filename} is that image's original file name (user data).",
-    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
-    "maxLength": null
-  },
-  "shell.breadcrumb.processing": {
-    "situation": "Header breadcrumb shown while a compression run is in progress (Processing stage mode).",
-    "control": "Mono, uppercase (CSS text-transform), small text next to the wordmark. Not interactive.",
-    "maxLength": 16
-  },
   "shell.optionsButton": {
     "situation": "Mobile-only header button (docs/ui-design.md §2) that opens the settings drawer. Rendered next to a decorative menu glyph (☰) that is not part of this string — the glyph is marked aria-hidden and carries no translatable text of its own.",
     "control": "Solid tint-red pill button, same visual weight as the primary Compress action. This is the button's full visible label, so it also serves as its accessible name (R-K10) — no separate aria-label is added.",
@@ -483,6 +463,16 @@
     "situation": "The transform line before this image's pixel dimensions are known (the background probe has not reached it yet). The names and the output extension are already correct, so the line is shown without the figures rather than with placeholders.",
     "control": "One line of small mono text below the comparison pill. Not interactive.",
     "maxLength": 60
+  },
+  "preview.transform.lineCompact": {
+    "situation": "The same transform line as preview.transform.line, but below the side-panel breakpoint where a full filename on each side would push the line onto a second row. Shows just the source and output file extensions in place of their full names (e.g. \"jpg 1200×1799 → jpg 1200×1799\") — the full filename is never shown anywhere else in Preview below this width, only here, so this is the one place that information narrows to the extension alone.",
+    "control": "One line of small mono text below the comparison pill, narrow viewport only. The arrow is styled more prominently than the rest of the line. Not interactive.",
+    "maxLength": 40
+  },
+  "preview.transform.lineCompactNoSizes": {
+    "situation": "preview.transform.lineCompact's counterpart for before the pixel dimensions are known, the same way lineNoSizes pairs with line.",
+    "control": "One line of small mono text below the comparison pill, narrow viewport only. Not interactive.",
+    "maxLength": 20
   },
   "preview.transform.flatten": {
     "situation": "Shown under the transform line when the chosen output format cannot store transparency, so any transparent pixels will be filled instead (R-C17: \"where transparency will be flattened, the Preview transform line says so\"). {format} is the output format acronym, already uppercased and not itself translated. Worded as something that *will* happen because whether this image actually has transparent pixels is not measured until it is compressed — the report states the measured outcome afterwards.",

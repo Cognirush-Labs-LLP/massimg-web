@@ -13,6 +13,7 @@
 import { computed } from 'vue'
 import { t } from '@/i18n/t'
 import ToggleSwitch from '@/app/shell/ToggleSwitch.vue'
+import { useBreakpoint } from '@/app/shell/useBreakpoint'
 import { describeSizeComparison, formatUiSize } from '@/domain/sizes'
 import type { ComparisonTab } from './usePreviewViewport'
 
@@ -24,6 +25,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ toggle: [] }>()
+
+// Below the side-panel breakpoint the figures drop to one fraction digit (e.g. "74.5 KB" instead
+// of "74.53 KB") so two sizes, the toggle and the change figure keep fitting beside each other in
+// the narrow toolbar.
+const { isDesktop } = useBreakpoint()
+const sizeFractionDigits = computed(() => (isDesktop.value ? 2 : 1))
+const formatSize = (bytes: number): string =>
+  formatUiSize(bytes, undefined, sizeFractionDigits.value)
 
 const comparison = computed(() =>
   props.compressedBytes === null
@@ -57,7 +66,7 @@ const changeText = computed(() => {
 <template>
   <div v-if="compressedBytes !== null" class="comparison" data-testid="preview-comparison">
     <span class="size original-size" data-testid="preview-original-size">
-      {{ formatUiSize(originalBytes) }}
+      {{ formatSize(originalBytes) }}
     </span>
 
     <ToggleSwitch
@@ -72,7 +81,7 @@ const changeText = computed(() => {
     </ToggleSwitch>
 
     <span class="size compressed-size" data-testid="preview-compressed-size">
-      {{ formatUiSize(compressedBytes) }}
+      {{ formatSize(compressedBytes) }}
     </span>
 
     <span
@@ -123,5 +132,20 @@ const changeText = computed(() => {
 .change.increase,
 .change.unchanged {
   color: var(--color-primary);
+}
+
+/* Matches ToolbarButton.vue's own `@media (max-width: 899.98px)` (SIDE_PANEL_BREAKPOINT_PX) —
+   the figures shrink a notch to match `sizeFractionDigits` dropping to one digit above, so the
+   pill stays compact in the narrow toolbar without the Original/Compressed switch itself changing
+   size. */
+@media (max-width: 899.98px) {
+  .comparison {
+    gap: 8px;
+  }
+
+  .size,
+  .change {
+    font-size: 11px;
+  }
 }
 </style>

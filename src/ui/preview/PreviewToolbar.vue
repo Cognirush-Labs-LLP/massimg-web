@@ -52,10 +52,15 @@ function openEdit(): void {
       {{ t('preview.toolbar.back') }}
     </ToolbarButton>
 
-    <ToolbarButton data-testid="preview-add-more" @click="addViaFilePicker">
+    <ToolbarButton data-testid="preview-add-more" icon-only-mobile @click="addViaFilePicker">
       <template #icon>
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+          <path
+            d="M8 2.5v11M2.5 8h11"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+          />
         </svg>
       </template>
       {{ t('preview.toolbar.addMore') }}

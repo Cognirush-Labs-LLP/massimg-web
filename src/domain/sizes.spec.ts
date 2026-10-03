@@ -46,6 +46,13 @@ describe('size formatting', () => {
   it('keeps the report and interface formatters as distinct functions', () => {
     expect(formatReportSize).not.toBe(formatUiSize)
   })
+
+  it('rounds to a requested fraction-digit count instead of the default 2', () => {
+    const bytes = 12.336 * 1000 ** 2
+
+    expect(formatUiSize(bytes, 'en-US', 1)).toBe('12.3 MB')
+    expect(formatUiSize(bytes, 'en-US', 0)).toBe('12 MB')
+  })
 })
 
 describe('describeSizeComparison (R-P5)', () => {

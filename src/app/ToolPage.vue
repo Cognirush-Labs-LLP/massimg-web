@@ -54,12 +54,6 @@ const showPanel = computed(() => stageMode.value !== 'processing')
 const imageCount = computed(() => images.value.length)
 const primaryActionDisabled = computed(() => imageCount.value === 0)
 
-// The breadcrumb's `PREVIEW · abc.jpg` / `EDIT · abc.jpg` forms (docs/ui-design.md §2). Header.vue
-// has computed them since T31; this is the real value its `activeFileName` prop was waiting for.
-const activeFileName = computed(
-  () => images.value.find((image) => image.id === uiStore.currentImageId)?.name ?? '',
-)
-
 // Facts-only meta line beneath the Compress button (R-A2, R-F4, T35). Format acronyms are
 // deliberately not translated (see SidePanelFormat.vue's own note) — only "Original formats" is
 // an actual sentence.
@@ -157,13 +151,7 @@ onMounted(() => {
 
 <template>
   <div class="tool-page">
-    <Header
-      :stage-mode="stageMode"
-      :is-desktop="isDesktop"
-      :selected-count="imageCount"
-      :active-file-name="activeFileName"
-      @open-panel="openPanel"
-    />
+    <Header :stage-mode="stageMode" :is-desktop="isDesktop" @open-panel="openPanel" />
 
     <div class="tool-body">
       <StageContainer>

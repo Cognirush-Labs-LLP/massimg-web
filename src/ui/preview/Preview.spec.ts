@@ -134,7 +134,19 @@ async function loadFrameImage(
 // keep stepping the next case's batch. Unmounting is the same thing leaving Preview does for real.
 enableAutoUnmount(afterEach)
 
+// jsdom has no matchMedia; useBreakpoint.ts (read by PreviewComparisonPill.vue and
+// PreviewTransformLine.vue) reads it in onMounted. Default to desktop so every existing assertion
+// below is unaffected — individual "mobile" tests override `matches` before mounting.
+let matches = true
+
 beforeEach(() => {
+  matches = true
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches,
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
   setActivePinia(createPinia())
   runs.length = 0
   run.mockClear()
@@ -195,6 +207,36 @@ describe('Preview', () => {
 
     expect(wrapper.get('[data-testid="preview-transform-line"]').text()).toBe(
       'a.jpeg 4000×3000 → a.webp 4000×3000',
+    )
+  })
+
+  it('shortens the transform line to extensions only below the side-panel breakpoint', async () => {
+    matches = false
+    seed(['a'], 'a', { name: 'camera_raw_file.jpg' })
+    const wrapper = await mountPreview()
+
+    expect(wrapper.get('[data-testid="preview-transform-line"]').text()).toBe(
+      'jpg 4000×3000 → jpg 4000×3000',
+    )
+  })
+
+  it('keeps the extension exactly as cased in the filename on the compact line', async () => {
+    matches = false
+    seed(['a'], 'a', { name: 'camera_raw_file.JPG' })
+    const wrapper = await mountPreview()
+
+    expect(wrapper.get('[data-testid="preview-transform-line"]').text()).toBe(
+      'JPG 4000×3000 → JPG 4000×3000',
+    )
+  })
+
+  it('drops the extension word (not the dimensions) on the compact line for a name with none', async () => {
+    matches = false
+    seed(['a'], 'a', { name: 'camera_raw_file' })
+    const wrapper = await mountPreview()
+
+    expect(wrapper.get('[data-testid="preview-transform-line"]').text()).toBe(
+      '4000×3000 → 4000×3000',
     )
   })
 

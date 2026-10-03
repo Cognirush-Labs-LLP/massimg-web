@@ -60,12 +60,21 @@ export function describeSizeComparison(inputBytes: number, outputBytes: number):
   }
 }
 
-/** Formats a size for the interface using the active interface locale. */
-export function formatUiSize(bytes: number, locales?: Intl.LocalesArgument): string {
+/**
+ * Formats a size for the interface using the active interface locale.
+ *
+ * `fractionDigits` defaults to 2; the Preview comparison pill passes 1 below the side-panel
+ * breakpoint to keep the figures from crowding the narrow toolbar.
+ */
+export function formatUiSize(
+  bytes: number,
+  locales?: Intl.LocalesArgument,
+  fractionDigits = 2,
+): string {
   const { value, unit } = scaleBytes(bytes)
   const formattedValue = new Intl.NumberFormat(locales, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(value)
 
   return `${formattedValue} ${unit}`

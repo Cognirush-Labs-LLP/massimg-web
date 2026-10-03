@@ -3,16 +3,27 @@
 // into StageContainer.vue's `toolbar` slot). Icon + label above the side-panel breakpoint; below
 // it (StageContainer.vue's own `@media (max-width: 899.98px)`, SIDE_PANEL_BREAKPOINT_PX) the icon
 // drops and only the label remains, so a cramped toolbar never shrinks a button down to a bare
-// icon a user might hesitate to tap (Clear in particular). A store-free leaf, like
-// PrimaryActionButton.vue — every attribute Vue doesn't claim as a prop (data-testid, aria-label,
-// disabled, @click, ...) falls through to the root <button> as usual.
-defineProps<{ quiet?: boolean }>()
+// icon a user might hesitate to tap (Clear in particular).
+//
+// `iconOnlyMobile` is the one deliberate exception to that rule (Preview toolbar's "Add Images",
+// confirmed with the user): below the breakpoint it flips the icon back on and visually hides the
+// label instead of dropping it, rather than removing the label from the DOM — the accessible name
+// (and `.text()` in tests) still comes from the label, only its on-screen box collapses, so this
+// stays a screen-reader-visible label, not a true bare-icon button.
+//
+// A store-free leaf, like PrimaryActionButton.vue — every attribute Vue doesn't claim as a prop
+// (data-testid, aria-label, disabled, @click, ...) falls through to the root <button> as usual.
+defineProps<{ quiet?: boolean; iconOnlyMobile?: boolean }>()
 </script>
 
 <template>
-  <button type="button" class="toolbar-button" :class="{ quiet }">
+  <button
+    type="button"
+    class="toolbar-button"
+    :class="{ quiet, 'icon-only-mobile': iconOnlyMobile }"
+  >
     <span v-if="$slots.icon" class="icon"><slot name="icon" /></span>
-    <slot />
+    <span class="label"><slot /></span>
   </button>
 </template>
 
@@ -54,6 +65,30 @@ defineProps<{ quiet?: boolean }>()
 
   .toolbar-button {
     padding-inline: 10px;
+  }
+
+  /* The `iconOnlyMobile` exception: put the icon back and visually collapse the label instead of
+     removing it, so the button keeps its accessible name (and its `.text()` in tests) — only the
+     on-screen box shrinks to the icon's footprint. Higher specificity than the two rules above, so
+     it wins regardless of source order. */
+  .toolbar-button.icon-only-mobile .icon {
+    display: flex;
+  }
+
+  .toolbar-button.icon-only-mobile {
+    padding-inline: 9px;
+  }
+
+  .toolbar-button.icon-only-mobile .label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 </style>

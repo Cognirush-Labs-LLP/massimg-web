@@ -45,6 +45,18 @@ describe('PreviewToolbar', () => {
     expect(wrapper.get('[data-testid="preview-edit"]').text()).toBe('Edit')
   })
 
+  it('keeps "Add Images" as an accessible label even though it collapses to its icon on mobile', () => {
+    seed(['a'])
+    const wrapper = mount(PreviewToolbar)
+    const addMore = wrapper.get('[data-testid="preview-add-more"]')
+
+    // ToolbarButton.vue's `icon-only-mobile`: the label stays in the DOM (and in `.text()`) for
+    // screen readers — only its on-screen box collapses below the breakpoint, via CSS this jsdom
+    // test can't evaluate directly, so the markup contract is what's checked here.
+    expect(addMore.classes()).toContain('icon-only-mobile')
+    expect(addMore.text()).toBe('Add Images')
+  })
+
   it('returns to the Gallery on Back', async () => {
     seed(['a', 'b'])
     const wrapper = mount(PreviewToolbar)
