@@ -8,9 +8,13 @@ import { computed } from 'vue'
 import { t } from '@/i18n/t'
 import { useBreakpoint } from '@/app/shell/useBreakpoint'
 import type { EncodableFormat } from '@/domain/types'
+import type { OutputJobResult } from '@/pipeline/protocol'
 import type { TransformLine } from './transform-line'
 
-const props = defineProps<{ line: TransformLine }>()
+const props = defineProps<{
+  line: TransformLine
+  outputSelection?: OutputJobResult['selection'] | null
+}>()
 
 const FORMAT_DISPLAY_NAME: Record<EncodableFormat, string> = {
   jpeg: 'JPEG',
@@ -104,6 +108,22 @@ const notes = computed(() => {
       : t('preview.transform.flatten', { format: FORMAT_DISPLAY_NAME[line.outputFormat] }),
   )
 })
+
+const outputSelectionNote = computed(() => {
+  const selection = props.outputSelection
+
+  if (selection === undefined || selection === null || selection.kind === 'encoded') {
+    return null
+  }
+
+  if (selection.kind === 'optimized-original') {
+    return t('preview.transform.originalOptimized')
+  }
+
+  return selection.reason === 'already-within-size-target'
+    ? t('preview.transform.originalKeptTarget')
+    : t('preview.transform.originalKeptNotSmaller')
+})
 </script>
 
 <template>
@@ -116,6 +136,9 @@ const notes = computed(() => {
     </p>
     <p v-for="note in notes" :key="note" class="note" data-testid="preview-transform-note">
       {{ note }}
+    </p>
+    <p v-if="outputSelectionNote" class="note" data-testid="preview-output-selection-note">
+      {{ outputSelectionNote }}
     </p>
   </div>
 </template>

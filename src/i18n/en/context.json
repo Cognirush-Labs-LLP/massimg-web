@@ -484,6 +484,21 @@
     "control": "Small muted note under the transform line. Not interactive.",
     "maxLength": 120
   },
+  "preview.transform.originalKeptTarget": {
+    "situation": "Shown after a measured Preview result returns the source bytes because the source already meets the selected size target and no requested format, dimension or edit change requires a new file.",
+    "control": "Small muted result note under the transform line. Not interactive.",
+    "maxLength": 80
+  },
+  "preview.transform.originalKeptNotSmaller": {
+    "situation": "Shown after a measured Preview result returns the source bytes because the same-format encoded candidate was equal in size or larger (R-X24).",
+    "control": "Small muted result note under the transform line. Not interactive.",
+    "maxLength": 80
+  },
+  "preview.transform.originalOptimized": {
+    "situation": "Shown after a measured PNG/APNG Preview result uses the source file's losslessly optimized bytes instead of the ordinary encoded candidate. This is not called Original kept because the optimizer changed the container bytes.",
+    "control": "Small muted result note under the transform line. Not interactive.",
+    "maxLength": 60
+  },
   "preview.toolbar.back": {
     "situation": "Preview toolbar action returning to the Gallery with the batch and settings intact (Functional Design §3.1's transition table, docs/ui-design.md §11). Prefixed with a literal \"‹\" as a back-navigation glyph, matching the stepper's own chevron style, so the label stays short.",
     "control": "Button with visible text, so it needs no separate accessible name (R-K10).",

@@ -1,5 +1,5 @@
 import { hasCropOp, resolveEditedSize, trailingResizeOp, type PixelSize } from './edit'
-import { resolveResizedSize } from './dimension'
+import { needsResize, resolveResizedSize } from './dimension'
 import { resolveFormat, supportsAlpha, type FormatSetting, type FormatResolution } from './format'
 import type {
   Caveat,
@@ -217,25 +217,27 @@ export function resolveSettings(image: SettingsImage, batch: BatchSettings): Set
 }
 
 /**
- * R-Q2's first half: whether the source file already *is* what the job asks for, so that an image
- * already under the target can be passed through rather than re-encoded.
+ * Whether the source file already *is* what the job asks for. A decoded `sourceSize` lets no-op
+ * Fit within/fixed-edge rules qualify; `null` is the pre-decode R-Q2 fast path, where only the
+ * explicit Original dimension can be proven safe.
  *
- * This is R-X45's test, applied to R-Q2 instead of to R-X24: the original may only be returned when
- * returning it gives the user what they asked for. A format change, any dimension rule, a rotation
- * or a crop all mean the source does not satisfy the request, however small it is, and the search
- * runs normally.
+ * This is R-X45's test, shared by R-Q2 and R-X24: the original may only be returned when
+ * returning it gives the user what they asked for. A format change, an actual dimension change, a
+ * rotation or a crop all mean the source does not satisfy the request, however small it is, and
+ * the search runs normally.
  *
- * It lives here rather than in the pipeline because R-X24 needs exactly the same test when it is
- * built, and two copies of it would be two places to get R-X45 wrong.
+ * It lives here rather than in the pipeline so both decisions use the same definition.
  */
 export function requestIsSatisfiedBySource(
   settings: ResolvedSettings,
   edit: EditRecord | null,
+  sourceSize: PixelSize | null,
 ): boolean {
   return (
     settings.format === settings.sourceFormat &&
-    settings.dimension.kind === 'original' &&
-    edit === null
+    edit === null &&
+    (settings.dimension.kind === 'original' ||
+      (sourceSize !== null && !needsResize(sourceSize, settings.dimension)))
   )
 }
 

@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import type { ImageId, ImageRecord, PipelineJob } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
-import type { JobToken } from '@/pipeline/protocol'
+import type { JobToken, OutputJobResult } from '@/pipeline/protocol'
 import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
@@ -77,12 +77,22 @@ async function mountPreview(): Promise<VueWrapper> {
   return wrapper
 }
 
-function completed(bytes: number, imageId: string): JobOutcome {
+function completed(
+  bytes: number,
+  imageId: string,
+  selection: OutputJobResult['selection'] = { kind: 'encoded' },
+): JobOutcome {
   return {
     token: 1 as JobToken,
     imageId: imageId as ImageId,
     outcome: 'completed',
-    result: { kind: 'output', bytes: new Uint8Array(bytes), format: 'jpeg', caveats: [] },
+    result: {
+      kind: 'output',
+      bytes: new Uint8Array(bytes),
+      format: 'jpeg',
+      selection,
+      caveats: [],
+    },
   }
 }
 
@@ -198,6 +208,39 @@ describe('Preview', () => {
 
     expect(wrapper.get('[data-testid="preview-compressed-size"]').text()).toBe('256.00 KB')
     expect(wrapper.get('[data-testid="preview-size-change"]').text()).toBe('50% ↓')
+  })
+
+  it('discloses an original-kept result and removes the disclosure during a re-encode', async () => {
+    seed(['a'])
+    const wrapper = await mountPreview()
+
+    runs[0]?.settle(completed(512_000, 'a', { kind: 'original', reason: 'encoded-not-smaller' }))
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="preview-output-selection-note"]').text()).toBe(
+      'Original kept — re-encoding was not smaller.',
+    )
+
+    useSettingsStore().quality = { kind: 'quality', value: 71 }
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="preview-output-selection-note"]').exists()).toBe(false)
+  })
+
+  it.each([
+    [
+      { kind: 'original', reason: 'already-within-size-target' } as const,
+      'Original kept — it already meets the size target.',
+    ],
+    [{ kind: 'optimized-original' } as const, 'Original optimized losslessly.'],
+  ])('discloses the other source-side selection outcomes', async (selection, message) => {
+    seed(['a'])
+    const wrapper = await mountPreview()
+
+    runs[0]?.settle(completed(256_000, 'a', selection))
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="preview-output-selection-note"]').text()).toBe(message)
   })
 
   it('shows the transform line while the encode is still running, because it reads the settings', async () => {

@@ -166,6 +166,11 @@ type PipelineJob = EncodeJob | JpegRecoveryJob | DimensionRecoveryJob
 
 Ordinary encode results are also discriminated. Only `{ kind: 'output' }` owns bytes. An unreachable hard ceiling returns metadata only: `{ kind: 'size-target-unreachable', targetBytes, achievedBytes, format, width, height }`. Preview replaces the image frame with its warning, so oversized attempt bytes remain inside the worker and are discarded rather than transferred to the UI. Packaging accepts only `output`. The worker protocol's existing `skipped` message remains reserved for cancellation before execution and cannot be confused with this completed constraint outcome.
 
+Every output also carries a selection descriptor: `encoded`, `original` with reason
+`already-within-size-target` or `encoded-not-smaller`, or `optimized-original` for a PNG/APNG
+source-side oxipng win. Preview uses this result metadata for its disclosure; packaging writes the
+bytes it accompanies and makes no second selection.
+
 `intent` affects only the caveats attached to a successful output: Preview's are empty and a run's feed the report. It never affects encode decisions, and an unreachable result is metadata-only for both intents. Recovery jobs also return metadata only. Clicking a recovery action changes settings/edit state and runs an ordinary Preview encode; Processing always re-reads and re-encodes the source.
 
 ### 4.1 Settings resolution
@@ -200,7 +205,18 @@ Stages share one intermediate representation, an RGBA frame buffer with dimensio
 
 **GIF is one row for both still and animated** (T28). A still image reaches `stages/gif.ts` as an animation of one frame (`singleFrameAnimation`), because gifsicle takes a GIF and returns a GIF whether or not it moves and ImageMagick writes a one-image collection the same way it writes a many-image one. Two rows would have meant two copies of the colour handling, the gifsicle call and every assertion made about the result. The row ends in a comparison rather than an encode because gifsicle is not always the winner: it is 69–83% smaller where frames share content, and **larger** on a still photograph (A7).
 
-**A size target repeats the encode stages and nothing else** (§7.5). Decode, orient, edit and resize do not depend on the quality asked for, so they run once and the search re-encodes the frame — or every frame — it left behind. Each probe is the whole of its format's encode row, not one codec call, which is why a PNG probe is two candidates and a GIF probe is an ImageMagick write plus a gifsicle pass. R-Q2's shortcut is decided before the decode: an image already under the target that the job asks nothing else of never enters the frame pipeline. Non-PNG bytes pass through; PNG and APNG bytes still receive a raw, lossless oxipng pass and keep the smaller result.
+**A size target repeats the encode stages and nothing else** (§7.5). Decode, orient, edit and resize do not depend on the quality asked for, so they run once and the search re-encodes the frame — or every frame — it left behind. Each probe is the whole of its format's encode row, not one codec call, which is why a PNG probe is two candidates and a GIF probe is an ImageMagick write plus a gifsicle pass. R-Q2's Original-size shortcut is decided before decode; a no-op Fit-within/fixed-edge rule is proved from the decoded upright dimensions. In either case, an image already under the target that the job asks nothing else of never enters edit, resize or encode. Non-PNG bytes pass through; PNG and APNG bytes still receive a raw, lossless oxipng pass and keep the smaller result.
+
+**Every successful encode row ends in the same R-X24/R-X45 selection.** After the format-specific
+row has produced its best candidate, `planOutputSelection` compares it with the source only when
+the effective format matches. `requestIsSatisfiedBySource` requires no edit and uses
+`needsResize(decodedUprightSize, dimension)` so a no-op Fit within or fixed-edge rule qualifies
+while a real resize does not. An eligible source wins an equal-size tie. PNG/APNG first runs the
+source bytes through oxipng and compares that candidate directly. When a same-format requested
+transformation produces a larger file, the encoded bytes remain authoritative and a run receives
+`output-larger-than-input`; a format conversion is retained without that warning. This function is
+shared by still and animated, quality and size paths, so Preview and Processing cannot disagree by
+placing the comparison in UI or packaging code.
 
 **Both animated rows end in byte surgery, and neither ending is optional.** ImageMagick's WebP writer replaces any frame delay under 10 ms with 100 ms, and UPNG hardcodes `acTL.num_plays` to 0 whatever it is asked for — so the durations are put back into the `ANMF` chunks and the loop count into `acTL` after each encoder has run (T29). The `iCCP` goes after apng-optimizer because that component strips one attached before it (D3), then oxipng performs the final lossless APNG refilter/recompression pass. The pre-oxipng candidate remains available so the final pass can never increase size.
 
@@ -490,7 +506,7 @@ So it is a real axis on two subjects of five, **inverted on a third**, and absen
 
 **Animated PNG never searches at all**, because R-Q15 leaves it no axis: `sizeSearchBand` gives it a single position and it encodes once. That matters most where it costs most — apng-optimizer is the most expensive animated encoder here, at about 2 s for a 16-frame 400×400 animation.
 
-**R-Q2 is decided before the decode.** An image whose *source file* is already at or under the target is not re-encoded — but only when the job asks nothing else of it: same format, no dimension rule, no rotation or crop. That is R-X45's test, applied to R-Q2 (`requestIsSatisfiedBySource` in `domain/job.ts`, which R-X24 will reuse), and returning the original when a resize was requested would return the wrong file. Non-PNG bytes are returned unchanged and record `original-kept`. PNG and APNG source bytes instead run directly through `optimisePngBytesKeepingSmaller`; if oxipng wins, the result is a losslessly compressed output rather than an original-kept substitution, and if it does not, the original and its caveat remain. **Both variants preserve whatever metadata the source carried**, which remains the known tension with R-I17 recorded in docs/task-notes/T30.md.
+**R-Q2 takes the earliest safe shortcut.** With **Original size**, an image whose source file is already at or under the target and whose effective format is unchanged passes through before decode. A non-Original dimension rule needs the decoded, EXIF-corrected size first; if `needsResize` then proves the rule is a no-op and there is no edit, the same shortcut runs immediately after decode and before edit/resize/encode. This is the same `requestIsSatisfiedBySource` test R-X24 uses, so a real resize, rotation, crop or format change can never return the wrong file. Non-PNG bytes are returned unchanged and record `original-kept` with reason `already-within-size-target`. PNG and APNG source bytes instead run directly through `optimisePngBytesKeepingSmaller`; if oxipng wins, the result is a losslessly compressed output rather than an original-kept substitution, and if it does not, the original and its caveat remain. **Both variants preserve whatever metadata the source carried**, which remains the known tension with R-I17 recorded in docs/task-notes/T30.md and BL-001.
 
 #### 7.5.1 Preview recovery after an unreachable ceiling
 
@@ -650,7 +666,7 @@ Notes:
   - file: holiday/day1/banner.png
     note: Transparency flattened to white, JPEG has no alpha channel
   - file: holiday/day3/panorama.jpg
-    note: Original kept, re-encoding produced a larger file
+    note: Original kept; re-encoding was not smaller
 ```
 
 Rules implemented here: sizes human-readable to two decimals using 1024-byte units (R-X32), exact bytes on summary totals only (R-X33), ordinary successes counted but not listed (R-X35), non-image files never mentioned (R-X36), relative paths throughout (R-X37), and the fixed caveat set (R-X46).

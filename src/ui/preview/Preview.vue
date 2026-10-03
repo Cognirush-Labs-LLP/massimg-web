@@ -220,7 +220,11 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <PreviewTransformLine v-if="transformLine" :line="transformLine" />
+    <PreviewTransformLine
+      v-if="transformLine"
+      :line="transformLine"
+      :output-selection="encode.outputSelection.value"
+    />
 
     <section
       v-if="encode.unreachable.value"

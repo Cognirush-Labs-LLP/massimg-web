@@ -41,7 +41,7 @@ const fixtureRun = {
       file: file('panorama.jpg', 'holiday/day3/panorama.jpg'),
       inputBytes: 16_384,
       outputBytes: 16_384,
-      caveats: [{ kind: 'original-kept' }],
+      caveats: [{ kind: 'original-kept', reason: 'encoded-not-smaller' }],
     },
   ],
   failures: [
@@ -183,7 +183,7 @@ describe('the closed R-X46 caveat set', () => {
       'Transparency flattened to white; output format has no alpha channel',
       'Animation substituted; output written as WebP because the chosen format cannot animate',
       'Metadata removed, including GPS data',
-      'Original kept; re-encoding produced a larger file',
+      'Original kept; re-encoding was not smaller',
       'Output larger than input; input 100.00 B, output 120.00 B',
       'PNG quantized; PNG was not written losslessly',
       'Colour converted to sRGB; output format could not carry the source colour information',
@@ -194,6 +194,12 @@ describe('the closed R-X46 caveat set', () => {
   it('states when removed metadata did not include GPS data', () => {
     expect(formatCaveat({ kind: 'metadata-removed', gpsDataRemoved: false })).toBe(
       'Metadata removed; GPS data was not among it',
+    )
+  })
+
+  it('states why an already-small source was kept without claiming it was re-encoded', () => {
+    expect(formatCaveat({ kind: 'original-kept', reason: 'already-within-size-target' })).toBe(
+      'Original kept; it already met the size target',
     )
   })
 

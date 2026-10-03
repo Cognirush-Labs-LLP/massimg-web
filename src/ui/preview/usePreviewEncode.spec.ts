@@ -4,7 +4,7 @@ import { defineComponent, h, ref, type Ref } from 'vue'
 import type { BatchSettings } from '@/domain/job'
 import type { ImageId, ImageRecord, Job } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
-import type { JobToken } from '@/pipeline/protocol'
+import type { JobToken, OutputJobResult } from '@/pipeline/protocol'
 import { PREVIEW_DEBOUNCE_MS, usePreviewEncode, type PreviewEncodeState } from './usePreviewEncode'
 
 interface PendingRun {
@@ -67,12 +67,23 @@ function batchSettings(overrides: Partial<BatchSettings> = {}): BatchSettings {
   }
 }
 
-function completed(bytes: number, imageId: string, token = 1): JobOutcome {
+function completed(
+  bytes: number,
+  imageId: string,
+  token = 1,
+  selection: OutputJobResult['selection'] = { kind: 'encoded' },
+): JobOutcome {
   return {
     token: token as JobToken,
     imageId: imageId as ImageId,
     outcome: 'completed',
-    result: { kind: 'output', bytes: new Uint8Array(bytes), format: 'png', caveats: [] },
+    result: {
+      kind: 'output',
+      bytes: new Uint8Array(bytes),
+      format: 'png',
+      selection,
+      caveats: [],
+    },
   }
 }
 
@@ -167,6 +178,24 @@ describe('usePreviewEncode', () => {
     expect(harness.state.phase.value).toBe('ready')
     expect(harness.state.compressedBytes.value).toBe(1234)
     expect(harness.state.compressedUrl.value).toBe('blob:preview/1')
+  })
+
+  it('exposes and clears the measured output selection with the rest of the result', async () => {
+    const harness = mountEncode()
+    await flushPromises()
+
+    runs[0]?.settle(completed(4096, 'a', 1, { kind: 'original', reason: 'encoded-not-smaller' }))
+    await flushPromises()
+
+    expect(harness.state.outputSelection.value).toEqual({
+      kind: 'original',
+      reason: 'encoded-not-smaller',
+    })
+
+    harness.settings.value = batchSettings({ quality: { kind: 'quality', value: 71 } })
+    await flushPromises()
+
+    expect(harness.state.outputSelection.value).toBeNull()
   })
 
   it('discards a recovery result after the settings generation changes', async () => {

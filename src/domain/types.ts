@@ -138,11 +138,13 @@ export interface DimensionRecoveryJob {
 
 export type PipelineJob = Job | JpegRecoveryJob | DimensionRecoveryJob
 
+export type OriginalKeptReason = 'already-within-size-target' | 'encoded-not-smaller'
+
 export type Caveat =
   | { kind: 'transparency-flattened'; fill: Rgba }
   | { kind: 'animation-substituted' }
   | { kind: 'metadata-removed'; gpsDataRemoved: boolean }
-  | { kind: 'original-kept' }
+  | { kind: 'original-kept'; reason: OriginalKeptReason }
   | { kind: 'output-larger-than-input'; inputBytes: number; outputBytes: number }
   | { kind: 'png-quantized' }
   | { kind: 'colour-converted' }

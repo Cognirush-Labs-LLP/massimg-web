@@ -664,6 +664,25 @@ Rotation buttons, crop rectangle with handles, ratio row, zoom slider, backgroun
 
 **Done when:** the on-screen output dimensions match `domain/edit.ts` exactly, Cancel restores every value including rotation, and the background row appears only on spill.
 
+### T37-A — Same-format output selection
+
+**Functional Design:** P5, R-P5, R-X24, R-X45, R-X46
+**Technical Design:** §4, §4.2, §7.5
+**Depends on:** T30, T36, T37
+
+Apply the source-vs-encoded byte decision once inside the shared pipeline, after each format has
+produced its best candidate. Same-format outputs with no edit and no actual dimension change keep
+the source-side candidate whenever the encode is equal or larger; PNG/APNG first losslessly
+optimises that source candidate. Requested transformations retain their encoded bytes and record a
+larger-output warning when applicable. Preview renders the selected bytes and states when the
+original or losslessly optimised original was used.
+
+**Done when:** quality and size jobs, still and animated paths, Preview and run intent all make the
+same selection; no-op dimension rules qualify while real transformations do not; exact ties keep
+the source; R-X45 caveats contain measured sizes; Preview's figures and disclosure describe the
+selected bytes; the real `bapu.jpg` regression shows 0% change and the original-kept disclosure;
+and the domain, report, component and three-engine worker/Preview regressions pass.
+
 ### T38 — Processing view
 
 **Functional Design:** §6.1 to §6.4, R-X26, R-X27

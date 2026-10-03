@@ -7,7 +7,8 @@ users in `content/en/faq.md` unless marked otherwise — nobody is being told so
 underlying code gap is still there.
 
 The same audit found five other findings that were straightforward to fix; those are already
-fixed in code (`a866ab2`, `02a1679`, `4cc8229`, `0a3aa11`, `528bb8a`) and aren't tracked here. It
+fixed in code (`a866ab2`, `02a1679`, `4cc8229`, `0a3aa11`, `528bb8a`) and aren't tracked here.
+T37-A later resolved CORE-004 by wiring R-X24 into the shared output-selection stage. The audit
 also flagged AVIF's "lossless" quality as a specification conflict, but that was already an
 accepted, tested deviation (`docs/assumptions.md` D9) disclosed in the FAQ, so it isn't tracked
 here either.
@@ -17,14 +18,14 @@ here either.
 - **Requirements:** P1, R-Q2, R-I17, R-X46
 - **Disclosed:** `content/en/faq.md` §7, "Does the app preserve EXIF metadata, like camera info or GPS
   location?"
-- **Location:** `src/pipeline/execute.ts:82–92` (the pass-through branch); `src/domain/report.ts`
-  (the `original-kept` caveat text).
+- **Location:** `src/pipeline/execute.ts` (the shared source-output selection paths).
 - **Why backlog:** R-Q2 ("an image already under the target is passed through unchanged") and
   R-I17 ("metadata is stripped by default") cannot both hold for a source carrying EXIF/IPTC/XMP.
   Deciding which promise wins, and what the report says when it does, is a product call — T30's
   handover note (`docs/task-notes/T30.md`) flagged this explicitly rather than picking an answer.
-- **Also:** the current `original-kept` caveat text is misleading on this path specifically — it
-  says "re-encoding produced a larger file," but this branch never encodes at all.
+- **Current disclosure:** the `original-kept` outcome carries a reason, so the report distinguishes
+  an already-met size target from a measured re-encode that was not smaller. This fixes the old
+  misleading wording without resolving the metadata conflict itself.
 - **Options recorded by the review:** container-level metadata stripping without a pixel
   re-encode (keeps R-Q2's byte-identical promise for pixels, breaks it for metadata bytes); or a
   distinct, truthful pass-through/metadata-retained caveat plus an amended R-I17.
@@ -43,21 +44,6 @@ here either.
 - **Option recorded by the review:** implement CICP→sRGB conversion for formats that cannot carry
   the signal, emit a `colour-converted` caveat, and keep the current AVIF carry-through unchanged.
   Needs real HEIC/AVIF CICP fixtures across still/animated and every output format.
-
-## BL-003 — "Keep original when re-encoding is larger" (R-X24) is not wired in (CORE-004)
-
-- **Requirements:** P5, R-X24, R-X45, R-Q7
-- **Disclosed:** `content/en/faq.md` §4, "Will the app ever hand me back a bigger file than the one I
-  uploaded?"
-- **Location:** `src/pipeline/execute.ts`, after the final candidate is selected in both the still
-  and animated paths.
-- **Why backlog:** `requestIsSatisfiedBySource` already exists and does exactly this comparison for
-  R-Q2's pass-through, so the arithmetic isn't the hard part. The risk is what wiring it in
-  everywhere *means*: it would make every no-op same-format run — not just a size-target
-  pass-through — eligible to return the original file's raw bytes, multiplying BL-001's
-  metadata-retention exposure across a much larger share of jobs before that policy question is
-  settled. This should ship together with, or after, BL-001's resolution so both "return the
-  original bytes" paths share one privacy-safe answer.
 
 ## BL-004 — GIF only models alpha as boolean; partial transparency silently binarized (CORE-007)
 

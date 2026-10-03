@@ -409,6 +409,7 @@ describe('qualityForSlider', () => {
 // R-Q2's pass-through and R-X24's substitution both need this test, and R-X45 is what it says: the
 // original may only be returned when returning it gives the user what they asked for.
 describe('requestIsSatisfiedBySource', () => {
+  const sourceSize = { width: 1200, height: 800 }
   const settings = (overrides: Partial<ResolvedSettings> = {}): ResolvedSettings => ({
     quality: { kind: 'size', targetBytes: 100_000 },
     dimension: { kind: 'original' },
@@ -420,19 +421,37 @@ describe('requestIsSatisfiedBySource', () => {
   })
 
   it('is true when the job asks for nothing the source does not already have', () => {
-    expect(requestIsSatisfiedBySource(settings(), null)).toBe(true)
+    expect(requestIsSatisfiedBySource(settings(), null, null)).toBe(true)
   })
 
   it('is false when the format changes', () => {
-    expect(requestIsSatisfiedBySource(settings({ format: 'webp' }), null)).toBe(false)
+    expect(requestIsSatisfiedBySource(settings({ format: 'webp' }), null, sourceSize)).toBe(false)
   })
 
   it.each([
     { kind: 'fit-long-edge', pixels: 1920 },
     { kind: 'fixed-width', pixels: 1200 },
-    { kind: 'fixed-height', pixels: 1080 },
-  ] as const)('is false under a $kind rule', (dimension) => {
-    expect(requestIsSatisfiedBySource(settings({ dimension }), null)).toBe(false)
+    { kind: 'fixed-height', pixels: 800 },
+  ] as const)('is true when a $kind rule is an actual no-op', (dimension) => {
+    expect(requestIsSatisfiedBySource(settings({ dimension }), null, sourceSize)).toBe(true)
+  })
+
+  it.each([
+    { kind: 'fit-long-edge', pixels: 600 },
+    { kind: 'fixed-width', pixels: 1000 },
+    { kind: 'fixed-height', pixels: 600 },
+  ] as const)('is false when a $kind rule resizes the source', (dimension) => {
+    expect(requestIsSatisfiedBySource(settings({ dimension }), null, sourceSize)).toBe(false)
+  })
+
+  it('cannot prove a non-Original rule is a no-op before decode supplies the source size', () => {
+    expect(
+      requestIsSatisfiedBySource(
+        settings({ dimension: { kind: 'fit-long-edge', pixels: 1920 } }),
+        null,
+        null,
+      ),
+    ).toBe(false)
   })
 
   it.each([
@@ -440,7 +459,38 @@ describe('requestIsSatisfiedBySource', () => {
     ['a crop', CROP_EDIT],
   ] as const)('is false under %s', (_label, edit) => {
     // A crop forces the resolved dimension back to `original`, so the edit is what has to be seen.
-    expect(requestIsSatisfiedBySource(settings(), edit)).toBe(false)
+    expect(requestIsSatisfiedBySource(settings(), edit, sourceSize)).toBe(false)
+  })
+
+  it('is false for a square rotation even though the dimensions stay equal', () => {
+    expect(requestIsSatisfiedBySource(settings(), ROTATE_EDIT, { width: 800, height: 800 })).toBe(
+      false,
+    )
+  })
+
+  it('is false for an explicit full-frame crop even though the dimensions stay equal', () => {
+    const edit: EditRecord = {
+      version: 1,
+      ops: [
+        {
+          kind: 'crop',
+          rect: { x: 0, y: 0, width: 1, height: 1 },
+          zoom: 1,
+          background: CROP_BACKGROUND,
+        },
+      ],
+    }
+
+    expect(requestIsSatisfiedBySource(settings(), edit, sourceSize)).toBe(false)
+  })
+
+  it('is false for a trailing recovery resize even when it names the source dimensions', () => {
+    const edit: EditRecord = {
+      version: 1,
+      ops: [{ kind: 'resize', width: 1200, height: 800 }],
+    }
+
+    expect(requestIsSatisfiedBySource(settings(), edit, sourceSize)).toBe(false)
   })
 
   it('is true for an animated source whose format is unchanged', () => {
@@ -448,12 +498,15 @@ describe('requestIsSatisfiedBySource', () => {
       requestIsSatisfiedBySource(
         settings({ format: 'gif', sourceFormat: 'gif', isAnimated: true }),
         null,
+        sourceSize,
       ),
     ).toBe(true)
   })
 
   it('is false for a source format that cannot be written at all', () => {
-    expect(requestIsSatisfiedBySource(settings({ sourceFormat: 'heic' }), null)).toBe(false)
+    expect(requestIsSatisfiedBySource(settings({ sourceFormat: 'heic' }), null, sourceSize)).toBe(
+      false,
+    )
   })
 })
 

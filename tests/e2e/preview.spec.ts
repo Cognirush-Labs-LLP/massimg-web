@@ -18,6 +18,7 @@ const BATCH_MODULE_PATH = '/src/stores/batch.ts'
 const SOURCE_FILES_MODULE_PATH = '/src/platform/source-files.ts'
 const PREVIEW_POOL_MODULE_PATH = '/src/ui/preview/preview-pool.ts'
 const SIZES_MODULE_PATH = '/src/domain/sizes.ts'
+const LOADER_MODULE_PATH = '/src/pipeline/codecs/loader.ts'
 
 test.describe.configure({ timeout: 180_000 })
 
@@ -27,7 +28,7 @@ interface CanvasContext {
 }
 interface Canvas {
   getContext(contextId: '2d'): CanvasContext
-  convertToBlob(options?: { type?: string }): Promise<Blob>
+  convertToBlob(options?: { type?: string; quality?: number }): Promise<Blob>
 }
 declare const OffscreenCanvas: new (width: number, height: number) => Canvas
 declare function makeBytes(
@@ -155,6 +156,36 @@ async function poolStarted(page: Page): Promise<number> {
   }, PREVIEW_POOL_MODULE_PATH)
 }
 
+async function lowQualityJpeg(page: Page): Promise<number[]> {
+  return page.evaluate(async (loaderPath) => {
+    const magick = await (await import(/* @vite-ignore */ loaderPath)).ensureImageMagick()
+    const { ImageMagick, MagickFormat, MagickReadSettings } = magick
+    const width = 96
+    const height = 64
+    const pixels = new Uint8Array(width * height * 4)
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        pixels.set(
+          [(x * 7 + y * 3) % 256, (x * 2 + y * 11) % 256, (x * 13 + y * 5) % 256, 255],
+          (y * width + x) * 4,
+        )
+      }
+    }
+
+    return Array.from(
+      ImageMagick.read(
+        pixels,
+        new MagickReadSettings({ format: MagickFormat.Rgba, width, height, depth: 8 }),
+        (image: { quality: number; write<T>(format: string, cb: (data: Uint8Array) => T): T }) => {
+          image.quality = 10
+          return image.write(MagickFormat.Jpeg, (data) => data.slice())
+        },
+      ) as Uint8Array,
+    )
+  }, LOADER_MODULE_PATH)
+}
+
 /** The rendered image and its frame, in viewport pixels, for the geometry assertions. */
 async function frameGeometry(page: Page) {
   const [frameBox, imageBox] = await Promise.all([
@@ -248,6 +279,36 @@ test('encodes on entry and shows the measured size of what it rendered (R-P1, R-
   )
   await expect(page.getByTestId('preview-transform-line')).toContainText('photo.jpeg 400×300')
 
+  expect(errors).toEqual([])
+})
+
+test('renders and discloses the original when the same-format encode is not smaller', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+  const bytes = await lowQualityJpeg(page)
+
+  await seed(page, [{ id: 'already-compressed', name: 'small.jpg', bytes, width: 96, height: 64 }])
+  await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
+
+  const compressedSize = await page.getByTestId('preview-compressed-size').textContent()
+  expect(compressedSize).not.toBeNull()
+  await expect(page.getByTestId('preview-original-size')).toHaveText(compressedSize!)
+  await expect(page.getByTestId('preview-size-change')).toHaveText('0%')
+  await expect(page.getByTestId('preview-output-selection-note')).toHaveText(
+    'Original kept — re-encoding was not smaller.',
+  )
+
+  const url = await page.getByTestId('preview-image').getAttribute('src')
+  const rendered = await page.evaluate(
+    async (source) => Array.from(new Uint8Array(await (await fetch(source)).arrayBuffer())),
+    url!,
+  )
+  expect(rendered).toEqual(bytes)
+
+  await page.getByTestId('quality-slider').fill('71')
+  await expect(page.getByTestId('preview-output-selection-note')).toHaveCount(0)
   expect(errors).toEqual([])
 })
 

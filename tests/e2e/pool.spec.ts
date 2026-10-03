@@ -20,6 +20,7 @@ const LIMITS_MODULE_PATH = '/src/config/limits.ts'
 const WORKER_MODULE_PATH = '/src/pipeline/worker.ts'
 const LOADER_MODULE_PATH = '/src/pipeline/codecs/loader.ts'
 const ANIMATION_MODULE_PATH = '/src/pipeline/stages/animation.ts'
+const PNG_OPTIMISE_MODULE_PATH = '/src/pipeline/stages/png-optimise.ts'
 
 function fixture(name: string): number[] {
   return Array.from(
@@ -85,7 +86,7 @@ test.beforeEach(async ({ page }) => {
         setTimeout(() => {
           const bytes = new Uint8Array([token & 255])
           self.postMessage(
-            { kind: 'result', token, imageId, result: { kind: 'output', bytes, format: 'jpeg', caveats: [] } },
+            { kind: 'result', token, imageId, result: { kind: 'output', bytes, format: 'jpeg', selection: { kind: 'encoded' }, caveats: [] } },
             [bytes.buffer],
           )
         }, delayMs)
@@ -213,16 +214,19 @@ test('warm() pre-loads ImageMagick in exactly one worker, and asking twice is a 
   await page.waitForRequest((request) => request.url().endsWith('magick.wasm'), { timeout: 10000 })
   const baseline = urls.filter((url) => url.endsWith('magick.wasm')).length
 
-  const immediate = await page.evaluate(async ({ poolPath }) => {
-    const mod = await import(/* @vite-ignore */ poolPath)
-    // Sized above 1: if `warm()` picked "any slot without a worker" rather than tracking whether it
-    // had already warmed one, a second call here would spin up a second worker and a second load.
-    const instance = mod.createWorkerPool({ size: 3 })
-    instance.warm()
-    instance.warm()
-    ;(globalThis as unknown as { __warmTestPool: unknown }).__warmTestPool = instance
-    return instance.stats() as Stats
-  }, { poolPath: POOL_MODULE_PATH })
+  const immediate = await page.evaluate(
+    async ({ poolPath }) => {
+      const mod = await import(/* @vite-ignore */ poolPath)
+      // Sized above 1: if `warm()` picked "any slot without a worker" rather than tracking whether it
+      // had already warmed one, a second call here would spin up a second worker and a second load.
+      const instance = mod.createWorkerPool({ size: 3 })
+      instance.warm()
+      instance.warm()
+      ;(globalThis as unknown as { __warmTestPool: unknown }).__warmTestPool = instance
+      return instance.stats() as Stats
+    },
+    { poolPath: POOL_MODULE_PATH },
+  )
 
   expect(immediate.workersAlive).toBe(1)
   expect(immediate.started).toBe(0)
@@ -654,6 +658,7 @@ interface ShippedOutcome {
     kind: string
     format: string
     caveats: { kind: string }[]
+    selection?: { kind: string; reason?: string }
     head: number[]
     byteLength: number
     hasOutputBytes: boolean
@@ -681,6 +686,8 @@ function runShipped(
       | 'garbage'
       | 'transparent-png'
       | 'shaded-png'
+      | 'optimized-png'
+      | 'low-quality-jpeg'
       | 'cicp-avif'
       | 'animated-gif'
       | 'animated-webp'
@@ -697,6 +704,7 @@ function runShipped(
     async ({
       poolPath,
       loaderPath,
+      pngOptimisePath,
       fixture,
       cicpFixture,
       animatedGif,
@@ -731,6 +739,36 @@ function runShipped(
 
       const transparentPng = () => buildPng(40, 20, (x) => [200, 30, 30, x < 20 ? 255 : 0])
 
+      const lowQualityJpeg = async () => {
+        const magick = await (await import(/* @vite-ignore */ loaderPath)).ensureImageMagick()
+        const { ImageMagick, MagickFormat, MagickReadSettings } = magick
+        const width = 96
+        const height = 64
+        const pixels = new Uint8Array(width * height * 4)
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const at = (y * width + x) * 4
+            pixels.set(
+              [(x * 7 + y * 3) % 256, (x * 2 + y * 11) % 256, (x * 13 + y * 5) % 256, 255],
+              at,
+            )
+          }
+        }
+
+        return ImageMagick.read(
+          pixels,
+          new MagickReadSettings({ format: MagickFormat.Rgba, width, height, depth: 8 }),
+          (image: {
+            quality: number
+            write<T>(format: string, cb: (data: Uint8Array) => T): T
+          }) => {
+            image.quality = 10
+            return image.write(MagickFormat.Jpeg, (data) => data.slice())
+          },
+        ) as Uint8Array
+      }
+
       const shadedPng = () =>
         buildPng(400, 300, (x, y) => {
           const u = x / 400
@@ -740,6 +778,11 @@ function runShipped(
           const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)))
           return [clamp(base[0]! * shade), clamp(base[1]! * shade), clamp(base[2]! * shade), 255]
         })
+
+      const optimizedPng = async () => {
+        const { optimisePngBytesKeepingSmaller } = await import(/* @vite-ignore */ pngOptimisePath)
+        return optimisePngBytesKeepingSmaller(await shadedPng()) as Promise<Uint8Array>
+      }
 
       const handles = []
       const inputByteLengths: number[] = []
@@ -757,9 +800,13 @@ function runShipped(
                     ? new Uint8Array(animatedPng)
                     : spec.source === 'garbage'
                       ? new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
-                      : spec.source === 'shaded-png'
-                        ? await shadedPng()
-                        : await transparentPng()
+                      : spec.source === 'low-quality-jpeg'
+                        ? await lowQualityJpeg()
+                        : spec.source === 'optimized-png'
+                          ? await optimizedPng()
+                          : spec.source === 'shaded-png'
+                            ? await shadedPng()
+                            : await transparentPng()
 
         inputByteLengths.push(source.byteLength)
         handles.push(
@@ -789,6 +836,7 @@ function runShipped(
             bytes?: Uint8Array
             format: string
             caveats?: { kind: string }[]
+            selection?: { kind: string; reason?: string }
             targetBytes?: number
             achievedBytes?: number
             width?: number
@@ -807,6 +855,7 @@ function runShipped(
                   kind: done.result.kind,
                   format: done.result.format,
                   caveats: done.result.caveats,
+                  selection: done.result.selection,
                   head: Array.from(done.result.bytes.subarray(0, 12)),
                   byteLength: done.result.bytes.byteLength,
                   hasOutputBytes: true,
@@ -837,6 +886,7 @@ function runShipped(
     {
       poolPath: POOL_MODULE_PATH,
       loaderPath: LOADER_MODULE_PATH,
+      pngOptimisePath: PNG_OPTIMISE_MODULE_PATH,
       fixture: fixture('orientation-1.jpg'),
       cicpFixture: fixture('cicp-p3.avif'),
       animatedGif: animatedFixture('anim-6f.gif'),
@@ -1145,6 +1195,19 @@ test('the shipped worker passes an already-small non-PNG through and losslessly 
       },
       intent: 'run',
     },
+    // A selected rule that resolves to the source dimensions is still satisfied by the source. The
+    // worker must decode to prove that fact, then take the same R-Q2 shortcut without encoding.
+    {
+      imageId: 'noop-dimension',
+      source: 'fixture',
+      settings: {
+        quality: generous,
+        sourceFormat: 'jpeg',
+        dimension: { kind: 'fit-long-edge', pixels: 100 },
+      },
+      intent: 'run',
+      keepBytes: true,
+    },
     // This is the resolved shape of both an explicit PNG selection and "Don't change" on PNG.
     {
       imageId: 'png-optimised',
@@ -1169,14 +1232,31 @@ test('the shipped worker passes an already-small non-PNG through and losslessly 
       intent: 'run',
       keepBytes: true,
     },
+    {
+      imageId: 'png-original',
+      source: 'optimized-png',
+      settings: {
+        format: 'png',
+        sourceFormat: 'png',
+        quality: { kind: 'size', targetBytes: 10_000_000 },
+      },
+      intent: 'run',
+      keepBytes: true,
+    },
   ])
 
-  const [passthrough, formatChanged, resized, png, apng] = outcomes
+  const [passthrough, formatChanged, resized, noOpDimension, png, apng, pngOriginal] = outcomes
 
   // Byte for byte the file that went in, and the report says the original was kept.
   expect(passthrough!.outcome).toBe('completed')
   expect(passthrough!.result?.bytes).toEqual(source)
-  expect(passthrough!.result?.caveats).toEqual([{ kind: 'original-kept' }])
+  expect(passthrough!.result?.selection).toEqual({
+    kind: 'original',
+    reason: 'already-within-size-target',
+  })
+  expect(passthrough!.result?.caveats).toEqual([
+    { kind: 'original-kept', reason: 'already-within-size-target' },
+  ])
 
   expect(formatChanged!.result?.format).toBe('webp')
   expect(String.fromCharCode(...formatChanged!.result!.head.slice(8, 12))).toBe('WEBP')
@@ -1186,12 +1266,28 @@ test('the shipped worker passes an already-small non-PNG through and losslessly 
   expect(resized!.result!.byteLength).toBeLessThan(source.length)
   expect(resized!.result?.caveats).toEqual([])
 
+  expect(noOpDimension!.result?.bytes).toEqual(source)
+  expect(noOpDimension!.result?.selection).toEqual({
+    kind: 'original',
+    reason: 'already-within-size-target',
+  })
+
   for (const outcome of [png!, apng!]) {
     expect(outcome.outcome, outcome.imageId).toBe('completed')
     expect(outcome.result?.format, outcome.imageId).toBe('png')
     expect(outcome.result!.byteLength, outcome.imageId).toBeLessThan(outcome.inputByteLength)
+    expect(outcome.result?.selection, outcome.imageId).toEqual({ kind: 'optimized-original' })
     expect(outcome.result?.caveats, outcome.imageId).toEqual([])
   }
+
+  expect(pngOriginal!.result?.selection).toEqual({
+    kind: 'original',
+    reason: 'already-within-size-target',
+  })
+  expect(pngOriginal!.result?.byteLength).toBe(pngOriginal!.inputByteLength)
+  expect(pngOriginal!.result?.caveats).toEqual([
+    { kind: 'original-kept', reason: 'already-within-size-target' },
+  ])
 
   // Oxipng recompresses APNG frame payloads but may not rewrite its animation semantics.
   const controls = (bytes: readonly number[]) => {
@@ -1244,6 +1340,101 @@ test('the shipped worker passes an already-small non-PNG through and losslessly 
   )
 
   expect(apngPixelsMatch).toBe(true)
+})
+
+// T37-A: the comparison happens inside the shared worker path, after every format has selected its
+// own best candidate. Preview and run therefore select the same bytes; intent changes caveats only.
+test('same-format output selection keeps only an eligible source that is not larger', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const quality70 = { kind: 'quality', value: 70, lossless: false }
+  const { outcomes } = await runShipped(page, [
+    {
+      imageId: 'run-original',
+      source: 'low-quality-jpeg',
+      settings: { quality: quality70, sourceFormat: 'jpeg' },
+      intent: 'run',
+      keepBytes: true,
+    },
+    {
+      imageId: 'preview-original',
+      source: 'low-quality-jpeg',
+      settings: { quality: quality70, sourceFormat: 'jpeg' },
+      intent: 'preview',
+      keepBytes: true,
+    },
+    {
+      imageId: 'noop-fit',
+      source: 'low-quality-jpeg',
+      settings: {
+        quality: quality70,
+        sourceFormat: 'jpeg',
+        dimension: { kind: 'fit-long-edge', pixels: 200 },
+      },
+      intent: 'run',
+    },
+    {
+      imageId: 'resized-larger',
+      source: 'low-quality-jpeg',
+      settings: {
+        quality: quality70,
+        sourceFormat: 'jpeg',
+        dimension: { kind: 'fixed-width', pixels: 120 },
+      },
+      intent: 'run',
+    },
+    {
+      imageId: 'format-conversion',
+      source: 'low-quality-jpeg',
+      settings: {
+        format: 'png',
+        quality: { kind: 'quality', value: 100, lossless: true },
+        sourceFormat: 'jpeg',
+      },
+      intent: 'run',
+    },
+    {
+      imageId: 'encoded-smaller',
+      source: 'fixture',
+      settings: { quality: quality70, sourceFormat: 'jpeg' },
+      intent: 'run',
+    },
+  ])
+
+  const [run, preview, noOp, resized, converted, smaller] = outcomes
+
+  expect(run!.result?.selection).toEqual({
+    kind: 'original',
+    reason: 'encoded-not-smaller',
+  })
+  expect(run!.result?.byteLength).toBe(run!.inputByteLength)
+  expect(run!.result?.caveats).toEqual([{ kind: 'original-kept', reason: 'encoded-not-smaller' }])
+
+  expect(preview!.result?.selection).toEqual(run!.result?.selection)
+  expect(preview!.result?.bytes).toEqual(run!.result?.bytes)
+  expect(preview!.result?.caveats).toEqual([])
+
+  expect(noOp!.result?.selection).toEqual(run!.result?.selection)
+  expect(noOp!.result?.byteLength).toBe(noOp!.inputByteLength)
+
+  expect(resized!.result?.selection).toEqual({ kind: 'encoded' })
+  expect(resized!.result!.byteLength).toBeGreaterThan(resized!.inputByteLength)
+  expect(resized!.result?.caveats).toEqual([
+    {
+      kind: 'output-larger-than-input',
+      inputBytes: resized!.inputByteLength,
+      outputBytes: resized!.result!.byteLength,
+    },
+  ])
+
+  expect(converted!.result?.selection).toEqual({ kind: 'encoded' })
+  expect(converted!.result!.byteLength).toBeGreaterThan(converted!.inputByteLength)
+  expect(converted!.result?.caveats).toEqual([])
+
+  expect(smaller!.result?.selection).toEqual({ kind: 'encoded' })
+  expect(smaller!.result!.byteLength).toBeLessThan(smaller!.inputByteLength)
 })
 
 test('the shipped worker reports undecodable bytes as decode-failed and unbuilt paths as unimplemented', async ({
@@ -1302,12 +1493,33 @@ test('the shipped worker runs the animated chain for both animated output format
       settings: { format: 'png', isAnimated: true, sourceFormat: 'webp' },
       keepBytes: true,
     },
+    {
+      imageId: 'apng-same-format',
+      source: 'animated-png',
+      settings: { format: 'png', isAnimated: true, sourceFormat: 'png' },
+      intent: 'run',
+      keepBytes: true,
+    },
   ])
 
   expect(outcomes.map((o) => [o.imageId, o.outcome, o.result?.format])).toEqual([
     ['gif-to-webp', 'completed', 'webp'],
     ['webp-to-png', 'completed', 'png'],
+    ['apng-same-format', 'completed', 'png'],
   ])
+
+  const sameFormat = outcomes[2]!
+  expect(sameFormat.result!.byteLength).toBeLessThanOrEqual(sameFormat.inputByteLength)
+  if (sameFormat.result?.selection?.kind === 'original') {
+    expect(sameFormat.result.bytes).toEqual(animatedFixture('anim-6f.png'))
+    expect(sameFormat.result.caveats).toEqual([
+      { kind: 'original-kept', reason: 'encoded-not-smaller' },
+    ])
+  } else if (sameFormat.result?.selection?.kind === 'encoded') {
+    expect(sameFormat.result.byteLength).toBeLessThan(sameFormat.inputByteLength)
+  } else {
+    expect(sameFormat.result?.selection).toEqual({ kind: 'optimized-original' })
+  }
 
   // Real animated files, not a still frame with an animated label: read back with the pipeline's own
   // container readers, in the page, on the bytes the worker actually returned.

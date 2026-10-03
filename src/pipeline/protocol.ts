@@ -12,6 +12,7 @@ import type {
   ImageId,
   PipelineJob,
   Rgba,
+  OriginalKeptReason,
 } from '@/domain/types'
 
 declare const jobTokenBrand: unique symbol
@@ -56,6 +57,11 @@ export interface OutputJobResult {
   bytes: Uint8Array
   /** What was actually produced: R-F6's animated substitution can differ from what was requested. */
   format: EncodableFormat
+  /** Whether the bytes came from the encoder or from R-Q2/R-X24's source-side candidate. */
+  selection:
+    | { kind: 'encoded' }
+    | { kind: 'original'; reason: OriginalKeptReason }
+    | { kind: 'optimized-original' }
   /** The report's caveat list (§4). Empty for `intent: 'preview'`, which returns bytes and size only. */
   caveats: Caveat[]
 }

@@ -36,6 +36,7 @@ import type {
   DimensionRecoveryResult,
   JobFailure,
   JpegRecoveryResult,
+  OutputJobResult,
   SizeTargetUnreachableResult,
 } from '@/pipeline/protocol'
 import { getSourceFile } from '@/platform/source-files'
@@ -78,6 +79,8 @@ export interface PreviewEncodeState {
   compressedUrl: Ref<string | null>
   /** `bytes.byteLength` of the real encode — measured, never estimated (§14.3). */
   compressedBytes: Ref<number | null>
+  /** R-Q2/R-X24's selected source-side result, or `encoded` for an ordinary encode. */
+  outputSelection: Ref<OutputJobResult['selection'] | null>
   /** Object URL of the untouched source file, created only once the Original tab asks for it. */
   originalUrl: Ref<string | null>
   /** The browser could not draw the source itself (a HEIC on Chromium, a TIFF, a JPEG XL). */
@@ -108,6 +111,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
   const phase = ref<PreviewPhase>('idle')
   const compressedUrl = ref<string | null>(null)
   const compressedBytes = ref<number | null>(null)
+  const outputSelection = ref<OutputJobResult['selection'] | null>(null)
   const originalUrl = ref<string | null>(null)
   const originalUnrenderable = ref(false)
   const error = ref<PreviewEncodeError | null>(null)
@@ -138,6 +142,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     }
 
     compressedBytes.value = null
+    outputSelection.value = null
     unreachable.value = null
     recoveryPhase.value = 'idle'
     jpegSuggestion.value = null
@@ -352,6 +357,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       releaseCompressed()
       compressedUrl.value = URL.createObjectURL(blob)
       compressedBytes.value = outcome.result.bytes.byteLength
+      outputSelection.value = outcome.result.selection
       phase.value = 'ready'
       return
     }
@@ -448,6 +454,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     phase,
     compressedUrl,
     compressedBytes,
+    outputSelection,
     originalUrl,
     originalUnrenderable,
     error,

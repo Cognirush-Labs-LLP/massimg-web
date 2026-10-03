@@ -42,7 +42,7 @@ These govern decisions not yet anticipated. When a requirement below and a princ
 
 **P4. Verify before assuming.** Stability outranks speed of design. A belief about how something behaves is recorded in the assumptions register with a test, not written into a requirement as fact.
 
-**P5. Never return a larger file for the same format.** If input and output formats match and the output is larger, the original is kept. A format change is the one case where a size increase is legitimate, because the user asked for it.
+**P5. Never return a larger file for the same format when the original satisfies the request.** If input and output formats match, no edit or actual dimension change was requested, and the re-encoded output is not smaller, the original-side candidate is kept. A format change or a transformation the original does not satisfy is the case where a size increase is legitimate, because the user asked for it.
 
 ### 1.5 Language
 
@@ -206,7 +206,7 @@ Shows one image fitted inside the available stage area, with the side panel stil
 ```
 
 - The pill is a single toggle. Clicking anywhere on it flips between Original and Compressed, so the user can flick back and forth without aiming at a specific half.
-- Left value: original file size. Right value: actual encoded size. Trailing value: percentage change.
+- Left value: original file size. Right value: actual selected output size after R-X24. Trailing value: percentage change.
 - R-P5 When the output is larger than the input, the trailing figure shows an increase, with an up glyph and non-tint colour. It is never suppressed or shown as zero.
 
 **Transform line (below).** Mono, one line, describing this image only:
@@ -529,7 +529,7 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 | Transparency flattened | Source had transparent pixels, output format has no alpha. States the fill colour used. |
 | Animation substituted | Animated source written as WebP because the chosen format cannot animate. |
 | Metadata removed | EXIF, IPTC or XMP was present and has been stripped. States whether GPS data was among it. |
-| Original kept | R-X24 applied. |
+| Original kept | The byte-for-byte original won under R-Q2 or R-X24. States whether it already met the size target or the re-encode was not smaller. |
 | Output larger than input | R-X45 applied. States both sizes. |
 | PNG quantized | PNG output below a slider value of 85. States that PNG was not written losslessly. |
 | Colour converted | Colour information could not be carried by the output format and pixels were converted to sRGB. |
@@ -561,8 +561,8 @@ The archive is streamed to browser-owned storage as the run proceeds, rather tha
 - R-X44 When the resolved output format differs from the source format — a genuine conversion, a "Don't change" fallback (R-F2), or an animated substitution (R-F6) — the canonical extension for the resolved format is used: `.jpg`, `.png`, `.webp`, `.avif`, `.gif`.
 - R-X22 When two outputs would collide within the same directory of the ZIP, later entries get a numeric suffix: `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`. Collisions are possible even without duplicate input names, because format conversion can map two different inputs onto one output name. Files in different directories never collide.
 - R-X23 The ZIP file name includes a timestamp so repeated runs do not overwrite each other in the downloads folder.
-- R-X24 When the output of an image is larger than its input, and the format is unchanged, and no dimension rule, rotation or crop applies to it, the original file is written to the output instead of the larger re-encode. For PNG, the original candidate first receives the same lossless PNG optimisation as every other PNG output, and the smaller candidate is used; it is only reported as `Original kept` when the original bytes actually win. This is recorded in the report (P5).
-- R-X45 The substitution in R-X24 does not happen when the user asked for a change that the original does not satisfy. A request to fit within 800px is honoured even if the 800px re-encode is larger in bytes, because returning the original would return the wrong dimensions. The size increase is recorded in the report as a warning instead.
+- R-X24 When the best encoded output of an image is not smaller than its input, the effective format is unchanged, no rotation or crop applies, and the resolved dimension rule leaves the decoded upright dimensions unchanged, the source-side candidate is written instead. This includes no-op **Fit within**, fixed-width and fixed-height rules, not only **Original size**. An exact byte-size tie keeps the source candidate. For PNG/APNG, the source candidate first receives the same lossless PNG optimisation as every other PNG output and competes directly with the encoded candidate; it is reported as `Original kept` only when the byte-for-byte source wins. Preview renders and measures the selected bytes, and a run records the outcome (P5).
+- R-X45 The substitution in R-X24 does not happen when the user asked for a change that the original does not satisfy. A request that actually resizes the image, any rotation or crop, or a format conversion is honoured even if its output is larger in bytes. A larger same-format transformed output is recorded in the report as a warning; a format conversion needs no warning because the user explicitly requested it.
 - R-X25 Results are retained only until download or until the user leaves the Processing view. They are not carried back to Gallery.
 
 ## 7. Encoder behaviour
@@ -755,7 +755,7 @@ Dark theme only. Tint is reserved for action and state. It is never decorative. 
 
 ### 14.3 Honesty of numbers
 
-Every size and percentage shown in the app is measured, not estimated. The comparison figures in Preview come from a real encode of that image at the current settings. The reduction total in Processing accumulates from completed encodes. No aggregate output size appears next to the primary action, because it is not knowable before the run and would have to be a guess.
+Every size and percentage shown in the app is measured, not estimated. The comparison figures in Preview come from the actual selected bytes after a real encode and R-X24's source comparison. The reduction total in Processing accumulates from completed outputs. No aggregate output size appears next to the primary action, because it is not knowable before the run and would have to be a guess.
 
 ### 14.4 Preset policy
 

@@ -18,9 +18,10 @@
 // **A size target (T30) is the same chain with the encoder run several times** (§7.5): `stages/size.ts`
 // walks the quality slider, and each probe is the whole encode stage the quality path would have run,
 // so R-Q6, R-Q11, R-Q14 and R-Q15 all still hold under a target. Decode, edit and resize happen once,
-// before the search, because none of them depends on quality. R-Q2's shortcut is decided before any
-// of that: an image already under the target that the job asks nothing else of is not decoded or
-// re-encoded. PNG/APNG bytes still receive their lossless raw-byte optimisation pass.
+// before the search, because none of them depends on quality. R-Q2's Original-size shortcut is
+// decided before any of that; a no-op Fit-within/fixed-edge rule is proved immediately after decode.
+// In either case an image already under the target that the job asks nothing else of is not edited,
+// resized or re-encoded. PNG/APNG bytes still receive their lossless raw-byte optimisation pass.
 //
 // The codec load stays first, ahead of every check (T22): §5.2's "a worker that needs a module it
 // has not loaded loads it and then proceeds" is keyed off the job's resolved settings, and
@@ -30,7 +31,7 @@
 // (T24's memory note): a 50 MP decode is 200 MB, and a caller still holding it doubles the peak.
 
 import { ensureCodecsForJob } from './codecs/loader'
-import type { JobResult } from './protocol'
+import type { JobResult, OutputJobResult } from './protocol'
 import { applyEditFrames, applyResizeFrames, decodeAnimation } from './stages/animation'
 import { encodeAnimatedWebp, encodeApng } from './stages/animation-encode'
 import { DecodeError, decodeFrame } from './stages/decode'
@@ -42,6 +43,7 @@ import { singleFrameAnimation } from './stages/frame'
 import { encodeGif } from './stages/gif'
 import { encodePng } from './stages/png'
 import { optimisePngBytesKeepingSmaller } from './stages/png-optimise'
+import { planOutputSelection } from './stages/output-selection'
 import { applyResize } from './stages/resize'
 import { encodeAnimatedToSize, encodeStillAtSlider, encodeStillToSize } from './stages/size'
 import type { AnimatedFormat } from './stages/size'
@@ -57,6 +59,7 @@ import type {
   EncodableFormat,
   Job,
   JpegRecoveryJob,
+  OriginalKeptReason,
   PipelineJob,
 } from '@/domain/types'
 
@@ -81,6 +84,96 @@ async function decodeSource(source: Uint8Array) {
   }
 }
 
+function caveatsForRun(job: Job, stage: Caveat[]): Caveat[] {
+  return job.intent === 'run' ? [...(job.caveats ?? []), ...stage] : []
+}
+
+/** R-Q2's source-side result, shared by the pre-decode and decoded-dimension shortcuts. */
+async function sourceOutput(job: Job, reason: OriginalKeptReason): Promise<OutputJobResult> {
+  const bytes =
+    job.settings.format === 'png' ? await optimisePngBytesKeepingSmaller(job.source) : job.source
+  const originalKept = bytes === job.source
+
+  return {
+    kind: 'output',
+    bytes,
+    format: job.settings.format,
+    selection: originalKept ? { kind: 'original', reason } : { kind: 'optimized-original' },
+    caveats: caveatsForRun(job, originalKept ? [{ kind: 'original-kept', reason }] : []),
+  }
+}
+
+/**
+ * R-X24/R-X45's one shared final decision. It runs after a format has selected its own best
+ * encoded candidate, so WebP/PNG/GIF's internal comparisons cannot drift from Preview or run.
+ */
+async function selectOutput(
+  job: Job,
+  encoded: Uint8Array,
+  format: EncodableFormat,
+  sourceSatisfiesRequest: boolean,
+  stageCaveats: Caveat[],
+): Promise<OutputJobResult> {
+  const sameFormat = format === job.settings.sourceFormat
+  const plan = planOutputSelection({
+    sourceBytes: job.source.byteLength,
+    encodedBytes: encoded.byteLength,
+    sameFormat,
+    sourceSatisfiesRequest,
+  })
+
+  // PNG/APNG's eligible source candidate receives the same lossless raw-byte optimisation as every
+  // PNG output, then competes with the encoded candidate directly. It may win even when the encoded
+  // file is smaller than the unoptimised source.
+  if (sameFormat && sourceSatisfiesRequest && format === 'png') {
+    const sourceCandidate = await optimisePngBytesKeepingSmaller(job.source)
+
+    if (sourceCandidate.byteLength <= encoded.byteLength) {
+      const originalKept = sourceCandidate === job.source
+      const reason: OriginalKeptReason = 'encoded-not-smaller'
+
+      return {
+        kind: 'output',
+        bytes: sourceCandidate,
+        format,
+        selection: originalKept ? { kind: 'original', reason } : { kind: 'optimized-original' },
+        caveats: caveatsForRun(job, originalKept ? [{ kind: 'original-kept', reason }] : []),
+      }
+    }
+  }
+
+  if (plan === 'source') {
+    const reason: OriginalKeptReason = 'encoded-not-smaller'
+
+    return {
+      kind: 'output',
+      bytes: job.source,
+      format,
+      selection: { kind: 'original', reason },
+      caveats: caveatsForRun(job, [{ kind: 'original-kept', reason }]),
+    }
+  }
+
+  const largerThanInput =
+    plan === 'encoded-larger'
+      ? ([
+          {
+            kind: 'output-larger-than-input',
+            inputBytes: job.source.byteLength,
+            outputBytes: encoded.byteLength,
+          },
+        ] as const)
+      : []
+
+  return {
+    kind: 'output',
+    bytes: encoded,
+    format,
+    selection: { kind: 'encoded' },
+    caveats: caveatsForRun(job, [...stageCaveats, ...largerThanInput]),
+  }
+}
+
 export async function executeJob(job: Job): Promise<JobResult> {
   const { settings } = job
 
@@ -98,24 +191,9 @@ export async function executeJob(job: Job): Promise<JobResult> {
   if (
     settings.quality.kind === 'size' &&
     job.source.byteLength <= settings.quality.targetBytes &&
-    requestIsSatisfiedBySource(settings, job.edit)
+    requestIsSatisfiedBySource(settings, job.edit, null)
   ) {
-    const bytes =
-      settings.format === 'png' ? await optimisePngBytesKeepingSmaller(job.source) : job.source
-    const originalKept = bytes === job.source
-
-    return {
-      kind: 'output',
-      bytes,
-      format: settings.format,
-      caveats:
-        job.intent === 'run'
-          ? [
-              ...(job.caveats ?? []),
-              ...(originalKept ? ([{ kind: 'original-kept' }] as const) : []),
-            ]
-          : [],
-    }
+    return await sourceOutput(job, 'already-within-size-target')
   }
 
   if (settings.isAnimated) {
@@ -123,6 +201,20 @@ export async function executeJob(job: Job): Promise<JobResult> {
   }
 
   const frame = await decodeSource(job.source)
+  const sourceSatisfiesRequest = requestIsSatisfiedBySource(settings, job.edit, {
+    width: frame.width,
+    height: frame.height,
+  })
+
+  // A non-Original dimension rule needs the decoded, EXIF-corrected size before we can prove it is
+  // a no-op. Once proven, R-Q2 takes the same source shortcut as the pre-decode Original path.
+  if (
+    settings.quality.kind === 'size' &&
+    job.source.byteLength <= settings.quality.targetBytes &&
+    sourceSatisfiesRequest
+  ) {
+    return await sourceOutput(job, 'already-within-size-target')
+  }
 
   // Checked here rather than at the encoder: the colour is known as soon as the frame exists, and a
   // job that cannot be encoded should not pay for an edit and a resize first.
@@ -140,12 +232,6 @@ export async function executeJob(job: Job): Promise<JobResult> {
       : ({ kind: 'exact', width: recovered.width, height: recovered.height } as const)
   const resized = await applyResize(edited.frame, dimension)
 
-  // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
-  // `job.caveats` first: whatever `resolveSettings` already decided (R-F6's `animation-substituted`
-  // is the one today) precedes what this job's own stages find (CORE-006).
-  const report = (stage: Caveat[]): Caveat[] =>
-    job.intent === 'run' ? [...(job.caveats ?? []), ...edited.caveats, ...stage] : []
-
   // §7.5: the same encoders, run up to eight times over the slider. Ahead of the per-format branches
   // because the search covers all five still formats, including the two that have their own stage.
   if (settings.quality.kind === 'size') {
@@ -162,18 +248,19 @@ export async function executeJob(job: Job): Promise<JobResult> {
       }
     }
 
-    return {
-      kind: 'output',
-      bytes: searched.bytes,
-      format: settings.format,
-      caveats: report(searched.caveats),
-    }
+    return await selectOutput(job, searched.bytes, settings.format, sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...searched.caveats,
+    ])
   }
 
   if (settings.format === 'png') {
     const encoded = await encodePng(resized, settings.quality)
 
-    return { kind: 'output', bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
+    return await selectOutput(job, encoded.bytes, 'png', sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...encoded.caveats,
+    ])
   }
 
   // A still GIF is an animation of one frame (R-Q8 and §4.2 give GIF one row, not two) — see
@@ -181,12 +268,17 @@ export async function executeJob(job: Job): Promise<JobResult> {
   if (settings.format === 'gif') {
     const encoded = await encodeGif(singleFrameAnimation(resized), settings.quality)
 
-    return { kind: 'output', bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
+    return await selectOutput(job, encoded.bytes, 'gif', sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...encoded.caveats,
+    ])
   }
 
   const encoded = await encodeFrame(resized, settings.format, settings.quality)
 
-  return { kind: 'output', bytes: encoded.bytes, format: settings.format, caveats: report([]) }
+  return await selectOutput(job, encoded.bytes, settings.format, sourceSatisfiesRequest, [
+    ...edited.caveats,
+  ])
 }
 
 async function executeJpegRecovery(job: JpegRecoveryJob): Promise<JobResult> {
@@ -336,6 +428,19 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
     throw new DecodeError('decoded animation has no frames')
   }
 
+  const sourceSatisfiesRequest = requestIsSatisfiedBySource(settings, job.edit, {
+    width: first.width,
+    height: first.height,
+  })
+
+  if (
+    settings.quality.kind === 'size' &&
+    job.source.byteLength <= settings.quality.targetBytes &&
+    sourceSatisfiesRequest
+  ) {
+    return await sourceOutput(job, 'already-within-size-target')
+  }
+
   // Checked as soon as the colour is known, before the edit and resize that would be thrown away.
   const unsupported = unsupportedColour(first.colour, animatedColourFormat(format))
 
@@ -345,12 +450,6 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
 
   const edited = applyEditFrames(animation, job.edit, settings.alpha)
   const resized = await applyResizeFrames(edited.animation, settings.dimension)
-
-  // `protocol.ts`: a preview returns bytes and size only; a run adds the report's caveat list.
-  // `job.caveats` first: whatever `resolveSettings` already decided (R-F6's `animation-substituted`
-  // is the one today) precedes what this job's own stages find (CORE-006).
-  const report = (stage: Caveat[]): Caveat[] =>
-    job.intent === 'run' ? [...(job.caveats ?? []), ...edited.caveats, ...stage] : []
 
   // §7.5, and the expensive half of it: every probe re-encodes every frame. R-Q10 forbids the other
   // lever — no frame is ever dropped to hit a target — and an animated PNG has no quality axis at
@@ -371,12 +470,10 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
       }
     }
 
-    return {
-      kind: 'output',
-      bytes: searched.bytes,
-      format: animated,
-      caveats: report(searched.caveats),
-    }
+    return await selectOutput(job, searched.bytes, animated, sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...searched.caveats,
+    ])
   }
 
   if (format === 'png') {
@@ -386,16 +483,25 @@ async function executeAnimated(job: Job, format: EncodableFormat): Promise<JobRe
     // `encodeApng`. The still path below still reads quality in full.
     const encoded = await encodeApng(resized)
 
-    return { kind: 'output', bytes: encoded.bytes, format: 'png', caveats: report(encoded.caveats) }
+    return await selectOutput(job, encoded.bytes, 'png', sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...encoded.caveats,
+    ])
   }
 
   if (format === 'gif') {
     const encoded = await encodeGif(resized, settings.quality)
 
-    return { kind: 'output', bytes: encoded.bytes, format: 'gif', caveats: report(encoded.caveats) }
+    return await selectOutput(job, encoded.bytes, 'gif', sourceSatisfiesRequest, [
+      ...edited.caveats,
+      ...encoded.caveats,
+    ])
   }
 
   const encoded = await encodeAnimatedWebp(resized, settings.quality)
 
-  return { kind: 'output', bytes: encoded.bytes, format: 'webp', caveats: report(encoded.caveats) }
+  return await selectOutput(job, encoded.bytes, 'webp', sourceSatisfiesRequest, [
+    ...edited.caveats,
+    ...encoded.caveats,
+  ])
 }

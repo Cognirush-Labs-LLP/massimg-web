@@ -112,7 +112,9 @@ export function formatCaveat(caveat: Caveat): string {
         ? 'Metadata removed, including GPS data'
         : 'Metadata removed; GPS data was not among it'
     case 'original-kept':
-      return 'Original kept; re-encoding produced a larger file'
+      return caveat.reason === 'already-within-size-target'
+        ? 'Original kept; it already met the size target'
+        : 'Original kept; re-encoding was not smaller'
     case 'output-larger-than-input':
       return `Output larger than input; input ${formatReportSize(caveat.inputBytes)}, output ${formatReportSize(caveat.outputBytes)}`
     case 'png-quantized':
