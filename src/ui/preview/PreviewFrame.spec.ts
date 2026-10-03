@@ -5,6 +5,7 @@ import type { PixelSize } from '@/domain/edit'
 import type { EditOp, EditRecord, ImageId, Rgba } from '@/domain/types'
 import PreviewFrame from './PreviewFrame.vue'
 import type { PreviewEncodeError, PreviewPhase } from './usePreviewEncode'
+import type { PreviewViewport } from './usePreviewViewport'
 
 const OPAQUE_WHITE = { r: 255, g: 255, b: 255, a: 1 } as const satisfies Rgba
 
@@ -89,8 +90,8 @@ async function wheel(wrapper: VueWrapper, init: WheelEventInit): Promise<void> {
   await nextTick()
 }
 
-function imageStyle(wrapper: VueWrapper): Record<string, string> {
-  const style = wrapper.get('[data-testid="preview-image"]').attributes('style') ?? ''
+function elementStyle(wrapper: VueWrapper, testId: string): Record<string, string> {
+  const style = wrapper.get(`[data-testid="${testId}"]`).attributes('style') ?? ''
 
   return Object.fromEntries(
     style
@@ -98,6 +99,23 @@ function imageStyle(wrapper: VueWrapper): Record<string, string> {
       .map((declaration) => declaration.split(':').map((part) => part.trim()))
       .filter((parts): parts is [string, string] => parts.length === 2),
   )
+}
+
+function imageStyle(wrapper: VueWrapper): Record<string, string> {
+  return elementStyle(wrapper, 'preview-image')
+}
+
+/** The `.frame` element's own CSS box — `inline-size`/`block-size`, not `width`/`height`. */
+function frameStyle(wrapper: VueWrapper): Record<string, string> {
+  return elementStyle(wrapper, 'preview-frame')
+}
+
+/**
+ * The viewport `defineExpose`s, so a test can drive zoom/pan state directly rather than
+ * synthesising pointer gestures against a jsdom environment that never lays anything out.
+ */
+function previewViewport(wrapper: VueWrapper): PreviewViewport {
+  return (wrapper.vm as unknown as { viewport: PreviewViewport }).viewport
 }
 
 beforeEach(() => {
@@ -114,6 +132,13 @@ beforeEach(() => {
       }
     },
   )
+
+  // jsdom does not implement the Pointer Events capture API at all; the component calls it
+  // unconditionally on a gesture it can inspect, so the pinch regression test below needs a stub.
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    value: vi.fn(),
+    configurable: true,
+  })
 })
 
 afterEach(() => {
@@ -132,9 +157,10 @@ describe('PreviewFrame', () => {
     const wrapper = await mountFrame()
     const style = imageStyle(wrapper)
 
-    // 400x300 in an 800x600 host fits exactly, so the frame is the host and the image fills it.
-    expect(style.width).toBe('800px')
-    expect(style.height).toBe('600px')
+    // fitScale(400x300, 800x600) is 2 — an upscale. restBoxSize caps the rest state at the image's
+    // own pixel size instead, so the frame is 400x300, not the host.
+    expect(style.width).toBe('400px')
+    expect(style.height).toBe('300px')
     expect(style.left).toBe('0px')
     expect(style.top).toBe('0px')
   })
@@ -167,8 +193,9 @@ describe('PreviewFrame', () => {
 
     const style = imageStyle(wrapper)
 
-    expect(Number.parseFloat(style.width ?? '0')).toBeGreaterThan(800)
-    expect(Number.parseFloat(style.height ?? '0')).toBeGreaterThan(600)
+    // Rest state is capped at 400x300 (R-P6's 100% cap); zooming in grows the drawn image past it.
+    expect(Number.parseFloat(style.width ?? '0')).toBeGreaterThan(400)
+    expect(Number.parseFloat(style.height ?? '0')).toBeGreaterThan(300)
   })
 
   it('normalises a line-mode wheel delta, so a mouse wheel is not a hundredth of a gesture', async () => {
@@ -191,7 +218,7 @@ describe('PreviewFrame', () => {
 
     const style = imageStyle(wrapper)
 
-    expect(style.width).toBe('800px')
+    expect(style.width).toBe('400px')
     expect(style.left).toBe('0px')
   })
 
@@ -212,7 +239,7 @@ describe('PreviewFrame', () => {
 
     await wheel(wrapper, { deltaY: -400, clientX: 200, clientY: 150 })
 
-    expect(imageStyle(wrapper).width).toBe('800px')
+    expect(imageStyle(wrapper).width).toBe('400px')
   })
 
   it('shows the Creating preview state instead of the image while encoding (R-P1)', async () => {
@@ -296,7 +323,7 @@ describe('PreviewFrame', () => {
   it('forgets the previous natural size when a new encode arrives', async () => {
     const wrapper = await mountFrame()
 
-    expect(imageStyle(wrapper).width).toBe('800px')
+    expect(imageStyle(wrapper).width).toBe('400px')
 
     // A dimension rule changed the output size: the frame must size itself from the new raster.
     await wrapper.setProps({ compressedUrl: 'blob:compressed-2' })
@@ -308,7 +335,137 @@ describe('PreviewFrame', () => {
 
     const style = imageStyle(wrapper)
 
-    expect(style.width).toBe('450px')
-    expect(style.height).toBe('600px')
+    // fitScale(300x400, 800x600) is 1.5 — also an upscale, also capped at the raster's true size.
+    expect(style.width).toBe('300px')
+    expect(style.height).toBe('400px')
+  })
+
+  it('downscales a wide, thin image per axis rather than distorting the short axis to fill the host', async () => {
+    const wide = { width: 1024, height: 200 } as const satisfies PixelSize
+    const wrapper = await mountFrame({}, { natural: wide })
+
+    // fitScale(1024x200, 800x600) = min(800/1024, 600/200) = 0.78125 < 1: an ordinary downscale,
+    // constrained by the width axis, not the 100%-cap case.
+    expect(imageStyle(wrapper).width).toBe('800px')
+    expect(imageStyle(wrapper).height).toBe('156.25px')
+    expect(imageStyle(wrapper).left).toBe('0px')
+    expect(imageStyle(wrapper).top).toBe('0px')
+    expect(frameStyle(wrapper)['inline-size']).toBe('800px')
+    expect(frameStyle(wrapper)['block-size']).toBe('156.25px')
+
+    previewViewport(wrapper).setLocal({ center: { x: 0.5, y: 0.5 }, scale: 4 })
+    await nextTick()
+
+    // The rest-state frame left headroom on the height axis (156.25 of 600 available); zooming in
+    // grows the frame into it rather than leaving it pinned at the rest-state height — the bug this
+    // fix addresses.
+    expect(frameStyle(wrapper)['block-size']).toBe('600px')
+    expect(frameStyle(wrapper)['inline-size']).toBe('800px')
+  })
+
+  it('shows a small image at its true size instead of upscaling it to fill the host, and still grows on zoom', async () => {
+    const small = { width: 97, height: 327 } as const satisfies PixelSize
+    const wrapper = await mountFrame({}, { natural: small })
+
+    // fitScale(97x327, 800x600) > 1 on both axes — restBoxSize caps the rest state at the image's
+    // own true pixel size rather than blowing it up to fill the host.
+    expect(imageStyle(wrapper).width).toBe('97px')
+    expect(imageStyle(wrapper).height).toBe('327px')
+    expect(frameStyle(wrapper)['inline-size']).toBe('97px')
+    expect(frameStyle(wrapper)['block-size']).toBe('327px')
+
+    previewViewport(wrapper).setLocal({ center: { x: 0.5, y: 0.5 }, scale: 2 })
+    await nextTick()
+
+    expect(frameStyle(wrapper)['inline-size']).toBe('194px')
+    expect(frameStyle(wrapper)['block-size']).toBe('600px')
+  })
+
+  it('converts the pinch midpoint fresh on every pinch move, not a rect cached at gesture start', async () => {
+    const wrapper = await mountFrame()
+    const frameElement = wrapper.get('[data-testid="preview-frame"]').element as HTMLElement
+
+    // jsdom lays nothing out: the rect is whatever this test returns. It changes mid-gesture, the
+    // way it would once a prior move already grew the frame toward the host — the pinch midpoint
+    // conversion has to pick that up fresh rather than reuse whatever an earlier event saw.
+    let rect = { left: 0, top: 0, width: 400, height: 300 } as DOMRect
+    const getRect = vi.fn(() => rect)
+    frameElement.getBoundingClientRect = getRect
+
+    const dispatch = (type: string, pointerId: number, clientX: number, clientY: number): void => {
+      frameElement.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, cancelable: true, pointerId, clientX, clientY }),
+      )
+    }
+
+    // Pointer tracking itself is in client space (resize-invariant), so pointerdown needs no
+    // measurement at all — only a pinch move, which must convert its midpoint into frame space,
+    // does.
+    dispatch('pointerdown', 1, 150, 150)
+    dispatch('pointerdown', 2, 250, 150)
+    await nextTick()
+    expect(getRect).not.toHaveBeenCalled()
+
+    dispatch('pointermove', 1, 120, 150)
+    dispatch('pointermove', 2, 280, 150)
+    await nextTick()
+
+    // The pointers moved apart, so the pinch zoomed in.
+    expect(previewViewport(wrapper).local.value.scale).toBeGreaterThan(1)
+
+    // A real layout would now report a bigger, differently-positioned rect, since the frame itself
+    // grew. A value cached before this point would never see it.
+    rect = { left: -100, top: -50, width: 800, height: 600 } as DOMRect
+
+    expect(() => {
+      dispatch('pointermove', 1, 90, 150)
+      dispatch('pointermove', 2, 310, 150)
+    }).not.toThrow()
+
+    await nextTick()
+
+    // Four pinch moves, four fresh conversions — never a value cached from an earlier event.
+    expect(getRect).toHaveBeenCalledTimes(4)
+    expect(Number.isFinite(previewViewport(wrapper).local.value.scale)).toBe(true)
+  })
+
+  it('keeps a pinch gesture correct when the two pointers are not updated in lockstep', async () => {
+    // The bug this guards against: if each pointer's position were converted into frame space at
+    // its own last event (rather than kept in resize-invariant client space until the moment of
+    // use), a pinch spanning a frame resize could end up averaging one pointer's fresh, post-resize
+    // position with the other's stale, pre-resize one. Real touch input never delivers two
+    // fingers' events in lockstep, so this is the ordinary case, not an edge case.
+    const wrapper = await mountFrame()
+    const frameElement = wrapper.get('[data-testid="preview-frame"]').element as HTMLElement
+
+    let rect = { left: 0, top: 0, width: 400, height: 300 } as DOMRect
+    frameElement.getBoundingClientRect = vi.fn(() => rect)
+
+    const dispatch = (type: string, pointerId: number, clientX: number, clientY: number): void => {
+      frameElement.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, cancelable: true, pointerId, clientX, clientY }),
+      )
+    }
+
+    dispatch('pointerdown', 1, 150, 150)
+    dispatch('pointerdown', 2, 250, 150)
+    await nextTick()
+
+    // Only pointer 1 moves. The frame has not resized yet, so this is an ordinary single-sided
+    // update — no pinch-distance change (pointer 2 hasn't reported a new position), just pointer
+    // 1's own stored position advancing.
+    dispatch('pointermove', 1, 140, 150)
+    await nextTick()
+
+    // Now the frame resizes (as it would once a subsequent move elsewhere grows it), and only
+    // pointer 2 moves — exercising the exact mixed-timing case the bug depended on.
+    rect = { left: -50, top: -25, width: 600, height: 450 } as DOMRect
+    dispatch('pointermove', 2, 300, 150)
+    await nextTick()
+
+    const scale = previewViewport(wrapper).local.value.scale
+    expect(Number.isFinite(scale)).toBe(true)
+    expect(Number.isFinite(previewViewport(wrapper).local.value.center.x)).toBe(true)
+    expect(Number.isFinite(previewViewport(wrapper).local.value.center.y)).toBe(true)
   })
 })

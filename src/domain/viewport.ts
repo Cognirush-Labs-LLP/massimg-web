@@ -29,9 +29,11 @@
 //     which an aspect-agnostic `[1/2s, 1 - 1/2s]` bound would clamp away. Under spill
 //     (`rect.x < 0`), canonical values legitimately leave `[0, 1]` altogether.
 //
-// Scale passes through both projections unchanged: scale 1 means "this tab's whole image fits the
-// frame" on both tabs, which is what makes the comparison a comparison — a 500x500 output of a
-// 1000x1000 source is shown at the same size as its original, not at half of it.
+// Scale passes through both projections unchanged: scale 1 means "this tab's rest state"
+// (`restBoxSize` — fit to the host, capped at the image's own pixel size) on both tabs, which is
+// what makes the comparison a comparison — a 500x500 output of a 1000x1000 source is shown at the
+// same size as its original, not at half of it. The box actually clipped and panned within
+// (`resolveViewportBox`) grows from there toward the host area as `scale` increases past 1.
 //
 // Pure, like every other module in `domain/`: no DOM, no Vue. Every value returned is a fresh object
 // and nothing here mutates its arguments, which is what lets a caller hold the canonical viewport in
@@ -64,7 +66,7 @@ export interface InspectorViewport {
 }
 
 /**
- * Fit to frame, centred — the state R-P6 describes, and the one every image starts in.
+ * Rest state (`restBoxSize`), centred — the state R-P6 describes, and the one every image starts in.
  *
  * Deeply readonly so it cannot be mutated in place by a caller that holds it. Callers replace the
  * viewport they hold; they never mutate one.
@@ -74,7 +76,10 @@ export const DEFAULT_VIEWPORT = {
   scale: 1,
 } as const satisfies InspectorViewport
 
-/** Scale 1 is fit-to-frame. Zooming out past it would shrink the image inside its own frame. */
+/**
+ * Scale 1 is the rest state, `restBoxSize` (fit to the host, capped at 100% — never upscaled).
+ * Zooming out past it would shrink the image inside its own rest box.
+ */
 export const MIN_VIEWPORT_SCALE = 1
 
 /**
@@ -125,16 +130,14 @@ function clamp01(value: number): number {
 }
 
 /**
- * How much of each axis of the drawn image the frame can show, as a fraction of that axis, capped at
+ * How much of each axis of the drawn image the box can show, as a fraction of that axis, capped at
  * the whole image. On the axis the fit scale is set by, this is exactly `1 / scale`; on the other it
  * is larger, which is why the clamp below has to be per-axis.
  */
-function visibleFraction(natural: PixelSize, frame: PixelSize, scale: number): ViewportPoint {
-  const drawScale = fitScale(natural, frame) * scale
-
+function visibleFraction(restBox: PixelSize, host: PixelSize, scale: number): ViewportPoint {
   return {
-    x: Math.min(1, frame.width / (natural.width * drawScale)),
-    y: Math.min(1, frame.height / (natural.height * drawScale)),
+    x: Math.min(1, host.width / (restBox.width * scale)),
+    y: Math.min(1, host.height / (restBox.height * scale)),
   }
 }
 
@@ -158,7 +161,7 @@ export function clampViewportScale(scale: number): number {
 }
 
 /**
- * Clamps a centre to what this raster can actually show in this frame at this scale, per axis.
+ * Clamps a centre to what the image can actually show in `host` at this scale, per axis.
  *
  * At scale 1 the visible fraction is the whole image on both axes, so this collapses the centre to
  * `(0.5, 0.5)` — which is why `resolveViewportFrameRect` at `DEFAULT_VIEWPORT` is plain contain-fit
@@ -166,17 +169,51 @@ export function clampViewportScale(scale: number): number {
  */
 export function clampViewportCenter(
   center: ViewportPoint,
-  natural: PixelSize,
-  frame: PixelSize,
+  restBox: PixelSize,
+  host: PixelSize,
   scale: number,
 ): ViewportPoint {
-  if (!isUsableSize(natural) || !isUsableSize(frame)) {
+  if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return { x: 0.5, y: 0.5 }
   }
 
-  const visible = visibleFraction(natural, frame, clampViewportScale(scale))
+  const visible = visibleFraction(restBox, host, clampViewportScale(scale))
 
   return { x: clampAxis(center.x, visible.x), y: clampAxis(center.y, visible.y) }
+}
+
+/**
+ * The box the image occupies at rest (`scale` 1): downscale to fit `host`, but never upscale past
+ * the image's own pixel size — an image already smaller than the host is shown at its true size
+ * rather than blown up to fill it. `MIN_VIEWPORT_SCALE`'s "fit" is a ceiling on the rest state, not
+ * a target.
+ */
+export function restBoxSize(natural: PixelSize, host: PixelSize): PixelSize {
+  if (!isUsableSize(natural) || !isUsableSize(host)) {
+    return { width: 0, height: 0 }
+  }
+
+  const scale = Math.min(1, fitScale(natural, host))
+
+  return { width: natural.width * scale, height: natural.height * scale }
+}
+
+/**
+ * The box the inspector actually clips and pans within, at a given zoom `scale`: exactly `restBox`
+ * at rest, growing proportionally toward `host` as `scale` increases, capped there per axis since
+ * there is no more host to use. Below saturation `box.axis == restBox.axis * scale` exactly, so the
+ * drawn image exactly fills the box and there is nothing to pan yet — only once an axis saturates
+ * does that axis start revealing previously-unused host space.
+ */
+export function resolveViewportBox(restBox: PixelSize, host: PixelSize, scale: number): PixelSize {
+  if (!isUsableSize(restBox) || !isUsableSize(host) || !Number.isFinite(scale)) {
+    return { width: 0, height: 0 }
+  }
+
+  return {
+    width: Math.min(host.width, restBox.width * scale),
+    height: Math.min(host.height, restBox.height * scale),
+  }
 }
 
 /**
@@ -188,19 +225,20 @@ export function clampViewportCenter(
  * fallback rather than positioning against a zero or a NaN.
  */
 export function resolveViewportFrameRect(
-  natural: PixelSize,
-  frame: PixelSize,
+  restBox: PixelSize,
+  host: PixelSize,
   viewport: InspectorViewport,
 ): FrameRect | null {
-  if (!isUsableSize(natural) || !isUsableSize(frame)) {
+  if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return null
   }
 
   const scale = clampViewportScale(viewport.scale)
-  const drawScale = fitScale(natural, frame) * scale
+  const box = resolveViewportBox(restBox, host, scale)
   // The one place the centred placement is computed, shared with Edit mode's own arithmetic.
-  const centred = imageRectInFrame(natural, frame, drawScale)
-  const center = clampViewportCenter(viewport.center, natural, frame, scale)
+  // `restBox` stands in for Edit's `source`: `restBox.width * scale` is the drawn width.
+  const centred = imageRectInFrame(restBox, box, scale)
+  const center = clampViewportCenter(viewport.center, restBox, host, scale)
   // At DEFAULT_VIEWPORT the clamp above forces (0.5, 0.5), both shifts are exactly 0, and this
   // returns `centred` unchanged: contain-fit, R-P6, by construction rather than by branch.
   const rect: FrameRect = {
@@ -238,42 +276,54 @@ export function viewportFractionAt(rect: FrameRect, point: FramePoint): Viewport
  * alternative is showing the user something that is not in their image.
  */
 export function zoomViewportAt(
-  natural: PixelSize,
-  frame: PixelSize,
+  restBox: PixelSize,
+  host: PixelSize,
   viewport: InspectorViewport,
   point: FramePoint,
   nextScale: number,
 ): InspectorViewport {
   const scale = clampViewportScale(nextScale)
-  const current = resolveViewportFrameRect(natural, frame, viewport)
+  const current = resolveViewportFrameRect(restBox, host, viewport)
 
   if (current === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
   }
 
   const fraction = viewportFractionAt(current, point)
-  const nextDrawScale = fitScale(natural, frame) * scale
-  const nextWidth = natural.width * nextDrawScale
-  const nextHeight = natural.height * nextDrawScale
-  // Inverse of resolveViewportFrameRect: a rect's left edge sits at `frame.width / 2 - center.x *
-  // width`, so the centre that puts `fraction` at `point` is this.
+  // The box is centred in `host` on both the current and next scale, so if it grows or shrinks
+  // between them its top-left corner physically shifts by half the size delta even though the
+  // pointer hasn't moved. Re-express `point` (measured against the box as currently rendered)
+  // in the next box's own coordinate space before solving for the centre that keeps `fraction`
+  // under it — otherwise every tick while the box is resizing drifts the content from the
+  // cursor instead of keeping it pinned.
+  const currentBox = resolveViewportBox(restBox, host, clampViewportScale(viewport.scale))
+  const nextBox = resolveViewportBox(restBox, host, scale)
+  const adjustedPoint: FramePoint = {
+    left: point.left + (nextBox.width - currentBox.width) / 2,
+    top: point.top + (nextBox.height - currentBox.height) / 2,
+  }
+  const nextWidth = restBox.width * scale
+  const nextHeight = restBox.height * scale
+  // Inverse of resolveViewportFrameRect: a rect's left edge sits at `box.width / 2 - center.x *
+  // width`, so the centre that puts `fraction` at `adjustedPoint` (in the next box's space) is
+  // this.
   const center = {
-    x: fraction.x + (frame.width / 2 - point.left) / nextWidth,
-    y: fraction.y + (frame.height / 2 - point.top) / nextHeight,
+    x: fraction.x + (nextBox.width / 2 - adjustedPoint.left) / nextWidth,
+    y: fraction.y + (nextBox.height / 2 - adjustedPoint.top) / nextHeight,
   }
 
-  return { center: clampViewportCenter(center, natural, frame, scale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale), scale }
 }
 
 /** Pans by a frame-pixel delta, so the content tracks the pointer 1:1 (docs/ui-design.md §15). */
 export function panViewport(
-  natural: PixelSize,
-  frame: PixelSize,
+  restBox: PixelSize,
+  host: PixelSize,
   viewport: InspectorViewport,
   delta: FramePoint,
 ): InspectorViewport {
   const scale = clampViewportScale(viewport.scale)
-  const rect = resolveViewportFrameRect(natural, frame, viewport)
+  const rect = resolveViewportFrameRect(restBox, host, viewport)
 
   if (rect === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
@@ -281,13 +331,13 @@ export function panViewport(
 
   // From the *clamped* centre, which is the one on screen — otherwise a drag that ran into an edge
   // would have to be dragged back out of an offset the user never saw.
-  const base = clampViewportCenter(viewport.center, natural, frame, scale)
+  const base = clampViewportCenter(viewport.center, restBox, host, scale)
   const center = {
     x: base.x - delta.left / rect.width,
     y: base.y - delta.top / rect.height,
   }
 
-  return { center: clampViewportCenter(center, natural, frame, scale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale), scale }
 }
 
 /**

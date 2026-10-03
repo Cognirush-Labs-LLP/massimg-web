@@ -7,21 +7,26 @@
 //     applies the embedded colour profile itself and the preview matches the downloaded file
 //     (R-I16). The same element plays an animated result on both tabs (R-P8) for free, which a
 //     canvas would have cost a frame scheduler to reproduce.
-//   - **The frame box is the image's own contain-fit rectangle** (R-P6): the host area is measured,
-//     the frame takes the active image's aspect ratio inside it, and the image is positioned within
-//     the frame by `resolveViewportFrameRect`. At rest that is exactly the frame itself; zoomed, the
-//     frame clips. A crop changes the *active* aspect, so flipping tabs can change the frame's
-//     shape — which is the honest thing for it to do.
+//   - **The frame box starts as a tight contain-fit rectangle** (R-P6): the host area is measured,
+//     the frame takes the active image's aspect ratio inside it capped at the image's own pixel size
+//     (never upscaled — `restBoxSize`), and the image is positioned within the frame by
+//     `resolveViewportFrameRect`. As the user zooms in, the frame itself grows toward the full host
+//     area (`resolveViewportBox`) rather than staying pinned at rest size. A crop changes the
+//     *active* aspect, so flipping tabs can change the frame's shape — which is the honest thing for
+//     it to do.
 //
 // Zoom and pan are direct manipulation only, by the user's own decision: wheel or pinch to zoom
 // about the pointer, drag to pan, no slider and no toolbar chrome. The arithmetic is all in
 // `domain/viewport.ts`; this component converts pointer events into frame points and nothing else.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { t } from '@/i18n/t'
-import { fitScale, type PixelSize } from '@/domain/edit'
+import type { PixelSize } from '@/domain/edit'
 import {
+  clampViewportScale,
   panViewport,
+  resolveViewportBox,
   resolveViewportFrameRect,
+  restBoxSize,
   zoomViewportAt,
   type FramePoint,
 } from '@/domain/viewport'
@@ -76,9 +81,24 @@ const compressedNatural = ref<PixelSize | null>(null)
 const dragging = ref(false)
 
 let resizeObserver: ResizeObserver | null = null
-/** The frame's box as of the current gesture, so a drag does not re-measure layout per event. */
-let gestureBox: DOMRect | null = null
-const activePointers = new Map<number, FramePoint>()
+/**
+ * A pointer's raw client position — deliberately not a `FramePoint`, and not assignable to one
+ * (`clientX`/`clientY` rather than `left`/`top`, the same device `FramePoint`'s own doc comment
+ * uses). The frame's own box can now resize between two pointers' events (it depends on zoom
+ * scale), so a point already converted into frame space at one pointer's last event can go stale
+ * relative to the frame space another pointer's event just caused it to resize into. Client
+ * coordinates have no such staleness — the real viewport doesn't move — so each pointer's position
+ * is kept in client space and converted into frame space fresh, once, only at the point of use (the
+ * pinch midpoint passed to `zoomViewportAt`; a pan delta needs no conversion at all, since the
+ * difference between two client points equals the difference between their frame-space equivalents
+ * regardless of any resize in between — translation cancels out of a subtraction).
+ */
+interface ClientPoint {
+  clientX: number
+  clientY: number
+}
+
+const activePointers = new Map<number, ClientPoint>()
 let pinchDistance: number | null = null
 
 const viewport = usePreviewViewport({
@@ -103,11 +123,12 @@ const naturalSize = computed<PixelSize | null>(() =>
 )
 
 /**
- * Contain-fit of the active image inside the measured host (R-P6). Falls back to the predicted
- * output size while an encode is running, and to the host itself when neither is known yet, so the
- * state text always has somewhere to sit.
+ * Rest-state contain-fit of the active image inside the measured host (R-P6), capped at the image's
+ * own pixel size so it is never upscaled. Falls back to the predicted output size while an encode is
+ * running, and to the host itself when neither is known yet, so the state text always has somewhere
+ * to sit.
  */
-const frameSize = computed<PixelSize | null>(() => {
+const restBox = computed<PixelSize | null>(() => {
   if (hostSize.value.width <= 0 || hostSize.value.height <= 0) {
     return null
   }
@@ -118,20 +139,34 @@ const frameSize = computed<PixelSize | null>(() => {
     return hostSize.value
   }
 
-  const scale = fitScale(basis, hostSize.value)
-
-  return { width: basis.width * scale, height: basis.height * scale }
+  return restBoxSize(basis, hostSize.value)
 })
 
-const imageRect = computed(() => {
-  const natural = naturalSize.value
-  const box = frameSize.value
+/**
+ * The frame's actual CSS box: `restBox` at rest, growing toward the host area as the user zooms in
+ * (`resolveViewportBox`). Must read the current scale — this is what makes zooming use the host's
+ * available space rather than clipping within a box frozen at rest size.
+ */
+const frameSize = computed<PixelSize | null>(() => {
+  const box = restBox.value
 
-  if (natural === null || box === null) {
+  if (box === null) {
     return null
   }
 
-  return resolveViewportFrameRect(natural, box, viewport.local.value)
+  // Clamped the same way `resolveViewportFrameRect` clamps internally, so this box and the image
+  // rect placed inside it (`imageRect`, below) can never disagree about which scale is current.
+  return resolveViewportBox(box, hostSize.value, clampViewportScale(viewport.local.value.scale))
+})
+
+const imageRect = computed(() => {
+  const box = restBox.value
+
+  if (box === null) {
+    return null
+  }
+
+  return resolveViewportFrameRect(box, hostSize.value, viewport.local.value)
 })
 
 const zoomed = computed(() => viewport.zoomed.value)
@@ -161,7 +196,7 @@ const imageStyle = computed(() => {
 })
 
 const canInspect = computed(
-  () => viewport.interactive.value && naturalSize.value !== null && frameSize.value !== null,
+  () => viewport.interactive.value && naturalSize.value !== null && restBox.value !== null,
 )
 
 const altText = computed(() =>
@@ -270,10 +305,9 @@ function normalisedWheelDelta(event: WheelEvent): number {
 }
 
 function onWheel(event: WheelEvent): void {
-  const natural = naturalSize.value
-  const box = frameSize.value
+  const box = restBox.value
 
-  if (!canInspect.value || natural === null || box === null) {
+  if (!canInspect.value || box === null) {
     return
   }
 
@@ -290,22 +324,29 @@ function onWheel(event: WheelEvent): void {
   const factor = Math.exp(-normalisedWheelDelta(event) * perPixel)
   const current = viewport.local.value
 
-  viewport.setLocal(zoomViewportAt(natural, box, current, point, current.scale * factor))
+  viewport.setLocal(zoomViewportAt(box, hostSize.value, current, point, current.scale * factor))
 }
 
-function pinchState(): { distance: number; midpoint: FramePoint } | null {
+/**
+ * The distance and midpoint between the two active pointers, in client space — resize-invariant,
+ * so this needs no frame measurement at all. Only `distance`'s *ratio* across two calls and the
+ * midpoint's eventual frame-space conversion (`onPointerMove`, where it's actually used) are
+ * meaningful; both are unaffected by computing it in client rather than frame coordinates, since
+ * the two spaces differ only by a translation that cancels out of a difference.
+ */
+function pinchState(): { distance: number; midpoint: ClientPoint } | null {
   const [first, second] = [...activePointers.values()]
 
   if (first === undefined || second === undefined) {
     return null
   }
 
-  const dx = second.left - first.left
-  const dy = second.top - first.top
+  const dx = second.clientX - first.clientX
+  const dy = second.clientY - first.clientY
 
   return {
     distance: Math.hypot(dx, dy),
-    midpoint: { left: first.left + dx / 2, top: first.top + dy / 2 },
+    midpoint: { clientX: first.clientX + dx / 2, clientY: first.clientY + dy / 2 },
   }
 }
 
@@ -314,15 +355,7 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
 
-  gestureBox = frame.value?.getBoundingClientRect() ?? null
-
-  const point = framePoint(event, gestureBox)
-
-  if (point === null) {
-    return
-  }
-
-  activePointers.set(event.pointerId, point)
+  activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY })
   frame.value?.setPointerCapture(event.pointerId)
   dragging.value = true
   pinchDistance = pinchState()?.distance ?? null
@@ -330,31 +363,40 @@ function onPointerDown(event: PointerEvent): void {
 
 function onPointerMove(event: PointerEvent): void {
   const previous = activePointers.get(event.pointerId)
-  const natural = naturalSize.value
-  const box = frameSize.value
-  const point = framePoint(event, gestureBox)
+  const box = restBox.value
 
-  if (previous === undefined || natural === null || box === null || point === null) {
+  if (previous === undefined || box === null) {
     return
   }
 
-  activePointers.set(event.pointerId, point)
+  const current: ClientPoint = { clientX: event.clientX, clientY: event.clientY }
+  activePointers.set(event.pointerId, current)
 
   const pinch = activePointers.size >= 2 ? pinchState() : null
 
   if (pinch !== null && pinchDistance !== null && pinchDistance > 0 && pinch.distance > 0) {
+    // The one place a frame-space point is actually needed, so it's the one place a frame
+    // measurement happens — fresh, for this event only, never stored.
+    const midpoint = framePoint(pinch.midpoint, frame.value?.getBoundingClientRect() ?? null)
+
+    if (midpoint === null) {
+      return
+    }
+
     const factor = pinch.distance / pinchDistance
-    const current = viewport.local.value
+    const viewportCurrent = viewport.local.value
 
     pinchDistance = pinch.distance
-    viewport.setLocal(zoomViewportAt(natural, box, current, pinch.midpoint, current.scale * factor))
+    viewport.setLocal(
+      zoomViewportAt(box, hostSize.value, viewportCurrent, midpoint, viewportCurrent.scale * factor),
+    )
     return
   }
 
   viewport.setLocal(
-    panViewport(natural, box, viewport.local.value, {
-      left: point.left - previous.left,
-      top: point.top - previous.top,
+    panViewport(box, hostSize.value, viewport.local.value, {
+      left: current.clientX - previous.clientX,
+      top: current.clientY - previous.clientY,
     }),
   )
 }
@@ -368,7 +410,6 @@ function onPointerUp(event: PointerEvent): void {
 
   if (activePointers.size === 0) {
     dragging.value = false
-    gestureBox = null
   }
 }
 
@@ -492,7 +533,8 @@ defineExpose({ viewport })
   overflow: hidden;
   background: var(--color-surface-panel);
   border: 1px solid var(--color-border-group);
-  border-radius: var(--radius-lg);
+  /* No border-radius: the preview must show the image's actual corners, not rounded ones, so the
+     user sees exactly what the file contains. */
   /* The inspector handles its own gestures, so the browser must not also pan or zoom the page from
      a drag that starts here. */
   touch-action: none;

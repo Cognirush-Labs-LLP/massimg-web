@@ -9,7 +9,9 @@ import {
   panViewport,
   projectViewportToCompressed,
   projectViewportToOriginal,
+  resolveViewportBox,
   resolveViewportFrameRect,
+  restBoxSize,
   rotatePointByQuarterTurns,
   rotateViewportBetweenQuarterTurns,
   unprojectViewportFromCompressed,
@@ -25,7 +27,7 @@ import type { EditOp, EditRecord, NormalisedRect, Rgba } from './types'
 const LANDSCAPE = { width: 4000, height: 3000 } as const satisfies PixelSize
 const PORTRAIT = { width: 3000, height: 4000 } as const satisfies PixelSize
 const SQUARE = { width: 2048, height: 2048 } as const satisfies PixelSize
-/** Matches LANDSCAPE's aspect exactly: the production case, where the frame is the contain-fit box. */
+/** Matches LANDSCAPE's aspect exactly: the production case, where the host is the contain-fit box. */
 const FITTED_FRAME = { width: 800, height: 600 } as const satisfies PixelSize
 /** Taller than the image's aspect, so the fit scale is set by width and the y axis has slack. */
 const TALL_FRAME = { width: 800, height: 900 } as const satisfies PixelSize
@@ -50,6 +52,24 @@ function expectPointCloseTo(actual: ViewportPoint, expected: ViewportPoint): voi
   expect(actual.y).toBeCloseTo(expected.y, 10)
 }
 
+/**
+ * Re-expresses a fixed host-relative pointer position in a box's own frame — the same conversion a
+ * real caller does every tick, since the box (`resolveViewportBox`) is centred in the host and
+ * shifts underneath a pointer that has not actually moved whenever it resizes between calls. Needed
+ * whenever a test's box can change size across the calls it is checking (an aspect mismatch between
+ * the image and the host); not needed when the box is fixed (aspect matches, box never grows).
+ */
+function pointInBox(
+  hostPoint: { left: number; top: number },
+  box: PixelSize,
+  host: PixelSize,
+): { left: number; top: number } {
+  return {
+    left: hostPoint.left - (host.width - box.width) / 2,
+    top: hostPoint.top - (host.height - box.height) / 2,
+  }
+}
+
 describe('clampViewportScale', () => {
   it('holds the scale between fit-to-frame and the maximum', () => {
     expect(clampViewportScale(0.25)).toBe(MIN_VIEWPORT_SCALE)
@@ -67,14 +87,77 @@ describe('clampViewportScale', () => {
   })
 })
 
+describe('restBoxSize', () => {
+  it('returns the image unchanged when it is already smaller than the host on both axes', () => {
+    const natural = { width: 400, height: 300 } satisfies PixelSize
+    const host = { width: 1200, height: 900 } satisfies PixelSize
+
+    expect(restBoxSize(natural, host)).toEqual(natural)
+  })
+
+  it('downscales to fit when the image is bigger than the host, matching fitScale', () => {
+    const scale = fitScale(LANDSCAPE, TALL_FRAME)
+
+    expect(restBoxSize(LANDSCAPE, TALL_FRAME)).toEqual({
+      width: LANDSCAPE.width * scale,
+      height: LANDSCAPE.height * scale,
+    })
+  })
+
+  it('returns a zero size for an unmeasured image or host', () => {
+    expect(restBoxSize({ width: 0, height: 0 }, FITTED_FRAME)).toEqual({ width: 0, height: 0 })
+    expect(restBoxSize(LANDSCAPE, { width: 0, height: 0 })).toEqual({ width: 0, height: 0 })
+  })
+})
+
+describe('resolveViewportBox', () => {
+  // restBoxSize(LANDSCAPE, TALL_FRAME) is {800, 600}; TALL_FRAME is {800, 900} — width already
+  // matches the host so it saturates immediately, height only once scale exceeds 900 / 600 = 1.5.
+  const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
+
+  it('is exactly the rest box at scale 1', () => {
+    expect(resolveViewportBox(restBox, TALL_FRAME, 1)).toEqual(restBox)
+  })
+
+  it('saturates each axis independently, at the scale where that axis first exceeds the host', () => {
+    const box = resolveViewportBox(restBox, TALL_FRAME, 1.2)
+
+    expect(box.width).toBeCloseTo(TALL_FRAME.width, 10)
+    expect(box.height).toBeCloseTo(restBox.height * 1.2, 10)
+  })
+
+  it('never exceeds the host, even at the maximum scale', () => {
+    const box = resolveViewportBox(restBox, TALL_FRAME, MAX_VIEWPORT_SCALE)
+
+    expect(box.width).toBeLessThanOrEqual(TALL_FRAME.width)
+    expect(box.height).toBeLessThanOrEqual(TALL_FRAME.height)
+    expect(box.width).toBeCloseTo(TALL_FRAME.width, 10)
+    expect(box.height).toBeCloseTo(TALL_FRAME.height, 10)
+  })
+
+  it('returns a zero size for an unmeasured rest box, host, or non-finite scale', () => {
+    expect(resolveViewportBox({ width: 0, height: 0 }, TALL_FRAME, 2)).toEqual({
+      width: 0,
+      height: 0,
+    })
+    expect(resolveViewportBox(restBox, { width: 0, height: 0 }, 2)).toEqual({
+      width: 0,
+      height: 0,
+    })
+    expect(resolveViewportBox(restBox, TALL_FRAME, Number.NaN)).toEqual({ width: 0, height: 0 })
+  })
+})
+
 describe('clampViewportCenter', () => {
   it('collapses any centre to the middle at scale 1, on both axes and both frame shapes', () => {
     for (const frame of [FITTED_FRAME, TALL_FRAME]) {
-      expectPointCloseTo(clampViewportCenter({ x: 0, y: 1 }, LANDSCAPE, frame, 1), {
+      const restBox = restBoxSize(LANDSCAPE, frame)
+
+      expectPointCloseTo(clampViewportCenter({ x: 0, y: 1 }, restBox, frame, 1), {
         x: 0.5,
         y: 0.5,
       })
-      expectPointCloseTo(clampViewportCenter({ x: 0.9, y: 0.1 }, LANDSCAPE, frame, 1), {
+      expectPointCloseTo(clampViewportCenter({ x: 0.9, y: 0.1 }, restBox, frame, 1), {
         x: 0.5,
         y: 0.5,
       })
@@ -83,54 +166,79 @@ describe('clampViewportCenter', () => {
 
   it('allows half a visible frame of travel from each edge at scale 2', () => {
     // Frame aspect matches the image, so both axes show 1/2 of the image at scale 2: [0.25, 0.75].
-    expectPointCloseTo(clampViewportCenter({ x: 0, y: 1 }, LANDSCAPE, FITTED_FRAME, 2), {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+
+    expectPointCloseTo(clampViewportCenter({ x: 0, y: 1 }, restBox, FITTED_FRAME, 2), {
       x: 0.25,
       y: 0.75,
     })
-    expectPointCloseTo(clampViewportCenter({ x: 0.3, y: 0.7 }, LANDSCAPE, FITTED_FRAME, 2), {
+    expectPointCloseTo(clampViewportCenter({ x: 0.3, y: 0.7 }, restBox, FITTED_FRAME, 2), {
       x: 0.3,
       y: 0.7,
     })
   })
 
   it('clamps each axis by its own visible fraction, not by one shared bound', () => {
-    // TALL_FRAME: fitScale is set by width (800/4000 = 0.2), so the drawn image is 800x600 inside a
-    // 800x900 frame. At scale 2 the frame shows 1/2 of the width but 900/1200 = 3/4 of the height.
-    const clamped = clampViewportCenter({ x: 0, y: 0 }, LANDSCAPE, TALL_FRAME, 2)
+    // TALL_FRAME: restBox is {800, 600} (fitScale is set by width), inside an 800x900 host. At
+    // scale 2 the host shows 1/2 of the width but 900/1200 = 3/4 of the height.
+    const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
+    const clamped = clampViewportCenter({ x: 0, y: 0 }, restBox, TALL_FRAME, 2)
 
     expect(clamped.x).toBeCloseTo(0.25, 10)
     expect(clamped.y).toBeCloseTo(0.375, 10)
   })
 
-  it('returns the middle for a frame or image that has not been measured', () => {
+  it('returns the middle for a rest box or host that has not been measured', () => {
     expectPointCloseTo(
-      clampViewportCenter({ x: 0.2, y: 0.2 }, LANDSCAPE, { width: 0, height: 0 }, 2),
-      {
-        x: 0.5,
-        y: 0.5,
-      },
+      clampViewportCenter(
+        { x: 0.2, y: 0.2 },
+        restBoxSize(LANDSCAPE, { width: 0, height: 0 }),
+        { width: 0, height: 0 },
+        2,
+      ),
+      { x: 0.5, y: 0.5 },
     )
     expectPointCloseTo(
-      clampViewportCenter({ x: 0.2, y: 0.2 }, { width: 0, height: 10 }, FITTED_FRAME, 2),
+      clampViewportCenter(
+        { x: 0.2, y: 0.2 },
+        restBoxSize({ width: 0, height: 10 }, FITTED_FRAME),
+        FITTED_FRAME,
+        2,
+      ),
       { x: 0.5, y: 0.5 },
     )
   })
 })
 
 describe('resolveViewportFrameRect', () => {
-  it('is exactly plain contain-fit at the default viewport (R-P6)', () => {
+  it('is exactly the rest box at the default viewport, filling it with no padding (R-P6)', () => {
     for (const natural of [LANDSCAPE, PORTRAIT, SQUARE]) {
-      for (const frame of [FITTED_FRAME, TALL_FRAME, { width: 1000, height: 300 }]) {
-        expect(resolveViewportFrameRect(natural, frame, DEFAULT_VIEWPORT)).toEqual(
-          imageRectInFrame(natural, frame, fitScale(natural, frame)),
+      for (const host of [FITTED_FRAME, TALL_FRAME, { width: 1000, height: 300 }]) {
+        const restBox = restBoxSize(natural, host)
+
+        expect(resolveViewportFrameRect(restBox, host, DEFAULT_VIEWPORT)).toEqual(
+          imageRectInFrame(restBox, restBox, 1),
         )
       }
     }
   })
 
+  it('caps the rest-state rect at the image size, never upscaling to fill a larger host', () => {
+    // A small image in a big host: restBoxSize caps at the image's own size, so the box never
+    // grows past it and the rect is drawn at its true 100% size rather than blown up to fill host.
+    const natural = { width: 400, height: 300 } satisfies PixelSize
+    const host = { width: 1600, height: 1200 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+    const rect = resolveViewportFrameRect(restBox, host, DEFAULT_VIEWPORT)
+
+    expect(rect).toEqual({ left: 0, top: 0, width: natural.width, height: natural.height })
+  })
+
   it('preserves the image aspect ratio at every scale, so the image is never stretched (R-P6)', () => {
+    const restBox = restBoxSize(PORTRAIT, TALL_FRAME)
+
     for (const scale of [1, 1.5, 3, MAX_VIEWPORT_SCALE]) {
-      const rect = resolveViewportFrameRect(PORTRAIT, TALL_FRAME, viewport(0.5, 0.5, scale))
+      const rect = resolveViewportFrameRect(restBox, TALL_FRAME, viewport(0.5, 0.5, scale))
 
       expect(rect).not.toBeNull()
       expect(rect!.width / rect!.height).toBeCloseTo(PORTRAIT.width / PORTRAIT.height, 10)
@@ -138,8 +246,9 @@ describe('resolveViewportFrameRect', () => {
   })
 
   it('puts the viewport centre at the middle of the frame', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
     const inspector = viewport(0.3, 0.6, 4)
-    const rect = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, inspector)
+    const rect = resolveViewportFrameRect(restBox, FITTED_FRAME, inspector)
 
     expect(rect).not.toBeNull()
     expect(rect!.left + inspector.center.x * rect!.width).toBeCloseTo(FITTED_FRAME.width / 2, 10)
@@ -147,39 +256,57 @@ describe('resolveViewportFrameRect', () => {
   })
 
   it('scales the drawn size by exactly the viewport scale', () => {
-    const atRest = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, DEFAULT_VIEWPORT)
-    const zoomed = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, viewport(0.5, 0.5, 2.5))
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const atRest = resolveViewportFrameRect(restBox, FITTED_FRAME, DEFAULT_VIEWPORT)
+    const zoomed = resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(0.5, 0.5, 2.5))
 
     expect(zoomed!.width).toBeCloseTo(atRest!.width * 2.5, 10)
     expect(zoomed!.height).toBeCloseTo(atRest!.height * 2.5, 10)
   })
 
   it('never lets the frame see past the image edge, however far the centre is pushed', () => {
-    const rect = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, viewport(-5, 9, 3))
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const rect = resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(-5, 9, 3))
 
     expect(rect).not.toBeNull()
-    expect(rect!.left).toBeLessThanOrEqual(0)
-    expect(rect!.top).toBeLessThanOrEqual(0)
-    expect(rect!.left + rect!.width).toBeGreaterThanOrEqual(FITTED_FRAME.width)
-    expect(rect!.top + rect!.height).toBeGreaterThanOrEqual(FITTED_FRAME.height)
+    // restBoxSize round-trips natural through a division and a multiplication by fitScale, so the
+    // edge lands within floating-point epsilon of 0 rather than exactly on it.
+    expect(rect!.left).toBeLessThan(1e-9)
+    expect(rect!.top).toBeLessThan(1e-9)
+    expect(rect!.left + rect!.width).toBeGreaterThan(FITTED_FRAME.width - 1e-9)
+    expect(rect!.top + rect!.height).toBeGreaterThan(FITTED_FRAME.height - 1e-9)
   })
 
   it('is null for an unmeasured frame, an unmeasured image or a non-finite centre', () => {
     expect(
-      resolveViewportFrameRect(LANDSCAPE, { width: 0, height: 0 }, DEFAULT_VIEWPORT),
+      resolveViewportFrameRect(
+        restBoxSize(LANDSCAPE, { width: 0, height: 0 }),
+        { width: 0, height: 0 },
+        DEFAULT_VIEWPORT,
+      ),
     ).toBeNull()
     expect(
-      resolveViewportFrameRect({ width: 0, height: 0 }, FITTED_FRAME, DEFAULT_VIEWPORT),
+      resolveViewportFrameRect(
+        restBoxSize({ width: 0, height: 0 }, FITTED_FRAME),
+        FITTED_FRAME,
+        DEFAULT_VIEWPORT,
+      ),
     ).toBeNull()
     expect(
-      resolveViewportFrameRect(LANDSCAPE, { width: Number.NaN, height: 600 }, DEFAULT_VIEWPORT),
+      resolveViewportFrameRect(
+        restBoxSize(LANDSCAPE, { width: Number.NaN, height: 600 }),
+        { width: Number.NaN, height: 600 },
+        DEFAULT_VIEWPORT,
+      ),
     ).toBeNull()
   })
 
   it('treats a non-finite centre as the middle rather than producing a NaN rectangle', () => {
-    expect(resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, viewport(Number.NaN, 0.5, 2))).toEqual(
-      resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, viewport(0.5, 0.5, 2)),
-    )
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+
+    expect(
+      resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(Number.NaN, 0.5, 2)),
+    ).toEqual(resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(0.5, 0.5, 2)))
   })
 })
 
@@ -203,15 +330,16 @@ describe('zoomViewportAt', () => {
   it('keeps the content under the pointer under the pointer', () => {
     // A point left of and above centre, zoomed in twice: the clamp cannot bite at these scales for
     // this point, so the anchor must hold exactly.
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
     const point = { left: 300, top: 220 }
     const start = DEFAULT_VIEWPORT as InspectorViewport
-    const before = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, start)!
+    const before = resolveViewportFrameRect(restBox, FITTED_FRAME, start)!
     const fraction = viewportFractionAt(before, point)
 
     let current = start
     for (const scale of [1.4, 2]) {
-      current = zoomViewportAt(LANDSCAPE, FITTED_FRAME, current, point, scale)
-      const after = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, current)!
+      current = zoomViewportAt(restBox, FITTED_FRAME, current, point, scale)
+      const after = resolveViewportFrameRect(restBox, FITTED_FRAME, current)!
 
       expect(current.scale).toBe(scale)
       expectPointCloseTo(viewportFractionAt(after, point), fraction)
@@ -219,27 +347,72 @@ describe('zoomViewportAt', () => {
   })
 
   it('keeps the anchor on a frame whose aspect differs from the image', () => {
-    const point = { left: 500, top: 400 }
-    const before = resolveViewportFrameRect(LANDSCAPE, TALL_FRAME, DEFAULT_VIEWPORT)!
+    // The pointer is a fixed position in the host (TALL_FRAME). The box it is measured against is
+    // restBox {800, 600} at scale 1 but host {800, 900} at scale 3 — it grows between the two calls
+    // this test makes, so the point has to be re-expressed in each box's own frame via `pointInBox`,
+    // exactly as `zoomViewportAt`'s internal `adjustedPoint` correction does for the viewport it
+    // owns. Reusing one raw box-relative point across both would silently test the wrong thing.
+    const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
+    const hostPoint = { left: 500, top: 400 }
+    const startBox = resolveViewportBox(restBox, TALL_FRAME, DEFAULT_VIEWPORT.scale)
+    const point = pointInBox(hostPoint, startBox, TALL_FRAME)
+    const before = resolveViewportFrameRect(restBox, TALL_FRAME, DEFAULT_VIEWPORT)!
     const fraction = viewportFractionAt(before, point)
-    const zoomed = zoomViewportAt(LANDSCAPE, TALL_FRAME, DEFAULT_VIEWPORT, point, 3)
-    const after = resolveViewportFrameRect(LANDSCAPE, TALL_FRAME, zoomed)!
 
-    expectPointCloseTo(viewportFractionAt(after, point), fraction)
+    const zoomed = zoomViewportAt(restBox, TALL_FRAME, DEFAULT_VIEWPORT, point, 3)
+    const after = resolveViewportFrameRect(restBox, TALL_FRAME, zoomed)!
+    const nextBox = resolveViewportBox(restBox, TALL_FRAME, zoomed.scale)
+    const afterPoint = pointInBox(hostPoint, nextBox, TALL_FRAME)
+
+    expectPointCloseTo(viewportFractionAt(after, afterPoint), fraction)
+  })
+
+  it('keeps the content under the pointer through a zoom that crosses an axis saturation point', () => {
+    // restBoxSize(LANDSCAPE, TALL_FRAME) is {800, 600}; TALL_FRAME is {800, 900}. The width axis
+    // is saturated immediately (restBox.width already equals TALL_FRAME.width); the height axis
+    // only saturates once scale exceeds 900 / 600 = 1.5.
+    //
+    // Below 1.5 the whole image height is already visible (visibleFraction's "capped at the whole
+    // image" case), so there is nothing to pan vertically and clampViewportCenter *correctly*
+    // forces centre.y to 0.5 regardless of the pointer — the anchor cannot hold there, by design,
+    // the same way the single-step test below demonstrates at the boundary. So this steps from
+    // DEFAULT_VIEWPORT straight across 1.5 in its first jump (exercising the box-growth correction
+    // across exactly the saturation point, like the "aspect differs" test above) and then takes
+    // several further steps once the axis has genuine pan freedom, checking at each one that the
+    // anchor established by that first jump keeps holding rather than drifting on a later step.
+    //
+    // The pointer sits at a fixed position in the host; since the box resizes at every step, that
+    // position has to be re-converted into the box's own frame before each call, exactly as a real
+    // caller tracking a stationary mouse through a sequence of wheel ticks would (see `pointInBox`).
+    const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
+    const hostPoint = { left: 550, top: 500 }
+    const start = DEFAULT_VIEWPORT as InspectorViewport
+    const startBox = resolveViewportBox(restBox, TALL_FRAME, start.scale)
+    const before = resolveViewportFrameRect(restBox, TALL_FRAME, start)!
+    const fraction = viewportFractionAt(before, pointInBox(hostPoint, startBox, TALL_FRAME))
+
+    let current = start
+    for (const scale of [1.6, 1.8, 2.2, 2.6, 3]) {
+      const currentBox = resolveViewportBox(restBox, TALL_FRAME, current.scale)
+      const point = pointInBox(hostPoint, currentBox, TALL_FRAME)
+      current = zoomViewportAt(restBox, TALL_FRAME, current, point, scale)
+
+      const nextBox = resolveViewportBox(restBox, TALL_FRAME, current.scale)
+      const afterPoint = pointInBox(hostPoint, nextBox, TALL_FRAME)
+      const after = resolveViewportFrameRect(restBox, TALL_FRAME, current)!
+
+      expect(current.scale).toBe(scale)
+      expectPointCloseTo(viewportFractionAt(after, afterPoint), fraction)
+    }
   })
 
   it('lets the edge clamp override the anchor on an axis that is still fully visible', () => {
-    // LANDSCAPE in TALL_FRAME draws 800x600 inside 800x900. At scale 1.5 the height is exactly the
-    // frame's, so there is nothing to pan vertically and the centre must stay at 0.5 whatever the
-    // pointer asked for — the clamp is not allowed to lose to the anchor, or the frame would show
-    // background above or below the image.
-    const zoomed = zoomViewportAt(
-      LANDSCAPE,
-      TALL_FRAME,
-      DEFAULT_VIEWPORT,
-      { left: 700, top: 200 },
-      1.5,
-    )
+    // LANDSCAPE in TALL_FRAME has a rest box of 800x600 inside an 800x900 host. At scale 1.5 the
+    // grown box's height is exactly the host's, so there is nothing to pan vertically and the
+    // centre must stay at 0.5 whatever the pointer asked for — the clamp is not allowed to lose to
+    // the anchor, or the frame would show background above or below the image.
+    const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
+    const zoomed = zoomViewportAt(restBox, TALL_FRAME, DEFAULT_VIEWPORT, { left: 700, top: 200 }, 1.5)
 
     expect(zoomed.center.x).toBeCloseTo(0.625, 10)
     expect(zoomed.center.y).toBeCloseTo(0.5, 10)
@@ -247,7 +420,7 @@ describe('zoomViewportAt', () => {
 
   it('clamps the scale and lands on the middle when the image is not measured yet', () => {
     const zoomed = zoomViewportAt(
-      { width: 0, height: 0 },
+      restBoxSize({ width: 0, height: 0 }, FITTED_FRAME),
       FITTED_FRAME,
       DEFAULT_VIEWPORT,
       { left: 10, top: 10 },
@@ -259,14 +432,9 @@ describe('zoomViewportAt', () => {
   })
 
   it('returns to the exact centre when zoomed back out to the fit point', () => {
-    const zoomedIn = zoomViewportAt(
-      LANDSCAPE,
-      FITTED_FRAME,
-      DEFAULT_VIEWPORT,
-      { left: 120, top: 90 },
-      5,
-    )
-    const backOut = zoomViewportAt(LANDSCAPE, FITTED_FRAME, zoomedIn, { left: 120, top: 90 }, 1)
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const zoomedIn = zoomViewportAt(restBox, FITTED_FRAME, DEFAULT_VIEWPORT, { left: 120, top: 90 }, 5)
+    const backOut = zoomViewportAt(restBox, FITTED_FRAME, zoomedIn, { left: 120, top: 90 }, 1)
 
     expect(backOut.scale).toBe(1)
     expectPointCloseTo(backOut.center, { x: 0.5, y: 0.5 })
@@ -275,21 +443,23 @@ describe('zoomViewportAt', () => {
 
 describe('panViewport', () => {
   it('moves the content with the pointer, one frame pixel per frame pixel', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
     const zoomed = viewport(0.5, 0.5, 4)
-    const rect = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, zoomed)!
-    const panned = panViewport(LANDSCAPE, FITTED_FRAME, zoomed, { left: 80, top: -40 })
-    const after = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, panned)!
+    const rect = resolveViewportFrameRect(restBox, FITTED_FRAME, zoomed)!
+    const panned = panViewport(restBox, FITTED_FRAME, zoomed, { left: 80, top: -40 })
+    const after = resolveViewportFrameRect(restBox, FITTED_FRAME, panned)!
 
     expect(after.left - rect.left).toBeCloseTo(80, 10)
     expect(after.top - rect.top).toBeCloseTo(-40, 10)
   })
 
   it('stops at the image edge instead of dragging background into the frame', () => {
-    const panned = panViewport(LANDSCAPE, FITTED_FRAME, viewport(0.5, 0.5, 2), {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const panned = panViewport(restBox, FITTED_FRAME, viewport(0.5, 0.5, 2), {
       left: 10_000,
       top: 10_000,
     })
-    const rect = resolveViewportFrameRect(LANDSCAPE, FITTED_FRAME, panned)!
+    const rect = resolveViewportFrameRect(restBox, FITTED_FRAME, panned)!
 
     expect(rect.left).toBeCloseTo(0, 10)
     expect(rect.top).toBeCloseTo(0, 10)
@@ -297,7 +467,8 @@ describe('panViewport', () => {
   })
 
   it('does nothing at the fit point, where the whole image is already visible', () => {
-    const panned = panViewport(LANDSCAPE, FITTED_FRAME, DEFAULT_VIEWPORT, { left: 120, top: 60 })
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const panned = panViewport(restBox, FITTED_FRAME, DEFAULT_VIEWPORT, { left: 120, top: 60 })
 
     expect(panned.scale).toBe(1)
     expectPointCloseTo(panned.center, { x: 0.5, y: 0.5 })
