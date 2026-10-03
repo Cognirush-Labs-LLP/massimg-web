@@ -681,15 +681,34 @@ Counter, donut, running reduction total, skipped/failure lists, Cancel, then con
 
 ### T39 — Errors and rejections
 
-**Functional Design:** §10, R-E1 to R-E3, R-I20, R-I21
+**Functional Design:** §5.1, §5.3, §10, R-E1 to R-E3, R-F8, R-I2, R-I3, R-I20,
+R-I21, R-I23, R-I29, R-I30
 
 Selection-time rejection list, per-image failure marking, and every condition in the §10 table.
 
 - One dismissible list, not one alert per file.
 - Every message names the file and states what to do next. "Something went wrong" appears nowhere.
 - Keep the size-ceiling skip message and badge distinct from decode/encode/memory failures.
+- The ordinary **Select images** / **Add images** picker uses `accept="image/*"`, remains
+  `multiple`, and has no `capture` attribute. `accept` is a native-picker hint only: classification
+  continues to inspect the file bytes and never trusts its extension or browser-supplied MIME type.
+- Folder selection and drag/drop remain unfiltered at the browser boundary so every entry reaches
+  the same classification path. Supported images are added, unsupported images become named
+  rejection entries, and ordinary non-image files are skipped silently.
+- Selection-time rejection entries live in `useBatchStore`; this task defines their final type,
+  lifecycle, dismissal behaviour and clearing behaviour rather than introducing a separate store.
+- A file classified as supported but found corrupt or undecodable during decode remains visible as
+  a per-image failure. It is not rewritten as a selection-time rejection or a size-ceiling skip.
+- A folder with no supported images is reported plainly. Traversal-depth and file-count breaches
+  reject the selection before anything is added and name the actual value, cap and next action.
 
-**Done when:** each row of the §10 table has a test that triggers it and asserts the message content.
+**Done when:** each row of the §10 table has a test that triggers it and asserts the message content;
+the ordinary picker is tested with `accept="image/*"`, `multiple` and no `capture`; equivalent picker,
+folder and drop inputs produce the same classification outcomes; and a mixed selection proves that
+supported images are added, unsupported images (including camera raw and animated AVIF) are named in
+the rejection list, ordinary non-images are absent from it, and decode failures remain distinct from
+both selection-time rejections and size-ceiling skips. Folder-empty and traversal-cap tests assert the
+reported figures and remediation.
 
 ---
 
