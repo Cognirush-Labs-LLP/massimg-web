@@ -57,6 +57,23 @@ describe('EditToolbar', () => {
     expect(wrapper.get('[data-testid="edit-zoom-readout"]').text()).toBe('200%')
   })
 
+  it('the 100% shortcut button resets zoom and disables itself at 100% (R-C7)', async () => {
+    seedAndInit()
+    const wrapper = mount(EditToolbar)
+    const resetButton = wrapper.get('[data-testid="edit-zoom-reset"]')
+
+    expect((resetButton.element as HTMLButtonElement).disabled).toBe(true)
+
+    await wrapper.get('[data-testid="edit-zoom-slider"]').setValue('2')
+    expect((resetButton.element as HTMLButtonElement).disabled).toBe(false)
+
+    await resetButton.trigger('click')
+
+    expect(useEditDraftStore().zoom).toBe(1)
+    expect(wrapper.get('[data-testid="edit-zoom-readout"]').text()).toBe('100%')
+    expect((resetButton.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it('rotate left/right call the draft store with the right quarter turns', async () => {
     seedAndInit()
     const wrapper = mount(EditToolbar)

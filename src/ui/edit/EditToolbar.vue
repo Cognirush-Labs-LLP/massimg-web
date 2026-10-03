@@ -26,8 +26,14 @@ const outputSize = computed(() =>
 const disabled = computed(() => geometry.value.kind !== 'resolved')
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
+const isDefaultZoom = computed(() => zoomPercent.value === 100)
+
 function onZoomInput(event: Event): void {
   draft.setZoom(Number((event.target as HTMLInputElement).value))
+}
+
+function onZoomReset(): void {
+  draft.setZoom(1)
 }
 
 function onWidthInput(event: Event): void {
@@ -111,6 +117,16 @@ function onHeightInput(event: Event): void {
         @input="onZoomInput"
       />
       <span class="zoom-readout" data-testid="edit-zoom-readout">{{ zoomPercent }}%</span>
+      <button
+        type="button"
+        class="zoom-reset"
+        :disabled="disabled || isDefaultZoom"
+        :aria-label="t('edit.zoom.resetLabel')"
+        data-testid="edit-zoom-reset"
+        @click="onZoomReset"
+      >
+        {{ t('edit.zoom.actualSize') }}
+      </button>
     </div>
 
     <div class="dimension-fields">
@@ -184,6 +200,23 @@ function onHeightInput(event: Event): void {
   font-family: var(--font-family-mono);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+}
+
+.zoom-reset {
+  min-block-size: 22px;
+  padding-inline: 7px;
+  background: var(--color-surface-control);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: var(--font-weight-control);
+  cursor: pointer;
+}
+
+.zoom-reset:disabled {
+  color: var(--color-text-muted-quiet);
+  cursor: not-allowed;
 }
 
 .trailing {

@@ -135,6 +135,8 @@
   "edit.toolbar.cancel": "Cancel",
   "edit.toolbar.removeEdit": "Remove edit",
   "edit.zoom.sliderLabel": "Zoom",
+  "edit.zoom.resetLabel": "Reset zoom to 100%",
+  "edit.zoom.actualSize": "100%",
   "edit.background.heading": "Background",
   "edit.background.swatchBlack": "Black",
   "edit.background.swatchWhite": "White",
