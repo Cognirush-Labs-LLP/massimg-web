@@ -75,6 +75,10 @@ useFocusTrap({
 .drawer-scroll {
   block-size: 100%;
   overflow-y: auto;
+  /* Clears ToolPage.vue's fixed .mobile-action-bar (Compress button) so scrolled-to-bottom
+     drawer content, e.g. the FORMAT select, is never hidden behind it. */
+  padding-block-end: 96px;
+  scroll-padding-block-end: 96px;
 }
 
 .drawer-hide-row {

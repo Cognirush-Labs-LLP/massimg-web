@@ -205,9 +205,19 @@ onMounted(() => {
 .tool-page {
   display: flex;
   flex-direction: column;
+  /* 100vh is the LARGEST viewport (browser chrome hidden); on mobile that overshoots the
+     visible area whenever the URL bar is showing, forcing page scroll with nothing to scroll
+     to. 100dvh tracks the actual visible viewport as browser chrome shows/hides. */
   block-size: 100vh;
   min-block-size: 100vh;
   overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  .tool-page {
+    block-size: 100dvh;
+    min-block-size: 100dvh;
+  }
 }
 
 .tool-body {
