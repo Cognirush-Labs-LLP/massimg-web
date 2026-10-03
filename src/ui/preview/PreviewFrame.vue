@@ -23,7 +23,11 @@ import { t } from '@/i18n/t'
 import type { PixelSize } from '@/domain/edit'
 import {
   clampViewportScale,
+  displayedZoomPercent,
+  effectiveMaxScale,
+  MAX_VIEWPORT_SCALE,
   panViewport,
+  pixelPerfectScale,
   resolveViewportBox,
   resolveViewportFrameRect,
   restBoxSize,
@@ -143,6 +147,19 @@ const restBox = computed<PixelSize | null>(() => {
 })
 
 /**
+ * The zoom ceiling for the active tab's image: at least `MAX_VIEWPORT_SCALE`, but raised so a photo
+ * shrunk hard to fit this host can still be zoomed in by hand to at least twice its true pixel size
+ * (`effectiveMaxScale`) — a fixed scale ceiling doesn't translate to a fixed real-size guarantee
+ * once the rest-state shrink factor varies this much between images.
+ */
+const zoomCeiling = computed<number>(() => {
+  const box = restBox.value
+  const natural = naturalSize.value
+
+  return box === null || natural === null ? MAX_VIEWPORT_SCALE : effectiveMaxScale(box, natural)
+})
+
+/**
  * The frame's actual CSS box: `restBox` at rest, growing toward the host area as the user zooms in
  * (`resolveViewportBox`). Must read the current scale — this is what makes zooming use the host's
  * available space rather than clipping within a box frozen at rest size.
@@ -156,7 +173,11 @@ const frameSize = computed<PixelSize | null>(() => {
 
   // Clamped the same way `resolveViewportFrameRect` clamps internally, so this box and the image
   // rect placed inside it (`imageRect`, below) can never disagree about which scale is current.
-  return resolveViewportBox(box, hostSize.value, clampViewportScale(viewport.local.value.scale))
+  return resolveViewportBox(
+    box,
+    hostSize.value,
+    clampViewportScale(viewport.local.value.scale, zoomCeiling.value),
+  )
 })
 
 const imageRect = computed(() => {
@@ -166,7 +187,7 @@ const imageRect = computed(() => {
     return null
   }
 
-  return resolveViewportFrameRect(box, hostSize.value, viewport.local.value)
+  return resolveViewportFrameRect(box, hostSize.value, viewport.local.value, zoomCeiling.value)
 })
 
 const zoomed = computed(() => viewport.zoomed.value)
@@ -198,6 +219,48 @@ const imageStyle = computed(() => {
 const canInspect = computed(
   () => viewport.interactive.value && naturalSize.value !== null && restBox.value !== null,
 )
+
+/** The scale that would show the active tab's image at its true pixel size, or `null` until
+ * both the host and the image are measured (mirrors `restBox`/`naturalSize`'s own nullability). */
+const actualSizeScale = computed<number | null>(() => {
+  const box = restBox.value
+  const natural = naturalSize.value
+
+  return box === null || natural === null ? null : pixelPerfectScale(box, natural)
+})
+
+/** The zoom toolbar's live readout, rounded for display; the domain function keeps the exact value. */
+const zoomPercent = computed<number | null>(() => {
+  const box = restBox.value
+  const natural = naturalSize.value
+
+  return box === null || natural === null
+    ? null
+    : Math.round(displayedZoomPercent(box, natural, viewport.local.value.scale))
+})
+
+/** Within a hair of `actualSizeScale`, so the "Actual size" button doesn't invite a no-op click. */
+const atActualSize = computed(() => {
+  const target = actualSizeScale.value
+
+  return target !== null && Math.abs(viewport.local.value.scale - target) < 1e-6
+})
+
+const showsZoomToolbar = computed(() => canInspect.value)
+
+function onFitClick(): void {
+  viewport.reset()
+}
+
+function onActualSizeClick(): void {
+  const scale = actualSizeScale.value
+
+  if (scale === null) {
+    return
+  }
+
+  viewport.setLocal({ center: viewport.local.value.center, scale })
+}
 
 const altText = computed(() =>
   showsOriginal.value
@@ -324,7 +387,9 @@ function onWheel(event: WheelEvent): void {
   const factor = Math.exp(-normalisedWheelDelta(event) * perPixel)
   const current = viewport.local.value
 
-  viewport.setLocal(zoomViewportAt(box, hostSize.value, current, point, current.scale * factor))
+  viewport.setLocal(
+    zoomViewportAt(box, hostSize.value, current, point, current.scale * factor, zoomCeiling.value),
+  )
 }
 
 /**
@@ -388,16 +453,26 @@ function onPointerMove(event: PointerEvent): void {
 
     pinchDistance = pinch.distance
     viewport.setLocal(
-      zoomViewportAt(box, hostSize.value, viewportCurrent, midpoint, viewportCurrent.scale * factor),
+      zoomViewportAt(
+        box,
+        hostSize.value,
+        viewportCurrent,
+        midpoint,
+        viewportCurrent.scale * factor,
+        zoomCeiling.value,
+      ),
     )
     return
   }
 
   viewport.setLocal(
-    panViewport(box, hostSize.value, viewport.local.value, {
-      left: current.clientX - previous.clientX,
-      top: current.clientY - previous.clientY,
-    }),
+    panViewport(
+      box,
+      hostSize.value,
+      viewport.local.value,
+      { left: current.clientX - previous.clientX, top: current.clientY - previous.clientY },
+      zoomCeiling.value,
+    ),
   )
 }
 
@@ -446,9 +521,19 @@ onBeforeUnmount(() => {
   resizeObserver = null
 })
 
-// Exposed for the component test, which drives the viewport directly rather than synthesising a
-// wheel gesture against a layout jsdom does not have.
-defineExpose({ viewport })
+// Exposed for the component test (which drives the viewport directly rather than synthesising a
+// wheel gesture against a layout jsdom does not have) and for `Preview.vue`'s zoom toolbar, which
+// renders outside this component (beside the Original/Compressed pill, not over the image) but
+// still needs to read and drive this frame's own viewport state.
+defineExpose({
+  viewport,
+  showsZoomToolbar,
+  zoomPercent,
+  zoomed,
+  atActualSize,
+  onFitClick,
+  onActualSizeClick,
+})
 </script>
 
 <template>

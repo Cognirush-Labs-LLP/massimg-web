@@ -118,6 +118,24 @@ function previewViewport(wrapper: VueWrapper): PreviewViewport {
   return (wrapper.vm as unknown as { viewport: PreviewViewport }).viewport
 }
 
+interface ZoomToolbarApi {
+  showsZoomToolbar: boolean
+  zoomPercent: number | null
+  zoomed: boolean
+  atActualSize: boolean
+  onFitClick: () => void
+  onActualSizeClick: () => void
+}
+
+/**
+ * The zoom toolbar's own state and actions, exposed for `Preview.vue`'s zoom toolbar (rendered
+ * outside this component, beside the Original/Compressed pill) to read and drive — tested directly
+ * off the exposed surface rather than through a template this component no longer has.
+ */
+function zoomToolbarApi(wrapper: VueWrapper): ZoomToolbarApi {
+  return wrapper.vm as unknown as ZoomToolbarApi
+}
+
 beforeEach(() => {
   observerCallback = null
   vi.stubGlobal(
@@ -467,5 +485,165 @@ describe('PreviewFrame', () => {
     expect(Number.isFinite(scale)).toBe(true)
     expect(Number.isFinite(previewViewport(wrapper).local.value.center.x)).toBe(true)
     expect(Number.isFinite(previewViewport(wrapper).local.value.center.y)).toBe(true)
+  })
+
+  describe('zoom toolbar state (exposed for Preview.vue, which renders the controls)', () => {
+    it('is showable once the image has loaded, with a 100% readout for an image that already fits', async () => {
+      const wrapper = await mountFrame()
+
+      expect(zoomToolbarApi(wrapper).showsZoomToolbar).toBe(true)
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(100)
+    })
+
+    it('is not showable before the image has loaded', async () => {
+      const wrapper = await mountFrame({}, { natural: null })
+
+      expect(zoomToolbarApi(wrapper).showsZoomToolbar).toBe(false)
+    })
+
+    it('is not showable while encoding and on error', async () => {
+      const encoding = await mountFrame({ phase: 'encoding', compressedUrl: null })
+      expect(zoomToolbarApi(encoding).showsZoomToolbar).toBe(false)
+
+      const errored = await mountFrame({
+        phase: 'error',
+        compressedUrl: null,
+        error: { kind: 'decode-failed' },
+      })
+      expect(zoomToolbarApi(errored).showsZoomToolbar).toBe(false)
+    })
+
+    it('is not showable when the original cannot be rendered by the browser', async () => {
+      const wrapper = await mountFrame({ tab: 'original', originalUnrenderable: true })
+
+      expect(zoomToolbarApi(wrapper).showsZoomToolbar).toBe(false)
+    })
+
+    it('is not showable for an edit it cannot project', async () => {
+      const unprojectable: EditRecord = {
+        ops: [
+          {
+            kind: 'crop',
+            rect: { x: 0, y: 0, width: 0.5, height: 0.5 },
+            zoom: 1,
+            background: OPAQUE_WHITE,
+          },
+          { kind: 'rotate', quarterTurns: 1 },
+        ] satisfies EditOp[],
+        version: 1,
+      }
+      const wrapper = await mountFrame({ edit: unprojectable })
+
+      expect(zoomToolbarApi(wrapper).showsZoomToolbar).toBe(false)
+    })
+
+    it('Fit is not zoomed at rest, and resets a zoomed, panned view back to rest', async () => {
+      const wrapper = await mountFrame()
+
+      expect(zoomToolbarApi(wrapper).zoomed).toBe(false)
+
+      previewViewport(wrapper).setLocal({ center: { x: 0.3, y: 0.3 }, scale: 2 })
+      await nextTick()
+      expect(zoomToolbarApi(wrapper).zoomed).toBe(true)
+
+      zoomToolbarApi(wrapper).onFitClick()
+      await nextTick()
+
+      expect(previewViewport(wrapper).local.value).toEqual({ center: { x: 0.5, y: 0.5 }, scale: 1 })
+    })
+
+    it('reflects rest-state shrink, not a literal 100%, for an oversized image', async () => {
+      const big = { width: 4000, height: 3000 } as const satisfies PixelSize
+      const wrapper = await mountFrame({}, { natural: big })
+
+      // restBoxSize(4000x3000, 800x600) is 800x600 — a 1/5 shrink to fit.
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(20)
+    })
+
+    it('Actual size sets the active tab to pixel-for-pixel scale without recentring, then reports itself reached', async () => {
+      const big = { width: 4000, height: 3000 } as const satisfies PixelSize
+      const wrapper = await mountFrame({}, { natural: big })
+
+      previewViewport(wrapper).setLocal({ center: { x: 0.3, y: 0.4 }, scale: 1 })
+      await nextTick()
+
+      zoomToolbarApi(wrapper).onActualSizeClick()
+      await nextTick()
+
+      // pixelPerfectScale(800x600 restBox, 4000x3000 natural) is 5.
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(5, 10)
+      expect(previewViewport(wrapper).local.value.center).toEqual({ x: 0.3, y: 0.4 })
+      expect(imageStyle(wrapper).width).toBe('4000px')
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(100)
+      expect(zoomToolbarApi(wrapper).atActualSize).toBe(true)
+    })
+
+    it('reaches the image true pixel size even when that is far past the baseline 8x ceiling', async () => {
+      const huge = { width: 20000, height: 15000 } as const satisfies PixelSize
+      const wrapper = await mountFrame({}, { natural: huge })
+
+      zoomToolbarApi(wrapper).onActualSizeClick()
+      await nextTick()
+
+      // restBoxSize(20000x15000, 800x600) is 800x600; pixelPerfectScale is 25 — well past
+      // MAX_VIEWPORT_SCALE (8), but still reachable so "Actual size" is never a lie.
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(25, 10)
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(100)
+    })
+
+    it('lets manual wheel zoom reach at least 200% for a huge image, past the baseline 8x ceiling', async () => {
+      const huge = { width: 20000, height: 15000 } as const satisfies PixelSize
+      const wrapper = await mountFrame({}, { natural: huge })
+
+      for (let i = 0; i < 20; i += 1) {
+        await wheel(wrapper, { deltaY: -600, clientX: 400, clientY: 300 })
+      }
+
+      expect(zoomToolbarApi(wrapper).zoomPercent ?? 0).toBeGreaterThanOrEqual(200)
+    })
+
+    it('grows the readout above 100% on a wheel zoom-in', async () => {
+      const wrapper = await mountFrame()
+
+      await wheel(wrapper, { deltaY: -400, clientX: 400, clientY: 300 })
+
+      expect(zoomToolbarApi(wrapper).zoomPercent ?? 0).toBeGreaterThan(100)
+    })
+
+    it('carries the scale set by Actual size on one tab over to the other, instead of resetting to 100% of that tab', async () => {
+      const compressedNatural = { width: 2000, height: 1500 } as const satisfies PixelSize
+      const originalNatural = { width: 4000, height: 3000 } as const satisfies PixelSize
+
+      const wrapper = await mountFrame(
+        { tab: 'compressed', compressedUrl: 'blob:compressed', originalUrl: 'blob:original' },
+        { natural: compressedNatural },
+      )
+
+      zoomToolbarApi(wrapper).onActualSizeClick()
+      await nextTick()
+
+      // pixelPerfectScale(800x600 restBox, 2000x1500 natural) is 2.5.
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(2.5, 10)
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(100)
+
+      await wrapper.setProps({ tab: 'original' })
+      const original = wrapper.get('[data-testid="preview-image"]')
+      Object.defineProperty(original.element, 'naturalWidth', {
+        value: originalNatural.width,
+        configurable: true,
+      })
+      Object.defineProperty(original.element, 'naturalHeight', {
+        value: originalNatural.height,
+        configurable: true,
+      })
+      await original.trigger('load')
+
+      // Scale passes through the tab projection unchanged — same canonical magnification, not reset.
+      expect(previewViewport(wrapper).canonical.value.scale).toBeCloseTo(2.5, 10)
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(2.5, 10)
+      // restBoxSize(4000x3000, 800x600) is 800x600; at scale 2.5 that is 50% of the original's true
+      // pixel size, not a reset to literal 100%.
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(50)
+    })
   })
 })

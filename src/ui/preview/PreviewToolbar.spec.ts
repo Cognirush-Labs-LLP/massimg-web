@@ -40,8 +40,8 @@ describe('PreviewToolbar', () => {
     seed(['a'])
     const wrapper = mount(PreviewToolbar)
 
-    expect(wrapper.get('[data-testid="preview-back"]').text()).toBe('Back to images')
-    expect(wrapper.get('[data-testid="preview-add-more"]').text()).toBe('Add more images')
+    expect(wrapper.get('[data-testid="preview-back"]').text()).toBe('‹ All Images')
+    expect(wrapper.get('[data-testid="preview-add-more"]').text()).toBe('+ Add Images')
     expect(wrapper.get('[data-testid="preview-edit"]').text()).toBe('Edit')
   })
 

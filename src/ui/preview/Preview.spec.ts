@@ -104,6 +104,32 @@ function unreachable(imageId: string, format: 'jpeg' | 'png' = 'png'): JobOutcom
 
 let urlCounter = 0
 
+/** jsdom has no ResizeObserver; this one hands the test the callback so it can report a size. */
+let observerCallback: (() => void) | null = null
+
+/** Reports a host size, the way a real layout would, and lets `PreviewFrame` re-measure it. */
+async function measureFrameHost(
+  wrapper: VueWrapper,
+  size: { width: number; height: number },
+): Promise<void> {
+  const host = wrapper.get('[data-testid="preview-frame-host"]').element
+  Object.defineProperty(host, 'clientWidth', { value: size.width, configurable: true })
+  Object.defineProperty(host, 'clientHeight', { value: size.height, configurable: true })
+  observerCallback?.()
+  await nextTick()
+}
+
+/** Loads the active tab's image at a known natural size, the way a real decode would. */
+async function loadFrameImage(
+  wrapper: VueWrapper,
+  size: { width: number; height: number },
+): Promise<void> {
+  const image = wrapper.get('[data-testid="preview-image"]')
+  Object.defineProperty(image.element, 'naturalWidth', { value: size.width, configurable: true })
+  Object.defineProperty(image.element, 'naturalHeight', { value: size.height, configurable: true })
+  await image.trigger('load')
+}
+
 // Preview listens on `window` for R-K2's arrow keys, so a wrapper left mounted between cases would
 // keep stepping the next case's batch. Unmounting is the same thing leaving Preview does for real.
 enableAutoUnmount(afterEach)
@@ -123,11 +149,17 @@ beforeEach(() => {
     return `blob:preview/${urlCounter}`
   })
   URL.revokeObjectURL = vi.fn()
+  observerCallback = null
   vi.stubGlobal(
     'ResizeObserver',
     class {
+      constructor(callback: () => void) {
+        observerCallback = callback
+      }
       observe() {}
-      disconnect() {}
+      disconnect() {
+        observerCallback = null
+      }
     },
   )
 })
@@ -182,6 +214,35 @@ describe('Preview', () => {
     const wrapper = await mountPreview()
 
     expect(wrapper.find('[data-testid="preview-transform-note"]').exists()).toBe(false)
+  })
+
+  it('renders the zoom toolbar beside the comparison pill, outside the frame, and wires Fit/Actual size to it', async () => {
+    seed(['a'])
+    const wrapper = await mountPreview()
+
+    // Nothing has loaded yet — the toolbar stays hidden, same as the comparison pill.
+    expect(wrapper.find('[data-testid="preview-zoom-toolbar"]').exists()).toBe(false)
+
+    runs[0]?.settle(completed(256_000, 'a'))
+    await flushPromises()
+    await measureFrameHost(wrapper, { width: 800, height: 600 })
+    await loadFrameImage(wrapper, { width: 4000, height: 3000 })
+
+    const toolbar = wrapper.get('[data-testid="preview-zoom-toolbar"]')
+    const pill = wrapper.get('[data-testid="preview-comparison"]')
+
+    // Beside the pill, not inside the image frame (not an overlay).
+    expect(toolbar.element.closest('[data-testid="preview-frame"]')).toBeNull()
+    expect(toolbar.element.parentElement).toBe(pill.element.parentElement)
+
+    // restBoxSize(4000x3000, 800x600) is 800x600 — a 1/5 shrink to fit, so rest is 20%, not 100%.
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('20%')
+
+    await wrapper.get('[data-testid="preview-zoom-actual-size"]').trigger('click')
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('100%')
+
+    await wrapper.get('[data-testid="preview-zoom-fit"]').trigger('click')
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('20%')
   })
 
   it('flips the stored comparison tab from anywhere on the pill (R-P2)', async () => {

@@ -7,7 +7,12 @@
 // the frame and the inspector, and the toolbar is mounted separately into the stage's toolbar slot
 // by ToolPage.vue. Unmounting it is what releases Preview's data (R-M4), which is why none of that
 // state lives above this component.
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+//
+// `PreviewZoomToolbar` is the one exception to "no arithmetic lives above PreviewFrame": it is
+// purely presentational, and reads/drives `PreviewFrame`'s own viewport state through a template
+// ref rather than owning anything itself, because it renders beside the Original/Compressed pill
+// here rather than as an overlay on the image (that was tried and looked bad).
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { withTrailingResize, type PixelSize } from '@/domain/edit'
 import {
@@ -26,6 +31,7 @@ import { ingestDrop } from '@/ui/gallery/ingest'
 import PreviewComparisonPill from './PreviewComparisonPill.vue'
 import PreviewFrame from './PreviewFrame.vue'
 import PreviewTransformLine from './PreviewTransformLine.vue'
+import PreviewZoomToolbar from './PreviewZoomToolbar.vue'
 import LoadingStatus from './LoadingStatus.vue'
 import { stepPreview } from './stepping'
 import { describeTransformLine } from './transform-line'
@@ -85,6 +91,24 @@ const placeholderSize = computed<PixelSize | null>(() => {
 
 function toggleTab(): void {
   uiStore.setComparisonTab(comparisonTab.value === 'compressed' ? 'original' : 'compressed')
+}
+
+const frame = ref<InstanceType<typeof PreviewFrame> | null>(null)
+
+/** Reads `PreviewFrame`'s exposed zoom state; `null` whenever the frame itself isn't mounted. */
+const zoomToolbar = computed(() => ({
+  visible: frame.value?.showsZoomToolbar ?? false,
+  percent: frame.value?.zoomPercent ?? 0,
+  fitDisabled: frame.value === null || !frame.value.zoomed,
+  actualSizeDisabled: frame.value?.atActualSize ?? true,
+}))
+
+function onZoomFit(): void {
+  frame.value?.onFitClick()
+}
+
+function onZoomActualSize(): void {
+  frame.value?.onActualSizeClick()
 }
 
 function fillName(fill: Rgba): string {
@@ -177,14 +201,24 @@ onBeforeUnmount(() => {
     @dragover="onDragOver"
     @drop="onDrop"
   >
-    <!-- R-P4: hidden, not stale, while an encode is in flight. -->
-    <PreviewComparisonPill
-      v-if="encode.phase.value !== 'encoding'"
-      :tab="comparisonTab"
-      :original-bytes="image.sizeBytes"
-      :compressed-bytes="encode.compressedBytes.value"
-      @toggle="toggleTab"
-    />
+    <div v-if="encode.phase.value !== 'encoding' || zoomToolbar.visible" class="top-row">
+      <!-- R-P4: hidden, not stale, while an encode is in flight. -->
+      <PreviewComparisonPill
+        v-if="encode.phase.value !== 'encoding'"
+        :tab="comparisonTab"
+        :original-bytes="image.sizeBytes"
+        :compressed-bytes="encode.compressedBytes.value"
+        @toggle="toggleTab"
+      />
+      <PreviewZoomToolbar
+        v-if="zoomToolbar.visible"
+        :percent="zoomToolbar.percent"
+        :fit-disabled="zoomToolbar.fitDisabled"
+        :actual-size-disabled="zoomToolbar.actualSizeDisabled"
+        @fit="onZoomFit"
+        @actual-size="onZoomActualSize"
+      />
+    </div>
 
     <PreviewTransformLine v-if="transformLine" :line="transformLine" />
 
@@ -277,6 +311,7 @@ onBeforeUnmount(() => {
 
     <PreviewFrame
       v-if="!encode.unreachable.value"
+      ref="frame"
       :image-id="image.id"
       :file-name="image.name"
       :edit="image.edit"
@@ -301,6 +336,14 @@ onBeforeUnmount(() => {
   gap: 12px;
   block-size: 100%;
   min-block-size: 0;
+}
+
+.top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
 .recovery {

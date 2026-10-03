@@ -6,7 +6,10 @@ import {
   MIN_VIEWPORT_SCALE,
   clampViewportCenter,
   clampViewportScale,
+  displayedZoomPercent,
+  effectiveMaxScale,
   panViewport,
+  pixelPerfectScale,
   projectViewportToCompressed,
   projectViewportToOriginal,
   resolveViewportBox,
@@ -107,6 +110,100 @@ describe('restBoxSize', () => {
   it('returns a zero size for an unmeasured image or host', () => {
     expect(restBoxSize({ width: 0, height: 0 }, FITTED_FRAME)).toEqual({ width: 0, height: 0 })
     expect(restBoxSize(LANDSCAPE, { width: 0, height: 0 })).toEqual({ width: 0, height: 0 })
+  })
+})
+
+describe('pixelPerfectScale', () => {
+  it('is 1 when the image already fits inside the host at its true size', () => {
+    const natural = { width: 400, height: 300 } satisfies PixelSize
+    const host = { width: 1200, height: 900 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+
+    expect(pixelPerfectScale(restBox, natural)).toBe(1)
+  })
+
+  it('is the inverse of the fit shrink when the image is bigger than the host', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+
+    expect(pixelPerfectScale(restBox, LANDSCAPE)).toBeCloseTo(LANDSCAPE.width / restBox.width, 10)
+  })
+
+  it('is not clamped to MAX_VIEWPORT_SCALE, however hard the image had to shrink to fit', () => {
+    // A photo shrunk this hard to fit a small host needs far more than 8x to reach its own true
+    // size — "Actual size" has to be able to land there regardless of the baseline ceiling.
+    const natural = { width: 20000, height: 15000 } satisfies PixelSize
+    const host = { width: 100, height: 75 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+
+    expect(pixelPerfectScale(restBox, natural)).toBeGreaterThan(MAX_VIEWPORT_SCALE)
+    expect(pixelPerfectScale(restBox, natural)).toBeCloseTo(natural.width / restBox.width, 10)
+  })
+
+  it('returns MIN_VIEWPORT_SCALE for an unmeasured image or host', () => {
+    expect(pixelPerfectScale({ width: 0, height: 0 }, LANDSCAPE)).toBe(MIN_VIEWPORT_SCALE)
+    expect(pixelPerfectScale(FITTED_FRAME, { width: 0, height: 0 })).toBe(MIN_VIEWPORT_SCALE)
+  })
+})
+
+describe('effectiveMaxScale', () => {
+  it('is MAX_VIEWPORT_SCALE for an image that needs little shrink to fit', () => {
+    const natural = { width: 400, height: 300 } satisfies PixelSize
+    const host = { width: 1200, height: 900 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+
+    expect(effectiveMaxScale(restBox, natural)).toBe(MAX_VIEWPORT_SCALE)
+  })
+
+  it('rises past MAX_VIEWPORT_SCALE so a heavily shrunk photo can still be zoomed to 200% of its true size', () => {
+    const natural = { width: 20000, height: 15000 } satisfies PixelSize
+    const host = { width: 100, height: 75 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+    const ceiling = effectiveMaxScale(restBox, natural)
+
+    expect(ceiling).toBeGreaterThan(MAX_VIEWPORT_SCALE)
+    expect(displayedZoomPercent(restBox, natural, ceiling)).toBeGreaterThanOrEqual(200)
+  })
+
+  it('is MAX_VIEWPORT_SCALE for an unmeasured image or host', () => {
+    expect(effectiveMaxScale({ width: 0, height: 0 }, LANDSCAPE)).toBe(MAX_VIEWPORT_SCALE)
+    expect(effectiveMaxScale(FITTED_FRAME, { width: 0, height: 0 })).toBe(MAX_VIEWPORT_SCALE)
+  })
+})
+
+describe('displayedZoomPercent', () => {
+  it('is 100 at pixel-perfect scale', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const scale = pixelPerfectScale(restBox, LANDSCAPE)
+
+    expect(displayedZoomPercent(restBox, LANDSCAPE, scale)).toBeCloseTo(100, 10)
+  })
+
+  it('is less than 100 at rest when the image had to shrink to fit', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+
+    expect(displayedZoomPercent(restBox, LANDSCAPE, 1)).toBeLessThan(100)
+  })
+
+  it('is 100 at rest when the image already fit without shrinking', () => {
+    const natural = { width: 400, height: 300 } satisfies PixelSize
+    const host = { width: 1200, height: 900 } satisfies PixelSize
+    const restBox = restBoxSize(natural, host)
+
+    expect(displayedZoomPercent(restBox, natural, 1)).toBeCloseTo(100, 10)
+  })
+
+  it('scales linearly with scale', () => {
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+
+    expect(displayedZoomPercent(restBox, LANDSCAPE, 2)).toBeCloseTo(
+      displayedZoomPercent(restBox, LANDSCAPE, 1) * 2,
+      10,
+    )
+  })
+
+  it('returns 0 for an unmeasured image or host', () => {
+    expect(displayedZoomPercent({ width: 0, height: 0 }, LANDSCAPE, 1)).toBe(0)
+    expect(displayedZoomPercent(FITTED_FRAME, { width: 0, height: 0 }, 1)).toBe(0)
   })
 })
 
@@ -304,9 +401,9 @@ describe('resolveViewportFrameRect', () => {
   it('treats a non-finite centre as the middle rather than producing a NaN rectangle', () => {
     const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
 
-    expect(
-      resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(Number.NaN, 0.5, 2)),
-    ).toEqual(resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(0.5, 0.5, 2)))
+    expect(resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(Number.NaN, 0.5, 2))).toEqual(
+      resolveViewportFrameRect(restBox, FITTED_FRAME, viewport(0.5, 0.5, 2)),
+    )
   })
 })
 
@@ -412,7 +509,13 @@ describe('zoomViewportAt', () => {
     // centre must stay at 0.5 whatever the pointer asked for — the clamp is not allowed to lose to
     // the anchor, or the frame would show background above or below the image.
     const restBox = restBoxSize(LANDSCAPE, TALL_FRAME)
-    const zoomed = zoomViewportAt(restBox, TALL_FRAME, DEFAULT_VIEWPORT, { left: 700, top: 200 }, 1.5)
+    const zoomed = zoomViewportAt(
+      restBox,
+      TALL_FRAME,
+      DEFAULT_VIEWPORT,
+      { left: 700, top: 200 },
+      1.5,
+    )
 
     expect(zoomed.center.x).toBeCloseTo(0.625, 10)
     expect(zoomed.center.y).toBeCloseTo(0.5, 10)
@@ -433,7 +536,13 @@ describe('zoomViewportAt', () => {
 
   it('returns to the exact centre when zoomed back out to the fit point', () => {
     const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
-    const zoomedIn = zoomViewportAt(restBox, FITTED_FRAME, DEFAULT_VIEWPORT, { left: 120, top: 90 }, 5)
+    const zoomedIn = zoomViewportAt(
+      restBox,
+      FITTED_FRAME,
+      DEFAULT_VIEWPORT,
+      { left: 120, top: 90 },
+      5,
+    )
     const backOut = zoomViewportAt(restBox, FITTED_FRAME, zoomedIn, { left: 120, top: 90 }, 1)
 
     expect(backOut.scale).toBe(1)

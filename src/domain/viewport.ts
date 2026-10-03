@@ -151,13 +151,17 @@ function clampAxis(value: number, visible: number): number {
   return Math.min(Math.max(value, half), 1 - half)
 }
 
-/** Clamps a zoom factor to the inspector's range. */
-export function clampViewportScale(scale: number): number {
+/**
+ * Clamps a zoom factor to the inspector's range. `maxScale` defaults to the fixed
+ * `MAX_VIEWPORT_SCALE` ceiling, but a caller inspecting a large image passes `effectiveMaxScale`'s
+ * result instead, so the ceiling can rise past it (see that function's own comment for why).
+ */
+export function clampViewportScale(scale: number, maxScale: number = MAX_VIEWPORT_SCALE): number {
   if (!Number.isFinite(scale)) {
     return MIN_VIEWPORT_SCALE
   }
 
-  return Math.min(Math.max(scale, MIN_VIEWPORT_SCALE), MAX_VIEWPORT_SCALE)
+  return Math.min(Math.max(scale, MIN_VIEWPORT_SCALE), maxScale)
 }
 
 /**
@@ -172,12 +176,13 @@ export function clampViewportCenter(
   restBox: PixelSize,
   host: PixelSize,
   scale: number,
+  maxScale: number = MAX_VIEWPORT_SCALE,
 ): ViewportPoint {
   if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return { x: 0.5, y: 0.5 }
   }
 
-  const visible = visibleFraction(restBox, host, clampViewportScale(scale))
+  const visible = visibleFraction(restBox, host, clampViewportScale(scale, maxScale))
 
   return { x: clampAxis(center.x, visible.x), y: clampAxis(center.y, visible.y) }
 }
@@ -196,6 +201,59 @@ export function restBoxSize(natural: PixelSize, host: PixelSize): PixelSize {
   const scale = Math.min(1, fitScale(natural, host))
 
   return { width: natural.width * scale, height: natural.height * scale }
+}
+
+/**
+ * The scale at which the active tab's image renders at its true pixel size. `restBox` already
+ * encodes whatever fit-shrink was applied (never upscaled — see `restBoxSize`), so this is exactly
+ * the inverse of that shrink: 1 when the image already fit at its own size, >1 when it had to
+ * shrink to fit. Not clamped to `MAX_VIEWPORT_SCALE`: a photo shrunk hard to fit a small preview can
+ * need well past 8x just to reach its own true size, and "Actual size" has to be able to reach it —
+ * `effectiveMaxScale` is what keeps that reachable by manual zoom too.
+ */
+export function pixelPerfectScale(restBox: PixelSize, natural: PixelSize): number {
+  if (!isUsableSize(restBox) || !isUsableSize(natural)) {
+    return MIN_VIEWPORT_SCALE
+  }
+
+  return Math.max(MIN_VIEWPORT_SCALE, natural.width / restBox.width)
+}
+
+/**
+ * The inspector's zoom ceiling for one particular image: at least `MAX_VIEWPORT_SCALE`, but never
+ * less than twice `pixelPerfectScale` — so a large photo shrunk hard to fit a small preview can
+ * still be inspected at a true 200%+ by hand, rather than topping out below (or barely above) its
+ * own actual size. `MAX_VIEWPORT_SCALE` alone is a scale *relative to the rest box*, and the rest
+ * box can be shrunk by an arbitrary factor relative to the image's own pixels, so a fixed scale
+ * ceiling does not translate to a fixed "how far past true size can you zoom" guarantee across
+ * images — this does.
+ */
+export function effectiveMaxScale(restBox: PixelSize, natural: PixelSize): number {
+  if (!isUsableSize(restBox) || !isUsableSize(natural)) {
+    return MAX_VIEWPORT_SCALE
+  }
+
+  return Math.max(MAX_VIEWPORT_SCALE, pixelPerfectScale(restBox, natural) * 2)
+}
+
+/**
+ * How much of the image's true pixel size is currently on screen, for a zoom readout. Not simply
+ * `scale * 100`: at rest (`scale` 1) this is only 100 when the image already fit without shrinking —
+ * a large image shrunk to fit reads less than 100 at rest, which is the whole point of
+ * distinguishing "fit" from "actual size".
+ */
+export function displayedZoomPercent(
+  restBox: PixelSize,
+  natural: PixelSize,
+  scale: number,
+): number {
+  if (!isUsableSize(restBox) || !isUsableSize(natural)) {
+    return 0
+  }
+
+  const safeScale = Number.isFinite(scale) ? scale : MIN_VIEWPORT_SCALE
+
+  return ((safeScale * restBox.width) / natural.width) * 100
 }
 
 /**
@@ -228,17 +286,18 @@ export function resolveViewportFrameRect(
   restBox: PixelSize,
   host: PixelSize,
   viewport: InspectorViewport,
+  maxScale: number = MAX_VIEWPORT_SCALE,
 ): FrameRect | null {
   if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return null
   }
 
-  const scale = clampViewportScale(viewport.scale)
+  const scale = clampViewportScale(viewport.scale, maxScale)
   const box = resolveViewportBox(restBox, host, scale)
   // The one place the centred placement is computed, shared with Edit mode's own arithmetic.
   // `restBox` stands in for Edit's `source`: `restBox.width * scale` is the drawn width.
   const centred = imageRectInFrame(restBox, box, scale)
-  const center = clampViewportCenter(viewport.center, restBox, host, scale)
+  const center = clampViewportCenter(viewport.center, restBox, host, scale, maxScale)
   // At DEFAULT_VIEWPORT the clamp above forces (0.5, 0.5), both shifts are exactly 0, and this
   // returns `centred` unchanged: contain-fit, R-P6, by construction rather than by branch.
   const rect: FrameRect = {
@@ -281,9 +340,10 @@ export function zoomViewportAt(
   viewport: InspectorViewport,
   point: FramePoint,
   nextScale: number,
+  maxScale: number = MAX_VIEWPORT_SCALE,
 ): InspectorViewport {
-  const scale = clampViewportScale(nextScale)
-  const current = resolveViewportFrameRect(restBox, host, viewport)
+  const scale = clampViewportScale(nextScale, maxScale)
+  const current = resolveViewportFrameRect(restBox, host, viewport, maxScale)
 
   if (current === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
@@ -296,7 +356,7 @@ export function zoomViewportAt(
   // in the next box's own coordinate space before solving for the centre that keeps `fraction`
   // under it — otherwise every tick while the box is resizing drifts the content from the
   // cursor instead of keeping it pinned.
-  const currentBox = resolveViewportBox(restBox, host, clampViewportScale(viewport.scale))
+  const currentBox = resolveViewportBox(restBox, host, clampViewportScale(viewport.scale, maxScale))
   const nextBox = resolveViewportBox(restBox, host, scale)
   const adjustedPoint: FramePoint = {
     left: point.left + (nextBox.width - currentBox.width) / 2,
@@ -312,7 +372,7 @@ export function zoomViewportAt(
     y: fraction.y + (nextBox.height / 2 - adjustedPoint.top) / nextHeight,
   }
 
-  return { center: clampViewportCenter(center, restBox, host, scale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale, maxScale), scale }
 }
 
 /** Pans by a frame-pixel delta, so the content tracks the pointer 1:1 (docs/ui-design.md §15). */
@@ -321,9 +381,10 @@ export function panViewport(
   host: PixelSize,
   viewport: InspectorViewport,
   delta: FramePoint,
+  maxScale: number = MAX_VIEWPORT_SCALE,
 ): InspectorViewport {
-  const scale = clampViewportScale(viewport.scale)
-  const rect = resolveViewportFrameRect(restBox, host, viewport)
+  const scale = clampViewportScale(viewport.scale, maxScale)
+  const rect = resolveViewportFrameRect(restBox, host, viewport, maxScale)
 
   if (rect === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
@@ -331,13 +392,13 @@ export function panViewport(
 
   // From the *clamped* centre, which is the one on screen — otherwise a drag that ran into an edge
   // would have to be dragged back out of an offset the user never saw.
-  const base = clampViewportCenter(viewport.center, restBox, host, scale)
+  const base = clampViewportCenter(viewport.center, restBox, host, scale, maxScale)
   const center = {
     x: base.x - delta.left / rect.width,
     y: base.y - delta.top / rect.height,
   }
 
-  return { center: clampViewportCenter(center, restBox, host, scale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale, maxScale), scale }
 }
 
 /**

@@ -399,6 +399,21 @@
     "control": "Note text centred in the stage frame, in place of the image. Not interactive.",
     "maxLength": 140
   },
+  "preview.frame.zoomFit": {
+    "situation": "Zoom toolbar button, in the row beside the Original/Compressed size-comparison pill (not over the image — an overlay was tried and looked bad). Returns the active tab's image to its contain-fit rest state (never upscaled past the image's own pixel size). Disabled when the view is already at rest.",
+    "control": "Small button inside the zoom toolbar row, beside the 'Actual size' button and the zoom readout.",
+    "maxLength": 10
+  },
+  "preview.frame.zoomActualSize": {
+    "situation": "Zoom toolbar button, in the row beside the Original/Compressed size-comparison pill. Sets the zoom to the active tab's true pixel-for-pixel size. Zoom is shared between the Original and Compressed tabs, so after using this on one tab, switching to the other shows the equivalent pixel-for-pixel magnification rather than resetting — comparing the two always means comparing true pixels on both sides, not 100% of each image's own raw size independently. Disabled when already at that exact scale.",
+    "control": "Small button inside the zoom toolbar row, beside the 'Fit' button and the zoom readout.",
+    "maxLength": 10
+  },
+  "preview.frame.zoomPercent": {
+    "situation": "The zoom toolbar's live readout, e.g. '85%', in the row beside the Original/Compressed size-comparison pill. {percent} is the rounded percentage of the active tab's true pixel size currently shown on screen — at rest this is below 100 whenever the image had to shrink to fit the frame.",
+    "control": "Small monospace text between the 'Fit' and 'Actual size' buttons. Display only, not interactive.",
+    "maxLength": 8
+  },
   "preview.error.decode": {
     "situation": "Inline error in the Preview frame when decoding the image fails (Functional Design §10, \"Corrupt or undecodable file\"). Shown with a retry action beside it. Names the file and says what is wrong rather than \"something went wrong\" (R-E1).",
     "control": "Error text inside the stage frame, above a retry button.",
@@ -490,12 +505,12 @@
     "maxLength": 120
   },
   "preview.toolbar.back": {
-    "situation": "Preview toolbar action returning to the Gallery with the batch and settings intact (Functional Design §3.1's transition table, docs/ui-design.md §11).",
+    "situation": "Preview toolbar action returning to the Gallery with the batch and settings intact (Functional Design §3.1's transition table, docs/ui-design.md §11). Prefixed with a literal \"‹\" as a back-navigation glyph, matching the stepper's own chevron style, so the label stays short.",
     "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
     "maxLength": 20
   },
   "preview.toolbar.addMore": {
-    "situation": "Preview toolbar action opening the file picker from inside Preview (R-M3). If the batch then holds more than one image the app returns to the Gallery (R-M2), so this action can take the user off this screen.",
+    "situation": "Preview toolbar action opening the file picker from inside Preview (R-M3). If the batch then holds more than one image the app returns to the Gallery (R-M2), so this action can take the user off this screen. Prefixed with a literal \"+\" so the label stays short.",
     "control": "Button with visible text, so it needs no separate accessible name (R-K10).",
     "maxLength": 20
   },
