@@ -659,7 +659,7 @@ Rules implemented here: sizes human-readable to two decimals using 1024-byte uni
 
 ### 9.4 Naming
 
-`domain/naming.ts`, pure. Under "Don't change" the original extension is reproduced byte for byte including case (R-X43). When the format changes, the canonical extension is used (R-X44). Collisions are resolved per directory, not globally (R-X22), so a folder tree never produces spurious renames.
+`domain/naming.ts`, pure. When the resolved format equals the source format — under "Don't change" or an explicit same-format pick — the original extension is reproduced byte for byte including case (R-X43). When the resolved format differs from the source format, the canonical extension is used (R-X44). Collisions are resolved per directory, not globally (R-X22), so a folder tree never produces spurious renames.
 
 ---
 

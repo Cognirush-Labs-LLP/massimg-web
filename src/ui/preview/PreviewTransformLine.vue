@@ -24,8 +24,8 @@ const FORMAT_DISPLAY_NAME: Record<EncodableFormat, string> = {
 // replaced by just their extensions (`jpg 1200×1799 → ...`) so a long filename doesn't push the
 // line onto a second row. The extension is read straight off `sourceName`/`outputName` — the same
 // strings the full desktop line already uses — exactly as they're cased there, with no attempt to
-// normalise `.JPG` vs `.jpg`: that's a naming.ts question, deliberately left open (see the handover
-// note for this change) rather than decided here.
+// normalise `.JPG` vs `.jpg`: naming.ts preserves that casing whenever `sourceFormat ===
+// resolvedFormat` (R-X43), so this view inherits the correct extension automatically.
 const { isDesktop } = useBreakpoint()
 
 function extensionOf(name: string): string {

@@ -26,10 +26,9 @@ describe('output naming', () => {
     ).toEqual(['photo.JPG', 'image.jpeg', 'graphic.PnG'])
   })
 
-  it('uses the canonical extension for every selected output format', () => {
+  it('uses the canonical extension for a genuine format conversion', () => {
     expect(
       resolveOutputNames([
-        input({ name: 'photo.JPEG', formatSetting: 'jpeg' }),
         input({ name: 'graphic.JPEG', formatSetting: 'png', resolvedFormat: 'png' }),
         input({ name: 'photo.JPEG', formatSetting: 'webp', resolvedFormat: 'webp' }),
         input({
@@ -40,8 +39,106 @@ describe('output naming', () => {
         }),
         input({ name: 'animation.JPEG', formatSetting: 'gif', resolvedFormat: 'gif' }),
       ]),
-    ).toEqual(['photo.jpg', 'graphic.png', 'photo.webp', 'animation.avif', 'animation.gif'])
+    ).toEqual(['graphic.png', 'photo.webp', 'animation.avif', 'animation.gif'])
   })
+
+  it('preserves the original extension when an explicit selection names the same format as the source', () => {
+    expect(resolveOutputNames([input({ name: 'photo.JPEG', formatSetting: 'jpeg' })])).toEqual([
+      'photo.JPEG',
+    ])
+  })
+
+  interface ExtensionCase {
+    sourceName: string
+    formatSetting: NamingInput['formatSetting']
+    sourceFormat: NamingInput['sourceFormat']
+    resolvedFormat: NamingInput['resolvedFormat']
+    expectedName: string
+  }
+
+  const EXTENSION_CASES = [
+    {
+      sourceName: 'photo.JPG',
+      formatSetting: 'dont-change',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'photo.JPG',
+    },
+    {
+      sourceName: 'photo.JPG',
+      formatSetting: 'jpeg',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'photo.JPG',
+    },
+    {
+      sourceName: 'photo.jpeg',
+      formatSetting: 'dont-change',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'photo.jpeg',
+    },
+    {
+      sourceName: 'photo.jpeg',
+      formatSetting: 'jpeg',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'photo.jpeg',
+    },
+    {
+      sourceName: 'photo.PNG',
+      formatSetting: 'dont-change',
+      sourceFormat: 'png',
+      resolvedFormat: 'png',
+      expectedName: 'photo.PNG',
+    },
+    {
+      sourceName: 'photo.PNG',
+      formatSetting: 'png',
+      sourceFormat: 'png',
+      resolvedFormat: 'png',
+      expectedName: 'photo.PNG',
+    },
+    {
+      sourceName: 'photo.JPEG',
+      formatSetting: 'webp',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'webp',
+      expectedName: 'photo.webp',
+    },
+    {
+      sourceName: 'camera_raw_file',
+      formatSetting: 'dont-change',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'camera_raw_file',
+    },
+    {
+      sourceName: 'camera_raw_file',
+      formatSetting: 'jpeg',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'jpeg',
+      expectedName: 'camera_raw_file',
+    },
+    {
+      sourceName: 'camera_raw_file',
+      formatSetting: 'png',
+      sourceFormat: 'jpeg',
+      resolvedFormat: 'png',
+      expectedName: 'camera_raw_file.png',
+    },
+  ] as const satisfies readonly ExtensionCase[]
+
+  it.each(EXTENSION_CASES)(
+    '$sourceName under $formatSetting ($sourceFormat -> $resolvedFormat) resolves to $expectedName',
+    ({ sourceName, formatSetting, sourceFormat, resolvedFormat, expectedName }) => {
+      expect(
+        resolveOutputNames([
+          input({ name: sourceName, formatSetting, sourceFormat, resolvedFormat }),
+        ]),
+      ).toEqual([expectedName])
+    },
+  )
 
   it("uses the resolved canonical extension for a Don't change fallback or substitution", () => {
     expect(

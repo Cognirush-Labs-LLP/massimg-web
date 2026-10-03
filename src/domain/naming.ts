@@ -51,8 +51,7 @@ function splitName(fileName: string): NameParts {
 }
 
 function outputExtension(input: NamingInput, originalExtension: string): string {
-  const keepsInputFormat =
-    input.formatSetting === 'dont-change' && input.sourceFormat === input.resolvedFormat
+  const keepsInputFormat = input.sourceFormat === input.resolvedFormat
 
   return keepsInputFormat ? originalExtension : CANONICAL_EXTENSIONS[input.resolvedFormat]
 }

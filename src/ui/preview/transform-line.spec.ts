@@ -77,11 +77,18 @@ describe('describeTransformLine', () => {
     ).toBe('image.jpeg')
   })
 
-  it('uses the canonical extension when the format does change (R-X44)', () => {
+  it('preserves the original extension when an explicit selection names the same format as the source (R-X43)', () => {
     expect(
-      described(describeTransformLine(image({ name: 'photo.jpeg' }), batch({ format: 'jpeg' })))
+      described(describeTransformLine(image({ name: 'photo.JPEG' }), batch({ format: 'jpeg' })))
         .outputName,
-    ).toBe('photo.jpg')
+    ).toBe('photo.JPEG')
+  })
+
+  it('uses the canonical extension for a genuine format conversion (R-X44)', () => {
+    expect(
+      described(describeTransformLine(image({ name: 'photo.jpeg' }), batch({ format: 'png' })))
+        .outputName,
+    ).toBe('photo.png')
   })
 
   it('shows the real output extension when "Don\'t change" cannot be honoured (R-F2)', () => {

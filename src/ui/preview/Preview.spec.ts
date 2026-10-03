@@ -230,6 +230,17 @@ describe('Preview', () => {
     )
   })
 
+  it('keeps the cased extension on the compact line when the explicit format selection matches the source', async () => {
+    matches = false
+    seed(['a'], 'a', { name: 'camera_raw_file.JPG', sourceFormat: 'jpeg' })
+    useSettingsStore().format = 'jpeg'
+    const wrapper = await mountPreview()
+
+    expect(wrapper.get('[data-testid="preview-transform-line"]').text()).toBe(
+      'JPG 4000×3000 → JPG 4000×3000',
+    )
+  })
+
   it('drops the extension word (not the dimensions) on the compact line for a name with none', async () => {
     matches = false
     seed(['a'], 'a', { name: 'camera_raw_file' })

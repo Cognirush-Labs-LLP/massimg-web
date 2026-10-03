@@ -682,8 +682,9 @@ settings for this specific image:
 abc.jpeg  1000×1000  →  abc.webp  500×500
 ```
 
-Under "Don't change," the output extension matches the input extension exactly
-(including case, per R-X43).
+Whenever the resolved format matches the source format — under "Don't change" or an
+explicit pick of the same format — the output extension matches the input extension
+exactly (including case, per R-X43).
 
 ### Hard size ceiling and recovery
 
