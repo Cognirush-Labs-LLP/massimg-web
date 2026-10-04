@@ -1,6 +1,6 @@
 # Mass Image Compressor Web: Functional Design
 
-Scope: responsive web app (mobile-first) for batch image compression, resizing, format conversion, rotation and single-image cropping. Accepts individual files or whole folders. All processing happens in the browser. No account, no upload.
+Scope: responsive web app (mobile-first) for batch image compression, resizing, format conversion, rotation and single-image cropping. Accepts individual files or whole folders. All processing happens in the browser. No account and no server-side upload; an explicit Share action may hand completed outputs to a system target selected by the user.
 
 Requirement IDs are stable and referenced by the Technical Design and Tasks documents. Do not renumber them.
 
@@ -8,12 +8,12 @@ Requirement IDs are stable and referenced by the Technical Design and Tasks docu
 
 ## 1. Product summary
 
-A single-screen tool. The user brings images in, sets one compression target, one dimension rule and one output format, runs the batch, and downloads the result: a single file for one image, a ZIP for many. A large staging area doubles as gallery, result preview, edit workspace and progress view, so the user never leaves the screen.
+A single-screen tool. The user brings images in, sets one compression target, one dimension rule and one output format, runs the batch, and then downloads the result: a single file for one image, a ZIP for many. On a supported platform, a run that started with no more than ten accepted images may instead share its successful images through the system share sheet. A large staging area doubles as gallery, result preview, edit workspace and progress view, so the user never leaves the screen.
 
 ### 1.1 Goals
 
 - Compress a batch in three decisions or fewer: target, size, format.
-- Make the result verifiable before download, by showing the actual compressed image and its actual size.
+- Make the result verifiable before delivery, by showing the actual compressed image and its actual size.
 - Support the manual operations that batch settings cannot express: rotation and cropping of a single image.
 - Work on a phone without hiding the primary action.
 - Keep peak memory low enough that mobile Safari does not kill the tab.
@@ -115,7 +115,7 @@ Four modes: Gallery, Preview, Edit, Processing. Exactly one is active.
   the outgoing mode (see §9). The bounded, batch-scoped thumbnail cache in R-G3 may remain so returning
   to Gallery does not reread large source files; R-G12 still stops all thumbnail generation outside
   Gallery.
-- R-M5 Leaving Processing with undownloaded results is governed by R-X18.
+- R-M5 Leaving Processing with undelivered results is governed by R-X18.
 - R-M6 The physical browser back button is integrated with this mode state machine: one synthetic
   history entry is pushed per nested stage mode (Preview, Edit, Processing), plus one base guard
   entry for Gallery pushed once at app start — Gallery is the app's only route (R-S1) and otherwise
@@ -293,7 +293,7 @@ Target selector, segmented, two options.
 - Numeric text box plus a `KB` and `MB` unit toggle.
 - The encoder targets that file size per image, not for the batch total.
 - R-Q2 If an image is already smaller than the size target, it is not re-encoded up to the target. Non-PNG files are passed through unchanged. A PNG or animated PNG is still run through the lossless PNG optimiser, and the smaller of that result and the original is kept. The same rule applies when "Don't change" resolves to PNG. The tool never increases file size to meet a target.
-- R-Q3 A size target is a hard per-image ceiling: every downloadable size-targeted output is no larger than the requested bytes. If the ceiling cannot be reached at the requested format and dimensions, the pipeline returns a typed `size-target-unreachable` outcome containing the target, effective format, requested output dimensions and smallest achieved size. Preview replaces the image frame with the warning rather than displaying the oversized attempt; Processing skips the image, and no oversized bytes enter the UI, a direct download or a ZIP. This constraint outcome is not an encode failure and is not a success caveat.
+- R-Q3 A size target is a hard per-image ceiling: every downloadable or shareable size-targeted output is no larger than the requested bytes. If the ceiling cannot be reached at the requested format and dimensions, the pipeline returns a typed `size-target-unreachable` outcome containing the target, effective format, requested output dimensions and smallest achieved size. Preview replaces the image frame with the warning rather than displaying the oversized attempt; Processing skips the image, and no oversized bytes enter the UI, a direct download, a ZIP or a share payload. This constraint outcome is not an encode failure and is not a success caveat.
 - For exactly one still image, Preview shows the R-Q3 warning immediately and then checks verified recovery alternatives in order. A still PNG source whose effective output is PNG is first tested as JPEG and offered only if it fits; if real transparency was flattened, the action names the fill color (opaque white outside Edit by default). The current format is then searched at smaller dimensions and the largest measured fitting dimensions that fit at quality 30 or better, followed by the highest fitting quality at those dimensions, are offered. Once that fit exists, Preview also offers the next lower standard controlled edge from the ladder `[240, 360, 480, 640, 720, 800, 1024, 1080, 1280, 1440, 1600, 1920, 2048, 2160, 2560, 2880, 3200, 3840, 4096]` without another recovery probe; its action states no byte size, and the ordinary hard-ceiling Preview encode verifies it after selection. No alternative is applied without a click.
 - Multi-image batches and animations receive no automatic recovery search. The warning explains that the size setting applies to the whole batch, or that repeated multi-frame searches are too expensive. If no single-image alternative is verified, Preview says so without disabled or speculative actions.
 - Leaving Preview cancels queued recovery jobs and prevents a completed step from dispatching the next one. A codec call already executing in WASM may finish, but its result is discarded; returning to Preview resumes the same worker pool without accumulating an unbounded recovery queue.
@@ -359,8 +359,8 @@ APNG is not a separate entry. An animated source written as PNG produces an anim
 - R-A1 The button is visible at all times. On mobile it sits in a fixed bottom bar outside the drawer, so opening or hiding Options never hides it. On desktop it is pinned to the panel footer.
 - R-A2 No aggregate output size is claimed before compression runs.
 - R-A3 The button is disabled when the batch is empty.
-- R-A4 Pressing it enters Processing mode (§6). It does not download anything directly. Download is an explicit action in the Processing view.
-- A known single-image R-Q3 miss does not disable Compress. Running it produces the same authoritative skip and a zero-output completion, which explains why no Download action exists.
+- R-A4 Pressing it enters Processing mode (§6). It does not deliver anything directly. Download and any available Share action are explicit in the Processing view.
+- A known single-image R-Q3 miss does not disable Compress. Running it produces the same authoritative skip and a zero-output completion, which explains why no delivery action exists.
 
 ### 4.5 Architectural note on editing
 
@@ -424,6 +424,8 @@ A folder can be selected through a picker or dropped onto the stage. The folder 
 
 **Consequence for naming.** Collision handling (R-X22) is scoped per directory. `a/photo.jpg` and `b/photo.jpg` do not collide and are never renamed.
 
+That directory-scoped rule applies to the ZIP. A share payload has no directory structure, so R-X53 defines a separate, global collision rule for the flattened shared file names.
+
 **Consequence for the Gallery.** Filename alone stops identifying an image once the batch spans a tree, so the list view shows relative paths and becomes the default for folder input (R-G8, R-G11).
 
 ### 5.4 Orientation
@@ -448,7 +450,7 @@ A folder can be selected through a picker or dropped onto the stage. The folder 
 
 ### 5.7 Limits
 
-Limits are enforced at selection time, before any processing.
+Selection limits are enforced before processing. Delivery limits are enforced at the earliest point at which the completed output facts they depend on exist.
 
 | Limit | Value | Behaviour on breach |
 | --- | --- | --- |
@@ -458,7 +460,9 @@ Limits are enforced at selection time, before any processing.
 | Animated frame count | to be set in Technical Design | File rejected |
 | Animated total pixels | to be set in Technical Design | File rejected |
 | Folder traversal depth | to be set in Technical Design | Selection rejected, depth stated |
-| Available storage quota | from `navigator.storage.estimate()` | Batch rejected before the run, §6.7 |
+| Available storage quota | from `navigator.storage.estimate()` | Reject if Download cannot fit; otherwise disable only Share when its extra copies cannot fit, §6.7 |
+| Files eligible for Share | 10 accepted images at run start | Share output is not retained or offered; Download is unchanged |
+| Total Share output bytes | to be set by T39-A and confirmed by T50 | Share is omitted after the run; Download remains available |
 
 - R-I19 Limits are lower on memory-constrained browsers where this can be detected. The tool prefers rejecting a file up front to having the tab killed mid-batch.
 - R-I20 Every limit message names the actual value and the cap, so the user can see how far over they are.
@@ -499,19 +503,25 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 - R-X13 If every image failed, no output is produced and the failure list is the whole result.
 - An accepted image with a `size-target-unreachable` result is counted and listed as **Skipped**, separately from technical failures. Its reason includes the target, smallest achieved size, effective format and requested dimensions. It contributes no output bytes or savings and is absent from output assembly.
 - Starting a run clears previous `FAILED` and `SKIPPED` image states. Its completed statuses persist when returning to Gallery until another run starts; settings changes alone do not rewrite the prior run result. A Preview-time miss is local and does not set `SKIPPED`.
-- If there are no successes, no output and no Download action are produced. Processing lists all skipped and failed images with their reasons; this includes a known single-image miss when the user presses Compress.
+- If there are no successes, no output, Download or Share action is produced. Processing lists all skipped and failed images with their reasons; this includes a known single-image miss when the user presses Compress.
 
 ### 6.4 On completion
 
-- R-X14 The view shows final succeeded/skipped/failed counts, the total size reduction from successes, the skipped and failure lists if any, and **Back to images**. **Download** is also shown when at least one output succeeded.
-- R-X15 **Download** is explicit. The run never downloads automatically, because an automatic download can trigger a browser warning and gives the user no clear moment at which the file arrived.
+- R-X14 The view shows final succeeded/skipped/failed counts, the total size reduction from successes, the skipped and failure lists if any, and **Back to images**. **Download** is also shown when at least one output succeeded. **Share** appears beside it only under R-X47 and R-X48.
+- R-X15 **Download** and **Share** are explicit. The run never delivers automatically, because an automatic download can trigger a browser warning, Web Share requires a fresh user activation, and the user needs a clear moment at which the result leaves the app.
 - R-X17 **Back to images** returns to Gallery with the batch, settings and edits intact, so the user can adjust and run again.
 
-### 6.5 What gets downloaded
+- R-X47 A run is eligible to retain share output only when it starts with between one and ten accepted images and the platform passes the preliminary file-sharing capability probe. Eligibility is fixed at run start: a run starting with eleven images remains Download-only even if failures or skips leave ten or fewer successes.
+- R-X48 At completion, **Share** is shown only when there is at least one success, the successful outputs do not exceed the measured total-byte safety limit, and `navigator.canShare({ files })` accepts the exact completed `File[]`. Failure of any of these checks removes the individual share copies and leaves **Download** unchanged.
+
+### 6.5 What gets delivered
 
 - R-X16 A single successful image downloads as that image, with its output extension. No ZIP, no report. Requiring the user to unzip a single file is a cost with no benefit, and the screen already showed them what happened.
 - R-X30 Two or more successful images download as a single ZIP containing the images and one `image_compression_report.txt`.
 - R-X31 The report lives inside the ZIP, not alongside it, so it travels with the images.
+- R-X49 Share passes every successful output as an individual image in one `navigator.share({ files })` call, in grid order. Failed and skipped images, the ZIP and `image_compression_report.txt` are never included. One success shares the same direct output that Download uses.
+- R-X50 Download and Share are alternative delivery actions. Resolution of `navigator.share()` means the browser has handed the payload to the chosen target or operating system and counts as successful delivery; the app cannot know whether the target later used it. User cancellation is not an error. Cancellation or any handoff failure retains the results and both available actions; a non-cancellation failure is stated inline and Share can be retried.
+- R-X54 After the first successful delivery, the completed Processing view remains open with its summary and skipped/failure lists. Download and Share are replaced by a checked, non-interactive completion state that identifies the outcome as **Download started** or **Shared**; **Back to images** becomes the remaining primary action. The app returns to Gallery only when the user selects that action or uses browser Back, and does not show the undelivered-results confirmation because delivery is complete.
 
 ### 6.6 The report
 
@@ -540,17 +550,19 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 
 ### 6.7 Output assembly and storage
 
-The archive is streamed to browser-owned storage as the run proceeds, rather than accumulated in memory and assembled at the end.
+The archive is streamed to browser-owned storage as the run proceeds, rather than accumulated in memory and assembled at the end. A share-eligible run additionally retains its individual outputs, but large and unsupported runs remain on the archive-only path.
 
-- R-X38 Each encoded image is appended to a ZIP being written into the Origin Private File System as the run progresses. Memory holds one entry at a time, not the archive.
+- R-X38 Each encoded image in a run that can produce multi-image delivery is appended to a ZIP being written into the Origin Private File System as the run progresses. Memory holds one entry at a time, not the archive. The first success is also the temporary direct-output candidate required if every other image fails or is skipped; it is released once a second success makes ZIP delivery certain unless R-X51 still needs it for Share.
 - R-X39 Compression therefore begins when the user presses the primary action and does not wait for the Download press. Download moves the finished archive out of storage.
-- R-X40 Before a run, the app checks available quota against the predicted archive size and rejects the batch up front if it will not fit, naming both figures.
+- R-X40 Before a run, the app checks available quota against the predicted stored artifacts. If the ordinary Download artifact will not fit, it rejects the batch up front and names both figures. If Download will fit but the additional Share copies will not, the run proceeds as Download-only under R-X52.
 - R-X41 Where origin-private storage is unavailable, most notably in private browsing windows, the app falls back to in-memory assembly with a reduced batch cap, and says so when the cap is what blocks a batch.
-- R-X42 The stored archive is deleted after download, after the user leaves the Processing view, and on application start, so abandoned runs do not accumulate.
+- R-X42 The stored archive and every individual output copy are deleted after the first successful Download or Share, after cancellation, after the user leaves the Processing view, after a storage failure, and on application start, so abandoned runs do not accumulate.
+- R-X51 For a run eligible under R-X47, each successful output is both appended to the normal ZIP path and written as a separate temporary file as it arrives. An exactly one-image run writes only its direct artifact because it can never need a ZIP. The extra write is a tee of the one encoded result, not a second encode, and it does not retain the batch in memory. A single successful output is one shared direct artifact rather than two copies of the same image.
+- R-X52 The quota preflight for a share-eligible run includes the archive, every predicted individual output copy and filesystem overhead. The private-browsing fallback applies its measured in-memory cap to the combined artifacts. When the archive fits but the combined artifacts do not, the run becomes Download-only before processing; Share storage limits never weaken the ordinary Download path.
 
-### 6.8 Leaving with undownloaded results
+### 6.8 Leaving with undelivered results
 
-- R-X18 Navigating away from a finished run without downloading raises a confirmation. It states that the results will be discarded and offers three actions: **Download and leave**, **Leave without downloading**, and **Stay**.
+- R-X18 Navigating away from a finished run before either delivery action succeeds raises a confirmation. It states that the results will be discarded and offers exactly three actions: **Download and leave**, **Leave without downloading**, and **Stay**. Share is not added to this dialog; Download remains the universal recovery action.
 - R-X19 **Cancel** during a run does not raise this confirmation. There are no complete results to lose.
 - R-X20 Cancelling stops after the image in flight, discards all partial results, and returns to Gallery with settings and edits intact.
 
@@ -560,10 +572,11 @@ The archive is streamed to browser-owned storage as the run proceeds, rather tha
 - R-X43 When the resolved output format equals the image's detected source format — whether because the setting is "Don't change" or because the user explicitly picked that same format — the original extension is reproduced byte for byte, including its case and its spelling. `photo.JPG` stays `photo.JPG`. `image.jpeg` does not become `image.jpg`, even if the user explicitly selects JPEG. Normalising an extension that names no real conversion is an unrequested change (P1).
 - R-X44 When the resolved output format differs from the source format — a genuine conversion, a "Don't change" fallback (R-F2), or an animated substitution (R-F6) — the canonical extension for the resolved format is used: `.jpg`, `.png`, `.webp`, `.avif`, `.gif`.
 - R-X22 When two outputs would collide within the same directory of the ZIP, later entries get a numeric suffix: `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`. Collisions are possible even without duplicate input names, because format conversion can map two different inputs onto one output name. Files in different directories never collide.
+- R-X53 Shared files have no directory tree. Their output basenames are therefore flattened into one namespace and collisions are resolved globally in grid order: `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`. ZIP naming remains directory-scoped under R-X22.
 - R-X23 The ZIP file name includes a timestamp so repeated runs do not overwrite each other in the downloads folder.
 - R-X24 When the best encoded output of an image is not smaller than its input, the effective format is unchanged, no rotation or crop applies, and the resolved dimension rule leaves the decoded upright dimensions unchanged, the source-side candidate is written instead. This includes no-op **Fit within**, fixed-width and fixed-height rules, not only **Original size**. An exact byte-size tie keeps the source candidate. For PNG/APNG, the source candidate first receives the same lossless PNG optimisation as every other PNG output and competes directly with the encoded candidate; it is reported as `Original kept` only when the byte-for-byte source wins. Preview renders and measures the selected bytes, and a run records the outcome (P5).
 - R-X45 The substitution in R-X24 does not happen when the user asked for a change that the original does not satisfy. A request that actually resizes the image, any rotation or crop, or a format conversion is honoured even if its output is larger in bytes. A larger same-format transformed output is recorded in the report as a warning; a format conversion needs no warning because the user explicitly requested it.
-- R-X25 Results are retained only until download or until the user leaves the Processing view. They are not carried back to Gallery.
+- R-X25 Results are retained only until the first successful Download or Share, or until the user leaves the Processing view. They are not carried back to Gallery.
 
 ## 7. Encoder behaviour
 
@@ -607,10 +620,11 @@ Verified against ImageMagick 7.1.2-30 Q8 wasm32 (`@imagemagick/magick-wasm` 0.0.
 
 The tool processes everything locally. This is the main differentiator against server-side competitors and it is invisible unless stated.
 
-- R-V1 A short persistent line states that images never leave the device. It appears in the empty state and remains reachable once images are loaded.
-- R-V2 The claim must remain literally true. No image bytes, file names, dimensions or sizes are sent anywhere, including to analytics.
+- R-V1 A short persistent line states that image processing happens on the device and that results leave only when the user explicitly shares them. It appears in the empty state and remains reachable once images are loaded.
+- R-V2 The claim must remain literally true. The app sends no image bytes, file names, dimensions or sizes over the network, including to analytics. An explicit Share action is a user-directed handoff to the operating system and chosen target under R-V5, not an app upload.
 - R-V3 If analytics are added, they are limited to anonymous aggregate events, and the privacy line is revised to say exactly what is collected.
 - R-V4 The interface carries a visible link to the application's own source code, and a credits page listing every bundled component with its licence and a link to its source. Both are requirements of the project's licence, not optional courtesies.
+- R-V5 Share transfers only the completed output files named in R-X49, only after the user presses **Share** and chooses a system target. The app cannot inspect which targets are installed or which one the user selects, and it does not send a parallel copy anywhere.
 
 ---
 
@@ -625,7 +639,7 @@ Two kinds of data are distinguished:
 
 **Requirements**
 
-- R-B1 No encoded results are retained beyond the moment they are used. Previews are discarded on leaving Preview or on any settings change. Run outputs are held only as described in R-X25.
+- R-B1 No encoded results are retained beyond the moment they are used. Previews are discarded on leaving Preview or on any settings change. Run outputs are held only as the OPFS-backed delivery artifacts described in R-X25, R-X38 and R-X51; no reactive store or in-memory collection retains the batch.
 - R-B2 Full-resolution decoded pixels are held for the minimum time necessary and released immediately after use. The number of images decoded at full resolution at any one time is bounded and small.
 - R-B3 The batch-scoped Gallery cache retains no more than the runtime-configured thumbnail limit of
   bounded, encoded thumbnail Blobs, plus file handles and metadata. It never retains full-resolution
@@ -656,13 +670,17 @@ Every condition below has a defined surface and message. No condition may fail s
 | Out of memory | Any | Run halts, partial results discarded, message recommends fewer or smaller images, and mentions the desktop application |
 | ZIP assembly failure | Packaging | Error shown, no partial ZIP delivered |
 | Download blocked by browser | Download | Message explaining the browser blocked it, with a retry |
+| Exact file payload cannot be shared | Completion | Share omitted, individual copies deleted, Download remains available |
+| User cancels the system share sheet | Share | No error; results and both available actions remain |
+| Share handoff fails | Share | Inline error with retry; results and Download remain available |
 | Animated AVIF input | Selection | Rejection list, reason named per R-F8 |
 | Selected folder contains no supported images | Selection | Stated plainly, batch not created |
 | Folder depth or file count exceeded | Selection | Rejection with actual figure and cap |
 | Storage quota insufficient for predicted archive | Before run | Batch rejected, both figures named |
+| Storage quota insufficient only for individual Share copies | Before run | Share path disabled for the run; Download proceeds unchanged |
 | Origin-private storage unavailable | Startup | Reduced cap applied silently; stated only when a batch is blocked by it |
-| Storage write failure mid-run | Run | Run halts, stored archive deleted, message states no partial file was kept |
-| Every image in a run failed or was skipped | End of run | No output or Download action; failures and skips listed with reasons |
+| Storage write failure mid-run | Run | Run halts, all stored artifacts deleted, message states no partial file was kept |
+| Every image in a run failed or was skipped | End of run | No output, Download or Share action; failures and skips listed with reasons |
 
 **Requirements**
 
@@ -834,7 +852,7 @@ Recorded so they are not relitigated.
 
 | Decision | Rationale |
 | --- | --- |
-| No retention of encoded results | Memory over speed. Accepted cost: repeated encoding. |
+| No retention of encoded results outside delivery artifacts | Memory over speed. Preview work is repeated; completed run bytes live only in bounded OPFS/in-memory delivery storage until the first delivery or exit. |
 | Preview performs a real encode | A projected size is a guess; the tool shows measured facts. |
 | "Don't change" is the default format | Most users want smaller files, not different files. |
 | Crop overrides the dimension rule; rotation does not | Crop states an explicit output size. Rotation does not. |
@@ -848,7 +866,12 @@ Recorded so they are not relitigated.
 | EXIF orientation baked, tag not copied | Copying it after applying it causes double rotation. |
 | ICC profile preserved, not converted | Converting to sRGB loses gamut the source carried. |
 | Other metadata stripped by default | Size and privacy, including GPS. |
-| Download is explicit | Automatic download triggers browser warnings and gives no clear arrival moment. |
+| Delivery is explicit | Automatic download triggers browser warnings, Share requires a fresh activation, and both need a clear handoff moment. |
+| Share only for runs starting with 1–10 accepted images | It serves the common small mobile batch without adding individual-file storage or writes to large desktop runs. |
+| Share sends individual images, never the ZIP or report | Image-oriented system targets can consume the files directly; Download remains the archival path with structure and report. |
+| Eligible runs keep ZIP and individual output artifacts | Both completion actions are immediate while the ten-file ceiling bounds the duplicated storage; quota and a measured byte cap remain mandatory. |
+| Download and Share are alternative deliveries | The first successful handoff fulfils the run and releases every temporary artifact, preserving the existing short-lived result lifecycle. |
+| Shared folder outputs use globally unique flattened names | System share payloads carry files, not the ZIP's directory tree; deterministic suffixes prevent silent collisions. |
 | Quality above 95 means lossless | A simple rule the user can predict. |
 | APNG output offered despite animated WebP being smaller | The encoder exists and the format has its uses. |
 | Single image: no ZIP and no report | Unzipping one file is a cost with no benefit. The screen already showed the outcome. |
@@ -900,3 +923,4 @@ Functional behaviour above is settled. These are implementation questions that m
 21. PNG quality rescale: confirming the 70 floor in R-Q11 against real images. The test is whether the floor is high enough that no PNG output shows banding at the lowest reachable setting.
 22. Locale file format, the parallel context file format, and how both are kept in sync with the code.
 23. Animated AVIF input detection, so R-F8 rejects it at selection rather than discovering it at decode.
+24. Web Share capability detection, multi-file and OPFS-backed `File` handoff, bounded-memory limits, flattened naming and cleanup for R-X47 to R-X53.

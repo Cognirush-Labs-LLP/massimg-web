@@ -75,6 +75,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | E1 | Streaming ZIP holds bounded memory | 76 | OPEN | P2 |
 | E2 | `predictLength` is exact | 100 | TESTED | P3 |
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
+| E4 | Multi-file Web Share safely hands off OPFS-backed outputs | 60 | OPEN | P1 |
 | F1 | vite-ssg produces genuinely static per-route HTML | 95 | TESTED | P2 |
 | F2 | Analytics beacon fires on a cache-served page load | 60 | OPEN | P3 |
 
@@ -1146,6 +1147,20 @@ JPEG, WebP and AVIF are already compressed, so storing rather than deflating cos
 
 ---
 
+### E4 `OPEN` `60%` `P1` Multi-file Web Share safely hands off OPFS-backed outputs
+
+**Claim.** On platforms that pass a preliminary file-share probe, `navigator.canShare({ files })` is a useful final gate for handing one to ten completed, OPFS-backed image `File` objects to the native share sheet in one call. The handoff does not materialise the whole payload in page memory or kill a constrained mobile tab, common JPEG/PNG/WebP/AVIF/GIF and mixed-format payloads remain usable, cancellation is distinguishable from failure, and the browser does not report success before it has accepted responsibility for the file bytes.
+
+**Why only 60.** The [Web Share Recommendation](https://www.w3.org/TR/web-share/) defines `files` as a sequence, requires fresh user activation for `share()`, and defines resolution after transmission to the target or operating system. It deliberately leaves available targets and their payload mapping to the browser and operating system. Desktop engine automation cannot exercise the native picker, an installed receiving app may impose its own limits, and no real iOS or Android device has yet received this app's OPFS-backed multi-file payloads. File count alone also says nothing about total bytes.
+
+**Affects.** R-X47 to R-X53, the extra OPFS sink in Technical Design §9.1, `maximumShareBytes`, and whether Share can be offered on the mobile platforms that motivate it.
+
+**Method.** T39-A shares 1, 2 and 10 OPFS-backed files on real iOS Safari and Android Chrome, plus every available desktop implementation. It covers each supported output MIME type and a mixed array; exact `canShare` results; a successful native handoff; user cancellation; increasing total payload sizes while observing memory or, where process memory is unavailable, tab survival and reload; and the in-memory private-browsing fallback separately. The result records a support matrix and the largest safe total-byte bound rather than inferring either from API presence.
+
+**Fallback if false.** Scope Share by capability and exact payload, lower the file or total-byte cap to the measured safe value, or withhold it entirely on the affected platform. Delete unused individual copies and keep the existing direct-file/ZIP Download path unchanged. A receiving application rejecting a payload after the operating system accepted it cannot be recovered by the sender and is stated as an OS-target limitation, not reported as app success beyond the handoff the API confirms.
+
+---
+
 ## 7. Refuted
 
 Kept deliberately. Each was stated with more confidence than the evidence supported, and each was refuted by a short test.
@@ -1209,8 +1224,9 @@ By dependency and cost, not document order.
 7. **C3** and **C5**, limits and thumbnail throughput. Fill in §5.7 and set the R-G8 threshold.
 8. **B5**, folder input. Decides whether the feature ships everywhere or degrades on iOS.
 9. **B9** and **B6**, headers and isolation. Decide the build variant.
-10. **E1**, streaming ZIP memory. Confirms the output path end to end.
-11. Everything else in priority order.
+10. **E4**, multi-file Web Share on real devices. Decides whether the small-batch second storage sink is safe before T40 builds it.
+11. **E1**, streaming ZIP memory. Confirms the Download output path end to end.
+12. Everything else in priority order.
 
 ---
 

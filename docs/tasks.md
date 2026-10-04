@@ -733,19 +733,63 @@ reported figures and remediation.
 
 # Phase 6 — Output
 
-### T40 — Archive assembly
+### T39-A — Multi-file Web Share verification
 
-**Functional Design:** R-X30, R-X38, R-X39, R-X40
+**Functional Design:** R-X47 to R-X53, R-V5
+**Technical Design:** §9.1, §9.2, §13
+**Assumption:** E4
+**Depends on:** T39
+
+Build a focused verification harness before adding the second output sink. Use real iOS Safari and
+Android Chrome, plus every available shipping desktop implementation; Playwright engine presence is
+not evidence for a native share sheet.
+
+- Share 1, 2 and 10 OPFS-backed image files in one call, covering JPEG, PNG, WebP, AVIF, GIF and a
+  mixed-format array. Record the preliminary and exact `canShare` results separately.
+- Exercise a successful native handoff, user cancellation and a rejected/failed handoff. Confirm
+  that `share()` runs from a fresh activation and that its resolved/rejected result matches the
+  state the app can safely promise.
+- Increase total payload bytes until rejection or the largest safe tested value. Measure process
+  memory where the platform exposes it; otherwise record tab survival, reload and target receipt.
+- Repeat the bounded cases through the in-memory fallback where private browsing makes OPFS
+  unavailable.
+
+**Done when:** `docs/task-notes/T39-A.md` contains the device/browser/target matrix, exact payloads,
+memory or survival evidence, cancellation/failure results and a recommended `maximumShareBytes`;
+E4 is updated in place; and any finding that makes ten files unsafe lowers the Functional Design
+limit before T40 rather than being hidden behind implementation fallback.
+
+### T40 — Archive and share-output assembly
+
+**Functional Design:** R-X30, R-X38 to R-X40, R-X42, R-X47, R-X48, R-X51, R-X52
 **Technical Design:** §9.1, §9.2
-**Depends on:** T01, T19
+**Depends on:** T01, T19, T39-A
 
-`client-zip` streamed into OPFS as the run proceeds. Quota preflight using `predictLength`.
+`client-zip` streamed into OPFS as the run proceeds. For a run that starts with 1–10 accepted
+images and passes the preliminary file-share probe, tee each successful final output into a
+separate run-scoped OPFS file without encoding twice or retaining the batch in memory.
 
 - Entries stored rather than deflated for already-compressed formats, per entry.
 - Compression starts on the primary action, not on Download, unless T01 forced the Chrome fallback.
 - Accept only T36-A `output` variants as entries; skipped images never enter a direct output or ZIP.
+- Skip ZIP creation for an exactly one-image run. For every larger run, retain the first success as
+  the possible R-X16 direct-download result and release it after the second success unless the
+  Share path still owns that same file.
+- Replace OPFS's single archive slot with an idempotently cleaned run artifact set: archive,
+  individual output handles and public name/MIME metadata. Keep the reduced-cap in-memory
+  implementation equivalent.
+- Extend quota preflight to the combined artifacts. If the archive fits but Share copies do not,
+  run Download-only; do not reject a batch the existing path can deliver.
+- Apply T39-A's measured total-byte cap to the exact completed share outputs and expose one cleanup
+  operation that T42 can call when its exact payload validation fails.
 
-**Done when:** a 200-image run holds memory near one entry, the preflight rejects an oversized batch before starting, and the archive opens correctly with its directory structure intact.
+**Done when:** the unchanged 200-image Download-only run holds memory near one entry and produces a
+valid directory-preserving archive; an eligible 1-image run keeps one direct artifact and an
+eligible 10-image run writes bounded-memory individual copies alongside its archive; an 11-image
+run opens no Share sink; quota tests distinguish archive failure from Share-only fallback; and
+cancellation, storage failure, startup and Processing exit
+remove the complete artifact set. A multi-image run with exactly one success still retains that
+image for direct Download without retaining Share copies when the starting count exceeded ten.
 
 ### T41 — Report generation
 
@@ -760,21 +804,56 @@ Wire the report model to real run data and write it into the archive.
 
 **Done when:** a run producing failures, skips and caveats writes a report whose totals reconcile against the exact byte counts, and which parses as YAML.
 
-### T42 — Download and leaving
+### T42 — Download, share and leaving
 
-**Functional Design:** R-X15 to R-X20, R-X41, R-X42, R-K9, R-M6 to R-M9, R-K12
+**Functional Design:** R-X15 to R-X20, R-X41, R-X42, R-X47 to R-X50, R-X53, R-X54, R-V5,
+R-K9, R-M6 to R-M9, R-K12
+**Technical Design:** §3.3, §9.1, §9.2, §9.4
 
-Explicit Download. Single image downloads directly with no ZIP and no report. The three-way confirmation on leaving with undownloaded results. Cleanup. Physical back-button navigation is integrated with the mode state machine: a first back press performs each nested stage's default transition (Processing following R-X18/R-X19 instead), and a second back press at Gallery raises a Stay/Leave confirmation.
+Explicit Download and conditional Share. Single-image Download remains direct with no ZIP or
+report; multi-image Download remains the ZIP. Share hands every successful individual image to the
+system in one call and never includes the ZIP or report. The three-way confirmation governs
+undelivered results. Physical back-button navigation remains integrated with the mode state
+machine: a first back press performs each nested stage's default transition (Processing following
+R-X18/R-X19 instead), and a second back press at Gallery raises a Stay/Leave confirmation.
 
-- A zero-success completion (all skipped and/or failed) has no downloadable artifact and no Download
-  action. A single success still downloads directly even when other images were skipped.
+- A zero-success completion (all skipped and/or failed) has no artifact or delivery action. A
+  single success still downloads and shares directly even when other images were skipped.
+- `platform/share.ts` owns preliminary capability detection, exact `canShare({ files })` validation
+  and `navigator.share({ files })`. The component never invokes the browser API directly, and the
+  platform call contains files only.
+- Show Share only for an eligible run whose exact successful files and byte total pass. Flatten
+  folder paths and resolve basename collisions globally in grid order; keep ZIP collision handling
+  directory-scoped.
+- Replace the run store's `downloaded` boolean with `pending | downloaded | shared`. A resolved
+  Share or completed Download cleans every artifact and fulfils the run; `AbortError` and other
+  failures stay pending, with only non-cancellation failures shown inline and retryable.
+- After delivery succeeds, keep the completed Processing view and its summary visible, replace both
+  delivery actions with a checked **Download started** or **Shared** state, and make **Back to
+  images** the remaining primary action. Only that action or browser Back returns to Gallery; the
+  delivered path does not show the undelivered-results confirmation.
+- Keep the leaving dialog exactly three-way — Download and leave, Leave without downloading, Stay.
+  Do not add Share to it.
+- Add the visible Share label, retryable failure copy and the two outcome-specific completion
+  messages to the English message catalogue and its shared translator-context file; do not
+  introduce literal component strings.
 - The back-button guard and its two dialogs (`useBackNavigationGuard`, `ConfirmDialog.vue`) land
   ahead of the rest of this task's download/report wiring — `downloadFinishedRun()`
   (`src/pipeline/run-download.ts`) is a scoped-out stub until this task's own run-output retention
   and archive assembly exist; wire the explicit Download button to that same function rather than
   duplicating its single-vs-ZIP logic.
+- Re-read `content/en/faq.md` after implementation and minimally correct any answer made false by
+  Share. Do not add a new FAQ question without user approval.
 
-**Done when:** a single-image run downloads one image file, a multi-image run downloads a ZIP, the confirmation offers all three actions with Stay focused by default, no OPFS file survives any exit path, a back press from Preview/Edit silently performs their default transition, a back press from a finished-undownloaded Processing run raises the three-way dialog, and a second back press at Gallery raises a Stay/Leave confirmation that genuinely blocks navigation when Stay is chosen.
+**Done when:** starting batches of 1 and 10 expose Download and, when the stubbed exact capability
+accepts, Share; 11 exposes Download only even if later failures leave fewer successes; a single
+success uses one direct file; multiple successes download a ZIP with report and share images only;
+folder-share collisions receive deterministic global suffixes; exact rejection hides Share;
+cancellation and failure retain the results; the first successful delivery removes every artifact;
+replaces both delivery actions with the outcome-specific checked state while the completed summary
+remains visible; Back to images and browser Back then reach Gallery without an undelivered-results
+confirmation; the other existing confirmations and physical-back transitions still pass with
+delivery state replacing download state; and zero successes expose neither action.
 
 ---
 
@@ -896,41 +975,54 @@ Every user-facing string extracted with context, including any accessible-name s
 
 ### T49 — Privacy, credits and source
 
-**Functional Design:** R-V1 to R-V4
+**Functional Design:** R-V1 to R-V5
 **Technical Design:** §7.2
 **Depends on:** T43
 
-The local-processing line, the credits page listing every bundled component with licence and source link, and the link to the application's own source.
+The local-processing line, including its explicit user-directed Share qualification, the credits
+page listing every bundled component with licence and source link, and the link to the application's
+own source.
 
 The credits page is a route on the router built in T31, generated from
 `3rd_party_licenses/` rather than authored prose — it needs no locale fallback and is
 not one of T44's four content pages. The source-code link lives in the site footer
 built by T43. If T46 (PWA and usage visibility) has already run, R-V3's disclosure
-names exactly what the analytics beacon collects; if not, the privacy line states
-plainly that nothing is collected yet.
+names exactly what the analytics beacon collects; if not, the privacy line states plainly that
+nothing is collected yet. Share is described as a handoff to the system target the user chooses,
+not as processing or an app upload, and the app never claims to know the selected target.
 
-**Done when:** a test asserts no network request carries image bytes, file names, dimensions or sizes, and the credits page covers every directory in `3rd_party_licenses/`.
+**Done when:** a test asserts no network request carries image bytes, file names, dimensions or
+sizes; a Share test asserts that only the completed `File[]` reaches the platform wrapper after an
+explicit click; and the credits page covers every directory in `3rd_party_licenses/`.
 
 ### T50 — Limits
 
-**Functional Design:** §5.7, R-I19 to R-I22, R-I33
+**Functional Design:** §5.7, R-I19 to R-I22, R-I33, R-X47, R-X48
 **Technical Design:** §8.3
-**Assumptions:** C3, C4
+**Assumptions:** C3, C4, E4
 
-One runtime configuration module holding every limit, including `maximumThumbnails`. Selection limits are
+One runtime configuration module holding every limit, including `maximumThumbnails`,
+`maximumShareFiles` and `maximumShareBytes`. Selection limits are
 enforced at selection time; operational limits such as the thumbnail budget are injected into their
 owning service.
 
 - Derive values by measurement on desktop and on a real phone. The 200-file figure inherited from the original design draft is not defended by anything.
 - C4 needs a physical iPhone, including an older low-memory model.
+- Re-run T39-A's ten-file and maximum-byte Share cases on that older iPhone. Keep the product ceiling
+  at ten only if it survives; lower the byte or file limit and update E4 and §5.7 if measurement says
+  otherwise.
 
-**Done when:** every limit has a measured value with its evidence, C3 and C4 are updated, and Functional Design §5.7 carries real numbers instead of placeholders.
+**Done when:** every limit has a measured value with its evidence, C3, C4 and E4 are updated, and
+Functional Design §5.7 carries real numbers instead of placeholders.
 
 ### T51 — End-to-end suite
 
 **Technical Design:** §13
 
-The full fixture set and journeys across three engines: single image, mixed batch, folder tree, animated batch, a run with failures, cancellation, leaving without downloading, and the public routes (FAQ, Privacy, Terms, Desktop, `sitemap.xml`, `robots.txt`) reachable and rendering correctly.
+The full fixture set and journeys across three engines: single image, mixed batch, folder tree,
+animated batch, a run with failures, cancellation, leaving without delivery, stubbed Share
+availability/success/cancellation/failure, the 10-versus-11 starting-count boundary, and the public
+routes (FAQ, Privacy, Terms, Desktop, `sitemap.xml`, `robots.txt`) reachable and rendering correctly.
 
 **Done when:** the suite passes on all three engines in CI and takes an acceptable time to run.
 

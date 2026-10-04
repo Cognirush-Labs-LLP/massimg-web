@@ -69,7 +69,7 @@ src/
     stages/         decode, orient, edit, resize, encode, optimise
     codecs/         one adapter per library
   platform/       browser capability wrappers
-    opfs.ts, picker.ts, folder.ts, download.ts, capability.ts
+    opfs.ts, picker.ts, folder.ts, download.ts, share.ts, capability.ts
   ui/             components, one directory per stage mode
   i18n/           one messages file per locale, one shared context file (§11)
 ```
@@ -111,7 +111,7 @@ Batch-wide settings: quality mode and value, dimension rule and value, format. T
 
 ### 3.3 `useRunStore`
 
-Run progress: counts by state (including skipped separately from failed), accumulated input and output bytes from successes only, failures, structured skip reasons and caveats. Populated by worker messages. Starting a run clears prior failed/skipped image states; completed status persists on return to Gallery until the next run.
+Run progress: counts by state (including skipped separately from failed), accumulated input and output bytes from successes only, failures, structured skip reasons and caveats. Populated by worker messages. Starting a run clears prior failed/skipped image states; completed status persists on return to Gallery until the next run. Delivery is a discriminated `pending | downloaded | shared` state rather than a `downloaded` boolean. Only Download completion or resolution of the platform Share call leaves `pending`; Share cancellation and failure do not. A delivered state keeps Processing mounted and drives its checked **Download started** or **Shared** completion treatment; it removes the delivery controls, makes **Back to images** the remaining primary action and lets browser Back return to Gallery without the undelivered-results confirmation (R-X54).
 
 ### 3.4 `useUiStore`
 
@@ -589,7 +589,7 @@ The rules from Functional Design §9, as implementation constraints:
   generation there. List mode performs no generation (R-G9), and uncached entries remain placeholders
   after the read budget is spent.
 - Preview holds one working set: decoded source for the Original tab, encoded result for the Compressed tab. Released on mode change, step, or settings change.
-- Run outputs stream to storage as they are produced (§9), so the archive never accumulates in memory.
+- Run outputs stream to storage as they are produced (§9), so neither the archive nor a share-eligible batch accumulates in memory.
 
 ### 8.2 Worker recycling
 
@@ -599,34 +599,46 @@ If a browser test shows the heap does not return, workers are recycled after a t
 
 ### 8.3 Limits
 
-Every value in Functional Design §5.7 is a placeholder. **C3 is 30% confident and C4 is 25%.** They are derived from measurement, not chosen, and the code reads them from one configuration module so that changing them is a single edit.
+The device-dependent values in Functional Design §5.7 remain placeholders. **C3 is 30% confident and C4 is 25%.** They are derived from measurement, not chosen, and the code reads them from one configuration module so that changing them is a single edit. The ten-file Share ceiling is the one product limit chosen up front, contingent on E4's real-device verification; its total-byte companion is still measured.
 
 The 200-file limit inherited from the original design draft is not defended by anything and should be assumed wrong until measured.
+
+`RuntimeLimits` also owns `maximumShareFiles`, fixed at the product limit of 10, and `maximumShareBytes`, whose shipped value is set by T39-A and rechecked on the older low-memory iPhone in T50. The first decides before the run whether individual outputs may be retained; the second is applied to the exact successful output bytes before Share is exposed.
 
 ---
 
 ## 9. Output
 
-### 9.1 Archive assembly
+### 9.1 Archive and share-output assembly
 
-`client-zip` produces a `ReadableStream`. That stream is piped into a file in the Origin Private File System as the run proceeds, so memory holds one entry at a time rather than the archive (R-X38).
+`client-zip` produces a `ReadableStream`. For a run starting with more than one accepted image, that stream is piped into a file in the Origin Private File System as the run proceeds, so memory holds one entry at a time rather than the archive (R-X38). An exactly one-image run cannot require a ZIP and writes its successful output directly.
 
-**E2 measured `predictLength` as byte-exact** across 50 entries with nested paths and non-ASCII filenames, so the quota preflight in R-X40 uses a real number rather than an estimate.
+**E2 measured `predictLength` as byte-exact** across 50 entries with nested paths and non-ASCII filenames, so the quota preflight in R-X40 uses the existing archive prediction rather than adding an unrelated packaging allowance.
 
 ZIP entries are stored rather than deflated for already-compressed formats (**E3**, 80%). PNG and GIF may still deflate usefully, so the setting is per entry.
 
-### 9.2 Storage
+Every run that starts with more than one image retains its first successful output as the possible direct-download candidate required by R-X16. The candidate is deleted when a second success makes ZIP delivery certain, unless the Share path below owns it independently. This one-file candidate is part of the existing Download contract, not Share overhead.
+
+A run starting with 1–10 accepted images takes the additional Share path only when the preliminary file-share capability probe succeeds. Except for an exactly one-image run, whose direct file is already sufficient, each successful worker result is consumed once and teed to two sinks before its transferred buffer is released: its normal ZIP entry and a separate run-scoped output file. This is one encode and bounded memory, not two encodes or an in-memory output array. Runs starting above 10, or on a platform that fails the preliminary probe, never open the Share sink.
+
+`Capabilities` gains a `fileShare` boolean from a generic non-empty image-file probe; it is false when either Web Share method is absent or the representative payload is rejected. The batch-specific preliminary probe lives in `platform/share.ts` and additionally checks representative non-empty `File` payloads for the resolved output MIME types. Both are optimisations that prevent pointless duplicate writes, not the authority to show the action. At completion the same module obtains OPFS-backed `File` objects, applies `maximumShareBytes`, and calls `navigator.canShare({ files })` on the exact successful array. A false result deletes the individual copies and leaves Download unchanged. A true result permits the component to render Share; only a fresh button activation may call `navigator.share({ files })`.
+
+`navigator.share()` receives only `files`, with no title, text, URL, ZIP or report. Resolution marks delivery as `shared`; `AbortError` is cancellation and leaves delivery pending without an error; any other rejection leaves delivery pending and produces the retryable inline error in §10. The platform wrapper does not report the chosen target because the API does not expose it.
+
+### 9.2 Storage and delivery
 
 OPFS is Baseline Widely available (**B1**, 97%). Quota comes from `navigator.storage.estimate()`, and differs sharply by platform: roughly 60% of disk on Chromium, roughly 20% on iOS WebKit (**B2**).
 
-**Contingent on B4, 60% and the largest unknown in the project.** The claim is that handing a finished OPFS file to a download streams from disk rather than materialising in RAM. If it fails:
+The OPFS layer owns a run-scoped artifact set rather than one global archive slot: zero or one archive, the temporary first-success direct candidate when required, zero to ten Share output files, and the metadata needed to reconstruct their public names and MIME types. One physical file may serve both candidate and Share roles. Its cleanup operation removes the whole set idempotently. It runs after the first successful Download or Share, cancellation, every Processing exit, a storage failure and application startup. If a run ends with one success, that individual file is the direct Download and, when eligible, Share source, and any unused archive is removed before completion actions appear.
+
+R-X40's preflight has two thresholds. The ordinary Download artifact prediction—including the first-success candidate for a multi-image run—must fit or the run is rejected. For a preliminarily Share-capable run, the same predicted successful-output bytes, plus per-file overhead, are counted again for the individual copies; if only that combined figure exceeds quota, the run proceeds archive-only. The final exact output-byte total is checked against `maximumShareBytes` before the exact `canShare` call.
+
+**Contingent on B4, 90%.** The claim is that handing a finished OPFS file to a download streams from disk rather than materialising it in RAM. If it fails:
 
 - Chrome falls back to `showSaveFilePicker` with `createWritable`, which writes directly to the user's chosen path. That requires the save location to be chosen in the user gesture, so compression would have to start after the Download press on Chrome only.
 - Other browsers fall back to in-memory assembly with a hard batch cap derived from measurement.
 
-This is the one place where the architecture would change shape rather than adjust a number, which is why B4 is second in the verification order.
-
-Private browsing has no OPFS (**B3**), so the in-memory path is needed regardless. The stored archive is deleted after download, on leaving the Processing view, and on application start (R-X42).
+Private browsing has no OPFS (**B3**), so the in-memory artifact-set implementation is needed regardless. Its reduced cap applies to the combined archive and individual output bytes. If the archive fits but the Share copies do not, it selects Download-only rather than rejecting a batch that the existing path can safely deliver.
 
 ### 9.3 The report
 
@@ -675,7 +687,9 @@ Rules implemented here: sizes human-readable to two decimals using 1024-byte uni
 
 ### 9.4 Naming
 
-`domain/naming.ts`, pure. When the resolved format equals the source format — under "Don't change" or an explicit same-format pick — the original extension is reproduced byte for byte including case (R-X43). When the resolved format differs from the source format, the canonical extension is used (R-X44). Collisions are resolved per directory, not globally (R-X22), so a folder tree never produces spurious renames.
+`domain/naming.ts`, pure. When the resolved format equals the source format — under "Don't change" or an explicit same-format pick — the original extension is reproduced byte for byte including case (R-X43). When the resolved format differs from the source format, the canonical extension is used (R-X44).
+
+It exposes two collision scopes over the same ordered candidate list. ZIP naming keys collisions by relative directory (R-X22), so a folder tree never produces spurious renames. Share naming discards the relative directory and keys every basename in one global namespace (R-X53); grid order deterministically receives `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`. OPFS internal entry names are opaque run-local identifiers and are never exposed as delivered filenames.
 
 ---
 
@@ -841,10 +855,11 @@ This is the concrete mechanism for Functional Design R-V3's "if analytics are ad
 
 | Layer | Tool | Covers |
 | --- | --- | --- |
-| `domain/` | Vitest | Crop arithmetic (§6 table as fixture), settings resolution, quality mapping, naming and collisions, report model, size formatting, caveat set |
+| `domain/` | Vitest | Crop arithmetic (§6 table as fixture), settings resolution, quality mapping, ZIP/share naming and collisions, report model, size formatting, caveat set |
 | Pipeline | Vitest with real WASM | Per-format encode, quality mapping end to end, the two comparison rules, animated round-trips |
 | Components | Vitest, Vue Test Utils | Mode transitions against the table in Functional Design §3.1 |
-| Browser | Playwright, three engines | Folder input, OPFS, download, worker cancellation, memory behaviour |
+| Browser | Playwright, three engines | Folder input, OPFS, download, stubbed Web Share branches, worker cancellation, memory behaviour |
+| Device | Manual T39-A/T50 harness | Native share sheet, OPFS-backed multi-file handoff, cancellation and memory/tab survival on real iOS and Android |
 | Fixtures | — | Eight-orientation EXIF set (**D4**), ICC-tagged images (**D3**), animated GIF and APNG, a real HEIC (**A8**), transparent PNGs, deep folder trees |
 
 The fixture set is the part most likely to be skipped and most likely to catch real bugs. D4 in particular fails on the mirrored orientations, not the rotations, and only a full test set finds that.
@@ -860,6 +875,7 @@ Which sections change if an entry fails.
 | Assumption | Conf | Section at risk | Consequence if false |
 | --- | --- | --- | --- |
 | **B4** | 90 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
+| **E4** | 60 | §9.1–§9.2 | Share is withheld per platform/payload, or its count/byte cap falls to the measured safe value; Download is unchanged |
 | **A13** | 95 | §7.7 | Settled in T23 for the mechanism — ImageMagick reports nothing about CICP, so the pipeline parses the `colr` box itself. The *frequency* clause is unconfirmed: no naturally CICP-only file in the local sample |
 | **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
 | **D1** | 99 | §7.5 | **Settled in T30.** The search costs 1, 2, 3 or 8 encodes and nothing between; AVIF at §7.3's speed is 10.8× quicker than at the library default, so **R-Q4 excludes no format**. Residual risk is wall time on hardware slower than a desktop, not the structure |
