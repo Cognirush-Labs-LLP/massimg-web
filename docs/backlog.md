@@ -103,6 +103,23 @@ here either.
   browser fixture is 16 frames at 400×400; T29 measured larger generated cases on desktop only.
   There is no mobile Safari run and no regression threshold for resize/encode peak memory.
 
+## BL-009 — HEIC-decoder-unavailable rejection has no live-browser trigger
+
+- **Requirements:** §10 ("HEIC with no available decoder"), R-I2
+- **Disclosed:** no — nothing to disclose; the condition cannot occur with the shipped build.
+- **Location:** `src/platform/capability.ts` (`Capabilities.heicDecode`); `src/ui/gallery/ingest.ts`
+  (`buildIngestOutcome`'s HEIC/HEIF branch); `src/ui/gallery/rejectionText.ts`
+  (`rejection.reason.heicUnavailable`).
+- **Why backlog:** the §10 row this rejection satisfies cites R-I7, which does not exist anywhere
+  in `functional-design.md` — a dangling reference — and §5.2 confirms HEIC decode works on all
+  three target engines today, since HEIC goes through ImageMagick WASM as ordinary input (T23) and
+  the compiled-in codec list (assumptions.md A2) is a build-time fact, not something a browser API
+  can be probed for at runtime. `Capabilities.heicDecode` is therefore hardcoded `true`, and the
+  rejection path it feeds is verified only by unit tests that inject `heicDecode: false` directly —
+  there is no way to make a real browser report it `false` with the current build. Revisit if a
+  future build ever ships without HEIC support, or if genuine runtime HEIC-decode capability
+  detection becomes possible.
+
 ---
 
 CICP and metadata *test coverage* gaps the original audit listed separately are tracked here

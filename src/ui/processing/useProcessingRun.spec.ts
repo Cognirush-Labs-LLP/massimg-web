@@ -185,6 +185,59 @@ describe('useProcessingRun.start', () => {
   })
 })
 
+describe('useProcessingRun out-of-memory halt (T39, §10 "Out of memory")', () => {
+  it('halts the run, cancels the pool, and never records the out-of-memory reason as an ordinary failure', async () => {
+    seed(['a', 'b', 'c'])
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+    expect(runs).toHaveLength(3)
+
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'failed',
+      reason: { kind: 'out-of-memory' },
+    })
+    await flush()
+
+    const runStore = useRunStore()
+    expect(runStore.haltReason).toBe('out-of-memory')
+    expect(runStore.finished).toBe(true)
+    expect(cancel).toHaveBeenCalledTimes(1)
+    // Never reaches recordResult's ordinary failed path (distinct from §10's "Corrupt or
+    // undecodable file" / "Encode failure" rows, which do land in the Failed list).
+    expect(runStore.failures).toEqual([])
+    expect(runStore.progress.failed).toBe(0)
+  })
+
+  it('drops any other outcome that settles after the halt, succeeded or not', async () => {
+    seed(['a', 'b'])
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'failed',
+      reason: { kind: 'out-of-memory' },
+    })
+    await flush()
+
+    // An in-flight job that finishes successfully just after the halt must not be recorded —
+    // "partial results discarded" (§10).
+    runs[1]?.settle(completedOutput('b'))
+    await flush()
+
+    const runStore = useRunStore()
+    expect(runStore.progress.succeeded).toBe(0)
+    expect(runStore.haltReason).toBe('out-of-memory')
+  })
+})
+
 describe('useProcessingRun.cancel', () => {
   it('flips to Gallery only after the in-flight job settles, and does not mark the run finished', async () => {
     seed(['a'])

@@ -18,6 +18,7 @@ interface Capabilities {
   opfs: boolean
   folderPicker: boolean
   crossOriginIsolated: boolean
+  heicDecode: boolean
 }
 
 async function detect(page: Page): Promise<Capabilities> {
@@ -34,6 +35,9 @@ test('detects capabilities in the standard fixture context', async ({ page }, te
   expect(capabilities.folderPicker).toBe(true)
   // No COOP/COEP headers until T48 — see docs/assumptions.md B6, B9.
   expect(capabilities.crossOriginIsolated).toBe(false)
+  // Hardcoded true (T39, BL-009) — a build-time fact about the compiled WASM codec list, not a
+  // runtime probe. See src/platform/capability.ts's own comment on `heicDecode`.
+  expect(capabilities.heicDecode).toBe(true)
 
   // WebKit's default Playwright context is ephemeral and has no working OPFS at all (T01,
   // docs/task-notes/T01.md) — the same failure mode Safari private windows produce (B3). It stands

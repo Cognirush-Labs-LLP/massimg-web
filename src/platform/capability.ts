@@ -4,6 +4,17 @@ export interface Capabilities {
   opfs: boolean
   folderPicker: boolean
   crossOriginIsolated: boolean
+  /**
+   * Whether this build can decode HEIC/HEIF (§10 "HEIC with no available decoder", R-I2). HEIC
+   * decode goes through ImageMagick WASM as ordinary input (T23) — a compiled-in codec list is a
+   * build-time fact, not something a browser API can be asked about at runtime, so this is not a
+   * probe like `opfs` below. It is hardcoded `true` because assumptions.md A2 confirms the current
+   * WASM build's delegate list includes `heic` and §5.2 confirms decode works on all three target
+   * engines; flip it by hand if a future build ever ships without HEIC support. See
+   * docs/backlog.md BL-009: no real browser condition can make this `false` today, so the rejection
+   * path it feeds is unit-tested by injecting `false` directly rather than by a live trigger.
+   */
+  heicDecode: boolean
 }
 
 const OPFS_PROBE_NAME = '.icompress-capability-probe'
@@ -47,6 +58,7 @@ export async function detectCapabilities(): Promise<Capabilities> {
     opfs: await probeOpfs(),
     folderPicker: detectFolderPicker(),
     crossOriginIsolated: detectCrossOriginIsolated(),
+    heicDecode: true,
   }
 }
 

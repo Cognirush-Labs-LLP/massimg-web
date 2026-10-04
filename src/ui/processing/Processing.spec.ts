@@ -141,13 +141,15 @@ describe('Processing view (T38)', () => {
       token: 1 as JobToken,
       imageId: 'photo' as ImageId,
       outcome: 'failed',
-      reason: { kind: 'out-of-memory' },
+      // Not out-of-memory: that reason halts the whole run instead of landing here (T39, see the
+      // dedicated describe block below) — decode-failed stays an ordinary per-image failure.
+      reason: { kind: 'decode-failed' },
     })
     await flushPromises()
 
     const failures = wrapper.get('[data-testid="processing-failures"]')
     expect(failures.text()).toContain('photo.jpeg')
-    expect(failures.text()).toContain('Too large for this browser to compress')
+    expect(failures.text()).toContain('Could not be read')
   })
 
   it('lists a skipped image with target, dimensions, format and achieved size (§6.3)', async () => {
@@ -256,5 +258,68 @@ describe('Processing view (T38)', () => {
 
     expect(useUiStore().stageMode).toBe('gallery')
     expect(useBatchStore().images).toHaveLength(1)
+  })
+
+  it('shows a distinct "nothing to download" message when every image failed or was skipped (§10)', async () => {
+    seed(['a'])
+    const wrapper = await mountProcessing()
+
+    runs[0]?.settle({
+      token: 1 as JobToken,
+      imageId: 'a' as ImageId,
+      outcome: 'failed',
+      reason: { kind: 'decode-failed' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="processing-total"]').text()).toBe(
+      'Nothing to download — see Failed/Skipped below.',
+    )
+  })
+
+  describe('out-of-memory run halt (T39, §10 "Out of memory")', () => {
+    it('replaces the completion actions with the halted message and hides Download, even with a prior success', async () => {
+      seed(['a', 'b'])
+      const wrapper = await mountProcessing()
+
+      runs[0]?.settle({
+        token: 1 as JobToken,
+        imageId: 'a' as ImageId,
+        outcome: 'completed',
+        result: completedOutput(400),
+      })
+      await flushPromises()
+
+      runs[1]?.settle({
+        token: 2 as JobToken,
+        imageId: 'b' as ImageId,
+        outcome: 'failed',
+        reason: { kind: 'out-of-memory' },
+      })
+      await flushPromises()
+
+      const halted = wrapper.get('[data-testid="processing-halted"]')
+      expect(halted.text()).toContain('fewer or smaller images')
+      expect(halted.text()).toMatch(/desktop/i)
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="processing-back"]').text()).toBe('Back to images')
+      // Not recorded as an ordinary per-image failure (distinct from decode/encode failures).
+      expect(wrapper.find('[data-testid="processing-failures"]').exists()).toBe(false)
+    })
+
+    it('shows no halted message for an ordinary completed or failed run', async () => {
+      seed(['a'])
+      const wrapper = await mountProcessing()
+
+      runs[0]?.settle({
+        token: 1 as JobToken,
+        imageId: 'a' as ImageId,
+        outcome: 'failed',
+        reason: { kind: 'encode-failed' },
+      })
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="processing-halted"]').exists()).toBe(false)
+    })
   })
 })

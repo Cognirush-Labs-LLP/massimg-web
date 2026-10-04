@@ -134,9 +134,9 @@ describe('classify', () => {
     expect(classify(bytes)).toEqual(SUPPORTED('png'))
   })
 
-  it('classifies an animated AVIF from the ftyp avis brand', () => {
+  it('rejects an animated AVIF from the ftyp avis brand as unhandled (R-F8)', () => {
     const bytes = ftypBox('avif', ['avif', 'avis', 'mif1', 'miaf'])
-    expect(classify(bytes)).toEqual(SUPPORTED('avif', true))
+    expect(classify(bytes)).toEqual({ class: 'unhandled', reason: 'animated-avif' })
   })
 
   it('classifies a still AVIF from the ftyp avif brand alone', () => {

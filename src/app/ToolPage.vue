@@ -12,6 +12,7 @@ import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import { getPreviewPool } from '@/ui/preview/preview-pool'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
+import RejectionList from '@/ui/gallery/RejectionList.vue'
 import Preview from '@/ui/preview/Preview.vue'
 import PreviewToolbar from '@/ui/preview/PreviewToolbar.vue'
 import Edit from '@/ui/edit/Edit.vue'
@@ -154,6 +155,13 @@ onMounted(() => {
 <template>
   <div class="tool-page">
     <Header :stage-mode="stageMode" :is-desktop="isDesktop" @open-panel="openPanel" />
+
+    <!-- Lives here, not inside Gallery.vue: a selection that adds exactly one image auto-opens
+         Preview (R-M1) and unmounts Gallery immediately, so a rejection from that same selection
+         must survive the stage-mode switch rather than disappear with it (T39). Hidden during
+         Processing for the same reason the side panel is (showPanel) — nothing in a stale
+         rejection list is actionable once a run has started. -->
+    <RejectionList v-if="showPanel" />
 
     <div class="tool-body">
       <StageContainer>

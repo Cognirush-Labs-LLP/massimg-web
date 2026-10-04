@@ -23,7 +23,7 @@ import { useProcessingRun } from './useProcessingRun'
 
 const batchStore = useBatchStore()
 const runStore = useRunStore()
-const { progress, failures, skipped, finished } = storeToRefs(runStore)
+const { progress, failures, skipped, finished, haltReason } = storeToRefs(runStore)
 const uiStore = useUiStore()
 
 const processingRun = useProcessingRun()
@@ -37,6 +37,12 @@ function nameFor(imageId: ImageId): string {
 
 const totalText = computed(() => {
   if (progress.value.succeeded === 0) {
+    // §10 "Every image in a run failed or was skipped": distinct from a genuinely empty/no-op run,
+    // whose total stays "No size change yet" — this one states plainly that there is nothing to
+    // download, rather than leaving that to be inferred from the Download button's mere absence.
+    if (finished.value && (progress.value.failed > 0 || progress.value.skipped > 0)) {
+      return t('processing.total.allFailedOrSkipped')
+    }
     return t('processing.total.unchanged')
   }
 
@@ -137,6 +143,10 @@ onMounted(() => {
 
     <p class="total" data-testid="processing-total">{{ totalText }}</p>
 
+    <p v-if="haltReason === 'out-of-memory'" class="halted" data-testid="processing-halted">
+      {{ t('processing.halted.memory') }}
+    </p>
+
     <p
       class="visually-hidden"
       role="status"
@@ -189,9 +199,11 @@ onMounted(() => {
         </button>
         <!-- Download's click handler is T42's: it wires the explicit Download button to
              downloadFinishedRun() once T40 (archive assembly) and T41 (report) exist. This button
-             only satisfies R-X14's visibility rule for now. -->
+             only satisfies R-X14's visibility rule for now. Never shown once the run halted
+             (haltReason) — "partial results discarded" (§10 "Out of memory") means there is
+             nothing to offer regardless of how many images succeeded before the halt. -->
         <button
-          v-if="progress.succeeded > 0"
+          v-if="haltReason === null && progress.succeeded > 0"
           type="button"
           class="action action--primary"
           data-testid="processing-download"
@@ -249,6 +261,14 @@ onMounted(() => {
   font-family: var(--font-family-mono);
   font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
+}
+
+.halted {
+  margin: 0;
+  color: var(--color-tint);
+  font-weight: var(--font-weight-control);
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .issue-list {

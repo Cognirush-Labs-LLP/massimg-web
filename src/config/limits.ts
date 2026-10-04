@@ -38,6 +38,23 @@ export interface RuntimeLimits {
    * already built and tested in `pipeline/pool.ts`.
    */
   jobTimeoutMs: number | null
+
+  /**
+   * Selection-time rejection cap (R-I20, §10 "File exceeds size or pixel cap"). **Provisional** —
+   * no measured value exists yet; T50 owns the real figure. Byte-size only: a true pixel-cap check
+   * would need decoded dimensions, which T33-A deliberately resolves asynchronously after an image
+   * already appears in the grid, not synchronously during selection (see docs/task-notes/T39.md).
+   */
+  maximumFileBytes: number
+
+  /**
+   * Selection-time rejection cap on total images per batch (§5.7 "Files per batch", R-I20, §10
+   * "Batch exceeds file count"). **Provisional** — the inherited 200-file figure was never measured
+   * (assumptions.md C3); T50 owns the real figure. Distinct from `folder.ts`'s own
+   * `MAX_TRAVERSAL_FILES`, which caps one folder's traversal, not the whole batch across every
+   * selection made so far.
+   */
+  maximumBatchFiles: number
 }
 
 export const runtimeLimits: RuntimeLimits = {
@@ -46,6 +63,8 @@ export const runtimeLimits: RuntimeLimits = {
   mobileWorkers: 1,
   reservedCores: 1,
   jobTimeoutMs: null,
+  maximumFileBytes: 100 * 1024 * 1024,
+  maximumBatchFiles: 500,
 }
 
 export interface WorkerPoolEnvironment {

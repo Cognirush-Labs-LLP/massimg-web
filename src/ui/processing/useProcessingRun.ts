@@ -82,6 +82,16 @@ export function useProcessingRun(): ProcessingRunState {
         applyResult(imageId, inputBytes, outcome.result)
         return
       case 'failed':
+        if (outcome.reason.kind === 'out-of-memory') {
+          // §10 "Out of memory": halts the whole run rather than being recorded as one more
+          // per-image failure (T38's handover note; T39 builds this). `runOne`'s own
+          // `generation !== expected` check already guarantees this outcome belongs to the current
+          // run before `applyOutcome` is ever called, so no further guard is needed here.
+          generation += 1 // drop every other still-outstanding outcome from this run
+          pool.cancel()
+          runStore.haltRun('out-of-memory')
+          return
+        }
         runStore.recordResult(imageId, {
           kind: 'failed',
           // `unimplemented` has no FailureReason slot (it is an internal pipeline gap, not a

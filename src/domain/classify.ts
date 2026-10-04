@@ -1,6 +1,6 @@
 import type { Format } from './types'
 
-export type UnhandledReason = 'psd' | 'ico' | 'svg' | 'camera-raw'
+export type UnhandledReason = 'psd' | 'ico' | 'svg' | 'camera-raw' | 'animated-avif'
 
 export type Classification =
   | { class: 'supported'; format: Format; isAnimated: boolean }
@@ -250,7 +250,10 @@ function classifyIsoBmff(bytes: Uint8Array): Classification | undefined {
     pos += 4
   }
 
-  if (brands.has('avis')) return { class: 'supported', format: 'avif', isAnimated: true }
+  // Animated AVIF is rejected outright (R-F8), not accepted and substituted or flattened later —
+  // classified as unhandled here rather than `supported`+`isAnimated`, so it never reaches the
+  // batch at all.
+  if (brands.has('avis')) return { class: 'unhandled', reason: 'animated-avif' }
   if (brands.has('avif')) return { class: 'supported', format: 'avif', isAnimated: false }
   // CR3 (Canon): an ISO-BMFF ftyp box with the "crx " brand.
   if (brands.has('crx ')) return { class: 'unhandled', reason: 'camera-raw' }

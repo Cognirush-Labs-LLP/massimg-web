@@ -212,4 +212,41 @@ describe('useBatchStore.clearAll', () => {
     expect(() => batch.clearAll()).not.toThrow()
     expect(batch.images).toHaveLength(0)
   })
+
+  it('also clears any pending rejection entries', () => {
+    const batch = useBatchStore()
+    batch.setRejections([
+      { id: '1', name: 'a.psd', relativePath: null, reason: { kind: 'unhandled', reason: 'psd' } },
+    ])
+
+    batch.clearAll()
+
+    expect(batch.rejections).toHaveLength(0)
+  })
+})
+
+describe('useBatchStore rejections (T39)', () => {
+  it('setRejections replaces whatever was there before (R-E2: once per selection action)', () => {
+    const batch = useBatchStore()
+    batch.setRejections([
+      { id: '1', name: 'a.psd', relativePath: null, reason: { kind: 'unhandled', reason: 'psd' } },
+    ])
+
+    batch.setRejections([
+      { id: '2', name: null, relativePath: null, reason: { kind: 'folder-empty' } },
+    ])
+
+    expect(batch.rejections.map((entry) => entry.id)).toEqual(['2'])
+  })
+
+  it('dismissRejections clears the list early', () => {
+    const batch = useBatchStore()
+    batch.setRejections([
+      { id: '1', name: null, relativePath: null, reason: { kind: 'folder-empty' } },
+    ])
+
+    batch.dismissRejections()
+
+    expect(batch.rejections).toHaveLength(0)
+  })
 })

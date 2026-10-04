@@ -47,6 +47,15 @@ export const useRunStore = defineStore('run', () => {
   const caveats = ref<RunCaveatEntry[]>([])
   const finished = ref(false)
   const downloaded = ref(false)
+  /**
+   * Set when the run was halted rather than completed normally (T39, §10 "Out of memory"). Distinct
+   * from an ordinary Cancel, which leaves straight for Gallery with no terminal state at all
+   * (R-X19/R-X20) — a halt still sets `finished`, so Processing.vue's existing completed branch
+   * renders, but swaps its actions for the halted message and never offers Download, matching
+   * "partial results discarded". `progress.pending` is left exactly where it was: jobs never
+   * submitted after the halt are not relabelled as failed.
+   */
+  const haltReason = ref<'out-of-memory' | null>(null)
 
   function startRun(totalPending: number): void {
     useBatchStore().clearRunStatuses()
@@ -58,6 +67,7 @@ export const useRunStore = defineStore('run', () => {
     caveats.value = []
     finished.value = false
     downloaded.value = false
+    haltReason.value = null
   }
 
   function recordResult(
@@ -92,6 +102,11 @@ export const useRunStore = defineStore('run', () => {
     finished.value = true
   }
 
+  function haltRun(reason: 'out-of-memory'): void {
+    haltReason.value = reason
+    finished.value = true
+  }
+
   function markDownloaded(): void {
     downloaded.value = true
   }
@@ -105,9 +120,11 @@ export const useRunStore = defineStore('run', () => {
     caveats,
     finished,
     downloaded,
+    haltReason,
     startRun,
     recordResult,
     finishRun,
+    haltRun,
     markDownloaded,
   }
 })

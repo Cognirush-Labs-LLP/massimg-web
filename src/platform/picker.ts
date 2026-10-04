@@ -12,6 +12,10 @@ export function pickFiles(): Promise<SelectedFile[]> {
     const input = document.createElement('input')
     input.type = 'file'
     input.multiple = true
+    // A native-picker hint only (T39, R-I23): classification still inspects every byte and never
+    // trusts the browser's filtered selection or a file's extension/MIME type. No `capture`
+    // attribute — this is the ordinary picker, not a camera shortcut.
+    input.accept = 'image/*'
     input.style.display = 'none'
     document.body.appendChild(input)
 

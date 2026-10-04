@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, toRaw } from 'vue'
+import type { RejectionEntry } from '@/domain/rejection'
 import type {
   EditOp,
   EditRecord,
@@ -40,15 +41,15 @@ function sanitizedOp(op: EditOp): EditOp {
  * `File`, thumbnail `Blob`s — never lives here; it stays in module-scope, non-reactive `Map`s
  * elsewhere (Technical Design §1.1), keyed by the same `ImageId` used here.
  *
- * Selection-time rejection entries are described in docs/ui-design.md §4 as living on this
- * store too, but no `RejectionEntry` type exists yet anywhere in the codebase — that shape is
- * T39's call to make against Functional Design §10, not this task's to guess. Not added here;
- * see docs/task-notes/T32.md.
+ * Selection-time rejection entries (T39, Functional Design §10, R-E2) also live here, per T32's
+ * handover note — one list, replaced wholesale by each selection action (`setRejections`), not
+ * accumulated across them.
  */
 export const useBatchStore = defineStore('batch', () => {
   // Insertion order is the array order (R-G5) — appended to, never re-sorted. Folder input
   // inserts in traversal order, which is simply the order `addImages` is called in.
   const images = ref<ImageRecord[]>([])
+  const rejections = ref<RejectionEntry[]>([])
 
   function addImages(records: ImageRecord[]): void {
     const wasEmpty = images.value.length === 0
@@ -110,11 +111,23 @@ export const useBatchStore = defineStore('batch', () => {
   // means for stage mode.
   function clearAll(): void {
     images.value = []
+    rejections.value = []
     useUiStore().onBatchCountChanged(0, [])
+  }
+
+  // Replaces the whole list — one selection action's rejections, not an accumulating log (T39
+  // decision: matches R-E2's "shown once per selection action" literally).
+  function setRejections(entries: RejectionEntry[]): void {
+    rejections.value = entries
+  }
+
+  function dismissRejections(): void {
+    rejections.value = []
   }
 
   return {
     images,
+    rejections,
     addImages,
     removeImage,
     updateImage,
@@ -122,5 +135,7 @@ export const useBatchStore = defineStore('batch', () => {
     markFailed,
     markSkipped,
     clearAll,
+    setRejections,
+    dismissRejections,
   }
 })

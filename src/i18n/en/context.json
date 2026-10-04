@@ -873,5 +873,80 @@
     "situation": "Accessible name for the crop rectangle's bottom-right resize handle.",
     "control": "ARIA label on a small focusable handle with no visible text of its own.",
     "maxLength": 40
+  },
+  "rejection.heading": {
+    "situation": "Heading above the selection-time rejection list (T39, R-E2), one dismissible panel shown once per selection action rather than one alert per file.",
+    "control": "Static section heading above a dismissible panel.",
+    "maxLength": 32
+  },
+  "rejection.dismiss": {
+    "situation": "Button that dismisses the whole rejection panel early (it is otherwise replaced wholesale by the next selection action).",
+    "control": "Small icon-adjacent text button.",
+    "maxLength": 16
+  },
+  "rejection.reason.psd": {
+    "situation": "Per-row reason text when a selected Photoshop (PSD) file is rejected at selection time (R-I2). {name} is the file name.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 140
+  },
+  "rejection.reason.ico": {
+    "situation": "Per-row reason text when a selected icon (ICO) file is rejected at selection time (R-I2). {name} is the file name.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 140
+  },
+  "rejection.reason.svg": {
+    "situation": "Per-row reason text when a selected SVG file is rejected at selection time (R-I2). {name} is the file name.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 140
+  },
+  "rejection.reason.cameraRaw": {
+    "situation": "Per-row reason text when a selected camera raw file (CR2/CR3/RW2/etc) is rejected at selection time (R-I2). {name} is the file name.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 140
+  },
+  "rejection.reason.animatedAvif": {
+    "situation": "Per-row reason text when a selected animated AVIF file is rejected at selection time (R-F8, §10 'Animated AVIF input'). {name} is the file name.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 140
+  },
+  "rejection.reason.heicUnavailable": {
+    "situation": "Per-row reason text when a selected HEIC/HEIF file is rejected because this build's decoder capability is unavailable (§10 'HEIC with no available decoder'). {name} is the file name. Unreachable in the current build — see docs/backlog.md BL-009.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 160
+  },
+  "rejection.reason.fileTooLarge": {
+    "situation": "Per-row reason text when a selected file exceeds the per-file byte-size cap (§10 'File exceeds size or pixel cap', R-I20). {name} is the file name; {actual} and {cap} are formatted byte amounts.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 180
+  },
+  "rejection.reason.batchCountExceeded": {
+    "situation": "Summary reason text (no single file) when a selection would push the batch over its total-image-count cap (§10 'Batch exceeds file count', R-I20). {actual} is the uncapped total this selection would have produced; {cap} is the limit.",
+    "control": "Plain text in a dismissible list row, with no associated file name.",
+    "maxLength": 180
+  },
+  "rejection.reason.folderEmpty": {
+    "situation": "Summary reason text (no single file) when a selected/dropped folder contains zero supported images after classification (§10 'Selected folder contains no supported images', R-I29).",
+    "control": "Plain text in a dismissible list row, with no associated file name.",
+    "maxLength": 140
+  },
+  "rejection.reason.folderDepthExceeded": {
+    "situation": "Summary reason text (no single file) when a folder's traversal depth exceeds the cap, reported before any file is added (§10 'Folder depth or file count exceeded', R-I30). {actual} and {cap} are nesting-level counts.",
+    "control": "Plain text in a dismissible list row, with no associated file name.",
+    "maxLength": 180
+  },
+  "rejection.reason.folderFileCountExceeded": {
+    "situation": "Summary reason text (no single file) when a folder's total file count exceeds the traversal cap, reported before any file is added (§10 'Folder depth or file count exceeded', R-I30). {actual} and {cap} are file counts.",
+    "control": "Plain text in a dismissible list row, with no associated file name.",
+    "maxLength": 180
+  },
+  "processing.total.allFailedOrSkipped": {
+    "situation": "Replaces the normal size-change total when a run finishes with zero successes but at least one failure or skip (§10 'Every image in a run failed or was skipped'), distinct from a genuinely empty run's 'No size change yet'.",
+    "control": "Plain status text above the completion actions.",
+    "maxLength": 60
+  },
+  "processing.halted.memory": {
+    "situation": "Terminal message shown in place of the normal completion actions when a run halts on out-of-memory (§10 'Out of memory', T38/T39). Unlike processing.failure.memory, this is framed at the batch level, since the whole run stops rather than just one image failing.",
+    "control": "Prominent status text replacing the completion actions.",
+    "maxLength": 160
   }
 }
