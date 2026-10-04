@@ -167,6 +167,19 @@ describe('ToolPage primary action', () => {
     // substring, so this asserts the button component's absence directly instead.
     expect(wrapper.findComponent(PrimaryActionButton).exists()).toBe(false)
   })
+
+  it('enters Processing when pressed with images in the batch', async () => {
+    const wrapper = await mountToolPage()
+    useBatchStore().addImages([image()])
+    await nextTick()
+
+    expect(useUiStore().stageMode).toBe('preview')
+
+    await wrapper.findComponent(PrimaryActionButton).trigger('click')
+
+    expect(useUiStore().stageMode).toBe('processing')
+    expect(wrapper.findComponent(Processing).exists()).toBe(true)
+  })
 })
 
 let nextId = 0

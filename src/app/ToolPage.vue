@@ -176,6 +176,7 @@ onMounted(() => {
             :count="imageCount"
             :disabled="primaryActionDisabled"
             :meta-line="primaryActionMeta"
+            @click="uiStore.enterProcessing()"
           />
         </div>
       </aside>
@@ -196,6 +197,7 @@ onMounted(() => {
         :count="imageCount"
         :disabled="primaryActionDisabled"
         :meta-line="primaryActionMeta"
+        @click="uiStore.enterProcessing()"
       />
     </div>
   </div>

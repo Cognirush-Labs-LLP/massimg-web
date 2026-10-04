@@ -593,7 +593,7 @@ defineExpose({
       </p>
     </div>
 
-    <p class="announcement" role="status" aria-live="polite">{{ announcement }}</p>
+    <p class="visually-hidden" role="status" aria-live="polite">{{ announcement }}</p>
   </div>
 </template>
 
@@ -680,19 +680,5 @@ defineExpose({
   font-size: 12.5px;
   font-weight: var(--font-weight-control);
   cursor: pointer;
-}
-
-/* Visually hidden, still announced (R-K5). No such utility class exists globally yet; T38's run
-   progress will want the same thing and should promote this rather than copy it. */
-.announcement {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
 }
 </style>

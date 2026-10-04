@@ -89,6 +89,126 @@
     "control": "Button with visible text, full accessible name (R-K10).",
     "maxLength": 20
   },
+  "processing.counter": {
+    "situation": "The Processing view's primary status line (R-X3), e.g. '2 / 10 processed'. {processed} is succeeded+failed+skipped so far, {total} is the batch size. Updates as each image settles.",
+    "control": "Mono text with tabular figures, the most prominent element on the screen besides the donut.",
+    "maxLength": 40
+  },
+  "processing.figure.succeeded": {
+    "situation": "One of four always-visible text figures beside the Processing donut (R-X4): the count of images that compressed successfully so far. Exists so every number the donut encodes is also readable as plain text, with no information existing only inside the chart.",
+    "control": "Small text row beside/below the donut, not inside its SVG.",
+    "maxLength": 24
+  },
+  "processing.figure.failed": {
+    "situation": "One of four always-visible text figures beside the Processing donut (R-X4): the count of images that failed so far.",
+    "control": "Small text row beside/below the donut, not inside its SVG.",
+    "maxLength": 24
+  },
+  "processing.figure.skipped": {
+    "situation": "One of four always-visible text figures beside the Processing donut (R-X4): the count of accepted images whose size target was unreachable (T36-A), counted separately from failures.",
+    "control": "Small text row beside/below the donut, not inside its SVG.",
+    "maxLength": 24
+  },
+  "processing.figure.pending": {
+    "situation": "One of four always-visible text figures beside the Processing donut (R-X4): the count of images not yet processed.",
+    "control": "Small text row beside/below the donut, not inside its SVG.",
+    "maxLength": 24
+  },
+  "processing.total.reduction": {
+    "situation": "The running size-reduction total (R-X5), shown once at least one image has succeeded. {saved} is a formatted byte amount (domain/sizes.ts's UI formatter), {percent} a whole-number percentage. Measured only from completed successes, never projected from pending images.",
+    "control": "Mono text figure below the counter/donut.",
+    "maxLength": 48
+  },
+  "processing.total.reductionUnderOne": {
+    "situation": "Same as processing.total.reduction, for a measured reduction under 1% — avoids rounding down to a misleading '0%'.",
+    "control": "Mono text figure below the counter/donut.",
+    "maxLength": 48
+  },
+  "processing.total.increase": {
+    "situation": "Same slot as processing.total.reduction, for the (legitimate, non-error) case where completed outputs are larger than their inputs so far.",
+    "control": "Mono text figure below the counter/donut.",
+    "maxLength": 48
+  },
+  "processing.total.increaseUnderOne": {
+    "situation": "Same as processing.total.increase, for a measured increase under 1%.",
+    "control": "Mono text figure below the counter/donut.",
+    "maxLength": 48
+  },
+  "processing.total.unchanged": {
+    "situation": "Shown before any image has succeeded yet (no measured bytes to report), or if input and output bytes are exactly equal.",
+    "control": "Mono text figure below the counter/donut.",
+    "maxLength": 32
+  },
+  "processing.cancel.label": {
+    "situation": "The Processing view's Cancel action (R-X7/R-X26), available throughout an in-progress run.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 16
+  },
+  "processing.cancel.stopping": {
+    "situation": "Replaces processing.cancel.label the instant Cancel is pressed (R-X27), staying visible until the run actually halts — bounded to at most one more image completing.",
+    "control": "Same button as processing.cancel.label, label swapped in place.",
+    "maxLength": 16
+  },
+  "processing.complete.back": {
+    "situation": "Shown once the run has finished (R-X14/R-X17). Returns to Gallery with the batch, settings and edits intact.",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 20
+  },
+  "processing.complete.download": {
+    "situation": "Shown once the run has finished, only when at least one image succeeded (R-X14/R-X16).",
+    "control": "Button with visible text, full accessible name (R-K10).",
+    "maxLength": 16
+  },
+  "processing.failure.heading": {
+    "situation": "Heading above the list of failed images (R-X11), shown whenever at least one failure has been recorded.",
+    "control": "Static section heading above a plain list.",
+    "maxLength": 16
+  },
+  "processing.failure.decode": {
+    "situation": "Per-row reason text in the Failed list (R-X11) for a decode failure — the file could not be read as an image at all. The row's own filename is shown separately, so this string does not repeat it.",
+    "control": "Plain text beside a file name in a list row.",
+    "maxLength": 140
+  },
+  "processing.failure.encode": {
+    "situation": "Per-row reason text in the Failed list for an encode failure at the chosen settings. Also used for the rare internal 'unimplemented' pipeline gap and a rejected format resolution, since both are, from the user's perspective, 'could not be compressed as requested'.",
+    "control": "Plain text beside a file name in a list row.",
+    "maxLength": 140
+  },
+  "processing.failure.memory": {
+    "situation": "Per-row reason text in the Failed list for an out-of-memory failure on one image. T38 treats this as an ordinary per-image failure that does not stop the run.",
+    "control": "Plain text beside a file name in a list row.",
+    "maxLength": 160
+  },
+  "processing.skip.heading": {
+    "situation": "Heading above the list of skipped images (§6.3), shown whenever at least one accepted image's size target was unreachable.",
+    "control": "Static section heading above a plain list.",
+    "maxLength": 16
+  },
+  "processing.skip.reason": {
+    "situation": "Per-row reason text in the Skipped list, stating the size target, the effective dimensions/format, and the smallest size actually achieved (§6.3). {target} and {achieved} are formatted byte amounts.",
+    "control": "Plain text beside a file name in a list row.",
+    "maxLength": 160
+  },
+  "processing.announce.started": {
+    "situation": "First text committed to the Processing view's aria-live region (R-K5), the moment a run begins.",
+    "control": "Visually hidden, screen-reader-only status text.",
+    "maxLength": 40
+  },
+  "processing.announce.progress": {
+    "situation": "Text committed to the aria-live region at intervals during a run (R-K5: announced periodically, not per image) — every quarter of the batch processed, not more often, so a long run doesn't flood a screen reader.",
+    "control": "Visually hidden, screen-reader-only status text.",
+    "maxLength": 40
+  },
+  "processing.announce.stopping": {
+    "situation": "Text committed to the aria-live region the instant Cancel is pressed (R-K5/R-X27).",
+    "control": "Visually hidden, screen-reader-only status text.",
+    "maxLength": 24
+  },
+  "processing.announce.complete": {
+    "situation": "Final text committed to the aria-live region once a run halts, naming the three outcome counts (R-K5/R-X14).",
+    "control": "Visually hidden, screen-reader-only status text.",
+    "maxLength": 80
+  },
   "gallery.emptyState.headline": {
     "situation": "The large headline inside the empty-state drop zone that covers the whole stage when the batch has no images (Functional Design §3.2). Shown alongside the formats line and two Select buttons.",
     "control": "Large, bold display text, centred. Not interactive.",
