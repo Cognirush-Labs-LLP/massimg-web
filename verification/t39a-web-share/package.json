@@ -1,0 +1,9 @@
+{
+  "name": "t39a-web-share",
+  "private": true,
+  "type": "module",
+  "description": "Manual device harness for T39-A — multi-file Web Share on real iOS/Android/desktop browsers (E4, see docs/task-notes/T39-A.md).",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

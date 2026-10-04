@@ -1,0 +1,354 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>T39-A Web Share harness</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 0; padding: 12px; max-width: 720px; }
+      h2 { font-size: 15px; margin: 20px 0 6px; border-top: 1px solid #ccc; padding-top: 12px; }
+      fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 8px 0; padding: 8px; }
+      label { display: inline-block; margin-right: 10px; }
+      button { padding: 8px 12px; margin: 4px 4px 4px 0; font-size: 14px; }
+      input[type="text"], input[type="number"] { font-size: 14px; padding: 4px; }
+      #log { background: #111; color: #0f0; font-family: monospace; font-size: 12px; padding: 8px;
+             height: 220px; overflow-y: auto; white-space: pre-wrap; border-radius: 6px; }
+      #fileList { font-family: monospace; font-size: 12px; }
+      .banner { background: #ffecb3; padding: 8px; border-radius: 6px; margin-bottom: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1 style="font-size:18px">T39-A — Web Share harness</h1>
+    <div id="crashBanner"></div>
+
+    <fieldset>
+      <legend>Tester / device note</legend>
+      <input type="text" id="deviceNote" placeholder="e.g. Pixel 8, Chrome 131" style="width: 100%" />
+    </fieldset>
+
+    <h2>1. Capabilities</h2>
+    <button id="probeBtn">Probe capabilities</button>
+
+    <h2>2. Build a file set</h2>
+    <fieldset>
+      <div>
+        <label><input type="checkbox" class="fmt" value="jpeg" checked /> JPEG</label>
+        <label><input type="checkbox" class="fmt" value="png" checked /> PNG</label>
+        <label><input type="checkbox" class="fmt" value="webp" checked /> WebP</label>
+        <label><input type="checkbox" class="fmt" value="avif" checked /> AVIF</label>
+        <label><input type="checkbox" class="fmt" value="gif" checked /> GIF</label>
+      </div>
+      <div>
+        <label>Count: <input type="number" id="count" value="1" min="1" max="200" style="width:60px" /></label>
+        <label><input type="checkbox" id="opfsMode" checked /> Write via OPFS (uncheck = in-memory fallback)</label>
+      </div>
+      <button id="buildRealBtn">Build from real fixtures</button>
+      <div style="margin-top:6px">
+        <label>Synthetic total MB: <input type="number" id="rampMb" value="50" min="1" style="width:70px" /></label>
+        <label>MIME tag:
+          <select id="rampFmt">
+            <option value="jpeg">jpeg</option><option value="png">png</option>
+            <option value="webp">webp</option><option value="avif">avif</option>
+            <option value="gif">gif</option>
+          </select>
+        </label>
+      </div>
+      <button id="buildSyntheticBtn">Build synthetic padding set</button>
+      <button id="clearOpfsBtn">Clear OPFS</button>
+    </fieldset>
+    <div id="fileList">(no set built yet)</div>
+
+    <h2>3. canShare / share</h2>
+    <button id="canShareBtn">Exact canShare() on current set</button>
+    <button id="shareNowBtn">Share now (fresh click)</button>
+    <button id="shareDelayedBtn">Share after 3s delay (forces non-cancel failure)</button>
+
+    <h2>Log</h2>
+    <div id="log"></div>
+
+    <script>
+      const FIXTURE_FORMATS = ['jpeg', 'png', 'webp', 'avif', 'gif'];
+      const EXT = { jpeg: 'jpg', png: 'png', webp: 'webp', avif: 'avif', gif: 'gif' };
+      const MIME = {
+        jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif',
+      };
+      const CRASH_MARKER_KEY = 't39a-pending-attempt';
+
+      let currentFiles = [];
+      const fixtureCache = new Map();
+
+      function log(line) {
+        const el = document.getElementById('log');
+        const stamp = new Date().toISOString().split('T')[1].replace('Z', '');
+        el.textContent += `[${stamp}] ${line}\n`;
+        el.scrollTop = el.scrollHeight;
+        console.log(line);
+      }
+
+      function deviceNote() {
+        return document.getElementById('deviceNote').value || '(no note entered)';
+      }
+
+      async function postResult(record) {
+        const full = { deviceNote: deviceNote(), userAgent: navigator.userAgent, ...record };
+        try {
+          await fetch('/results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(full),
+          });
+          log(`recorded: ${record.testCase}`);
+        } catch (err) {
+          log(`WARNING: could not POST result (${err.message}) — copy the log manually`);
+        }
+      }
+
+      async function sampleMemory() {
+        if (typeof performance.measureUserAgentSpecificMemory === 'function') {
+          try {
+            const r = await performance.measureUserAgentSpecificMemory();
+            return { method: 'measureUserAgentSpecificMemory', bytes: r.bytes };
+          } catch (err) {
+            log(`measureUserAgentSpecificMemory failed: ${err.message}`);
+          }
+        }
+        if (performance.memory) {
+          return { method: 'performance.memory.usedJSHeapSize', bytes: performance.memory.usedJSHeapSize };
+        }
+        return { method: 'unavailable (note tab survival manually)', bytes: null };
+      }
+
+      // --- capability probe -------------------------------------------------
+
+      async function probeOpfs() {
+        if (!('storage' in navigator) || typeof navigator.storage.getDirectory !== 'function') return false;
+        try {
+          const root = await navigator.storage.getDirectory();
+          const handle = await root.getFileHandle('.t39a-probe', { create: true });
+          const writable = await handle.createWritable();
+          await writable.write(new Uint8Array([1]));
+          await writable.close();
+          await root.removeEntry('.t39a-probe');
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      document.getElementById('probeBtn').addEventListener('click', async () => {
+        const hasShare = 'share' in navigator;
+        const hasCanShare = 'canShare' in navigator;
+        const opfs = await probeOpfs();
+        // Generic non-empty-file probe, mirroring `Capabilities.fileShare` (Technical Design §9.1).
+        let genericFileShare = false;
+        if (hasCanShare) {
+          try {
+            const probeFile = new File([new Uint8Array([0, 1, 2, 3])], 'probe.jpg', { type: 'image/jpeg' });
+            genericFileShare = navigator.canShare({ files: [probeFile] });
+          } catch {
+            genericFileShare = false;
+          }
+        }
+        if (!opfs) {
+          document.getElementById('crashBanner').innerHTML =
+            '<div class="banner">OPFS probe failed — likely private/incognito mode. Use the in-memory fallback mode below.</div>';
+        }
+        log(`share=${hasShare} canShare=${hasCanShare} opfs=${opfs} genericFileShare=${genericFileShare}`);
+        await postResult({ testCase: 'capability-probe', hasShare, hasCanShare, opfs, genericFileShare });
+      });
+
+      // --- building file sets ------------------------------------------------
+
+      async function fetchFixtureBytes(format) {
+        if (fixtureCache.has(format)) return fixtureCache.get(format);
+        const res = await fetch(`/fixture/${format}`);
+        if (!res.ok) throw new Error(`fixture fetch failed for ${format}: ${res.status}`);
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        fixtureCache.set(format, bytes);
+        return bytes;
+      }
+
+      async function writeOpfsFile(name, bytes, mime) {
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(name, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(bytes);
+        await writable.close();
+        const file = await handle.getFile();
+        // Reconstruct with an explicit MIME so every engine agrees on `.type`, regardless of
+        // whether it sniffs the extension the same way OPFS's `getFile()` does.
+        return new File([file], name, { type: mime, lastModified: file.lastModified });
+      }
+
+      function inMemoryFile(name, bytes, mime) {
+        return new File([bytes], name, { type: mime });
+      }
+
+      function renderFileList() {
+        const el = document.getElementById('fileList');
+        if (currentFiles.length === 0) {
+          el.textContent = '(no set built yet)';
+          return;
+        }
+        const total = currentFiles.reduce((sum, f) => sum + f.size, 0);
+        el.innerHTML =
+          currentFiles.map((f) => `${f.name} — ${f.type} — ${f.size.toLocaleString()} bytes`).join('<br>') +
+          `<br><strong>Total: ${currentFiles.length} files, ${total.toLocaleString()} bytes</strong>`;
+      }
+
+      document.getElementById('buildRealBtn').addEventListener('click', async () => {
+        const formats = [...document.querySelectorAll('.fmt:checked')].map((el) => el.value);
+        const count = Math.max(1, Number(document.getElementById('count').value) || 1);
+        const opfsMode = document.getElementById('opfsMode').checked;
+        if (formats.length === 0) {
+          log('pick at least one format');
+          return;
+        }
+        currentFiles = [];
+        try {
+          for (let i = 0; i < count; i++) {
+            const format = formats[i % formats.length];
+            const bytes = await fetchFixtureBytes(format);
+            const name = `sample-${i}.${EXT[format]}`;
+            const file = opfsMode
+              ? await writeOpfsFile(name, bytes, MIME[format])
+              : inMemoryFile(name, bytes, MIME[format]);
+            currentFiles.push(file);
+          }
+          log(`built ${count} file(s) from real fixtures (${opfsMode ? 'OPFS' : 'in-memory'}): ${formats.join(', ')}`);
+          renderFileList();
+        } catch (err) {
+          log(`build failed: ${err.message}`);
+        }
+      });
+
+      document.getElementById('buildSyntheticBtn').addEventListener('click', async () => {
+        const targetMb = Math.max(1, Number(document.getElementById('rampMb').value) || 1);
+        const format = document.getElementById('rampFmt').value;
+        const count = Math.max(1, Number(document.getElementById('count').value) || 1);
+        const opfsMode = document.getElementById('opfsMode').checked;
+        const perFileBytes = Math.floor((targetMb * 1024 * 1024) / count);
+        currentFiles = [];
+        try {
+          for (let i = 0; i < count; i++) {
+            // Content is irrelevant to this measurement — only MIME type and total bytes matter to
+            // canShare()/share() (same reasoning as T01's fixed pattern buffer). Zero-filled is fine.
+            const bytes = new Uint8Array(perFileBytes);
+            const name = `ramp-${i}.${EXT[format]}`;
+            const file = opfsMode
+              ? await writeOpfsFile(name, bytes, MIME[format])
+              : inMemoryFile(name, bytes, MIME[format]);
+            currentFiles.push(file);
+          }
+          log(`built ${count} synthetic file(s), ~${targetMb} MB total, tagged ${format}`);
+          renderFileList();
+        } catch (err) {
+          log(`synthetic build failed: ${err.message}`);
+          await postResult({
+            testCase: 'synthetic-build-failed',
+            targetMb,
+            count,
+            format,
+            error: String(err.message || err),
+          });
+        }
+      });
+
+      document.getElementById('clearOpfsBtn').addEventListener('click', async () => {
+        try {
+          const root = await navigator.storage.getDirectory();
+          for await (const name of root.keys()) {
+            await root.removeEntry(name).catch(() => {});
+          }
+          currentFiles = [];
+          renderFileList();
+          log('OPFS cleared');
+        } catch (err) {
+          log(`clear failed: ${err.message}`);
+        }
+      });
+
+      // --- canShare / share ---------------------------------------------------
+
+      function currentTotalBytes() {
+        return currentFiles.reduce((sum, f) => sum + f.size, 0);
+      }
+
+      document.getElementById('canShareBtn').addEventListener('click', async () => {
+        if (currentFiles.length === 0) {
+          log('build a set first');
+          return;
+        }
+        let result, errorMessage = null;
+        try {
+          result = navigator.canShare({ files: currentFiles });
+        } catch (err) {
+          result = false;
+          errorMessage = String(err.message || err);
+        }
+        log(`canShare = ${result}${errorMessage ? ' (threw: ' + errorMessage + ')' : ''}`);
+        await postResult({
+          testCase: 'exact-canShare',
+          fileCount: currentFiles.length,
+          totalBytes: currentTotalBytes(),
+          formats: currentFiles.map((f) => f.type),
+          result,
+          errorMessage,
+        });
+      });
+
+      async function attemptShare(label) {
+        if (currentFiles.length === 0) {
+          log('build a set first');
+          return;
+        }
+        const attempt = { testCase: label, fileCount: currentFiles.length, totalBytes: currentTotalBytes() };
+        sessionStorage.setItem(CRASH_MARKER_KEY, JSON.stringify(attempt));
+        // navigator.share() must run on the click's transient user activation with nothing async
+        // ahead of it — Chrome's activation window is short enough that even one slow await (e.g.
+        // measureUserAgentSpecificMemory(), which triggers a real memory sweep) can expire it before
+        // this call runs, surfacing as a spurious NotAllowedError that looks like a gesture problem
+        // but isn't one. Memory is sampled only after the call has settled.
+        const sharePromise = navigator.share({ files: currentFiles });
+        try {
+          await sharePromise;
+          sessionStorage.removeItem(CRASH_MARKER_KEY);
+          const memAfter = await sampleMemory();
+          log(`${label}: resolved (delivered)`);
+          await postResult({ ...attempt, outcome: 'resolved', memAfter });
+        } catch (err) {
+          sessionStorage.removeItem(CRASH_MARKER_KEY);
+          const isCancel = err && err.name === 'AbortError';
+          log(`${label}: ${isCancel ? 'cancelled' : 'FAILED'} — ${err.name}: ${err.message}`);
+          await postResult({
+            ...attempt,
+            outcome: isCancel ? 'cancelled' : 'failed',
+            errorName: err.name,
+            errorMessage: err.message,
+          });
+        }
+      }
+
+      document.getElementById('shareNowBtn').addEventListener('click', () => attemptShare('share-fresh-click'));
+      document.getElementById('shareDelayedBtn').addEventListener('click', () => {
+        log('waiting 3s before calling share() — activation will have expired...');
+        setTimeout(() => attemptShare('share-delayed-no-activation'), 3000);
+      });
+
+      // --- crash/reload detection ---------------------------------------------
+
+      (function checkCrashMarker() {
+        const raw = sessionStorage.getItem(CRASH_MARKER_KEY);
+        if (!raw) return;
+        sessionStorage.removeItem(CRASH_MARKER_KEY);
+        const attempt = JSON.parse(raw);
+        document.getElementById('crashBanner').innerHTML +=
+          `<div class="banner">Previous attempt (${attempt.testCase}, ${attempt.fileCount} files, ` +
+          `${attempt.totalBytes.toLocaleString()} bytes) did not complete before this reload — tab likely did not survive.</div>`;
+        postResult({ testCase: 'tab-did-not-survive', ...attempt });
+      })();
+
+      log('ready');
+    </script>
+  </body>
+</html>

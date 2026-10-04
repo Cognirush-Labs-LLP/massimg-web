@@ -875,7 +875,7 @@ Which sections change if an entry fails.
 | Assumption | Conf | Section at risk | Consequence if false |
 | --- | --- | --- | --- |
 | **B4** | 90 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
-| **E4** | 60 | §9.1–§9.2 | Share is withheld per platform/payload, or its count/byte cap falls to the measured safe value; Download is unchanged |
+| **E4** | 85 | §9.1–§9.2 | Measured on desktop + Android: `maximumShareBytes` ≈ 40 MB (Chrome's real ceiling, not `canShare`'s), file count isn't the constraint. Real iOS still open, deferred to T50 |
 | **A13** | 95 | §7.7 | Settled in T23 for the mechanism — ImageMagick reports nothing about CICP, so the pipeline parses the `colr` box itself. The *frequency* clause is unconfirmed: no naturally CICP-only file in the local sample |
 | **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
 | **D1** | 99 | §7.5 | **Settled in T30.** The search costs 1, 2, 3 or 8 encodes and nothing between; AVIF at §7.3's speed is 10.8× quicker than at the library default, so **R-Q4 excludes no format**. Residual risk is wall time on hardware slower than a desktop, not the structure |

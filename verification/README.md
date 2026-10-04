@@ -19,6 +19,7 @@ recorded in each folder's `results.json` and written up in `docs/task-notes/TNN.
 | [t28-gif](t28-gif) | gifsicle vs. ImageMagick GIF writer (A7) | Optional — degrades gracefully |
 | [t29-animated](t29-animated) | Peak memory vs. frame count/size for animation decode (C7) | No — synthetic animations |
 | [t30-size](t30-size) | Size-target search cost across formats (D1) | Optional — degrades gracefully |
+| [t39a-web-share](t39a-web-share) | Multi-file Web Share on real iOS/Android/desktop browsers (E4) — manual, no `run.mjs` | **Required** |
 
 ## Real-photo fixtures
 

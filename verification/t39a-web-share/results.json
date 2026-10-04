@@ -1,0 +1,1426 @@
+[
+  {
+    "deviceNote": "(no note entered)",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:04:36.823Z"
+  },
+  {
+    "deviceNote": "macos_safari",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:04:48.896Z"
+  },
+  {
+    "deviceNote": "macos_safari",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:05:38.097Z"
+  },
+  {
+    "deviceNote": "macos_safari",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "resolved",
+    "memBefore": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T16:06:06.351Z"
+  },
+  {
+    "deviceNote": "macos_safari",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:06:30.060Z"
+  },
+  {
+    "deviceNote": "macos_safari",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "resolved",
+    "memBefore": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T16:06:33.589Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:08:20.259Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:08:27.293Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "resolved",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4436168
+    },
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4431412
+    },
+    "recordedAt": "2026-10-04T16:08:43.523Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:08:53.008Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "InvalidStateError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': An earlier share has not yet completed.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4516323
+    },
+    "recordedAt": "2026-10-04T16:08:59.613Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4516323
+    },
+    "recordedAt": "2026-10-04T16:09:01.810Z"
+  },
+  {
+    "deviceNote": "macos chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:09:13.527Z"
+  },
+  {
+    "deviceNote": "(no note entered)",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "recordedAt": "2026-10-04T16:09:29.447Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:09:55.776Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:09:59.968Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "resolved",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4520177
+    },
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4504065
+    },
+    "recordedAt": "2026-10-04T16:10:31.688Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:10:42.708Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4526573
+    },
+    "recordedAt": "2026-10-04T16:11:03.909Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4529589
+    },
+    "recordedAt": "2026-10-04T16:11:34.180Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4526529
+    },
+    "recordedAt": "2026-10-04T16:11:53.510Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:11:59.053Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4530737
+    },
+    "recordedAt": "2026-10-04T16:12:20.302Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 3",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:13:19.467Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 3",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:13:26.636Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 3",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4565721
+    },
+    "recordedAt": "2026-10-04T16:13:38.417Z"
+  },
+  {
+    "deviceNote": "macos chrome attempt 3",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4538539
+    },
+    "recordedAt": "2026-10-04T16:14:23.703Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:16:07.897Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:16:20.217Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4506963
+    },
+    "recordedAt": "2026-10-04T16:16:39.643Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:16:56.185Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request.",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4515372
+    },
+    "recordedAt": "2026-10-04T16:16:59.561Z"
+  },
+  {
+    "deviceNote": "Android chrome ",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "resolved",
+    "memBefore": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4515372
+    },
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4521004
+    },
+    "recordedAt": "2026-10-04T16:17:18.856Z"
+  },
+  {
+    "deviceNote": "2_macos_chrome_attempt1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T16:59:11.790Z"
+  },
+  {
+    "deviceNote": "2_macos_chrome_attempt1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T16:59:16.384Z"
+  },
+  {
+    "deviceNote": "2_macos_chrome_attempt1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4573491
+    },
+    "recordedAt": "2026-10-04T16:59:25.772Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T17:00:29.772Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T17:00:42.801Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4508452
+    },
+    "recordedAt": "2026-10-04T17:01:00.506Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T17:01:07.929Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T17:01:10.311Z"
+  },
+  {
+    "deviceNote": "2_android_chrome_1",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T17:01:15.223Z"
+  },
+  {
+    "deviceNote": "2_macos_firefox",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
+    "testCase": "capability-probe",
+    "hasShare": false,
+    "hasCanShare": false,
+    "opfs": true,
+    "genericFileShare": false,
+    "recordedAt": "2026-10-04T17:02:55.987Z"
+  },
+  {
+    "deviceNote": "2_macos_firefox",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": false,
+    "errorMessage": "navigator.canShare is not a function",
+    "recordedAt": "2026-10-04T17:03:03.574Z"
+  },
+  {
+    "deviceNote": "(no note entered)",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T17:03:37.089Z"
+  },
+  {
+    "deviceNote": "(no note entered)",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T17:03:38.021Z"
+  },
+  {
+    "deviceNote": "Android chrome 3 second test",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T17:03:53.940Z"
+  },
+  {
+    "deviceNote": "Android chrome 3 second test",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T17:03:57.458Z"
+  },
+  {
+    "deviceNote": "Android chrome 3 second test",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4470382
+    },
+    "recordedAt": "2026-10-04T17:04:16.865Z"
+  },
+  {
+    "deviceNote": "2_macos_firefox",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
+    "testCase": "capability-probe",
+    "hasShare": false,
+    "hasCanShare": false,
+    "opfs": true,
+    "genericFileShare": false,
+    "recordedAt": "2026-10-04T17:04:25.129Z"
+  },
+  {
+    "deviceNote": "2_macos_chrome_attempt1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 2,
+    "totalBytes": 3916479,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 4535797
+    },
+    "recordedAt": "2026-10-04T17:05:17.613Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T18:04:33.297Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 8155829,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T18:04:45.135Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 8155829,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 8787304
+    },
+    "recordedAt": "2026-10-04T18:05:01.418Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 2,
+    "totalBytes": 9454480,
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T18:05:10.002Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 2,
+    "totalBytes": 9454480,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 10048674
+    },
+    "recordedAt": "2026-10-04T18:05:25.812Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 2,
+    "totalBytes": 9454480,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 10091106
+    },
+    "recordedAt": "2026-10-04T18:06:02.327Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 8155829,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T18:06:17.464Z"
+  },
+  {
+    "deviceNote": "3_windows_chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 1,
+    "totalBytes": 8155829,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 10097834
+    },
+    "recordedAt": "2026-10-04T18:06:37.177Z"
+  },
+  {
+    "deviceNote": "iPad ios12",
+    "userAgent": "Mozilla/5.0 (iPad; CPU OS 12_5_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1",
+    "testCase": "capability-probe",
+    "hasShare": false,
+    "hasCanShare": false,
+    "opfs": false,
+    "genericFileShare": false,
+    "recordedAt": "2026-10-04T18:27:33.357Z"
+  },
+  {
+    "deviceNote": "iPad ios12",
+    "userAgent": "Mozilla/5.0 (iPad; CPU OS 12_5_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1",
+    "testCase": "capability-probe",
+    "hasShare": false,
+    "hasCanShare": false,
+    "opfs": false,
+    "genericFileShare": false,
+    "recordedAt": "2026-10-04T18:29:09.120Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:05:11.424Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:05:48.083Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 599030
+    },
+    "recordedAt": "2026-10-04T19:06:12.730Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:06:47.028Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Permission denied",
+    "recordedAt": "2026-10-04T19:06:47.783Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:07:01.053Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:07:09.050Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Permission denied",
+    "recordedAt": "2026-10-04T19:07:12.151Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:07:26.642Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:07:30.443Z"
+  },
+  {
+    "deviceNote": "macos_chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 621617
+    },
+    "recordedAt": "2026-10-04T19:08:01.514Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:08:23.396Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:08:47.097Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:08:49.394Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:08:55.316Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:08:55.664Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "failed",
+    "errorName": "InvalidStateError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': An earlier share has not yet completed.",
+    "recordedAt": "2026-10-04T19:08:56.597Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 3875787,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:08:57.041Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:09:01.523Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:09:09.935Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:09:12.912Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-delayed-no-activation",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:09:47.732Z"
+  },
+  {
+    "deviceNote": "incognito-macos-chrome",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:09:54.790Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:10:13.324Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:10:17.439Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:10:20.308Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:10:32.371Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:10:34.601Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 209715200,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:10:49.131Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 209715200,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:10:51.339Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 524288000,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:11:05.273Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 524288000,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:11:08.468Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": true,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:11:34.138Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:11:38.846Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 104857600,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Permission denied",
+    "recordedAt": "2026-10-04T19:11:39.689Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:11:49.003Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 607659
+    },
+    "recordedAt": "2026-10-04T19:11:59.073Z"
+  },
+  {
+    "deviceNote": "private-safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "capability-probe",
+    "hasShare": true,
+    "hasCanShare": true,
+    "opfs": false,
+    "genericFileShare": true,
+    "recordedAt": "2026-10-04T19:12:29.030Z"
+  },
+  {
+    "deviceNote": "private-safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "synthetic-build-failed",
+    "targetMb": 50,
+    "count": 1,
+    "format": "jpeg",
+    "error": "The operation failed for an unknown transient reason (e.g. out of memory).",
+    "recordedAt": "2026-10-04T19:12:55.926Z"
+  },
+  {
+    "deviceNote": "private-safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "synthetic-build-failed",
+    "targetMb": 50,
+    "count": 1,
+    "format": "jpeg",
+    "error": "The operation failed for an unknown transient reason (e.g. out of memory).",
+    "recordedAt": "2026-10-04T19:13:05.250Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 1048576000,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:14:00.668Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 1048576000,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:14:05.448Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 73400320,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:15:09.091Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 73400320,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Permission denied",
+    "recordedAt": "2026-10-04T19:15:09.699Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 62914560,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:15:17.161Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 62914560,
+    "outcome": "failed",
+    "errorName": "NotAllowedError",
+    "errorMessage": "Failed to execute 'share' on 'Navigator': Permission denied",
+    "recordedAt": "2026-10-04T19:15:18.052Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "formats": [
+      "image/jpeg"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:15:27.041Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 1,
+    "totalBytes": 52428800,
+    "outcome": "cancelled",
+    "errorName": "AbortError",
+    "errorMessage": "Share canceled",
+    "recordedAt": "2026-10-04T19:15:33.648Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "exact-canShare",
+    "fileCount": 10,
+    "totalBytes": 9848586,
+    "formats": [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/gif"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:17:56.667Z"
+  },
+  {
+    "deviceNote": "chrome-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "testCase": "share-fresh-click",
+    "fileCount": 10,
+    "totalBytes": 9848586,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "measureUserAgentSpecificMemory",
+      "bytes": 5559028
+    },
+    "recordedAt": "2026-10-04T19:18:09.421Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "exact-canShare",
+    "fileCount": 10,
+    "totalBytes": 9848586,
+    "formats": [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/gif"
+    ],
+    "result": true,
+    "errorMessage": null,
+    "recordedAt": "2026-10-04T19:18:13.271Z"
+  },
+  {
+    "deviceNote": "safari-macos",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "testCase": "share-fresh-click",
+    "fileCount": 10,
+    "totalBytes": 9848586,
+    "outcome": "resolved",
+    "memAfter": {
+      "method": "unavailable (note tab survival manually)",
+      "bytes": null
+    },
+    "recordedAt": "2026-10-04T19:18:15.269Z"
+  }
+]
