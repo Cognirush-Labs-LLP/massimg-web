@@ -948,5 +948,15 @@
     "situation": "Terminal message shown in place of the normal completion actions when a run halts on out-of-memory (§10 'Out of memory', T38/T39). Unlike processing.failure.memory, this is framed at the batch level, since the whole run stops rather than just one image failing.",
     "control": "Prominent status text replacing the completion actions.",
     "maxLength": 160
+  },
+  "processing.halted.storage": {
+    "situation": "Terminal message shown in place of the normal completion actions when a run halts because writing to origin-private storage failed partway through (§10 'Storage write failure mid-run', T40). Sibling to processing.halted.memory: same batch-level halt, different cause. The partial archive/output artifacts are deleted before this is shown.",
+    "control": "Prominent status text replacing the completion actions.",
+    "maxLength": 160
+  },
+  "processing.quota.rejected": {
+    "situation": "Shown instead of the normal counter/progress UI when the pre-run storage quota preflight (R-X40, T40) finds the predicted archive will not fit before any image is processed — no job is ever dispatched in this case. {required} and {available} are formatted byte amounts (domain/sizes.ts's UI formatter).",
+    "control": "Prominent status text replacing the whole counter/donut/progress view.",
+    "maxLength": 160
   }
 }

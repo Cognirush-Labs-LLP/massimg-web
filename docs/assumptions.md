@@ -1121,11 +1121,19 @@ Photographs are split out because they are the row the rest of this entry is wea
 
 ## 6. Output
 
-### E1 `OPEN` `76%` `P2` Streaming ZIP assembly holds bounded memory
+### E1 `TESTED` `95%` `P2` Streaming ZIP assembly holds bounded memory
 
 A ZIP written incrementally into OPFS should hold memory proportional to one entry rather than the archive.
 
-**Supporting evidence (T01), not a direct test.** T01's harness (`verification/t01-opfs-memory`) wrote a single 1 GB then 3 GB blob into OPFS in chunks and downloaded it, on Chromium, Firefox and WebKit, watching peak process RSS throughout. Peak memory stayed flat and far below file size in every case (see B4 above for the numbers) — i.e. the OPFS layer underneath a streaming ZIP writer does not itself force materialisation of what passes through it, on any of the three engines. That is consistent with, and mildly raises confidence in, E1's claim. It is not a substitute for E1's own test: T01 wrote one large contiguous blob, not a ZIP assembled incrementally from many small entries, so it says nothing about whether the ZIP-writing approach itself buffers entries, retains previously-written entries' bytes, or grows a central directory in memory. E1 stays `OPEN` — the dedicated test (T40: assemble a multi-gigabyte archive from many entries while watching tab memory) is still required before this can be marked `TESTED`.
+**Measured (T40, `verification/t40-archive-memory`).** 200 distinct 16 MB entries (3.2 GB total, deliberately many separate allocations rather than one buffer reused — see the harness's own comment on why that distinction matters for this exact question) streamed through a real `client-zip` `makeZip()` call into a real OPFS file via `createWritable`, on Chromium, Firefox and desktop WebKit, each in its own `launchPersistentContext` profile (WebKit has no OPFS in its default context — T01). Peak process-tree RSS sampled throughout, against an idle baseline taken immediately before:
+
+| Engine | Idle baseline | Peak during write | Peak above baseline | Total archived |
+| --- | --- | --- | --- | --- |
+| Chromium | 261.5 MB | 390.0 MB | 128.5 MB | 3,200 MB |
+| Firefox | 998.9 MB | 1,169.5 MB | 170.6 MB | 3,200 MB |
+| WebKit | 108.9 MB | 109.0 MB | ~0.1 MB | 3,200 MB |
+
+(A repeat run landed within the same range — 118.6/211.1/~0 MB above baseline — confirming this is stable, not a one-off sample.) Every engine's peak-above-baseline is a small multiple of one entry (16 MB) — around 8x on Chromium, 11x on Firefox, immeasurable on WebKit — and nowhere close to the 3.2 GB total. Confidence is 95%, not 100%: the small multiple above one entry (rather than exactly one) is consistent with ordinary stream backpressure/double-buffering, not with full retention, but it means the pass condition is "a small bounded multiple of one entry", not literally "one entry" to the byte. Combined with T01's supporting evidence (OPFS itself does not force materialisation) and E2 (the central directory's size prediction is exact, meaning its in-memory bookkeeping is also small and fixed-shape per entry, not unbounded), this closes the gap T01 explicitly left open: the ZIP-writing approach itself does not buffer entries or retain previously-written bytes, on any of the three engines.
 
 **Method.** Assemble a multi-gigabyte archive from many entries while watching tab memory. Pass condition: peak stays near the largest single entry.
 
@@ -1139,11 +1147,13 @@ A ZIP written incrementally into OPFS should hold memory proportional to one ent
 
 ---
 
-### E3 `OPEN` `80%` `P3` ZIP compression level is not worth paying for
+### E3 `REFUTED` `100%` `P3` ZIP compression level is not worth paying for
 
-JPEG, WebP and AVIF are already compressed, so storing rather than deflating costs little and saves time. PNG and GIF outputs may still deflate usefully.
+**Claim, as originally written.** JPEG, WebP and AVIF are already compressed, so storing rather than deflating costs little and saves time; PNG and GIF outputs may still deflate usefully, so the choice should be made per entry.
 
-**Method.** Assemble a representative batch both ways and compare size and time.
+**The premise assumed a choice the chosen library does not offer.** `client-zip` (Technical Design §7.1's named library, vendored and licensed under T06; `pnpm add`ed in T40) does not implement deflate at all, in any released version (checked against 2.5.1, the current latest, and its full version history). Its own documentation is explicit: *"`client-zip` does not support compression, encryption, or any extra fields and attributes."* Compression appears only in the library's own "not planned" notes, with the maintainer's stated reason that it is "incompatible with content-length prediction" — the same `predictLength` exactness E2 already measured and R-X40's quota preflight depends on. There is no per-entry knob, no global option, and no way to feed it pre-deflated bytes and have it record the correct ZIP compression-method flag: every entry `client-zip` writes is stored, unconditionally.
+
+**Consequence.** T40's "entries stored rather than deflated for already-compressed formats, per entry" is satisfied trivially and without code to write — not because PNG/GIF were measured and found not worth deflating, but because deflating anything is not possible with this library. The original question (is per-format deflate worth its cost) was never actually tested and now cannot be, short of replacing the library or patching in a from-scratch deflate-and-flag implementation — neither justified by one format pair's marginal savings against a library the project already vendored, licensed and chose for its small size and clean streaming API. Technical Design §9.1 is corrected to state the actual constraint rather than a per-entry choice that does not exist.
 
 ---
 

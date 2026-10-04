@@ -79,7 +79,7 @@ async function runRoundTrip(
       const first = new Uint8Array(await blob.slice(0, 1).arrayBuffer())
       const last = new Uint8Array(await blob.slice(blobSize - 1, blobSize).arrayBuffer())
 
-      await mod.deleteArchive()
+      await mod.deleteRunArtifacts()
       let readAfterDeleteThrew = false
       try {
         await mod.readArchive()
@@ -110,6 +110,112 @@ test('writes, reads back and deletes a multi-hundred-MB archive via real OPFS', 
     expect(result.firstByte).toBe(0)
     expect(result.lastByte).toBe((REAL_CHUNK_COUNT - 1) % 256)
     expect(result.readAfterDeleteThrew).toBe(true)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('writes, reads back and cleans up individual output copies via real OPFS', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    const result = await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+
+      await mod.writeOutputCopy(0, new Uint8Array([1, 2, 3]), {
+        name: 'photo.jpg',
+        mimeType: 'image/jpeg',
+      })
+      await mod.writeOutputCopy(1, new Uint8Array([4, 5]), {
+        name: 'photo-1.jpg',
+        mimeType: 'image/jpeg',
+      })
+
+      const beforeDelete = await mod.readOutputCopies()
+      const beforeNamesAndSizes = beforeDelete.map((f: File) => [f.name, f.type, f.size])
+
+      await mod.deleteOutputCopy(0)
+      const afterDeleteOne = await mod.readOutputCopies()
+      const afterDeleteOneNames = afterDeleteOne.map((f: File) => f.name)
+
+      await mod.deleteRunArtifacts()
+      const afterFullCleanup = await mod.readOutputCopies()
+
+      return {
+        beforeNamesAndSizes,
+        afterDeleteOneNames,
+        afterFullCleanupLength: afterFullCleanup.length,
+      }
+    }, OPFS_MODULE_PATH)
+
+    expect(result.beforeNamesAndSizes).toEqual([
+      ['photo.jpg', 'image/jpeg', 3],
+      ['photo-1.jpg', 'image/jpeg', 2],
+    ])
+    expect(result.afterDeleteOneNames).toEqual(['photo-1.jpg'])
+    expect(result.afterFullCleanupLength).toBe(0)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('deleteRunArtifacts removes the archive and every output copy together', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    const result = await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+
+      await mod.writeArchive(new Blob([new Uint8Array([9, 9])]).stream())
+      await mod.writeOutputCopy(0, new Uint8Array([1]), { name: 'a.png', mimeType: 'image/png' })
+      await mod.deleteRunArtifacts()
+
+      let archiveReadThrew = false
+      try {
+        await mod.readArchive()
+      } catch {
+        archiveReadThrew = true
+      }
+
+      const copies = await mod.readOutputCopies()
+      return { archiveReadThrew, copiesLength: copies.length }
+    }, OPFS_MODULE_PATH)
+
+    expect(result.archiveReadThrew).toBe(true)
+    expect(result.copiesLength).toBe(0)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('checkCombinedQuota distinguishes archive failure from share-only failure', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    const result = await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+      const { quota, usage } = await mod.estimateQuota()
+      const available = quota - usage
+
+      // Small enough to fit alone; combined with a share-copy allowance larger than everything
+      // left over, only the combined figure should fail.
+      const archiveOnlyFits = await mod.checkCombinedQuota(1024, available)
+      // Larger than the whole quota: both figures fail.
+      const archiveItselfFails = await mod.checkCombinedQuota(available + quota, 0)
+
+      return { archiveOnlyFits, archiveItselfFails }
+    }, OPFS_MODULE_PATH)
+
+    expect(result.archiveOnlyFits.archive.ok).toBe(true)
+    expect(result.archiveOnlyFits.combined.ok).toBe(false)
+    expect(result.archiveItselfFails.archive.ok).toBe(false)
+    expect(result.archiveItselfFails.combined.ok).toBe(false)
   } finally {
     await cleanup()
   }
@@ -165,6 +271,20 @@ test('falls back to in-memory storage in real Firefox private browsing', async (
       }, OPFS_MODULE_PATH)
       expect(quota.ok).toBe(true)
       expect(quota.available).toBe(Infinity)
+
+      const copies = await page.evaluate(async (path) => {
+        const mod = await import(/* @vite-ignore */ path)
+        await mod.writeOutputCopy(0, new Uint8Array([7]), { name: 'a.png', mimeType: 'image/png' })
+        const before = await mod.readOutputCopies()
+        await mod.deleteRunArtifacts()
+        const after = await mod.readOutputCopies()
+        return {
+          beforeLength: before.length,
+          beforeName: before[0]?.name,
+          afterLength: after.length,
+        }
+      }, OPFS_MODULE_PATH)
+      expect(copies).toEqual({ beforeLength: 1, beforeName: 'a.png', afterLength: 0 })
     } finally {
       await context.close()
     }

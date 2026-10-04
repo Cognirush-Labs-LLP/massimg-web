@@ -615,7 +615,7 @@ The 200-file limit inherited from the original design draft is not defended by a
 
 **E2 measured `predictLength` as byte-exact** across 50 entries with nested paths and non-ASCII filenames, so the quota preflight in R-X40 uses the existing archive prediction rather than adding an unrelated packaging allowance.
 
-ZIP entries are stored rather than deflated for already-compressed formats (**E3**, 80%). PNG and GIF may still deflate usefully, so the setting is per entry.
+Every ZIP entry is stored, never deflated: `client-zip` does not implement compression in any released version and has no per-entry or global compression option (**E3**, refuted at 100% — the library's own documentation rules it out, and the maintainer notes deflate is "incompatible with content-length prediction", the same exactness **E2** relies on). There is accordingly no store-versus-deflate choice to make for PNG or GIF; this is a property of the chosen library, not a measured trade-off.
 
 Every run that starts with more than one image retains its first successful output as the possible direct-download candidate required by R-X16. The candidate is deleted when a second success makes ZIP delivery certain, unless the Share path below owns it independently. This one-file candidate is part of the existing Download contract, not Share overhead.
 
@@ -876,6 +876,7 @@ Which sections change if an entry fails.
 | --- | --- | --- | --- |
 | **B4** | 90 | §9.2 | Architecture changes shape. Chrome defers compression to the Download press; others get a hard cap |
 | **E4** | 85 | §9.1–§9.2 | Measured on desktop + Android: `maximumShareBytes` ≈ 40 MB (Chrome's real ceiling, not `canShare`'s), file count isn't the constraint. Real iOS still open, deferred to T50 |
+| **E3** | 100 | §9.1 | **Refuted in T40.** `client-zip` has no compression capability at all, in any released version — every entry is always stored. The per-entry store-vs-deflate choice §9.1 described does not exist |
 | **A13** | 95 | §7.7 | Settled in T23 for the mechanism — ImageMagick reports nothing about CICP, so the pipeline parses the `colr` box itself. The *frequency* clause is unconfirmed: no naturally CICP-only file in the local sample |
 | **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
 | **D1** | 99 | §7.5 | **Settled in T30.** The search costs 1, 2, 3 or 8 encodes and nothing between; AVIF at §7.3's speed is 10.8× quicker than at the library default, so **R-Q4 excludes no format**. Residual risk is wall time on hardware slower than a desktop, not the structure |
@@ -889,6 +890,6 @@ Which sections change if an entry fails.
 | **B9**, **B6** | 70, 95 | §12 | Threaded build unavailable; single-threaded baseline. **Measured in T27**: with no COOP/COEP, all three engines refuse `SharedArrayBuffer`; the later APNG-compatible build now ships only the measured single-threaded baseline |
 | **C5** | 85 | §10.4 | List view becomes the default at a lower threshold. Measured in T20: the threshold is `maximumThumbnails`, and no fallback was needed |
 | **D3** | 90 | §7.7 | Measured in T23 and the APNG recompression pass: attach `iCCP` after apng-optimizer strips its input profile; oxipng 9.1.5 then preserves it. The sRGB-conversion contingency is no longer needed |
-| **E1** | 76 | §9.1 | Batch caps tighten |
+| **E1** | 95 | §9.1 | **Measured in T40**: 200×16 MB entries (3.2 GB) streamed through `client-zip` into OPFS peaked 128.5 MB (Chromium), 170.6 MB (Firefox) and ~0 MB (WebKit) above idle baseline — a small bounded multiple of one entry, not proportional to the archive. No structural change needed |
 
 **B4 is now settled** (T01, 90%): it held on Chromium, Firefox and desktop WebKit, so no fallback and no structural change are needed for those engines. iOS Safari is untested and deferred to T50, but that no longer blocks starting implementation the way an open B4 would have. The gifsicle licence question in §7.2 needs a legal answer before release but does not block implementation, since the fallback is ImageMagick's own GIF writer at worse compression.

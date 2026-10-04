@@ -33,7 +33,21 @@ vi.mock('@/platform/source-files', () => ({
   getSourceFile: (id: ImageId) => sourceFiles.get(id),
 }))
 
+// Every other test in this file relies on the *real* platform/opfs, platform/share and
+// pipeline/run-archive modules, which degrade gracefully to jsdom's in-memory fallback — itself
+// useful end-to-end coverage. These two are wrapped (not replaced) so the T40-specific tests below
+// can force a quota rejection or a storage failure for one call without disturbing the rest.
+vi.mock('@/platform/opfs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/platform/opfs')>()
+  return {
+    ...actual,
+    checkCombinedQuota: vi.fn(actual.checkCombinedQuota),
+    writeOutputCopy: vi.fn(actual.writeOutputCopy),
+  }
+})
+
 const Processing = (await import('./Processing.vue')).default
+const { checkCombinedQuota, writeOutputCopy } = await import('@/platform/opfs')
 
 function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
   return {
@@ -87,6 +101,8 @@ beforeEach(() => {
   resume.mockClear()
   run.mockClear()
   sourceFiles.clear()
+  vi.mocked(checkCombinedQuota).mockClear()
+  vi.mocked(writeOutputCopy).mockClear()
 })
 
 describe('Processing view (T38)', () => {
@@ -320,6 +336,45 @@ describe('Processing view (T38)', () => {
       await flushPromises()
 
       expect(wrapper.find('[data-testid="processing-halted"]').exists()).toBe(false)
+    })
+  })
+
+  describe('storage quota rejection (T40, R-X40)', () => {
+    it('replaces the whole counter/donut view with the rejection message and no Cancel button', async () => {
+      seed(['a', 'b'])
+      vi.mocked(checkCombinedQuota).mockResolvedValueOnce({
+        archive: { ok: false, required: 50_000_000, available: 10_000_000 },
+        combined: { ok: false, required: 50_000_000, available: 10_000_000 },
+      })
+      const wrapper = await mountProcessing()
+
+      const rejected = wrapper.get('[data-testid="processing-quota-rejected"]')
+      expect(rejected.text()).toContain('50.00 MB')
+      expect(rejected.text()).toContain('10.00 MB')
+      expect(wrapper.find('[data-testid="processing-counter"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-cancel"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="processing-back"]').text()).toBe('Back to images')
+      expect(runs).toHaveLength(0)
+    })
+  })
+
+  describe('storage write failure mid-run (T40, §10)', () => {
+    it('halts with its own message, distinct from the out-of-memory one', async () => {
+      seed(['a'])
+      vi.mocked(writeOutputCopy).mockRejectedValueOnce(new Error('disk full'))
+      const wrapper = await mountProcessing()
+
+      runs[0]?.settle({
+        token: 1 as JobToken,
+        imageId: 'a' as ImageId,
+        outcome: 'completed',
+        result: completedOutput(400),
+      })
+      await flushPromises()
+
+      const halted = wrapper.get('[data-testid="processing-halted"]')
+      expect(halted.text()).toContain('Storage stopped working')
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
     })
   })
 })

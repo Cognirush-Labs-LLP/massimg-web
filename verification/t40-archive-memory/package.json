@@ -1,0 +1,14 @@
+{
+  "name": "t40-archive-memory",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway Playwright harness for T40 — assumption E1: does streaming many entries through client-zip into OPFS hold memory near one entry, or does the ZIP writer itself buffer/retain entries? (see docs/task-notes/T40.md, docs/assumptions.md E1).",
+  "scripts": {
+    "install-browsers": "playwright install chromium firefox webkit",
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "client-zip": "2.5.1",
+    "playwright": "^1.48.0"
+  }
+}

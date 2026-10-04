@@ -20,6 +20,7 @@ recorded in each folder's `results.json` and written up in `docs/task-notes/TNN.
 | [t29-animated](t29-animated) | Peak memory vs. frame count/size for animation decode (C7) | No — synthetic animations |
 | [t30-size](t30-size) | Size-target search cost across formats (D1) | Optional — degrades gracefully |
 | [t39a-web-share](t39a-web-share) | Multi-file Web Share on real iOS/Android/desktop browsers (E4) — manual, no `run.mjs` | **Required** |
+| [t40-archive-memory](t40-archive-memory) | Streaming many entries through client-zip into OPFS, peak tab memory per browser (E1) | No — synthetic bytes |
 
 ## Real-photo fixtures
 

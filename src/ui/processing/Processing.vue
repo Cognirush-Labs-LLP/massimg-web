@@ -27,6 +27,7 @@ const { progress, failures, skipped, finished, haltReason } = storeToRefs(runSto
 const uiStore = useUiStore()
 
 const processingRun = useProcessingRun()
+const { quotaRejection } = processingRun
 
 const announcement = ref('')
 const lastAnnouncedQuartile = ref(-1)
@@ -109,86 +110,18 @@ onMounted(() => {
 
 <template>
   <div class="processing" data-testid="processing-root">
-    <p class="counter" data-testid="processing-counter">
-      {{
-        t('processing.counter', {
-          processed: processingRun.processed.value,
-          total: processingRun.total.value,
-        })
-      }}
-    </p>
-
-    <div class="donut-row">
-      <ProcessingDonut
-        :succeeded="progress.succeeded"
-        :failed="progress.failed"
-        :skipped="progress.skipped"
-        :pending="progress.pending"
-      />
-      <ul class="figures">
-        <li data-testid="processing-figure-succeeded">
-          {{ t('processing.figure.succeeded', { count: progress.succeeded }) }}
-        </li>
-        <li data-testid="processing-figure-failed">
-          {{ t('processing.figure.failed', { count: progress.failed }) }}
-        </li>
-        <li data-testid="processing-figure-skipped">
-          {{ t('processing.figure.skipped', { count: progress.skipped }) }}
-        </li>
-        <li data-testid="processing-figure-pending">
-          {{ t('processing.figure.pending', { count: progress.pending }) }}
-        </li>
-      </ul>
-    </div>
-
-    <p class="total" data-testid="processing-total">{{ totalText }}</p>
-
-    <p v-if="haltReason === 'out-of-memory'" class="halted" data-testid="processing-halted">
-      {{ t('processing.halted.memory') }}
-    </p>
-
-    <p
-      class="visually-hidden"
-      role="status"
-      aria-live="polite"
-      data-testid="processing-announcement"
-    >
-      {{ announcement }}
-    </p>
-
-    <section v-if="failures.length > 0" class="issue-list" data-testid="processing-failures">
-      <h2>{{ t('processing.failure.heading') }}</h2>
-      <ul>
-        <li v-for="entry in failures" :key="entry.imageId">
-          <span class="file-name">{{ nameFor(entry.imageId) }}</span>
-          <span class="reason">{{ describeFailureReason(entry.reason) }}</span>
-        </li>
-      </ul>
-    </section>
-
-    <section v-if="skipped.length > 0" class="issue-list" data-testid="processing-skipped">
-      <h2>{{ t('processing.skip.heading') }}</h2>
-      <ul>
-        <li v-for="entry in skipped" :key="entry.imageId">
-          <span class="file-name">{{ nameFor(entry.imageId) }}</span>
-          <span class="reason">{{ describeSkipReason(entry.reason) }}</span>
-        </li>
-      </ul>
-    </section>
-
-    <div class="actions">
-      <button
-        v-if="!finished"
-        type="button"
-        class="action"
-        data-testid="processing-cancel"
-        @click="onCancel"
-      >
+    <!-- R-X40: the pre-run storage preflight rejected this batch before any job was dispatched —
+         no counter, donut or Cancel makes sense since nothing ever started. -->
+    <template v-if="quotaRejection">
+      <p class="halted" data-testid="processing-quota-rejected">
         {{
-          t(processingRun.stopping.value ? 'processing.cancel.stopping' : 'processing.cancel.label')
+          t('processing.quota.rejected', {
+            required: formatUiSize(quotaRejection.requiredBytes),
+            available: formatUiSize(quotaRejection.availableBytes),
+          })
         }}
-      </button>
-      <template v-else>
+      </p>
+      <div class="actions">
         <button
           type="button"
           class="action"
@@ -197,21 +130,120 @@ onMounted(() => {
         >
           {{ t('processing.complete.back') }}
         </button>
-        <!-- Download's click handler is T42's: it wires the explicit Download button to
+      </div>
+    </template>
+    <template v-else>
+      <p class="counter" data-testid="processing-counter">
+        {{
+          t('processing.counter', {
+            processed: processingRun.processed.value,
+            total: processingRun.total.value,
+          })
+        }}
+      </p>
+
+      <div class="donut-row">
+        <ProcessingDonut
+          :succeeded="progress.succeeded"
+          :failed="progress.failed"
+          :skipped="progress.skipped"
+          :pending="progress.pending"
+        />
+        <ul class="figures">
+          <li data-testid="processing-figure-succeeded">
+            {{ t('processing.figure.succeeded', { count: progress.succeeded }) }}
+          </li>
+          <li data-testid="processing-figure-failed">
+            {{ t('processing.figure.failed', { count: progress.failed }) }}
+          </li>
+          <li data-testid="processing-figure-skipped">
+            {{ t('processing.figure.skipped', { count: progress.skipped }) }}
+          </li>
+          <li data-testid="processing-figure-pending">
+            {{ t('processing.figure.pending', { count: progress.pending }) }}
+          </li>
+        </ul>
+      </div>
+
+      <p class="total" data-testid="processing-total">{{ totalText }}</p>
+
+      <p v-if="haltReason === 'out-of-memory'" class="halted" data-testid="processing-halted">
+        {{ t('processing.halted.memory') }}
+      </p>
+      <p v-if="haltReason === 'storage-failure'" class="halted" data-testid="processing-halted">
+        {{ t('processing.halted.storage') }}
+      </p>
+
+      <p
+        class="visually-hidden"
+        role="status"
+        aria-live="polite"
+        data-testid="processing-announcement"
+      >
+        {{ announcement }}
+      </p>
+
+      <section v-if="failures.length > 0" class="issue-list" data-testid="processing-failures">
+        <h2>{{ t('processing.failure.heading') }}</h2>
+        <ul>
+          <li v-for="entry in failures" :key="entry.imageId">
+            <span class="file-name">{{ nameFor(entry.imageId) }}</span>
+            <span class="reason">{{ describeFailureReason(entry.reason) }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <section v-if="skipped.length > 0" class="issue-list" data-testid="processing-skipped">
+        <h2>{{ t('processing.skip.heading') }}</h2>
+        <ul>
+          <li v-for="entry in skipped" :key="entry.imageId">
+            <span class="file-name">{{ nameFor(entry.imageId) }}</span>
+            <span class="reason">{{ describeSkipReason(entry.reason) }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="actions">
+        <button
+          v-if="!finished"
+          type="button"
+          class="action"
+          data-testid="processing-cancel"
+          @click="onCancel"
+        >
+          {{
+            t(
+              processingRun.stopping.value
+                ? 'processing.cancel.stopping'
+                : 'processing.cancel.label',
+            )
+          }}
+        </button>
+        <template v-else>
+          <button
+            type="button"
+            class="action"
+            data-testid="processing-back"
+            @click="uiStore.finishProcessing()"
+          >
+            {{ t('processing.complete.back') }}
+          </button>
+          <!-- Download's click handler is T42's: it wires the explicit Download button to
              downloadFinishedRun() once T40 (archive assembly) and T41 (report) exist. This button
              only satisfies R-X14's visibility rule for now. Never shown once the run halted
              (haltReason) — "partial results discarded" (§10 "Out of memory") means there is
              nothing to offer regardless of how many images succeeded before the halt. -->
-        <button
-          v-if="haltReason === null && progress.succeeded > 0"
-          type="button"
-          class="action action--primary"
-          data-testid="processing-download"
-        >
-          {{ t('processing.complete.download') }}
-        </button>
-      </template>
-    </div>
+          <button
+            v-if="haltReason === null && progress.succeeded > 0"
+            type="button"
+            class="action action--primary"
+            data-testid="processing-download"
+          >
+            {{ t('processing.complete.download') }}
+          </button>
+        </template>
+      </div>
+    </template>
   </div>
 </template>
 

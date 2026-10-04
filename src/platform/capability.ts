@@ -15,9 +15,43 @@ export interface Capabilities {
    * path it feeds is unit-tested by injecting `false` directly rather than by a live trigger.
    */
   heicDecode: boolean
+
+  /**
+   * Whether this browser can hand image files to the system share sheet at all (Technical Design
+   * §9.1, R-X47/R-X48). A generic, representative-payload functional probe, not presence sniffing:
+   * `'share'`/`'canShare'` can exist and still reject every real payload. This is the cheap,
+   * once-per-session flag; the batch-specific preliminary probe for a particular run's actual
+   * output formats lives in `platform/share.ts` and is checked separately, since a single generic
+   * probe cannot speak to every resolved output MIME type a run might produce.
+   */
+  fileShare: boolean
 }
 
 const OPFS_PROBE_NAME = '.icompress-capability-probe'
+
+// A minimal valid 1x1 transparent PNG, used only as a non-empty, real image/png payload for the
+// fileShare functional probe below — canShare looks at File.type and size, not pixel validity
+// (confirmed in practice by T39-A, verification/t39a-web-share/results.json).
+const PROBE_PNG_BYTES = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+])
+
+function probeFileShare(): boolean {
+  if (typeof navigator === 'undefined' || !('canShare' in navigator)) {
+    return false
+  }
+
+  try {
+    const file = new File([PROBE_PNG_BYTES], 'probe.png', { type: 'image/png' })
+    return navigator.canShare({ files: [file] })
+  } catch {
+    return false
+  }
+}
 
 // A functional probe, not a presence check: `navigator.storage.getDirectory` can exist and still
 // throw on call (observed on WebKit's ephemeral Playwright context; the same failure mode private
@@ -59,6 +93,7 @@ export async function detectCapabilities(): Promise<Capabilities> {
     folderPicker: detectFolderPicker(),
     crossOriginIsolated: detectCrossOriginIsolated(),
     heicDecode: true,
+    fileShare: probeFileShare(),
   }
 }
 

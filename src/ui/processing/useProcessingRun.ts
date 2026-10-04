@@ -1,33 +1,59 @@
-// Processing's run-orchestration composable (T38). Mirrors src/ui/preview/usePreviewEncode.ts's
-// established patterns: a job built from `resolveSettings` + the stored source file, submitted to
-// this stage's own worker pool, and a generation counter that drops any outcome belonging to a torn
-// -down run rather than letting it reach the (possibly already-reset) store.
+// Processing's run-orchestration composable (T38, extended by T40 for archive/Share assembly).
+// Mirrors src/ui/preview/usePreviewEncode.ts's established patterns: a job built from
+// `resolveSettings` + the stored source file, submitted to this stage's own worker pool, and a
+// generation counter that drops any outcome belonging to a torn-down run rather than letting it
+// reach the (possibly already-reset) store.
 //
 // The generation guard exists for a real reason, not by analogy alone: useBackNavigationGuard.ts's
 // `handleProcessingPop()` calls `uiStore.cancelProcessing()` directly on a back-button press during
 // an in-progress run, bypassing this composable's own `cancel()` entirely. Component unmount
 // (Processing.vue is exclusively mounted, so every exit path tears it down) is the one hook
 // guaranteed to fire regardless of which path was taken, so `onScopeDispose` is what actually
-// prevents a straggling job from one run corrupting a second run's freshly-reset counters.
+// prevents a straggling job from one run corrupting a second run's freshly-reset counters — and,
+// since T40, from leaving an archive stream open or an output copy un-cleaned-up behind it.
 import { computed, onScopeDispose, ref, toRaw, type ComputedRef, type Ref } from 'vue'
-import { resolveSettings, type BatchSettings } from '@/domain/job'
+import { resolveOutputNames, type NamingInput } from '@/domain/naming'
+import { resolveSettings, type BatchSettings, type SettingsResolution } from '@/domain/job'
 import type { ImageId, ImageRecord, Job } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
 import type { JobResult } from '@/pipeline/protocol'
+import {
+  openRunArchiveSink,
+  preflightRunArchive,
+  type NamingEntry,
+  type RunArchiveSink,
+} from '@/pipeline/run-archive'
 import { getSourceFile } from '@/platform/source-files'
+import { probeFileShareForRun } from '@/platform/share'
 import { useBatchStore } from '@/stores/batch'
 import { useRunStore } from '@/stores/run'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 import { getProcessingPool } from './processing-pool'
 
+export interface QuotaRejection {
+  requiredBytes: number
+  availableBytes: number
+}
+
 export interface ProcessingRunState {
   total: ComputedRef<number>
   /** succeeded + failed + skipped. */
   processed: ComputedRef<number>
   stopping: Ref<boolean>
+  /** Set instead of starting the run at all when the pre-run storage preflight (R-X40) finds the
+   * predicted archive will not fit. No job is ever dispatched in this case. */
+  quotaRejection: Ref<QuotaRejection | null>
   start: () => void
   cancel: () => Promise<void>
+}
+
+type ResolvedResolution = Extract<SettingsResolution, { kind: 'resolved' }>
+
+function isResolved<T extends { resolution: SettingsResolution }>(
+  entry: T,
+): entry is T & { resolution: ResolvedResolution } {
+  return entry.resolution.kind === 'resolved'
 }
 
 export function useProcessingRun(): ProcessingRunState {
@@ -42,8 +68,10 @@ export function useProcessingRun(): ProcessingRunState {
   const uiStore = useUiStore()
 
   const stopping = ref(false)
+  const quotaRejection = ref<QuotaRejection | null>(null)
   let outstanding: Promise<void>[] = []
   let generation = 0
+  let currentSink: RunArchiveSink | null = null
 
   const total = computed(() => {
     const progress = runStore.progress
@@ -54,8 +82,20 @@ export function useProcessingRun(): ProcessingRunState {
     return progress.succeeded + progress.failed + progress.skipped
   })
 
-  function applyResult(imageId: ImageId, inputBytes: number, result: JobResult): void {
+  async function applyResult(
+    imageId: ImageId,
+    inputBytes: number,
+    result: JobResult,
+    sink: RunArchiveSink | null,
+  ): Promise<void> {
     if (result.kind === 'output') {
+      // May throw on a mid-run storage failure — propagated to runOne's caller, which halts the
+      // run (§10 "Storage write failure mid-run"). Done before recordResult: if this throws, the
+      // run is about to halt entirely, so there is no value in first recording a success that is
+      // the last thing this run will ever record for this image.
+      if (sink) {
+        await sink.submit(imageId, result.bytes, result.format)
+      }
       runStore.recordResult(imageId, {
         kind: 'succeeded',
         inputBytes,
@@ -76,10 +116,15 @@ export function useProcessingRun(): ProcessingRunState {
     runStore.recordResult(imageId, { kind: 'failed', reason: { kind: 'encode-failed' } })
   }
 
-  function applyOutcome(imageId: ImageId, inputBytes: number, outcome: JobOutcome): void {
+  async function applyOutcome(
+    imageId: ImageId,
+    inputBytes: number,
+    outcome: JobOutcome,
+    sink: RunArchiveSink | null,
+  ): Promise<void> {
     switch (outcome.outcome) {
       case 'completed':
-        applyResult(imageId, inputBytes, outcome.result)
+        await applyResult(imageId, inputBytes, outcome.result, sink)
         return
       case 'failed':
         if (outcome.reason.kind === 'out-of-memory') {
@@ -89,6 +134,7 @@ export function useProcessingRun(): ProcessingRunState {
           // run before `applyOutcome` is ever called, so no further guard is needed here.
           generation += 1 // drop every other still-outstanding outcome from this run
           pool.cancel()
+          await sink?.abortAndCleanup()
           runStore.haltRun('out-of-memory')
           return
         }
@@ -117,15 +163,12 @@ export function useProcessingRun(): ProcessingRunState {
     }
   }
 
-  async function runOne(image: ImageRecord, expected: number): Promise<void> {
-    const settings: BatchSettings = {
-      quality: toRaw(settingsStore.quality),
-      dimension: toRaw(settingsStore.dimension),
-      format: settingsStore.format,
-    }
-
-    const resolution = resolveSettings(image, settings)
-
+  async function runOne(
+    image: ImageRecord,
+    resolution: SettingsResolution,
+    expected: number,
+    sink: RunArchiveSink | null,
+  ): Promise<void> {
     if (resolution.kind === 'rejected') {
       if (generation === expected) {
         runStore.recordResult(image.id, { kind: 'failed', reason: { kind: 'encode-failed' } })
@@ -175,22 +218,113 @@ export function useProcessingRun(): ProcessingRunState {
       return
     }
 
-    applyOutcome(image.id, source.byteLength, outcome)
+    try {
+      await applyOutcome(image.id, source.byteLength, outcome, sink)
+    } catch {
+      // A sink write failed (OPFS quota exhausted or a real storage error mid-run) — halt the same
+      // way out-of-memory does, but distinctly (§10 "Storage write failure mid-run", closed by
+      // T40; T39's handover deferred this row to whoever built the mechanism).
+      if (generation === expected) {
+        generation += 1
+        pool.cancel()
+        await sink?.abortAndCleanup()
+        runStore.haltRun('storage-failure')
+      }
+    }
   }
 
-  function start(): void {
-    const expected = (generation += 1)
-    stopping.value = false
-
+  async function runInternal(expected: number): Promise<void> {
     // R-X1: grid order is the batch array's own insertion order (see stores/batch.ts). `toRaw`
     // avoids handing a worker a reactive Proxy, which fails structured clone at `postMessage` time
     // (see usePreviewEncode.ts's own note on this).
     const images = batchStore.images.map((image) => toRaw(image))
+
+    const settings: BatchSettings = {
+      quality: toRaw(settingsStore.quality),
+      dimension: toRaw(settingsStore.dimension),
+      format: settingsStore.format,
+    }
+
+    // Resolved once, up front, in batch order — not lazily per image as before T40. Naming must
+    // see every image in one call for its per-directory collision resolution to be deterministic,
+    // independent of which worker happens to finish first (domain/naming.ts).
+    const resolved = images.map((image) => ({
+      image,
+      resolution: resolveSettings(image, settings),
+    }))
+    const accepted = resolved.filter(isResolved)
+
+    const namingInputs: NamingInput[] = accepted.map(({ image, resolution }) => ({
+      name: image.name,
+      relativePath: image.relativePath,
+      sourceFormat: image.sourceFormat,
+      formatSetting: settings.format,
+      resolvedFormat: resolution.settings.format,
+    }))
+    const paths = resolveOutputNames(namingInputs)
+    const pathsByImage = new Map<ImageId, string>(
+      accepted.map(({ image }, index) => [image.id, paths[index] as string]),
+    )
+    const namingEntries: NamingEntry[] = accepted.map(({ image }, index) => ({
+      imageId: image.id,
+      path: paths[index] as string,
+      sizeBytes: image.sizeBytes,
+    }))
+
+    const multiImage = images.length > 1
+    let shareEligible = false
+
+    if (multiImage) {
+      const formats = [...new Set(accepted.map(({ resolution }) => resolution.settings.format))]
+      const preliminaryProbe = formats.length > 0 ? await probeFileShareForRun(formats) : false
+
+      if (generation !== expected) {
+        return // superseded while awaiting the probe
+      }
+
+      const preflight = await preflightRunArchive(namingEntries, preliminaryProbe)
+
+      if (generation !== expected) {
+        return
+      }
+
+      if (!preflight.archive.ok) {
+        quotaRejection.value = {
+          requiredBytes: preflight.archive.required,
+          availableBytes: preflight.archive.available,
+        }
+        return
+      }
+
+      shareEligible = preflight.shareEligible
+    }
+
+    if (images.length === 0) {
+      return
+    }
+
+    const sink = openRunArchiveSink({ pathsByImage, multiImage, shareEligible })
+    currentSink = sink
+
     runStore.startRun(images.length)
 
-    outstanding = images.map((image) => runOne(image, expected))
+    outstanding = resolved.map(({ image, resolution }) => runOne(image, resolution, expected, sink))
 
-    void Promise.all(outstanding).then(() => {
+    void Promise.all(outstanding).then(async () => {
+      if (generation !== expected) {
+        return
+      }
+
+      try {
+        await sink.finish()
+      } catch {
+        if (generation === expected) {
+          await sink.abortAndCleanup()
+          runStore.haltRun('storage-failure')
+        }
+        return
+      }
+
       // Guarded so a Cancel racing the very last image's natural completion can't flip `finished`
       // after cancel() has already decided this run is over.
       if (generation === expected && !stopping.value) {
@@ -199,17 +333,32 @@ export function useProcessingRun(): ProcessingRunState {
     })
   }
 
+  function start(): void {
+    const expected = (generation += 1)
+    stopping.value = false
+    quotaRejection.value = null
+    void runInternal(expected)
+  }
+
   async function cancel(): Promise<void> {
     stopping.value = true // R-X27: the button reads "Stopping" immediately.
     pool.cancel() // R-X26: queued jobs settle 'cancelled' now; in-flight jobs finish normally.
     await Promise.all(outstanding) // Bounded by at most one image per busy worker.
+    await currentSink?.abortAndCleanup()
     uiStore.cancelProcessing() // R-X19/R-X20: straight to Gallery, no dialog.
   }
 
   onScopeDispose(() => {
     generation += 1
     pool.cancel()
+    // Awaited asynchronously (onScopeDispose itself cannot be async): every in-flight `runOne` must
+    // settle before cleanup, the same ordering `cancel()` uses, or a straggling `sink.submit()`
+    // could still be mid-write when `abortAndCleanup()` deletes the directory out from under it.
+    void (async () => {
+      await Promise.all(outstanding)
+      await currentSink?.abortAndCleanup()
+    })()
   })
 
-  return { total, processed, stopping, start, cancel }
+  return { total, processed, stopping, quotaRejection, start, cancel }
 }

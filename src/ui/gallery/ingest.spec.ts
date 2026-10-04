@@ -27,6 +27,7 @@ const DEFAULT_CAPABILITIES: Capabilities = {
   folderPicker: true,
   crossOriginIsolated: false,
   heicDecode: true,
+  fileShare: false,
 }
 const getCapabilitiesMock = vi.fn<() => Promise<Capabilities>>()
 vi.mock('@/platform/capability', () => ({ getCapabilities: () => getCapabilitiesMock() }))

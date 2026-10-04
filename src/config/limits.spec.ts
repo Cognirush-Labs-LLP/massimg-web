@@ -87,6 +87,15 @@ describe('resolveAutomaticGalleryView', () => {
   })
 })
 
+describe('runtimeLimits Share limits', () => {
+  it('ships the T39-A/E4-measured Share ceilings', () => {
+    // docs/task-notes/T39-A.md: 10 files was never the binding constraint; ~40 MB is a safety
+    // margin under the measured 50 MB-safe / 60 MB-failing macOS Chrome boundary.
+    expect(runtimeLimits.maximumShareFiles).toBe(10)
+    expect(runtimeLimits.maximumShareBytes).toBe(40 * 1024 * 1024)
+  })
+})
+
 describe('runtimeLimits.jobTimeoutMs', () => {
   it('is null until a re-init cost has actually been measured (R-X29)', () => {
     // §5.3: the threshold "is set from measured re-init cost, not guessed". It lives here rather

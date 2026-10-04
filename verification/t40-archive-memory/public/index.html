@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>T40 archive-memory harness</title>
+  </head>
+  <body>
+    <p id="status">idle</p>
+    <script type="module">
+      import { makeZip } from '/client-zip.js';
+
+      const FILE_NAME = 't40-archive.zip';
+
+      // A fresh, distinct allocation per entry — deliberately, not one buffer reused. Reusing a
+      // single buffer would hide exactly the failure mode E1 asks about: if client-zip or the OPFS
+      // write path retained a reference to each yielded entry instead of consuming it immediately,
+      // reusing one object would make every retained reference point at the same bytes, and the
+      // bug would never show up as real memory growth. Distinct objects are what make a retention
+      // bug visible as rising RSS, the same way distinct worker outputs would in the real pipeline.
+      function entryBytes(size, index) {
+        const bytes = new Uint8Array(size);
+        bytes[0] = index % 256; // cheap per-entry variation, irrelevant to the measurement
+        return bytes;
+      }
+
+      function setStatus(s) {
+        document.getElementById('status').textContent = s;
+      }
+
+      // Yields `entryCount` synthetic entries of `entrySize` bytes each, built one at a time —
+      // mirrors how the real pipeline produces one image's output, hands it to the sink, and moves
+      // on, never holding more than one entry's bytes at once on the producing side.
+      async function* entries(entryCount, entrySize) {
+        for (let i = 0; i < entryCount; i++) {
+          yield {
+            name: `entry-${i}.bin`,
+            input: entryBytes(entrySize, i),
+            size: entrySize,
+            lastModified: new Date(),
+          };
+        }
+      }
+
+      // The exact mechanism Technical Design §9.1 describes: client-zip's ReadableStream piped
+      // straight into an OPFS file via createWritable — this is what E1 asks whether it holds
+      // memory near one entry across *many* entries, not just across one large contiguous write
+      // (which is all T01's B4 measurement covered).
+      window.runZipWrite = async function runZipWrite(entryCount, entrySize) {
+        setStatus('writing:start');
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(FILE_NAME, { create: true });
+        const writable = await handle.createWritable({ keepExistingData: false });
+        const stream = makeZip(entries(entryCount, entrySize));
+        await stream.pipeTo(writable);
+        setStatus('writing:done');
+        return { entryCount, entrySize };
+      };
+
+      window.opfsFileSize = async function opfsFileSize() {
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(FILE_NAME);
+        const file = await handle.getFile();
+        return file.size;
+      };
+
+      window.opfsCleanup = async function opfsCleanup() {
+        const root = await navigator.storage.getDirectory();
+        try {
+          await root.removeEntry(FILE_NAME);
+        } catch {
+          // ignore if absent
+        }
+      };
+
+      setStatus('ready');
+    </script>
+  </body>
+</html>

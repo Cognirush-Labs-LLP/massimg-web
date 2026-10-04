@@ -55,6 +55,25 @@ export interface RuntimeLimits {
    * selection made so far.
    */
   maximumBatchFiles: number
+
+  /**
+   * Fixed product ceiling on accepted images a run may start with and still retain Share output
+   * (R-X47). Technical Design §8.3: unlike every other limit here, this one is not provisional —
+   * T39-A measured that total bytes, not file count, is the binding constraint (10 real
+   * mixed-format files at ~9.8 MB shared fine everywhere tested), so there is no pending
+   * re-measurement that would change it.
+   */
+  maximumShareFiles: number
+
+  /**
+   * Total successful-output bytes above which Share is withheld (R-X48, R-X52). Measured in T39-A
+   * (`docs/task-notes/T39-A.md`, assumptions.md E4): macOS Chrome's `share()` reliably failed with
+   * `NotAllowedError` at 60 MB and reliably succeeded at 50 MB, the tightest boundary of every
+   * engine/device tested (including real Android) — `canShare` does not catch this on its own.
+   * 40 MB is a safety margin under that measured 50 MB-safe boundary, not the boundary itself.
+   * **Provisional** — T50 re-measures on a real, older, low-memory iPhone and may lower it.
+   */
+  maximumShareBytes: number
 }
 
 export const runtimeLimits: RuntimeLimits = {
@@ -65,6 +84,8 @@ export const runtimeLimits: RuntimeLimits = {
   jobTimeoutMs: null,
   maximumFileBytes: 100 * 1024 * 1024,
   maximumBatchFiles: 500,
+  maximumShareFiles: 10,
+  maximumShareBytes: 40 * 1024 * 1024,
 }
 
 export interface WorkerPoolEnvironment {

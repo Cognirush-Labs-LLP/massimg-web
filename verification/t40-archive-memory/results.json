@@ -1,0 +1,44 @@
+[
+  {
+    "engine": "chromium",
+    "entryCount": 200,
+    "entrySize": 16777216,
+    "totalBytes": 3355443200,
+    "idleBaselineBytes": 274169856,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 13678,
+      "peakBytes": 408944640
+    },
+    "confirmedFileSize": 3355466602
+  },
+  {
+    "engine": "firefox",
+    "entryCount": 200,
+    "entrySize": 16777216,
+    "totalBytes": 3355443200,
+    "idleBaselineBytes": 1047461888,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 25407,
+      "peakBytes": 1226309632
+    },
+    "confirmedFileSize": 3355466602
+  },
+  {
+    "engine": "webkit",
+    "entryCount": 200,
+    "entrySize": 16777216,
+    "totalBytes": 3355443200,
+    "idleBaselineBytes": 114229248,
+    "write": {
+      "ok": true,
+      "error": null,
+      "durationMs": 9437,
+      "peakBytes": 114245632
+    },
+    "confirmedFileSize": 3355466602
+  }
+]

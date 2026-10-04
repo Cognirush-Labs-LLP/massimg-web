@@ -35,7 +35,22 @@ vi.mock('@/platform/source-files', () => ({
   getSourceFile: (id: ImageId) => sourceFiles.get(id),
 }))
 
+// Every other test in this file relies on the *real* platform/opfs, platform/share and
+// pipeline/run-archive modules, which degrade gracefully to jsdom's in-memory fallback (no real
+// OPFS, no navigator.canShare) — that is itself useful end-to-end coverage. These two functions are
+// wrapped (not replaced) so the T40-specific tests below can force a quota rejection or a storage
+// failure for one call while every other test keeps exercising the real fallback behaviour.
+vi.mock('@/platform/opfs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/platform/opfs')>()
+  return {
+    ...actual,
+    checkCombinedQuota: vi.fn(actual.checkCombinedQuota),
+    writeOutputCopy: vi.fn(actual.writeOutputCopy),
+  }
+})
+
 const { useProcessingRun } = await import('./useProcessingRun')
+const { checkCombinedQuota, writeOutputCopy } = await import('@/platform/opfs')
 
 function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
   return {
@@ -93,6 +108,8 @@ beforeEach(() => {
   resume.mockClear()
   run.mockClear()
   sourceFiles.clear()
+  vi.mocked(checkCombinedQuota).mockClear()
+  vi.mocked(writeOutputCopy).mockClear()
 })
 
 describe('useProcessingRun.start', () => {
@@ -280,6 +297,66 @@ describe('useProcessingRun.cancel', () => {
     const runStore = useRunStore()
     expect(runStore.progress.succeeded).toBe(1)
     expect(runStore.progress.pending).toBe(1)
+  })
+})
+
+describe('useProcessingRun quota preflight (T40, R-X40)', () => {
+  it('rejects the batch before dispatching any job when the archive will not fit', async () => {
+    seed(['a', 'b'])
+    vi.mocked(checkCombinedQuota).mockResolvedValueOnce({
+      archive: { ok: false, required: 50_000, available: 10_000 },
+      combined: { ok: false, required: 50_000, available: 10_000 },
+    })
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+
+    expect(runs).toHaveLength(0)
+    expect(api.quotaRejection.value).toEqual({ requiredBytes: 50_000, availableBytes: 10_000 })
+    expect(useRunStore().progress).toEqual({ pending: 0, succeeded: 0, failed: 0, skipped: 0 })
+  })
+
+  it('starts normally, with quotaRejection left null, when the archive fits', async () => {
+    seed(['a', 'b'])
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+
+    expect(api.quotaRejection.value).toBeNull()
+    expect(runs).toHaveLength(2)
+  })
+
+  it('does not preflight at all for a 1-image run', async () => {
+    seed(['a'])
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+
+    expect(checkCombinedQuota).not.toHaveBeenCalled()
+    expect(runs).toHaveLength(1)
+  })
+})
+
+describe('useProcessingRun storage-failure halt (T40, §10 "Storage write failure mid-run")', () => {
+  it('halts the run and cleans up when writing a successful output fails', async () => {
+    seed(['a'])
+    vi.mocked(writeOutputCopy).mockRejectedValueOnce(new Error('disk full'))
+    const { run: api } = setupRun()
+
+    api.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    await flush()
+
+    const runStore = useRunStore()
+    expect(runStore.haltReason).toBe('storage-failure')
+    expect(runStore.finished).toBe(true)
+    expect(cancel).toHaveBeenCalledTimes(1)
+    // The write that failed is never recorded as a success.
+    expect(runStore.progress.succeeded).toBe(0)
   })
 })
 
