@@ -159,6 +159,36 @@
     "control": "Button with visible text, full accessible name (R-K10).",
     "maxLength": 16
   },
+  "processing.complete.share": {
+    "situation": "Second delivery action, shown beside Download on a finished run only when this platform accepted the exact completed files for the system share sheet (R-X14/R-X47/R-X48). Pressing it hands the images straight to the operating system's own share UI, so the label should match whatever that platform calls that gesture in the target language.",
+    "control": "Button with visible text, full accessible name (R-K10), same visual weight as Download beside it.",
+    "maxLength": 16
+  },
+  "processing.complete.downloadStarted": {
+    "situation": "Replaces both Download and Share once a Download has actually been handed to the browser (R-X54). Reports an outcome and is not pressable; it is rendered beside a decorative check mark that is not part of this string. 'Started' is deliberate honesty: the app hands the file to the browser and cannot see where it lands or whether the user later deletes it.",
+    "control": "Static text in the slot the two delivery buttons occupied — not a button, and must not read as one.",
+    "maxLength": 24
+  },
+  "processing.complete.shared": {
+    "situation": "Sibling of processing.complete.downloadStarted, for the Share outcome (R-X54). Shown once navigator.share() resolved, which means the browser handed the files to the chosen target or the operating system — the app cannot know which target was picked or what it did with them (R-X50), so this must not claim the images were sent, received or saved anywhere.",
+    "control": "Static text in the slot the two delivery buttons occupied — not a button, and must not read as one.",
+    "maxLength": 24
+  },
+  "processing.download.assemblyFailed": {
+    "situation": "Inline error beside the completion actions when the finished run's output could not be read back out of browser storage at Download time (§10 'ZIP assembly failure'). Nothing was delivered and no partial file was kept; the results and both delivery actions remain, so the retry is the Download button itself rather than a separate control. Covers the single-image direct file as well as the ZIP, so it should not name a file format.",
+    "control": "Plain status text directly above the completion actions.",
+    "maxLength": 160
+  },
+  "processing.download.blocked": {
+    "situation": "Inline error beside the completion actions when the browser itself refused the download rather than the file being at fault (§10 'Download blocked by browser'). The results survive and the Download button is the retry, so the message names the browser as the cause and states the one thing the user can change.",
+    "control": "Plain status text directly above the completion actions.",
+    "maxLength": 160
+  },
+  "processing.share.failed": {
+    "situation": "Inline error beside the completion actions when the system share handoff failed for any reason other than the user cancelling it (§10 'Share handoff fails', R-X50). User cancellation shows nothing at all and must not be described by this string. The results, Share and Download all remain available, so both named recoveries really are reachable.",
+    "control": "Plain status text directly above the completion actions.",
+    "maxLength": 160
+  },
   "processing.failure.heading": {
     "situation": "Heading above the list of failed images (R-X11), shown whenever at least one failure has been recorded.",
     "control": "Static section heading above a plain list.",

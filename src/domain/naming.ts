@@ -60,31 +60,89 @@ function joinPath(directory: string, fileName: string): string {
   return directory === '' ? fileName : `${directory}/${fileName}`
 }
 
+interface OutputCandidate {
+  /** Source-relative directory, `''` for a flat (non-folder) selection. */
+  directory: string
+  baseName: string
+  /** Already resolved through R-X43/R-X44, including the leading dot. */
+  extension: string
+}
+
+function splitCandidate(input: NamingInput): OutputCandidate {
+  const inputPath = input.relativePath ?? input.name
+  const { directory, fileName } = splitPath(inputPath)
+  const { baseName, extension: originalExtension } = splitName(fileName)
+
+  return { directory, baseName, extension: outputExtension(input, originalExtension) }
+}
+
+/** First available `name`, `name-1`, `name-2`, ... within one collision scope (R-X22, R-X53). */
+function dedupeInScope(taken: Set<string>, candidate: OutputCandidate): string {
+  const { baseName, extension } = candidate
+
+  let outputName = `${baseName}${extension}`
+  let suffix = 1
+
+  while (taken.has(outputName)) {
+    outputName = `${baseName}-${suffix}${extension}`
+    suffix += 1
+  }
+
+  taken.add(outputName)
+  return outputName
+}
+
 /**
- * Resolves ZIP-relative output paths in input order. Later collisions receive the
- * first available numeric suffix within their own directory.
+ * The one place output names are resolved. `scopeKey` is what makes the two exported wrappers
+ * differ: a per-directory key keeps `a/photo.jpg` and `b/photo.jpg` from colliding (R-X22), a
+ * constant key makes them collide (R-X53). `format` decides whether the resolved basename is
+ * re-joined to its directory or stays flat.
  */
-export function resolveOutputNames(inputs: readonly NamingInput[]): string[] {
-  const namesByDirectory = new Map<string, Set<string>>()
+function resolveNames(
+  inputs: readonly NamingInput[],
+  scopeKey: (candidate: OutputCandidate) => string,
+  format: (candidate: OutputCandidate, outputName: string) => string,
+): string[] {
+  const namesByScope = new Map<string, Set<string>>()
 
   return inputs.map((input) => {
-    const inputPath = input.relativePath ?? input.name
-    const { directory, fileName } = splitPath(inputPath)
-    const { baseName, extension: originalExtension } = splitName(fileName)
-    const extension = outputExtension(input, originalExtension)
-    const namesInDirectory = namesByDirectory.get(directory) ?? new Set<string>()
+    const candidate = splitCandidate(input)
+    const key = scopeKey(candidate)
+    const taken = namesByScope.get(key) ?? new Set<string>()
 
-    namesByDirectory.set(directory, namesInDirectory)
+    namesByScope.set(key, taken)
 
-    let outputName = `${baseName}${extension}`
-    let suffix = 1
-
-    while (namesInDirectory.has(outputName)) {
-      outputName = `${baseName}-${suffix}${extension}`
-      suffix += 1
-    }
-
-    namesInDirectory.add(outputName)
-    return joinPath(directory, outputName)
+    return format(candidate, dedupeInScope(taken, candidate))
   })
+}
+
+/**
+ * Resolves ZIP-relative output paths in input order. Later collisions receive the
+ * first available numeric suffix within their own directory (R-X22).
+ */
+export function resolveOutputNames(inputs: readonly NamingInput[]): string[] {
+  return resolveNames(
+    inputs,
+    (candidate) => candidate.directory,
+    (candidate, outputName) => joinPath(candidate.directory, outputName),
+  )
+}
+
+// One namespace for every shared file, whatever directory it came from (R-X53).
+const SHARE_SCOPE = ''
+
+/**
+ * Resolves flattened Share file names in input order — grid order, when the caller passes the
+ * batch in grid order, which is what R-X49/R-X53 require. A share payload has no directory tree,
+ * so the source directory is discarded entirely and collisions are keyed globally: `a/photo.jpg`
+ * and `b/photo.jpg` become `photo.jpg` and `photo-1.jpg`, where `resolveOutputNames` leaves both
+ * alone. Deliberately a separate function rather than a flag on the ZIP one — the two scopes
+ * coexist within a single run, and the ZIP's names must not shift because Share is also eligible.
+ */
+export function resolveShareNames(inputs: readonly NamingInput[]): string[] {
+  return resolveNames(
+    inputs,
+    () => SHARE_SCOPE,
+    (_candidate, outputName) => outputName,
+  )
 }

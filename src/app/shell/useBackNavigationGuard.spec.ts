@@ -9,10 +9,11 @@ import { downloadFinishedRun } from '@/pipeline/run-download'
 import { useBackNavigationGuard } from './useBackNavigationGuard'
 
 vi.mock('@/pipeline/run-download', () => ({
-  downloadFinishedRun: vi.fn().mockResolvedValue(undefined),
+  downloadFinishedRun: vi.fn().mockResolvedValue('downloaded'),
 }))
 
 const idA = 'image-a' as ImageId
+const idB = 'image-b' as ImageId
 
 // Captured into an outer variable rather than read back off `wrapper.vm` — a setup() return
 // isn't a typed instance property without extra ceremony, and the composable's own return type
@@ -53,8 +54,21 @@ afterEach(() => {
   wrapper = null
   guard = null
   vi.restoreAllMocks()
-  vi.mocked(downloadFinishedRun).mockClear()
+  vi.mocked(downloadFinishedRun).mockReset()
+  vi.mocked(downloadFinishedRun).mockResolvedValue('downloaded')
 })
+
+/**
+ * R-X18's dialog only governs a run with results still sitting undelivered, so every test that
+ * expects it must give the run something to lose — a bare `finishRun()` on an all-failed run has
+ * no Download action at all (§10 "Every image in a run failed or was skipped").
+ */
+function finishRunWithOneSuccess(): void {
+  const run = useRunStore()
+  run.startRun(1)
+  run.recordResult(idA, { kind: 'succeeded', inputBytes: 1000, outputBytes: 400, caveats: [] })
+  run.finishRun()
+}
 
 describe('useBackNavigationGuard', () => {
   it('pushes one base guard entry on mount', () => {
@@ -200,26 +214,29 @@ describe('useBackNavigationGuard', () => {
       expect(guard?.dialog.value).toBeNull()
     })
 
-    it('cancels silently when the run finished but was already downloaded', () => {
+    // R-X54: "the delivered path does not show the undelivered-results confirmation".
+    it.each(['markDownloaded', 'markShared'] as const)(
+      'cancels silently when the run was already delivered via %s',
+      (mark) => {
+        mountHost()
+        const ui = useUiStore()
+        const run = useRunStore()
+        ui.enterProcessing()
+        finishRunWithOneSuccess()
+        run[mark]()
+
+        dispatchPopstate()
+
+        expect(ui.stageMode).toBe('gallery')
+        expect(guard?.dialog.value).toBeNull()
+      },
+    )
+
+    it('opens the three-way dialog when finished and undelivered, leaving stageMode untouched', () => {
       mountHost()
       const ui = useUiStore()
-      const run = useRunStore()
       ui.enterProcessing()
-      run.finishRun()
-      run.markDownloaded()
-
-      dispatchPopstate()
-
-      expect(ui.stageMode).toBe('gallery')
-      expect(guard?.dialog.value).toBeNull()
-    })
-
-    it('opens the three-way dialog when finished and undownloaded, leaving stageMode untouched', () => {
-      mountHost()
-      const ui = useUiStore()
-      const run = useRunStore()
-      ui.enterProcessing()
-      run.finishRun()
+      finishRunWithOneSuccess()
 
       dispatchPopstate()
 
@@ -231,12 +248,53 @@ describe('useBackNavigationGuard', () => {
       ])
     })
 
-    it('"stay" re-arms the guard and keeps the user on Processing', () => {
+    // §10 "Every image in a run failed or was skipped": no output, Download or Share action — and
+    // "Download and leave" is a Download action, so the dialog has nothing to offer.
+    it('leaves silently with zero successes, offering no Download at all', () => {
       mountHost()
       const ui = useUiStore()
       const run = useRunStore()
       ui.enterProcessing()
+      run.startRun(1)
+      run.recordResult(idB, { kind: 'failed', reason: { kind: 'decode-failed' } })
       run.finishRun()
+
+      dispatchPopstate()
+
+      expect(ui.stageMode).toBe('gallery')
+      expect(guard?.dialog.value).toBeNull()
+    })
+
+    // §10 "Out of memory" / "Storage write failure mid-run": partial results and every stored
+    // artifact are already gone, so there is nothing left to download or discard.
+    it.each(['out-of-memory', 'storage-failure'] as const)(
+      'leaves silently after a %s halt, even with an earlier success',
+      (reason) => {
+        mountHost()
+        const ui = useUiStore()
+        const run = useRunStore()
+        ui.enterProcessing()
+        run.startRun(2)
+        run.recordResult(idA, {
+          kind: 'succeeded',
+          inputBytes: 1000,
+          outputBytes: 400,
+          caveats: [],
+        })
+        run.haltRun(reason)
+
+        dispatchPopstate()
+
+        expect(ui.stageMode).toBe('gallery')
+        expect(guard?.dialog.value).toBeNull()
+      },
+    )
+
+    it('"stay" re-arms the guard and keeps the user on Processing', () => {
+      mountHost()
+      const ui = useUiStore()
+      ui.enterProcessing()
+      finishRunWithOneSuccess()
       dispatchPopstate()
       vi.mocked(history.pushState).mockClear()
 
@@ -252,28 +310,82 @@ describe('useBackNavigationGuard', () => {
       const ui = useUiStore()
       const run = useRunStore()
       ui.enterProcessing()
-      run.finishRun()
+      finishRunWithOneSuccess()
       dispatchPopstate()
 
       guard?.handleDialogAction('leave-without-downloading')
 
       expect(ui.stageMode).toBe('gallery')
-      expect(run.downloaded).toBe(false)
+      expect(run.delivery).toBe('pending')
+      expect(downloadFinishedRun).not.toHaveBeenCalled()
     })
 
-    it('"download and leave" downloads, marks downloaded, then returns to Gallery', async () => {
+    it('"download and leave" downloads, then returns to Gallery', async () => {
       mountHost()
       const ui = useUiStore()
-      const run = useRunStore()
       ui.enterProcessing()
-      run.finishRun()
+      finishRunWithOneSuccess()
       dispatchPopstate()
 
       await guard?.handleDialogAction('download-and-leave')
 
       expect(downloadFinishedRun).toHaveBeenCalledOnce()
-      expect(run.downloaded).toBe(true)
       expect(ui.stageMode).toBe('gallery')
+    })
+
+    it('does not mark the delivery state itself — downloadFinishedRun owns that', async () => {
+      mountHost()
+      const ui = useUiStore()
+      const run = useRunStore()
+      ui.enterProcessing()
+      finishRunWithOneSuccess()
+      dispatchPopstate()
+
+      await guard?.handleDialogAction('download-and-leave')
+
+      // The real function sets `downloaded` internally; the mock here deliberately does not, so a
+      // second `markDownloaded()` call in the guard would show up as a false 'downloaded'.
+      expect(run.delivery).toBe('pending')
+    })
+
+    // Leaving on a failed download would unmount Processing.vue, whose onScopeDispose deletes the
+    // very artifacts the inline error is inviting the user to retry.
+    it.each(['assembly-failed', 'blocked'] as const)(
+      '"download and leave" stays on Processing when the download %s',
+      async (outcome) => {
+        mountHost()
+        const ui = useUiStore()
+        ui.enterProcessing()
+        finishRunWithOneSuccess()
+        dispatchPopstate()
+        vi.mocked(downloadFinishedRun).mockResolvedValueOnce(outcome)
+
+        await guard?.handleDialogAction('download-and-leave')
+
+        expect(ui.stageMode).toBe('processing')
+        expect(guard?.dialog.value).toBeNull()
+      },
+    )
+
+    it('re-arms the back guard after staying put on a failed download', async () => {
+      mountHost()
+      const ui = useUiStore()
+      ui.enterProcessing()
+      finishRunWithOneSuccess()
+      dispatchPopstate()
+      vi.mocked(downloadFinishedRun).mockResolvedValueOnce('blocked')
+
+      await guard?.handleDialogAction('download-and-leave')
+
+      // Without the re-arm, the pop that opened the dialog has already consumed the nested
+      // entry, so this second press would fall through to the leave-the-app dialog instead.
+      dispatchPopstate()
+
+      expect(guard?.dialog.value?.actions.map((action) => action.id)).toEqual([
+        'stay',
+        'leave-without-downloading',
+        'download-and-leave',
+      ])
     })
   })
 })

@@ -98,8 +98,13 @@ export async function readArchive(): Promise<Blob> {
 
 /**
  * Writes one successful output's individual copy (R-X38's direct-download candidate, and/or one of
- * R-X51's Share copies — the same physical file serves both roles when it's entry 0). `index` is
- * the copy's position among this run's successes, not the image's position in the batch.
+ * R-X51's Share copies — the same physical file can serve both roles).
+ *
+ * `index` is an opaque sort key, not a meaning: this module only promises that `readOutputCopies`
+ * returns copies in ascending `index` order. What that order *is* belongs to the caller —
+ * `pipeline/run-archive.ts` uses the image's grid position for a Share-eligible run (so the
+ * payload comes back in grid order, R-X49) and plain index 0 for the lone R-X16 candidate
+ * otherwise.
  */
 export async function writeOutputCopy(
   index: number,
@@ -132,6 +137,29 @@ export async function deleteOutputCopy(index: number): Promise<void> {
   }
 
   fallback.outputs.delete(index)
+}
+
+/**
+ * Releases every individual copy while leaving the archive intact — R-X48's "removes the
+ * individual share copies and leaves **Download** unchanged", for a run whose exact `canShare`
+ * check or byte total ruled Share out after the copies had already been written.
+ *
+ * Deliberately not `deleteRunArtifacts()`: that would take the archive with it, which is the very
+ * thing R-X48 says must survive. Caller's job to only use this where the archive is the Download
+ * artifact — a run reduced to one success has no archive, and its lone copy *is* the R-X16
+ * download (`pipeline/run-archive.ts`, §9.2's "one physical file may serve both roles").
+ *
+ * Reads the index set from whichever backend is live: `outputMeta` is only populated on the OPFS
+ * path, so the private-browsing fallback (R-X41) has to be asked for its own keys or this would
+ * silently do nothing there.
+ */
+export async function deleteAllOutputCopies(): Promise<void> {
+  const { opfs } = await getCapabilities()
+  const indices = opfs ? [...outputMeta.keys()] : [...fallback.outputs.keys()]
+
+  for (const index of indices) {
+    await deleteOutputCopy(index)
+  }
 }
 
 /** Reads back every individual copy as a real `File`, in index order, for Share or direct Download. */

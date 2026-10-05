@@ -192,6 +192,46 @@ test('deleteRunArtifacts removes the archive and every output copy together', as
   }
 })
 
+// T42, R-X48: "removes the individual share copies and leaves Download unchanged". The archive
+// surviving is the whole point — deleteRunArtifacts would take it with the copies.
+test('deleteAllOutputCopies removes every copy and leaves the archive alone', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    const result = await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+
+      await mod.writeArchive(new Blob([new Uint8Array([9, 9, 9])]).stream())
+      // Sparse, non-zero-based indices: a Share-eligible run writes each copy at its image's grid
+      // position, so index 0 need not exist at all.
+      await mod.writeOutputCopy(1, new Uint8Array([1]), { name: 'b.png', mimeType: 'image/png' })
+      await mod.writeOutputCopy(3, new Uint8Array([2, 2]), {
+        name: 'd.png',
+        mimeType: 'image/png',
+      })
+
+      const before = (await mod.readOutputCopies()).length
+      await mod.deleteAllOutputCopies()
+      const after = (await mod.readOutputCopies()).length
+      const archiveSize = (await mod.readArchive()).size
+
+      // Idempotent, like every other cleanup operation in this module.
+      await mod.deleteAllOutputCopies()
+
+      await mod.deleteRunArtifacts()
+      return { before, after, archiveSize }
+    }, OPFS_MODULE_PATH)
+
+    expect(result.before).toBe(2)
+    expect(result.after).toBe(0)
+    expect(result.archiveSize).toBe(3)
+  } finally {
+    await cleanup()
+  }
+})
+
 test('checkCombinedQuota distinguishes archive failure from share-only failure', async ({
   page: fixturePage,
 }, testInfo) => {
@@ -285,6 +325,21 @@ test('falls back to in-memory storage in real Firefox private browsing', async (
         }
       }, OPFS_MODULE_PATH)
       expect(copies).toEqual({ beforeLength: 1, beforeName: 'a.png', afterLength: 0 })
+
+      // T42: `deleteAllOutputCopies` reads its index set from a different place on each backend
+      // (`outputMeta` is OPFS-only), so the fallback needs its own proof that it isn't a no-op
+      // here (R-X41).
+      const shareOnlyCleanup = await page.evaluate(async (path) => {
+        const mod = await import(/* @vite-ignore */ path)
+        await mod.writeArchive(new Blob([new Uint8Array([9, 9, 9])]).stream())
+        await mod.writeOutputCopy(2, new Uint8Array([8]), { name: 'c.png', mimeType: 'image/png' })
+        await mod.deleteAllOutputCopies()
+        const after = await mod.readOutputCopies()
+        const archiveSize = (await mod.readArchive()).size
+        await mod.deleteRunArtifacts()
+        return { afterLength: after.length, archiveSize }
+      }, OPFS_MODULE_PATH)
+      expect(shareOnlyCleanup).toEqual({ afterLength: 0, archiveSize: 3 })
     } finally {
       await context.close()
     }

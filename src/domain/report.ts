@@ -1,5 +1,8 @@
+import type { FormatSetting } from './format'
+import type { BatchSettings, QualitySetting } from './job'
+import type { RejectionReason } from './rejection'
 import { formatReportSize } from './sizes'
-import type { Caveat, Rgba, SizeTargetSkipReason } from './types'
+import type { BatchDimension, Caveat, FailureReason, Rgba, SizeTargetSkipReason } from './types'
 
 export interface ReportFile {
   name: string
@@ -130,6 +133,104 @@ export function formatSkippedReason(reason: string | SizeTargetSkipReason): stri
   if (typeof reason === 'string') return reason
 
   return `Size target not reached; target ${formatReportSize(reason.targetBytes)}, smallest achieved ${formatReportSize(reason.achievedBytes)}, ${reason.width}×${reason.height} ${reason.format.toUpperCase()}`
+}
+
+/** Hardcoded English for the report (R-L3) — deliberately not `processingText.ts`'s
+ * `describeFailureReason`, which routes every case through the translatable UI catalogue. */
+export function formatFailureReason(reason: FailureReason): string {
+  switch (reason.kind) {
+    case 'decode-failed':
+      return 'File could not be decoded'
+    case 'encode-failed':
+      return 'File could not be encoded'
+    case 'out-of-memory':
+      // Unreachable in practice: an out-of-memory result halts the whole run (useProcessingRun.ts)
+      // rather than being recorded as a per-image failure. Kept for the exhaustive switch.
+      return 'Ran out of memory'
+  }
+}
+
+/** Hardcoded English for the report (R-L3) — a shorter, file-name-less sibling of
+ * `rejectionText.ts`'s `describeRejection`, which produces translatable on-screen copy with a
+ * call to action. The report already carries the file name as its own field. */
+export function formatRejectionReason(reason: RejectionReason): string {
+  switch (reason.kind) {
+    case 'unhandled':
+      switch (reason.reason) {
+        case 'psd':
+          return 'Photoshop documents are not supported'
+        case 'ico':
+          return 'Icon (ICO) files are not supported'
+        case 'svg':
+          return 'SVG files are not supported'
+        case 'camera-raw':
+          return 'Camera RAW files are not supported'
+        case 'animated-avif':
+          return 'Animated AVIF is not supported'
+      }
+      break
+    case 'heic-decoder-unavailable':
+      return 'This browser cannot decode HEIC'
+    case 'file-too-large':
+      return `File size ${formatReportSize(reason.actualBytes)} exceeds the ${formatReportSize(reason.capBytes)} limit for this browser`
+    case 'batch-count-exceeded':
+      return `Selection exceeded the ${reason.cap}-image batch limit`
+    case 'folder-empty':
+      return 'Folder contained no images this app can process'
+    case 'folder-depth-exceeded':
+      return `Folder exceeded the ${reason.cap}-level depth limit`
+    case 'folder-file-count-exceeded':
+      return `Folder exceeded the ${reason.cap}-file limit`
+  }
+}
+
+function describeQualitySetting(quality: QualitySetting): number | string {
+  return quality.kind === 'quality'
+    ? quality.value
+    : `Target size ${formatReportSize(quality.targetBytes)}`
+}
+
+function describeFormatSetting(format: FormatSetting): string {
+  return format === 'dont-change' ? 'Original formats' : format.toUpperCase()
+}
+
+function describeDimensionSetting(dimension: BatchDimension): string {
+  switch (dimension.kind) {
+    case 'original':
+      return 'Original size'
+    case 'fit-long-edge':
+      return `Fit within long edge, ${dimension.pixels} px`
+    case 'fixed-width':
+      return `Fixed width, ${dimension.pixels} px`
+    case 'fixed-height':
+      return `Fixed height, ${dimension.pixels} px`
+  }
+}
+
+/** Hardcoded English for the report (R-L3) — mirrors the batch settings used for the run, never
+ * the translated side-panel copy (`panel.quality.*`/`panel.dimension.*`/`panel.format.*`). */
+export function describeReportSettings(settings: BatchSettings): ReportSettings {
+  return {
+    quality: describeQualitySetting(settings.quality),
+    format: describeFormatSetting(settings.format),
+    dimension: describeDimensionSetting(settings.dimension),
+  }
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** Formats a run-start timestamp as the report's locale-independent `YYYY-MM-DD HH:MM:SS`. */
+export function formatReportTimestamp(date: Date): string {
+  const year = date.getFullYear()
+  const month = pad2(date.getMonth() + 1)
+  const day = pad2(date.getDate())
+  const hours = pad2(date.getHours())
+  const minutes = pad2(date.getMinutes())
+  const seconds = pad2(date.getSeconds())
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 /** Builds the complete, serialisable report model from reportable run outcomes. */

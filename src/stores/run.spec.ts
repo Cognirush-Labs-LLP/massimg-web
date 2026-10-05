@@ -13,7 +13,7 @@ beforeEach(() => {
 })
 
 describe('useRunStore initial state', () => {
-  it('starts at zero with no failures, caveats, or finished/downloaded flags', () => {
+  it('starts at zero with no failures, caveats, finished flag or delivery', () => {
     const run = useRunStore()
 
     expect(run.progress).toEqual({ pending: 0, succeeded: 0, failed: 0, skipped: 0 })
@@ -22,7 +22,8 @@ describe('useRunStore initial state', () => {
     expect(run.failures).toEqual([])
     expect(run.caveats).toEqual([])
     expect(run.finished).toBe(false)
-    expect(run.downloaded).toBe(false)
+    expect(run.delivery).toBe('pending')
+    expect(run.deliveryError).toBeNull()
   })
 })
 
@@ -39,7 +40,19 @@ describe('useRunStore.startRun', () => {
     expect(run.progress).toEqual({ pending: 5, succeeded: 0, failed: 0, skipped: 0 })
     expect(run.failures).toEqual([])
     expect(run.finished).toBe(false)
-    expect(run.downloaded).toBe(false)
+    expect(run.delivery).toBe('pending')
+    expect(run.deliveryError).toBeNull()
+  })
+
+  it('resets a delivery error left behind by a previous run', () => {
+    const run = useRunStore()
+    run.startRun(1)
+    run.finishRun()
+    run.markDeliveryFailed('download-blocked')
+
+    run.startRun(1)
+
+    expect(run.deliveryError).toBeNull()
   })
 
   it('clears prior failed and skipped image status only when a new run starts', () => {
@@ -129,15 +142,60 @@ describe('useRunStore.recordResult', () => {
   })
 })
 
-describe('useRunStore.finishRun / markDownloaded', () => {
-  it('set exactly their own flag', () => {
+describe('useRunStore delivery state (R-X50, R-X54, Technical Design §3.3)', () => {
+  it('finishRun does not deliver anything by itself', () => {
     const run = useRunStore()
 
     run.finishRun()
+
     expect(run.finished).toBe(true)
-    expect(run.downloaded).toBe(false)
+    expect(run.delivery).toBe('pending')
+  })
+
+  it.each([
+    { mark: 'markDownloaded', expected: 'downloaded' },
+    { mark: 'markShared', expected: 'shared' },
+  ] as const)('$mark leaves pending for $expected', ({ mark, expected }) => {
+    const run = useRunStore()
+    run.finishRun()
+
+    run[mark]()
+
+    expect(run.delivery).toBe(expected)
+  })
+
+  it.each(['download-assembly', 'download-blocked', 'share'] as const)(
+    'markDeliveryFailed(%s) records the error and leaves delivery pending',
+    (kind) => {
+      const run = useRunStore()
+      run.finishRun()
+
+      run.markDeliveryFailed(kind)
+
+      expect(run.deliveryError).toBe(kind)
+      expect(run.delivery).toBe('pending')
+    },
+  )
+
+  it('a successful delivery clears a previous attempt’s error', () => {
+    const run = useRunStore()
+    run.finishRun()
+    run.markDeliveryFailed('download-blocked')
 
     run.markDownloaded()
-    expect(run.downloaded).toBe(true)
+
+    expect(run.delivery).toBe('downloaded')
+    expect(run.deliveryError).toBeNull()
+  })
+
+  it('a successful share clears a previous failed share’s error', () => {
+    const run = useRunStore()
+    run.finishRun()
+    run.markDeliveryFailed('share')
+
+    run.markShared()
+
+    expect(run.delivery).toBe('shared')
+    expect(run.deliveryError).toBeNull()
   })
 })

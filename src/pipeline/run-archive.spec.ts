@@ -86,6 +86,21 @@ describe('openRunArchiveSink — single-image run', () => {
     })
     expect(opfsMocks.writeArchive).not.toHaveBeenCalled()
   })
+
+  it('ignores a report entry when there is no queue to append it to', async () => {
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([[idA, 'a.jpg']]),
+      multiImage: false,
+      shareEligible: false,
+    })
+
+    await sink.submit(idA, bytes(1, 2, 3), 'jpeg')
+    await expect(
+      sink.finish({ path: 'image_compression_report.txt', bytes: bytes(9) }),
+    ).resolves.toBeUndefined()
+
+    expect(opfsMocks.writeArchive).not.toHaveBeenCalled()
+  })
 })
 
 describe('openRunArchiveSink — multi-image, not Share-eligible', () => {
@@ -121,6 +136,25 @@ describe('openRunArchiveSink — multi-image, not Share-eligible', () => {
 
     expect(collected.map((e) => e.name)).toEqual(['a.jpg', 'sub/b.png', 'c.webp'])
   })
+
+  it('appends a given report entry last, before the queue closes (T41)', async () => {
+    const collected = await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+      ]),
+      multiImage: true,
+      shareEligible: false,
+    })
+
+    await sink.submit(idA, bytes(1), 'jpeg')
+    await sink.submit(idB, bytes(2), 'png')
+    await sink.finish({ path: 'image_compression_report.txt', bytes: bytes(9, 9) })
+
+    expect(collected.map((e) => e.name)).toEqual(['a.jpg', 'b.png', 'image_compression_report.txt'])
+    expect(collected.at(-1)?.bytes).toEqual(bytes(9, 9))
+  })
 })
 
 describe('openRunArchiveSink — multi-image, Share-eligible', () => {
@@ -133,6 +167,10 @@ describe('openRunArchiveSink — multi-image, Share-eligible', () => {
       ]),
       multiImage: true,
       shareEligible: true,
+      shareNamesByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+      ]),
     })
 
     await sink.submit(idA, bytes(1), 'jpeg')
@@ -148,6 +186,93 @@ describe('openRunArchiveSink — multi-image, Share-eligible', () => {
       mimeType: 'image/png',
     })
     expect(opfsMocks.deleteOutputCopy).not.toHaveBeenCalled()
+  })
+
+  // R-X49: grid order, not completion order. `readOutputCopies()` sorts by write index, so the
+  // index *is* the share payload's ordering — writing at `successCount - 1` would hand Share
+  // whatever order the workers happened to finish in.
+  it('writes each copy at its grid position, not its completion position', async () => {
+    await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+        [idC, 'c.webp'],
+      ]),
+      multiImage: true,
+      shareEligible: true,
+      // Grid order: a, b, c.
+      shareNamesByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+        [idC, 'c.webp'],
+      ]),
+    })
+
+    // Completion order: c, a, b — nothing like grid order.
+    await sink.submit(idC, bytes(3), 'webp')
+    await sink.submit(idA, bytes(1), 'jpeg')
+    await sink.submit(idB, bytes(2), 'png')
+    await sink.finish()
+
+    const indexByName = new Map(
+      opfsMocks.writeOutputCopy.mock.calls.map(([index, , meta]) => [
+        (meta as { name: string }).name,
+        index,
+      ]),
+    )
+    expect(indexByName.get('a.jpg')).toBe(0)
+    expect(indexByName.get('b.png')).toBe(1)
+    expect(indexByName.get('c.webp')).toBe(2)
+  })
+
+  // R-X53 against R-X22: the ZIP keeps the directory-scoped path, Share gets the flattened,
+  // globally-deduplicated basename. The two must not be the same string for a folder run.
+  it('names Share copies from the global Share names, not the ZIP basename', async () => {
+    const collected = await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a/photo.jpg'],
+        [idB, 'b/photo.jpg'],
+      ]),
+      multiImage: true,
+      shareEligible: true,
+      shareNamesByImage: new Map([
+        [idA, 'photo.jpg'],
+        [idB, 'photo-1.jpg'],
+      ]),
+    })
+
+    await sink.submit(idA, bytes(1), 'jpeg')
+    await sink.submit(idB, bytes(2), 'jpeg')
+    await sink.finish()
+
+    expect(opfsMocks.writeOutputCopy).toHaveBeenNthCalledWith(1, 0, bytes(1), {
+      name: 'photo.jpg',
+      mimeType: 'image/jpeg',
+    })
+    // Not 'photo.jpg', which is what basename('b/photo.jpg') would have produced.
+    expect(opfsMocks.writeOutputCopy).toHaveBeenNthCalledWith(2, 1, bytes(2), {
+      name: 'photo-1.jpg',
+      mimeType: 'image/jpeg',
+    })
+    // ZIP paths unchanged: different directories never collide there (R-X22).
+    expect(collected.map((entry) => entry.name)).toEqual(['a/photo.jpg', 'b/photo.jpg'])
+  })
+
+  it('rejects a Share-eligible submit for an image with no Share name', async () => {
+    await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+      ]),
+      multiImage: true,
+      shareEligible: true,
+      shareNamesByImage: new Map([[idA, 'a.jpg']]),
+    })
+
+    await expect(sink.submit(idB, bytes(2), 'png')).rejects.toThrow()
   })
 })
 

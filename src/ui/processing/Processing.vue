@@ -14,6 +14,8 @@ import { storeToRefs } from 'pinia'
 import { describeSizeComparison, formatUiSize } from '@/domain/sizes'
 import type { ImageId } from '@/domain/types'
 import { t } from '@/i18n/t'
+import { downloadFinishedRun } from '@/pipeline/run-download'
+import { shareFinishedRun } from '@/pipeline/run-share'
 import { useBatchStore } from '@/stores/batch'
 import { useRunStore } from '@/stores/run'
 import { useUiStore } from '@/stores/ui'
@@ -23,11 +25,12 @@ import { useProcessingRun } from './useProcessingRun'
 
 const batchStore = useBatchStore()
 const runStore = useRunStore()
-const { progress, failures, skipped, finished, haltReason } = storeToRefs(runStore)
+const { progress, failures, skipped, finished, haltReason, delivery, deliveryError } =
+  storeToRefs(runStore)
 const uiStore = useUiStore()
 
 const processingRun = useProcessingRun()
-const { quotaRejection } = processingRun
+const { quotaRejection, shareAvailable } = processingRun
 
 const announcement = ref('')
 const lastAnnouncedQuartile = ref(-1)
@@ -101,6 +104,38 @@ async function onCancel(): Promise<void> {
   announcement.value = t('processing.announce.stopping')
   await processingRun.cancel()
 }
+
+// R-X14/R-X15: delivery is explicit and only ever reachable from a finished run with at least one
+// success. Both handlers own no logic of their own — the single-vs-ZIP branching lives in
+// run-download.ts and the platform call in platform/share.ts (§9.1: "the component never invokes
+// the browser API directly"). The result is read back off `runStore.deliveryError` rather than
+// from the return value, so a failure raised by the back guard's "Download and leave" surfaces
+// through the same inline message as one raised here.
+async function onDownload(): Promise<void> {
+  await downloadFinishedRun()
+}
+
+// Deliberately the first statement, with nothing awaited ahead of it: Web Share is gesture-gated
+// and T39-A measured a real harness losing its transient activation to one slow await.
+// R-X50: a cancelled share is silent — no message, no state change, both actions still offered.
+async function onShare(): Promise<void> {
+  await shareFinishedRun()
+}
+
+/** R-X54's checked, non-interactive completion state, naming which delivery actually happened. */
+const deliveredLabel = computed(() =>
+  delivery.value === 'shared'
+    ? t('processing.complete.shared')
+    : t('processing.complete.downloadStarted'),
+)
+
+/** §10 "ZIP assembly failure" and "Download blocked by browser" — two rows, two messages. */
+const downloadErrorText = computed(() => {
+  if (deliveryError.value === 'download-assembly') {
+    return t('processing.download.assemblyFailed')
+  }
+  return deliveryError.value === 'download-blocked' ? t('processing.download.blocked') : ''
+})
 
 onMounted(() => {
   announcement.value = t('processing.announce.started')
@@ -203,6 +238,24 @@ onMounted(() => {
         </ul>
       </section>
 
+      <!-- §10 "ZIP assembly failure" / "Download blocked by browser" / "Share handoff fails":
+           stated inline beside the actions, which remain available so the user can retry
+           (R-X50). A cancelled share sets nothing and so renders nothing. -->
+      <p
+        v-if="downloadErrorText !== ''"
+        class="delivery-error"
+        data-testid="processing-download-error"
+      >
+        {{ downloadErrorText }}
+      </p>
+      <p
+        v-else-if="deliveryError === 'share'"
+        class="delivery-error"
+        data-testid="processing-share-error"
+      >
+        {{ t('processing.share.failed') }}
+      </p>
+
       <div class="actions">
         <button
           v-if="!finished"
@@ -220,27 +273,49 @@ onMounted(() => {
           }}
         </button>
         <template v-else>
+          <!-- R-X54: once delivery has succeeded, this becomes the remaining primary action. -->
           <button
             type="button"
             class="action"
+            :class="{ 'action--primary': delivery !== 'pending' }"
             data-testid="processing-back"
             @click="uiStore.finishProcessing()"
           >
             {{ t('processing.complete.back') }}
           </button>
-          <!-- Download's click handler is T42's: it wires the explicit Download button to
-             downloadFinishedRun() once T40 (archive assembly) and T41 (report) exist. This button
-             only satisfies R-X14's visibility rule for now. Never shown once the run halted
-             (haltReason) — "partial results discarded" (§10 "Out of memory") means there is
-             nothing to offer regardless of how many images succeeded before the halt. -->
-          <button
-            v-if="haltReason === null && progress.succeeded > 0"
-            type="button"
-            class="action action--primary"
-            data-testid="processing-download"
-          >
-            {{ t('processing.complete.download') }}
-          </button>
+          <!-- Never shown once the run halted (haltReason) — "partial results discarded" (§10
+               "Out of memory") means there is nothing to offer regardless of how many images
+               succeeded before the halt — nor with zero successes (R-X14, §10 "Every image in a
+               run failed or was skipped"). -->
+          <template v-if="haltReason === null && progress.succeeded > 0">
+            <!-- R-X54: the two delivery actions are replaced by one checked, non-interactive
+                 state once either of them has succeeded. The check glyph is decoration; the
+                 label is what identifies the outcome. -->
+            <p v-if="delivery !== 'pending'" class="delivered" data-testid="processing-delivered">
+              <span aria-hidden="true">✓</span> {{ deliveredLabel }}
+            </p>
+            <template v-else>
+              <button
+                type="button"
+                class="action action--primary"
+                data-testid="processing-download"
+                @click="onDownload"
+              >
+                {{ t('processing.complete.download') }}
+              </button>
+              <!-- R-X14/R-X48: beside Download, and only once the exact completed payload has
+                   been accepted by this platform. -->
+              <button
+                v-if="shareAvailable"
+                type="button"
+                class="action action--primary"
+                data-testid="processing-share"
+                @click="onShare"
+              >
+                {{ t('processing.complete.share') }}
+              </button>
+            </template>
+          </template>
         </template>
       </div>
     </template>
@@ -301,6 +376,28 @@ onMounted(() => {
   font-weight: var(--font-weight-control);
   font-size: 0.9rem;
   text-align: center;
+}
+
+.delivery-error {
+  margin: 0;
+  color: var(--color-tint);
+  font-weight: var(--font-weight-control);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* R-X54: deliberately not a button and not styled as one — it reports an outcome and must not
+   look pressable, while still sitting in the slot the two delivery actions occupied. */
+.delivered {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+  margin: 0;
+  padding-inline: 20px;
+  color: var(--color-tint);
+  font-weight: var(--font-weight-control);
+  font-size: 0.95rem;
 }
 
 .issue-list {

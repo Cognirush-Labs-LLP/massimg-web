@@ -18,10 +18,13 @@ Yes, a separate desktop application exists for people who need to process very l
 ## 2. Privacy
 
 **Do my images ever leave my device?**
-No. Every image is decoded, edited and compressed locally in your browser. Nothing is uploaded to a server.
+Not unless you send them somewhere yourself. Every image is decoded, edited and compressed locally in your browser, and nothing is ever uploaded to a server. The only way a result leaves your device is if you press Share on a finished batch and pick an app or destination to hand the images to — that choice is yours, and the tool itself still sends nothing anywhere.
+
+**What does Share do, and where do my images go?**
+Share hands your finished images to a system share sheet or app picker, so you can choose where they go — a messaging app, email, cloud storage, whatever your device offers. The app itself doesn't send them anywhere: it passes the files to your operating system in one call and then waits to be told whether that handoff succeeded or you cancelled it. We can't see, and don't control, which app or destination you pick.
 
 **Does the app track me or send analytics about my images?**
-No. No image bytes, file names, dimensions or sizes are sent anywhere.
+No. No image bytes, file names, dimensions or sizes are sent to us or to any analytics service.
 
 **Is it safe to use this in a private/incognito window?**
 Yes, but with a small difference: some browsers (Firefox and Safari, in their private modes) don't allow the on-device temporary storage the app normally uses, so it automatically switches to keeping data in memory for the run instead. It still works, but it may handle somewhat smaller batches in that mode. The exact reduced limit for private browsing hasn't been finalized yet.
@@ -156,9 +159,8 @@ A handful of established open-source image libraries handle the actual decoding,
 
 ## 10. What's still being finished
 
-The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above, and so are the on-screen gallery, preview and rotate/crop editing screens. The parts of the app you'd actually click through are not all finished yet, including:
+The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above, and so are the on-screen gallery, preview and rotate/crop editing screens, the compression run itself, and downloading or sharing the finished result. Some parts of the app are still not finished, including:
 
-- The compress-and-download flow, including the ZIP file and summary report for multi-image batches
 - Finalized limits on batch size, file size and image dimensions
 - Full keyboard and screen-reader accessibility
 - Translations into languages other than English

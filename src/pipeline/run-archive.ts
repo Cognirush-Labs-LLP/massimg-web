@@ -8,8 +8,11 @@
 // This module owns two things: a pre-run quota/eligibility decision (`preflightRunArchive`), and
 // the per-result sink useProcessingRun.ts feeds every successful output through as the run
 // proceeds (`openRunArchiveSink`). Naming is precomputed by the caller (`domain/naming.ts`'s
-// `resolveOutputNames`, called once in batch order before any job dispatches) because collision
-// resolution must not depend on which worker happens to finish first.
+// `resolveOutputNames` for the ZIP and, for a Share-eligible run, `resolveShareNames` for the
+// flattened Share copies), called once in batch order before any job dispatches, because collision
+// resolution must not depend on which worker happens to finish first. The two scopes are both
+// live at once for a Share-eligible folder run: the ZIP keeps `a/photo.jpg` and `b/photo.jpg`
+// distinct (R-X22) while Share flattens them to `photo.jpg` and `photo-1.jpg` (R-X53).
 
 import { makeZip, predictLength } from 'client-zip'
 import type { EncodableFormat, ImageId } from '@/domain/types'
@@ -154,11 +157,13 @@ export interface RunArchiveSink {
    */
   submit(imageId: ImageId, bytes: Uint8Array, format: EncodableFormat): Promise<void>
   /**
-   * Call once every expected result (success, failure or skip alike) has arrived. Resolves once
-   * the archive, if this run has one, has been fully flushed to storage — only then is it safe to
-   * read back or mark the run finished.
+   * Call once every expected result (success, failure or skip alike) has arrived. `report`, when
+   * given, is appended as one final ZIP entry before the queue closes (T41) — never written for a
+   * single-image run, which has no `queue` to append to. Resolves once the archive, if this run
+   * has one, has been fully flushed to storage — only then is it safe to read back or mark the run
+   * finished.
    */
-  finish(): Promise<void>
+  finish(report?: { path: string; bytes: Uint8Array }): Promise<void>
   /** Cancellation or storage-failure path: stop accepting entries and delete everything written
    * so far. Idempotent with `finish()` not having been called, and safe to call more than once. */
   abortAndCleanup(): Promise<void>
@@ -173,13 +178,33 @@ function basename(path: string): string {
  * Opens the sink for one run. `multiImage` and `shareEligible` are decided once, at run start, and
  * are fixed for the sink's whole lifetime (R-X47: eligibility does not change if later failures
  * leave fewer successes than the file-count ceiling).
+ *
+ * `shareNamesByImage` is only passed for a `shareEligible` run and must be in grid order — it is
+ * both the flattened, globally-deduplicated Share name per image (R-X53, `resolveShareNames`) and,
+ * through its own insertion order, the grid position each copy is written at (R-X49). The ZIP's
+ * own `pathsByImage` stays directory-scoped and is unaffected by either.
  */
 export function openRunArchiveSink(options: {
   pathsByImage: ReadonlyMap<ImageId, string>
   multiImage: boolean
   shareEligible: boolean
+  shareNamesByImage?: ReadonlyMap<ImageId, string>
 }): RunArchiveSink {
-  const { pathsByImage, multiImage, shareEligible } = options
+  const { pathsByImage, multiImage, shareEligible, shareNamesByImage } = options
+
+  // Grid position per image, derived once from the Share name map's insertion order: a `Map`
+  // iterates in insertion order, so the Nth entry's position *is* the Nth accepted image's grid
+  // position. Writing at that index rather than at completion order is what makes
+  // `readOutputCopies()`'s ascending-index sort hand Share its payload in grid order (R-X49),
+  // whichever worker happens to finish first.
+  const shareIndexByImage = new Map<ImageId, number>()
+  if (shareNamesByImage) {
+    let gridIndex = 0
+    for (const imageId of shareNamesByImage.keys()) {
+      shareIndexByImage.set(imageId, gridIndex)
+      gridIndex += 1
+    }
+  }
 
   let successCount = 0
   let queue: EntryQueue | null = null
@@ -203,10 +228,13 @@ export function openRunArchiveSink(options: {
     }
 
     successCount += 1
-    const meta = { name: basename(path), mimeType: mimeForFormat(format) }
+    const mimeType = mimeForFormat(format)
+    const meta = { name: basename(path), mimeType }
 
     if (!multiImage) {
-      // R-X16: the only output a 1-image run can ever have, no ZIP involved.
+      // R-X16: the only output a 1-image run can ever have, no ZIP involved. A lone file cannot
+      // collide under either naming scope, so the ZIP basename is already its Share name too —
+      // no separate naming pass, and no second write (R-X51, R-X49's "same direct output").
       await writeOutputCopy(0, bytes, meta)
       return
     }
@@ -214,10 +242,17 @@ export function openRunArchiveSink(options: {
     queue?.push({ path, bytes })
 
     if (shareEligible) {
+      const shareName = shareNamesByImage?.get(imageId)
+      const shareIndex = shareIndexByImage.get(imageId)
+      if (shareName === undefined || shareIndex === undefined) {
+        // Same contract as `path` above: a Share-eligible sink is given the whole accepted set.
+        throw new Error(`openRunArchiveSink: no Share name for image ${String(imageId)}`)
+      }
+
       // Every success keeps its own copy — this is also what gives the R-X16 candidate role to
-      // entry 0 for free, with no separate bookkeeping (§9.2's "one physical file may serve both
-      // candidate and Share roles").
-      await writeOutputCopy(successCount - 1, bytes, meta)
+      // the single remaining copy for free, with no separate bookkeeping (§9.2's "one physical
+      // file may serve both candidate and Share roles").
+      await writeOutputCopy(shareIndex, bytes, { name: shareName, mimeType })
       return
     }
 
@@ -228,7 +263,10 @@ export function openRunArchiveSink(options: {
     }
   }
 
-  async function finish(): Promise<void> {
+  async function finish(report?: { path: string; bytes: Uint8Array }): Promise<void> {
+    if (report && queue) {
+      queue.push({ path: report.path, bytes: report.bytes })
+    }
     queue?.close()
     await archiveDone
   }

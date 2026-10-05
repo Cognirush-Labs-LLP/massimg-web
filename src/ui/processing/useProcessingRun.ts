@@ -12,7 +12,8 @@
 // prevents a straggling job from one run corrupting a second run's freshly-reset counters — and,
 // since T40, from leaving an archive stream open or an output copy un-cleaned-up behind it.
 import { computed, onScopeDispose, ref, toRaw, type ComputedRef, type Ref } from 'vue'
-import { resolveOutputNames, type NamingInput } from '@/domain/naming'
+import { runtimeLimits } from '@/config/limits'
+import { resolveOutputNames, resolveShareNames, type NamingInput } from '@/domain/naming'
 import { resolveSettings, type BatchSettings, type SettingsResolution } from '@/domain/job'
 import type { ImageId, ImageRecord, Job } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
@@ -23,8 +24,10 @@ import {
   type NamingEntry,
   type RunArchiveSink,
 } from '@/pipeline/run-archive'
+import { buildRunReportEntry } from '@/pipeline/run-report'
+import { deleteAllOutputCopies, readOutputCopies } from '@/platform/opfs'
 import { getSourceFile } from '@/platform/source-files'
-import { probeFileShareForRun } from '@/platform/share'
+import { canShareExactFiles, probeFileShareForRun } from '@/platform/share'
 import { useBatchStore } from '@/stores/batch'
 import { useRunStore } from '@/stores/run'
 import { useSettingsStore } from '@/stores/settings'
@@ -44,6 +47,12 @@ export interface ProcessingRunState {
   /** Set instead of starting the run at all when the pre-run storage preflight (R-X40) finds the
    * predicted archive will not fit. No job is ever dispatched in this case. */
   quotaRejection: Ref<QuotaRejection | null>
+  /**
+   * R-X48's answer, decided once after the run completes: whether **Share** may be rendered. False
+   * until then, and false for the whole run whenever any of R-X47's run-start eligibility, the
+   * `maximumShareBytes` total or the exact `navigator.canShare({ files })` check says no.
+   */
+  shareAvailable: Ref<boolean>
   start: () => void
   cancel: () => Promise<void>
 }
@@ -69,6 +78,7 @@ export function useProcessingRun(): ProcessingRunState {
 
   const stopping = ref(false)
   const quotaRejection = ref<QuotaRejection | null>(null)
+  const shareAvailable = ref(false)
   let outstanding: Promise<void>[] = []
   let generation = 0
   let currentSink: RunArchiveSink | null = null
@@ -303,7 +313,25 @@ export function useProcessingRun(): ProcessingRunState {
       return
     }
 
-    const sink = openRunArchiveSink({ pathsByImage, multiImage, shareEligible })
+    // R-X53's flattened, globally-deduplicated Share names, built from the same accepted list in
+    // the same grid order as the ZIP's own names — a second, independent collision scope over one
+    // ordered candidate list (Technical Design §9.4), not a transformation of `paths`. Only built
+    // when the run will actually write Share copies; the `Map`'s insertion order is also what
+    // fixes each copy's grid index inside the sink (R-X49).
+    let shareNamesByImage: Map<ImageId, string> | undefined
+    if (shareEligible) {
+      const shareNames = resolveShareNames(namingInputs)
+      shareNamesByImage = new Map<ImageId, string>(
+        accepted.map(({ image }, index) => [image.id, shareNames[index] as string]),
+      )
+    }
+
+    const sink = openRunArchiveSink({
+      pathsByImage,
+      multiImage,
+      shareEligible,
+      shareNamesByImage,
+    })
     currentSink = sink
 
     runStore.startRun(images.length)
@@ -316,7 +344,8 @@ export function useProcessingRun(): ProcessingRunState {
       }
 
       try {
-        await sink.finish()
+        // R-X16: a single-image run has no report at all.
+        await sink.finish(multiImage ? buildRunReportEntry() : undefined)
       } catch {
         if (generation === expected) {
           await sink.abortAndCleanup()
@@ -329,14 +358,73 @@ export function useProcessingRun(): ProcessingRunState {
       // after cancel() has already decided this run is over.
       if (generation === expected && !stopping.value) {
         runStore.finishRun()
+        // A storage error while merely *checking* shareability is one of R-X48's "failure of any
+        // of these checks": Share is not offered, Download is left exactly as it was. It must not
+        // halt a run that has already completed successfully, so it is caught here rather than
+        // joining the storage-failure path above.
+        await decideShareAvailability(expected, multiImage, shareEligible).catch(() => {})
       }
     })
+  }
+
+  /**
+   * R-X48, run once at completion. Three checks, in the order that avoids paying for a later one
+   * the earlier one already settles: at least one success, the measured `maximumShareBytes` total,
+   * and finally the exact `navigator.canShare({ files })` on the real completed array — which
+   * T39-A proved is the only one of the three that can speak for the platform.
+   *
+   * `attemptCheck` is where R-X47's two eligible shapes diverge. A multi-image run had to pass the
+   * run-start probe/preflight to have written any Share copies at all, so an ineligible one has
+   * nothing to check. A run that *started* with exactly one image had no retention decision to
+   * make — R-X51 writes its single direct artifact unconditionally and R-X49 makes that same file
+   * the share payload — so there was never a preliminary probe to gate it, and R-X48's exact check
+   * is the whole answer. See docs/task-notes/T42.md for the reading this rests on.
+   */
+  async function decideShareAvailability(
+    expected: number,
+    multiImage: boolean,
+    shareEligible: boolean,
+  ): Promise<void> {
+    const attemptCheck = multiImage ? shareEligible : true
+    if (!attemptCheck || runStore.progress.succeeded === 0) {
+      return
+    }
+
+    // T39-A: `canShare` keeps answering `true` well past the byte total at which `share()` itself
+    // starts throwing, so the measured ceiling is applied *first* and the exact array is not even
+    // read back when it cannot be offered anyway.
+    const totalShareBytes = runStore.successes.reduce((sum, entry) => sum + entry.outputBytes, 0)
+    const files = totalShareBytes <= runtimeLimits.maximumShareBytes ? await readOutputCopies() : []
+
+    if (generation !== expected) {
+      return
+    }
+
+    const shareable = files.length > 0 && (await canShareExactFiles(files))
+
+    if (generation !== expected) {
+      return
+    }
+
+    if (shareable) {
+      shareAvailable.value = true
+      return
+    }
+
+    // R-X48: "removes the individual share copies and leaves Download unchanged". Only safe once
+    // the archive is the Download artifact — a run reduced to exactly one success has no archive,
+    // and that one copy *is* its R-X16 direct download, so deleting it here would take Download
+    // down with Share.
+    if (runStore.progress.succeeded > 1) {
+      await deleteAllOutputCopies()
+    }
   }
 
   function start(): void {
     const expected = (generation += 1)
     stopping.value = false
     quotaRejection.value = null
+    shareAvailable.value = false
     void runInternal(expected)
   }
 
@@ -360,5 +448,5 @@ export function useProcessingRun(): ProcessingRunState {
     })()
   })
 
-  return { total, processed, stopping, quotaRejection, start, cancel }
+  return { total, processed, stopping, quotaRejection, shareAvailable, start, cancel }
 }

@@ -5,6 +5,7 @@ import type { ImageId, ImageRecord, PipelineJob } from '@/domain/types'
 import type { JobOutcome } from '@/pipeline/pool'
 import type { JobToken, OutputJobResult } from '@/pipeline/protocol'
 import { useBatchStore } from '@/stores/batch'
+import { useRunStore } from '@/stores/run'
 import { useUiStore } from '@/stores/ui'
 
 interface PendingRun {
@@ -46,8 +47,35 @@ vi.mock('@/platform/opfs', async (importOriginal) => {
   }
 })
 
+// jsdom has no `navigator.canShare`, so the real functions can only ever answer `false` — which
+// is the correct default for every test here that isn't about Share, and useless for the ones that
+// are. Wrapped, so each Share test opts in explicitly (T42).
+vi.mock('@/platform/share', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/platform/share')>()
+  return {
+    ...actual,
+    probeFileShareForRun: vi.fn(actual.probeFileShareForRun),
+    canShareExactFiles: vi.fn(actual.canShareExactFiles),
+  }
+})
+
+// The two delivery actions are mocked at their module boundary: what this file tests is that the
+// right button calls the right one and that the view reacts to the resulting store state. Their
+// own behaviour lives in run-download.spec.ts / run-share.spec.ts, and mocking them also keeps a
+// real `URL.createObjectURL`/anchor click out of a component test.
+vi.mock('@/pipeline/run-download', () => ({
+  downloadFinishedRun: vi.fn(async () => 'downloaded'),
+}))
+
+vi.mock('@/pipeline/run-share', () => ({
+  shareFinishedRun: vi.fn(async () => 'shared'),
+}))
+
 const Processing = (await import('./Processing.vue')).default
 const { checkCombinedQuota, writeOutputCopy } = await import('@/platform/opfs')
+const { probeFileShareForRun, canShareExactFiles } = await import('@/platform/share')
+const { downloadFinishedRun } = await import('@/pipeline/run-download')
+const { shareFinishedRun } = await import('@/pipeline/run-share')
 
 function image(id: string, overrides: Partial<ImageRecord> = {}): ImageRecord {
   return {
@@ -103,7 +131,24 @@ beforeEach(() => {
   sourceFiles.clear()
   vi.mocked(checkCombinedQuota).mockClear()
   vi.mocked(writeOutputCopy).mockClear()
+  vi.mocked(probeFileShareForRun).mockReset().mockResolvedValue(false)
+  vi.mocked(canShareExactFiles).mockReset().mockResolvedValue(false)
+  vi.mocked(downloadFinishedRun).mockReset().mockResolvedValue('downloaded')
+  vi.mocked(shareFinishedRun).mockReset().mockResolvedValue('shared')
 })
+
+/** Settles every pending job as a success, so the finished view renders its delivery actions. */
+async function completeAll(bytes = 400): Promise<void> {
+  for (const [index, pending] of runs.entries()) {
+    pending.settle({
+      token: (index + 1) as JobToken,
+      imageId: String(index) as ImageId,
+      outcome: 'completed',
+      result: completedOutput(bytes),
+    })
+  }
+  await flushPromises()
+}
 
 describe('Processing view (T38)', () => {
   it('shows the counter, donut and every number also as text, numerically correct through a run', async () => {
@@ -234,7 +279,7 @@ describe('Processing view (T38)', () => {
     expect(wrapper.get('[data-testid="processing-back"]').text()).toBe('Back to images')
   })
 
-  it('shows Download once at least one image succeeded, present but without triggering a download', async () => {
+  it('shows Download once at least one image succeeded, and clicking it delivers the run', async () => {
     seed(['a', 'b'])
     const wrapper = await mountProcessing()
 
@@ -254,8 +299,21 @@ describe('Processing view (T38)', () => {
 
     const download = wrapper.get('[data-testid="processing-download"]')
     expect(download.text()).toBe('Download')
-    // T42, not T38, wires this click to downloadFinishedRun() — clicking it here must not throw.
-    await expect(download.trigger('click')).resolves.not.toThrow()
+
+    await download.trigger('click')
+    await flushPromises()
+
+    // R-X15: explicit. Nothing was delivered before the press.
+    expect(downloadFinishedRun).toHaveBeenCalledOnce()
+  })
+
+  it('never delivers anything on its own (R-X15)', async () => {
+    seed(['a', 'b'])
+    await mountProcessing()
+    await completeAll()
+
+    expect(downloadFinishedRun).not.toHaveBeenCalled()
+    expect(shareFinishedRun).not.toHaveBeenCalled()
   })
 
   it('"Back to images" returns to Gallery with the batch intact', async () => {
@@ -375,6 +433,277 @@ describe('Processing view (T38)', () => {
       const halted = wrapper.get('[data-testid="processing-halted"]')
       expect(halted.text()).toContain('Storage stopped working')
       expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+    })
+  })
+
+  describe('Share (T42, R-X14/R-X48/R-X49)', () => {
+    it('is absent when the exact capability check did not accept this payload', async () => {
+      seed(['a'])
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
+    })
+
+    it('appears beside Download when the exact capability check accepts', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      const share = wrapper.get('[data-testid="processing-share"]')
+      expect(share.text()).toBe('Share')
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+    })
+
+    it('hands the press to the platform Share action', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-share"]').trigger('click')
+      await flushPromises()
+
+      expect(shareFinishedRun).toHaveBeenCalledOnce()
+    })
+
+    it('is absent with zero successes, alongside Download (§10)', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      const wrapper = await mountProcessing()
+
+      runs[0]?.settle({
+        token: 1 as JobToken,
+        imageId: 'a' as ImageId,
+        outcome: 'failed',
+        reason: { kind: 'decode-failed' },
+      })
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="processing-back"]').text()).toBe('Back to images')
+    })
+  })
+
+  describe('after a successful delivery (T42, R-X54)', () => {
+    it.each([
+      { action: 'processing-download', mock: 'download', label: 'Download started' },
+      { action: 'processing-share', mock: 'share', label: 'Shared' },
+    ] as const)('$mock replaces both actions with "$label"', async ({ action, mock, label }) => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      if (mock === 'download') {
+        vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+          useRunStore().markDownloaded()
+          return 'downloaded'
+        })
+      } else {
+        vi.mocked(shareFinishedRun).mockImplementation(async () => {
+          useRunStore().markShared()
+          return 'shared'
+        })
+      }
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get(`[data-testid="${action}"]`).trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="processing-delivered"]').text()).toContain(label)
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
+    })
+
+    it('keeps the completed summary and both issue lists visible', async () => {
+      seed(['a', 'b', 'c'])
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDownloaded()
+        return 'downloaded'
+      })
+      const wrapper = await mountProcessing()
+
+      runs[0]?.settle({
+        token: 1 as JobToken,
+        imageId: 'a' as ImageId,
+        outcome: 'completed',
+        result: completedOutput(400),
+      })
+      runs[1]?.settle({
+        token: 2 as JobToken,
+        imageId: 'b' as ImageId,
+        outcome: 'failed',
+        reason: { kind: 'decode-failed' },
+      })
+      runs[2]?.settle({
+        token: 3 as JobToken,
+        imageId: 'c' as ImageId,
+        outcome: 'completed',
+        result: {
+          kind: 'size-target-unreachable',
+          targetBytes: 100,
+          achievedBytes: 200,
+          format: 'jpeg',
+          width: 800,
+          height: 600,
+        },
+      })
+      await flushPromises()
+
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="processing-counter"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-donut"]').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="processing-figure-succeeded"]').text()).toBe('1 succeeded')
+      expect(wrapper.find('[data-testid="processing-failures"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-skipped"]').exists()).toBe(true)
+    })
+
+    it('makes Back to images the remaining primary action', async () => {
+      seed(['a'])
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDownloaded()
+        return 'downloaded'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      const back = wrapper.get('[data-testid="processing-back"]')
+      expect(back.classes()).not.toContain('action--primary')
+
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="processing-back"]').classes()).toContain('action--primary')
+    })
+
+    it('the delivered state is not a button', async () => {
+      seed(['a'])
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDownloaded()
+        return 'downloaded'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      // R-X54: "a checked, non-interactive completion state".
+      expect(wrapper.get('[data-testid="processing-delivered"]').element.tagName).not.toBe('BUTTON')
+    })
+
+    it('"Back to images" still reaches Gallery from the delivered state', async () => {
+      seed(['a'])
+      useUiStore().enterProcessing()
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDownloaded()
+        return 'downloaded'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.get('[data-testid="processing-back"]').trigger('click')
+
+      expect(useUiStore().stageMode).toBe('gallery')
+    })
+  })
+
+  describe('retryable delivery failures (T42, §10)', () => {
+    it('states the ZIP assembly failure inline and keeps Download available', async () => {
+      seed(['a', 'b'])
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDeliveryFailed('download-assembly')
+        return 'assembly-failed'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      const error = wrapper.get('[data-testid="processing-download-error"]')
+      expect(error.text()).toContain("couldn't be assembled")
+      expect(error.text()).toContain('no partial file was kept')
+      expect(error.text()).toContain('try again')
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-delivered"]').exists()).toBe(false)
+    })
+
+    it('states the blocked download inline, with what to do about it', async () => {
+      seed(['a', 'b'])
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDeliveryFailed('download-blocked')
+        return 'blocked'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      const error = wrapper.get('[data-testid="processing-download-error"]')
+      expect(error.text()).toContain('browser blocked the download')
+      expect(error.text()).toContain('Allow downloads')
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+    })
+
+    it('states a failed share handoff inline and keeps both actions available', async () => {
+      seed(['a', 'b'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      vi.mocked(probeFileShareForRun).mockResolvedValue(true)
+      vi.mocked(shareFinishedRun).mockImplementation(async () => {
+        useRunStore().markDeliveryFailed('share')
+        return 'failed'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-share"]').trigger('click')
+      await flushPromises()
+
+      const error = wrapper.get('[data-testid="processing-share-error"]')
+      expect(error.text()).toContain("didn't finish")
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-download-error"]').exists()).toBe(false)
+    })
+
+    // R-X50: "User cancellation is not an error."
+    it('says nothing at all when the user cancels the system share sheet', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      vi.mocked(shareFinishedRun).mockResolvedValue('cancelled')
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-share"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="processing-share-error"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-download-error"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-delivered"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+    })
+
+    it('a failure reported by the back guard’s "Download and leave" surfaces in the same place', async () => {
+      seed(['a', 'b'])
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      // Not a click on this view's own button: the guard calls downloadFinishedRun() itself, and
+      // the store is the only channel through which that failure can reach this message.
+      useRunStore().markDeliveryFailed('download-blocked')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="processing-download-error"]').text()).toContain(
+        'browser blocked the download',
+      )
     })
   })
 })

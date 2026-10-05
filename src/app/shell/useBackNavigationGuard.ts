@@ -96,13 +96,21 @@ export function useBackNavigationGuard(): {
   )
 
   function handleProcessingPop(): void {
-    if (!runStore.finished || runStore.downloaded) {
-      // R-X19: a plain Cancel (run in flight, or already downloaded) raises no confirmation.
+    // R-X18 only governs a run that has results still sitting undelivered. Three cases have
+    // nothing to lose and so leave silently:
+    //  - the run is still in flight (R-X19: a plain Cancel raises no confirmation);
+    //  - delivery already succeeded (R-X54: the delivered path never shows this dialog);
+    //  - the run produced nothing deliverable — zero successes, or a halt that already discarded
+    //    every partial result and artifact. §10 is explicit that such a run has "no output,
+    //    Download or Share action", and "Download and leave" is a Download action.
+    const nothingToDeliver = runStore.haltReason !== null || runStore.progress.succeeded === 0
+
+    if (!runStore.finished || runStore.delivery !== 'pending' || nothingToDeliver) {
       uiStore.cancelProcessing()
       return
     }
 
-    // R-X18: a finished, undownloaded run raises the three-way dialog instead of transitioning
+    // R-X18: a finished, undelivered run raises the three-way dialog instead of transitioning
     // immediately — stageMode stays 'processing' until the dialog resolves.
     activeDialog.value = 'processing-leave'
   }
@@ -201,9 +209,22 @@ export function useBackNavigationGuard(): {
       }
 
       if (id === 'download-and-leave') {
-        await downloadFinishedRun()
-        runStore.markDownloaded()
-        uiStore.finishProcessing()
+        // `downloadFinishedRun` sets the delivery state itself; nothing to mark here.
+        if ((await downloadFinishedRun()) === 'downloaded') {
+          uiStore.finishProcessing()
+          return
+        }
+
+        // §10 "ZIP assembly failure" / "Download blocked by browser": stay on Processing. Leaving
+        // would unmount Processing.vue, whose `onScopeDispose` runs `abortAndCleanup()` and would
+        // delete the very artifacts the user is now being invited to retry downloading. The
+        // dialog is already closed, so what the user sees is Processing's own inline error (read
+        // from the same `runStore.deliveryError`) above a Download button that still works.
+        //
+        // Re-arming matters: the pop that opened this dialog consumed the nested history entry,
+        // so without this the *next* back press would fall through to the leave-intent dialog
+        // instead of this one (R-M6/R-M8).
+        pushNestedEntry()
       }
     }
   }

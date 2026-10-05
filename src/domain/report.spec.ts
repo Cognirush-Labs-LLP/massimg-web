@@ -1,6 +1,15 @@
 import { load } from 'js-yaml'
 import { describe, expect, it } from 'vitest'
-import { buildReport, formatCaveat, serializeReport, type ReportSource } from './report'
+import {
+  buildReport,
+  describeReportSettings,
+  formatCaveat,
+  formatFailureReason,
+  formatReportTimestamp,
+  formatRejectionReason,
+  serializeReport,
+  type ReportSource,
+} from './report'
 import { caveatFixtures } from './types.fixtures'
 
 const file = (name: string, relativePath: string | null = null) => ({ name, relativePath })
@@ -210,5 +219,110 @@ describe('the closed R-X46 caveat set', () => {
         fill: { r: 12, g: 34, b: 56, a: 1 },
       }),
     ).toBe('Transparency flattened to rgb(12, 34, 56); output format has no alpha channel')
+  })
+})
+
+describe('real-run formatters (T41)', () => {
+  it('formats every FailureReason as hardcoded English', () => {
+    expect(formatFailureReason({ kind: 'decode-failed' })).toBe('File could not be decoded')
+    expect(formatFailureReason({ kind: 'encode-failed' })).toBe('File could not be encoded')
+    expect(formatFailureReason({ kind: 'out-of-memory' })).toBe('Ran out of memory')
+  })
+
+  it('formats every RejectionReason as hardcoded English, without routing through i18n', () => {
+    expect(formatRejectionReason({ kind: 'unhandled', reason: 'psd' })).toBe(
+      'Photoshop documents are not supported',
+    )
+    expect(formatRejectionReason({ kind: 'unhandled', reason: 'ico' })).toBe(
+      'Icon (ICO) files are not supported',
+    )
+    expect(formatRejectionReason({ kind: 'unhandled', reason: 'svg' })).toBe(
+      'SVG files are not supported',
+    )
+    expect(formatRejectionReason({ kind: 'unhandled', reason: 'camera-raw' })).toBe(
+      'Camera RAW files are not supported',
+    )
+    expect(formatRejectionReason({ kind: 'unhandled', reason: 'animated-avif' })).toBe(
+      'Animated AVIF is not supported',
+    )
+    expect(formatRejectionReason({ kind: 'heic-decoder-unavailable' })).toBe(
+      'This browser cannot decode HEIC',
+    )
+    expect(
+      formatRejectionReason({ kind: 'file-too-large', actualBytes: 2000, capBytes: 1000 }),
+    ).toBe('File size 2.00 KB exceeds the 1.00 KB limit for this browser')
+    expect(formatRejectionReason({ kind: 'batch-count-exceeded', actual: 250, cap: 200 })).toBe(
+      'Selection exceeded the 200-image batch limit',
+    )
+    expect(formatRejectionReason({ kind: 'folder-empty' })).toBe(
+      'Folder contained no images this app can process',
+    )
+    expect(formatRejectionReason({ kind: 'folder-depth-exceeded', actual: 20, cap: 15 })).toBe(
+      'Folder exceeded the 15-level depth limit',
+    )
+    expect(
+      formatRejectionReason({ kind: 'folder-file-count-exceeded', actual: 500, cap: 400 }),
+    ).toBe('Folder exceeded the 400-file limit')
+  })
+
+  it('describes quality settings in both modes', () => {
+    expect(
+      describeReportSettings({
+        quality: { kind: 'quality', value: 70 },
+        format: 'dont-change',
+        dimension: { kind: 'original' },
+      }).quality,
+    ).toBe(70)
+    expect(
+      describeReportSettings({
+        quality: { kind: 'size', targetBytes: 512_000 },
+        format: 'dont-change',
+        dimension: { kind: 'original' },
+      }).quality,
+    ).toBe('Target size 512.00 KB')
+  })
+
+  it('describes format settings', () => {
+    expect(
+      describeReportSettings({
+        quality: { kind: 'quality', value: 70 },
+        format: 'dont-change',
+        dimension: { kind: 'original' },
+      }).format,
+    ).toBe('Original formats')
+    expect(
+      describeReportSettings({
+        quality: { kind: 'quality', value: 70 },
+        format: 'webp',
+        dimension: { kind: 'original' },
+      }).format,
+    ).toBe('WEBP')
+  })
+
+  it('describes every dimension mode, matching the §9.3 sample wording', () => {
+    const base = {
+      quality: { kind: 'quality', value: 70 } as const,
+      format: 'dont-change' as const,
+    }
+    expect(describeReportSettings({ ...base, dimension: { kind: 'original' } }).dimension).toBe(
+      'Original size',
+    )
+    expect(
+      describeReportSettings({ ...base, dimension: { kind: 'fit-long-edge', pixels: 1920 } })
+        .dimension,
+    ).toBe('Fit within long edge, 1920 px')
+    expect(
+      describeReportSettings({ ...base, dimension: { kind: 'fixed-width', pixels: 800 } })
+        .dimension,
+    ).toBe('Fixed width, 800 px')
+    expect(
+      describeReportSettings({ ...base, dimension: { kind: 'fixed-height', pixels: 600 } })
+        .dimension,
+    ).toBe('Fixed height, 600 px')
+  })
+
+  it('formats a run timestamp as locale-independent YYYY-MM-DD HH:MM:SS', () => {
+    expect(formatReportTimestamp(new Date(2026, 8, 13, 14, 22, 5))).toBe('2026-09-13 14:22:05')
+    expect(formatReportTimestamp(new Date(2026, 0, 1, 0, 0, 0))).toBe('2026-01-01 00:00:00')
   })
 })
