@@ -26,6 +26,7 @@ import {
   displayedZoomPercent,
   effectiveMaxScale,
   MAX_VIEWPORT_SCALE,
+  MIN_VIEWPORT_SCALE,
   panViewport,
   pixelPerfectScale,
   resolveViewportBox,
@@ -33,6 +34,7 @@ import {
   restBoxSize,
   zoomViewportAt,
   type FramePoint,
+  type ViewportTabSizes,
 } from '@/domain/viewport'
 import type { EditRecord, EncodableFormat, ImageId } from '@/domain/types'
 import LoadingStatus from './LoadingStatus.vue'
@@ -50,10 +52,13 @@ const props = defineProps<{
   originalUnrenderable: boolean
   error: PreviewEncodeError | null
   /**
-   * The output size the current settings predict, used only to give the "Creating preview" box the
-   * right shape before the result exists, so the frame does not jump when it arrives.
+   * Both tabs' predicted output sizes — Original's always known from the source, Compressed's from
+   * the current settings. Used to give the "Creating preview" box the right shape before the result
+   * exists (so the frame does not jump when it arrives) and, unconditionally for both tabs, to feed
+   * the cross-tab pixel-density scale conversion (`tabSizes`, below) before either raster has
+   * actually loaded.
    */
-  placeholderSize: PixelSize | null
+  placeholderSizes: { original: PixelSize; compressed: PixelSize } | null
 }>()
 
 const emit = defineEmits<{ retry: []; 'original-unrenderable': [] }>()
@@ -105,12 +110,6 @@ interface ClientPoint {
 const activePointers = new Map<number, ClientPoint>()
 let pinchDistance: number | null = null
 
-const viewport = usePreviewViewport({
-  imageId: computed(() => props.imageId),
-  edit: computed(() => props.edit),
-  tab: computed(() => props.tab),
-})
-
 const showsOriginal = computed(() => props.tab === 'original')
 
 /** What the active tab has to draw, or `null` when the frame is showing a state instead. */
@@ -137,7 +136,10 @@ const restBox = computed<PixelSize | null>(() => {
     return null
   }
 
-  const basis = naturalSize.value ?? props.placeholderSize
+  const placeholder = showsOriginal.value
+    ? (props.placeholderSizes?.original ?? null)
+    : (props.placeholderSizes?.compressed ?? null)
+  const basis = naturalSize.value ?? placeholder
 
   if (basis === null || basis.width <= 0 || basis.height <= 0) {
     return hostSize.value
@@ -147,17 +149,89 @@ const restBox = computed<PixelSize | null>(() => {
 })
 
 /**
+ * Both tabs' best-available (decoded, falling back to predicted) restBox/natural sizes at once —
+ * unlike `restBox`/`naturalSize` above, which only track whichever tab is active. Feeds the
+ * cross-tab pixel-density scale conversion in `domain/viewport.ts`, which needs both tabs
+ * simultaneously regardless of which one is currently showing. `null` until both sides have at
+ * least a predicted size, which the projection falls back gracefully from.
+ */
+const bestOriginalSize = computed<PixelSize | null>(
+  () => originalNatural.value ?? props.placeholderSizes?.original ?? null,
+)
+const bestCompressedSize = computed<PixelSize | null>(
+  () => compressedNatural.value ?? props.placeholderSizes?.compressed ?? null,
+)
+const bestOriginalRestBox = computed<PixelSize | null>(() => {
+  const natural = bestOriginalSize.value
+
+  return hostSize.value.width > 0 && hostSize.value.height > 0 && natural !== null
+    ? restBoxSize(natural, hostSize.value)
+    : null
+})
+const bestCompressedRestBox = computed<PixelSize | null>(() => {
+  const natural = bestCompressedSize.value
+
+  return hostSize.value.width > 0 && hostSize.value.height > 0 && natural !== null
+    ? restBoxSize(natural, hostSize.value)
+    : null
+})
+const tabSizes = computed<ViewportTabSizes | null>(() => {
+  const originalNaturalSize = bestOriginalSize.value
+  const compressedNaturalSize = bestCompressedSize.value
+  const originalRestBox = bestOriginalRestBox.value
+  const compressedRestBox = bestCompressedRestBox.value
+
+  if (
+    originalNaturalSize === null ||
+    compressedNaturalSize === null ||
+    originalRestBox === null ||
+    compressedRestBox === null
+  ) {
+    return null
+  }
+
+  return {
+    original: { restBox: originalRestBox, natural: originalNaturalSize },
+    compressed: { restBox: compressedRestBox, natural: compressedNaturalSize },
+  }
+})
+
+const viewport = usePreviewViewport({
+  imageId: computed(() => props.imageId),
+  edit: computed(() => props.edit),
+  tab: computed(() => props.tab),
+  tabSizes,
+})
+
+/**
  * The zoom ceiling for the active tab's image: at least `MAX_VIEWPORT_SCALE`, but raised so a photo
  * shrunk hard to fit this host can still be zoomed in by hand to at least twice its true pixel size
  * (`effectiveMaxScale`) — a fixed scale ceiling doesn't translate to a fixed real-size guarantee
- * once the rest-state shrink factor varies this much between images.
+ * once the rest-state shrink factor varies this much between images. Also raised, rather than
+ * clamping the value away, to at least whatever scale a cross-tab pixel-density match just produced
+ * — a density match deliberately wins over the usual cap (confirmed product decision), and ordinary
+ * in-tab gestures are already separately bounded by `zoomViewportAt`'s own `nextScale` each tick, so
+ * this never lets a manual zoom run away.
  */
 const zoomCeiling = computed<number>(() => {
   const box = restBox.value
   const natural = naturalSize.value
+  const base =
+    box === null || natural === null ? MAX_VIEWPORT_SCALE : effectiveMaxScale(box, natural)
 
-  return box === null || natural === null ? MAX_VIEWPORT_SCALE : effectiveMaxScale(box, natural)
+  return Math.max(base, viewport.local.value.scale)
 })
+
+/**
+ * The zoom floor for the active tab's image: ordinarily `MIN_VIEWPORT_SCALE` (an in-tab gesture has
+ * nothing below this tab's own fit — there's nothing more to show once the whole image is already
+ * on screen). Lowered, rather than clamping the value away, to at most whatever scale a cross-tab
+ * pixel-density match just produced: that match can legitimately land below 1 (this tab's own fit
+ * represents proportionally *more* true pixels than the match calls for), and the whole point of the
+ * match is that the image then renders smaller than this tab's own rest size, not clamped back up to
+ * it. Symmetric to `zoomCeiling` above, at the other end.
+ */
+const zoomFloor = computed<number>(() => Math.min(MIN_VIEWPORT_SCALE, viewport.local.value.scale))
 
 /**
  * The frame's actual CSS box: `restBox` at rest, growing toward the host area as the user zooms in
@@ -176,7 +250,7 @@ const frameSize = computed<PixelSize | null>(() => {
   return resolveViewportBox(
     box,
     hostSize.value,
-    clampViewportScale(viewport.local.value.scale, zoomCeiling.value),
+    clampViewportScale(viewport.local.value.scale, zoomCeiling.value, zoomFloor.value),
   )
 })
 
@@ -187,7 +261,13 @@ const imageRect = computed(() => {
     return null
   }
 
-  return resolveViewportFrameRect(box, hostSize.value, viewport.local.value, zoomCeiling.value)
+  return resolveViewportFrameRect(
+    box,
+    hostSize.value,
+    viewport.local.value,
+    zoomCeiling.value,
+    zoomFloor.value,
+  )
 })
 
 const zoomed = computed(() => viewport.zoomed.value)
@@ -225,6 +305,22 @@ const canInspect = computed(
 const actualSizeScale = computed<number | null>(() => {
   const box = restBox.value
   const natural = naturalSize.value
+
+  return box === null || natural === null ? null : pixelPerfectScale(box, natural)
+})
+
+/**
+ * Compressed's own actual-size scale from the best *available* size — decoded if the raster has
+ * loaded, the predicted size otherwise — rather than `actualSizeScale`'s stricter "only once really
+ * measured". For the manual "Actual size" button, a predicted size would be dishonest (the button
+ * should never claim a scale it cannot yet prove); for the forced jump a regenerate triggers
+ * (`Preview.vue`'s `regenerateToken` watcher), the new raster is still mid-encode by construction —
+ * every regenerate starts from "Creating preview" — so insisting on a decoded size there would mean
+ * this jump almost always lands on `null` and degrades to plain "Fit" instead of true actual size.
+ */
+const bestCompressedActualSizeScale = computed<number | null>(() => {
+  const box = bestCompressedRestBox.value
+  const natural = bestCompressedSize.value
 
   return box === null || natural === null ? null : pixelPerfectScale(box, natural)
 })
@@ -388,7 +484,15 @@ function onWheel(event: WheelEvent): void {
   const current = viewport.local.value
 
   viewport.setLocal(
-    zoomViewportAt(box, hostSize.value, current, point, current.scale * factor, zoomCeiling.value),
+    zoomViewportAt(
+      box,
+      hostSize.value,
+      current,
+      point,
+      current.scale * factor,
+      zoomCeiling.value,
+      zoomFloor.value,
+    ),
   )
 }
 
@@ -460,6 +564,7 @@ function onPointerMove(event: PointerEvent): void {
         midpoint,
         viewportCurrent.scale * factor,
         zoomCeiling.value,
+        zoomFloor.value,
       ),
     )
     return
@@ -472,6 +577,7 @@ function onPointerMove(event: PointerEvent): void {
       viewport.local.value,
       { left: current.clientX - previous.clientX, top: current.clientY - previous.clientY },
       zoomCeiling.value,
+      zoomFloor.value,
     ),
   )
 }
@@ -524,13 +630,17 @@ onBeforeUnmount(() => {
 // Exposed for the component test (which drives the viewport directly rather than synthesising a
 // wheel gesture against a layout jsdom does not have) and for `Preview.vue`'s zoom toolbar, which
 // renders outside this component (beside the Original/Compressed pill, not over the image) but
-// still needs to read and drive this frame's own viewport state.
+// still needs to read and drive this frame's own viewport state. `bestCompressedActualSizeScale` is
+// additionally read by `Preview.vue`'s forced-switch-on-regenerate handler, so it can land Compressed
+// at its own actual size (from the best available size estimate) without duplicating
+// `pixelPerfectScale`'s arithmetic.
 defineExpose({
   viewport,
   showsZoomToolbar,
   zoomPercent,
   zoomed,
   atActualSize,
+  bestCompressedActualSizeScale,
   onFitClick,
   onActualSizeClick,
 })

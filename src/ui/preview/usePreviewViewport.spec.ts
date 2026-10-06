@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type Ref } from 'vue'
-import { DEFAULT_VIEWPORT, type InspectorViewport } from '@/domain/viewport'
+import { DEFAULT_VIEWPORT, type InspectorViewport, type ViewportTabSizes } from '@/domain/viewport'
 import type { EditOp, EditRecord, ImageId, NormalisedRect, Rgba } from '@/domain/types'
 import { usePreviewViewport, type ComparisonTab, type PreviewViewport } from './usePreviewViewport'
 
 const OPAQUE_WHITE = { r: 255, g: 255, b: 255, a: 1 } as const satisfies Rgba
 const RIGHT_HALF = { x: 0.5, y: 0, width: 0.5, height: 1 } as const satisfies NormalisedRect
+
+/** Both tabs equal (no resize) — the scale conversion collapses to passthrough, matching behaviour
+ *  before `tabSizes` existed, so every test written against that older contract keeps passing. */
+const NO_RESIZE_SIZES: ViewportTabSizes = {
+  original: { restBox: { width: 1000, height: 1000 }, natural: { width: 1000, height: 1000 } },
+  compressed: { restBox: { width: 1000, height: 1000 }, natural: { width: 1000, height: 1000 } },
+}
+
+/** Compressed resized to half of Original's natural width — a genuine density difference. */
+const HALVED_SIZES: ViewportTabSizes = {
+  original: { restBox: { width: 1000, height: 1000 }, natural: { width: 1000, height: 1000 } },
+  compressed: { restBox: { width: 500, height: 500 }, natural: { width: 500, height: 500 } },
+}
 
 function cropOp(rect: NormalisedRect = RIGHT_HALF): EditOp {
   return { kind: 'crop', rect, zoom: 1, background: OPAQUE_WHITE }
@@ -21,18 +34,23 @@ interface Harness {
   imageId: Ref<ImageId | null>
   edit: Ref<EditRecord | null>
   tab: Ref<ComparisonTab>
+  tabSizes: Ref<ViewportTabSizes | null>
 }
 
-function mountViewport(edit: EditRecord | null = null): Harness {
+function mountViewport(
+  edit: EditRecord | null = null,
+  tabSizes: ViewportTabSizes | null = NO_RESIZE_SIZES,
+): Harness {
   const imageId = ref<ImageId | null>('a' as ImageId)
   const editRef = ref<EditRecord | null>(edit)
   const tab = ref<ComparisonTab>('compressed')
+  const tabSizesRef = ref<ViewportTabSizes | null>(tabSizes) as Ref<ViewportTabSizes | null>
   let viewport: PreviewViewport | null = null
 
   mount(
     defineComponent({
       setup() {
-        viewport = usePreviewViewport({ imageId, edit: editRef, tab })
+        viewport = usePreviewViewport({ imageId, edit: editRef, tab, tabSizes: tabSizesRef })
 
         return () => h('div')
       },
@@ -43,7 +61,7 @@ function mountViewport(edit: EditRecord | null = null): Harness {
     throw new Error('composable did not run')
   }
 
-  return { viewport, imageId, edit: editRef, tab }
+  return { viewport, imageId, edit: editRef, tab, tabSizes: tabSizesRef }
 }
 
 function viewportAt(x: number, y: number, scale: number): InspectorViewport {
@@ -57,6 +75,37 @@ describe('usePreviewViewport', () => {
     expect(viewport.canonical.value).toEqual(DEFAULT_VIEWPORT)
     expect(viewport.local.value).toEqual(DEFAULT_VIEWPORT)
     expect(viewport.zoomed.value).toBe(false)
+  })
+
+  it('starts the active tab at exactly its own 100% fit even when the tabs differ in resolution (bug: was 200%)', () => {
+    // Reproduces the reported bug exactly: neither tab needs to shrink to fit (HALVED_SIZES' restBox
+    // equals its own natural on both tabs), which is precisely the case where the old
+    // "write DEFAULT_VIEWPORT directly into canonical" bug showed Compressed at scale 2 (= the
+    // original/compressed width ratio) instead of 1, the moment both tabs' sizes became known.
+    const { viewport } = mountViewport(null, HALVED_SIZES)
+
+    expect(viewport.local.value.scale).toBe(1)
+    expect(viewport.local.value.center).toEqual({ x: 0.5, y: 0.5 })
+  })
+
+  it('anchors to rest lazily once tabSizes becomes known, not only at the instant reset() runs', async () => {
+    // The real app's `tabSizes` is null until the frame's host is measured (a ResizeObserver
+    // callback firing after mount) — simulates that gap by mounting with sizes unknown, then
+    // supplying them, rather than only ever testing the (unrealistic) synchronously-ready case.
+    const { viewport, tab, tabSizes } = mountViewport(null, null)
+
+    expect(viewport.local.value.scale).toBe(1) // unanchored passthrough fallback, still correct here
+
+    tabSizes.value = HALVED_SIZES
+    await nextTick()
+
+    expect(viewport.local.value.scale).toBe(1) // now anchored: still exactly Compressed's own 100%
+
+    // And the anchor is tab-aware: Original now shows the density-equivalent, not its own independent
+    // rest — exactly the cross-tab part of R-P9 the original bug report asked for at rest.
+    tab.value = 'original'
+    await nextTick()
+    expect(viewport.local.value.scale).toBeCloseTo(0.5, 10)
   })
 
   it('projects into the active tab and writes back through the same projection', () => {
@@ -153,5 +202,34 @@ describe('usePreviewViewport', () => {
     viewport.reset()
 
     expect(viewport.zoomed.value).toBe(false)
+  })
+
+  it('matches pixel density, not apparent size, across a tab switch when the tabs differ in resolution', async () => {
+    const { viewport, tab } = mountViewport(null, HALVED_SIZES)
+
+    tab.value = 'original'
+    await nextTick()
+    // Actual size on Original (natural == restBox here, so scale 1 is already 1:1).
+    viewport.setLocal(viewportAt(0.5, 0.5, 1))
+    tab.value = 'compressed'
+    await nextTick()
+
+    // Compressed's natural is half of Original's, both tabs' restBox equal natural here, so the
+    // density-matched scale on Compressed is double Original's.
+    expect(viewport.local.value.scale).toBeCloseTo(2, 10)
+  })
+
+  it('falls back to a plain scale passthrough when tabSizes is not known yet', async () => {
+    const { viewport, tab, tabSizes } = mountViewport(null, null)
+
+    tab.value = 'original'
+    await nextTick()
+    viewport.setLocal(viewportAt(0.5, 0.5, 3))
+    tab.value = 'compressed'
+    await nextTick()
+
+    expect(viewport.local.value.scale).toBe(3)
+    expect(Number.isFinite(viewport.local.value.scale)).toBe(true)
+    expect(tabSizes.value).toBeNull()
   })
 })

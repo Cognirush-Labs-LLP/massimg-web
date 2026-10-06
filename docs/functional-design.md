@@ -225,6 +225,24 @@ Reflects the current format, rotation, crop and dimension settings for this imag
 - R-P7 The stepper wraps at both ends and preserves the selected comparison tab. Stepping releases the outgoing image's data and encodes the incoming one.
 - R-P8 Animated sources play in the frame on both tabs, so the user can see that animation survived.
 
+**Zoom/pan inspector.** The frame supports direct-manipulation zoom and pan: wheel or pinch to zoom
+about the pointer, drag to pan. There is no slider — a small toolbar beside the comparison pill
+offers **Fit** and **Actual size**, plus a live zoom percent readout. "Actual size" means true
+1:1 pixels of whichever tab is active; "Fit" is the same contain-fit rest state R-P6 describes.
+
+- R-P9 Flipping between Original and Compressed keeps the same patch of the image in view and
+  preserves true **pixel density**, not apparent on-screen size: a Compressed output viewed at its
+  own 100% shows Original at the fraction of its own pixels that reproduces the same screen
+  footprint (a 500×500 output of a 1000×1000 source is shown at 50% on Original, not at the same
+  size as before). This holds from the very first, unzoomed view, not only once the user has
+  manually zoomed in. Matching the density this way may require zooming past a tab's own usual
+  ceiling; when it does, the ceiling yields rather than clamping the match away.
+- R-P10 Any settings or edit change that causes the Compressed output to regenerate (quality,
+  size target, dimension rule, format, rotation or crop) brings the Compressed tab to the front at
+  its own actual size, centred — the user is never left looking at an Original that does not match
+  a change they just made. This does not apply to R-P7's stepper, which still preserves whichever
+  tab was selected when stepping to a different image.
+
 ### 3.4 Edit mode
 
 Entered from Preview. Edits are per-image, always applied to the image currently in the frame. This version offers rotation and crop.

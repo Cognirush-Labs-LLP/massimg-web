@@ -495,7 +495,9 @@ test('zooming and panning, then flipping tabs, keeps the same patch of the image
   expect(errors).toEqual([])
 })
 
-test('the viewport survives a settings change and resets on a step', async ({ page }) => {
+test('a settings change forces Compressed to its own actual size, and a step still resets (R-P7)', async ({
+  page,
+}) => {
   const errors = watchForErrors(page)
   await page.goto('/')
   await seed(page, [
@@ -513,14 +515,28 @@ test('the viewport survives a settings change and resets on a step', async ({ pa
   const zoomedWidth = (await frameGeometry(page))!.image.width
   expect(zoomedWidth).toBeGreaterThan(atRest!.image.width * 1.5)
 
-  // Tuning quality while inspecting a detail is the whole point of keeping the viewport.
+  // A settings change is no longer kept transparent to the viewport: the product decision is that
+  // the user must see the new Compressed result, not stay parked on the view they had before it
+  // changed — so this now resets, rather than preserving, the zoomed-in state above.
   await page.getByTestId('quality-chip-low').click()
   await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
-  await expect
-    .poll(async () => (await frameGeometry(page))!.image.width)
-    .toBeCloseTo(zoomedWidth, 0)
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('data-tab', 'compressed')
 
-  // Stepping to a different image starts from fit-to-frame again.
+  const afterRegenerate = await frameGeometry(page)
+  expect(afterRegenerate!.image.width).not.toBeCloseTo(zoomedWidth, 0)
+  // Centred, not wherever the old zoomed-in pan happened to leave it.
+  const fraction = centredFraction(afterRegenerate!)
+  expect(fraction.x).toBeCloseTo(0.5, 1)
+  expect(fraction.y).toBeCloseTo(0.5, 1)
+
+  // Landed on Compressed's own actual size already: the "Actual size" button disables itself once
+  // the view is already there (same rule the manual button follows elsewhere), which is a
+  // self-consistent proof rather than hard-coding the exact pixel width this fixture happens to
+  // produce.
+  await expect(page.getByTestId('preview-zoom-actual-size')).toBeDisabled()
+  await expect(page.getByTestId('preview-zoom-readout')).toHaveText('100%')
+
+  // Stepping to a different image starts from fit-to-frame again, same as before this change.
   await page.getByTestId('preview-step-next').click()
   await expect(page.locator('.breadcrumb')).toHaveText('PREVIEW · b.jpeg')
   await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })

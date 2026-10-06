@@ -683,6 +683,37 @@ the source; R-X45 caveats contain measured sizes; Preview's figures and disclosu
 selected bytes; the real `bapu.jpg` regression shows 0% change and the original-kept disclosure;
 and the domain, report, component and three-engine worker/Preview regressions pass.
 
+### T36-B — Pixel-density-matched tab switching and forced regenerate switch
+
+**Functional Design:** R-P9, R-P10 (new)
+**Technical Design:** §4 (new subsection on the inspector's coordinate space)
+**Depends on:** T36, T37
+
+Switching the Original/Compressed tab preserves on-screen pixel density, not apparent box size, from
+the first view onward: a Compressed output viewed at its own 100% shows Original at the true fraction
+of its own pixels that reproduces the same screen footprint, not at the same apparent size as before.
+Density matching may exceed a tab's normal zoom ceiling rather than clamp it away. Any same-image
+settings- or edit-driven regenerate (quality, format, dimension, rotation, crop) forces the Compressed
+tab to the front at its own actual size, centred, so the user is never left looking at an Original
+that does not match a change they just made; stepping to a different image still preserves the
+selected tab (R-P7) untouched. This task also backfills Functional, Technical and UI Design for the
+zoom/pan inspector itself (T36's own scope, built without ever being added to those documents).
+
+- `domain/viewport.ts`'s canonical scale is pinned to the Original tab's own convention (Original
+  always has 1:1 pixel correspondence with canonical space); only the Compressed-side projections
+  convert scale, via a new `nativePixelsPerCanonicalPixel` ratio.
+- Both tabs' predicted/decoded sizes are threaded through `usePreviewViewport`/`PreviewFrame` as a new
+  `tabSizes` value, independent of which tab is actually showing, so the match works from the very
+  first view (placeholder estimates) rather than only once both rasters have loaded.
+- Rotation stays exempt from pixel-perfectness: it does not change pixel counts, only axis
+  orientation, so no part of this task attempts to correct for it.
+
+**Done when:** a tab switch at rest or any zoom level matches true pixel density per
+`domain/viewport.ts`'s projection math; a density match can exceed the usual zoom ceiling; a same-image
+settings/edit change lands Compressed at its own actual size, centred; stepping to a different image
+does not force a switch; and the viewport, PreviewFrame, Preview and preview e2e regression suites
+pass.
+
 ### T38 — Processing view
 
 **Functional Design:** §6.1 to §6.4, R-X26, R-X27

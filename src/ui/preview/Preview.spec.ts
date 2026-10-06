@@ -8,6 +8,9 @@ import type { JobToken, OutputJobResult } from '@/pipeline/protocol'
 import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
+import PreviewFrame from './PreviewFrame.vue'
+import type { InspectorViewport } from '@/domain/viewport'
+import type { PreviewViewport } from './usePreviewViewport'
 
 interface PendingRun {
   job: PipelineJob
@@ -138,6 +141,25 @@ async function loadFrameImage(
   Object.defineProperty(image.element, 'naturalWidth', { value: size.width, configurable: true })
   Object.defineProperty(image.element, 'naturalHeight', { value: size.height, configurable: true })
   await image.trigger('load')
+}
+
+/** Reads `PreviewFrame`'s exposed viewport through the child component instance. */
+function frameViewport(wrapper: VueWrapper): PreviewViewport {
+  return (wrapper.findComponent(PreviewFrame).vm as unknown as { viewport: PreviewViewport })
+    .viewport
+}
+
+/** The actual drawn `<img>` width in CSS pixels, from its inline style — the real rendered size,
+ *  as distinct from the toolbar's percent readout (bug: the two had fallen out of sync). */
+function drawnImageWidth(wrapper: VueWrapper): number {
+  const style = wrapper.get('[data-testid="preview-image"]').attributes('style') ?? ''
+  const match = /(?:^|;)\s*width:\s*([\d.]+)px/.exec(style)
+
+  if (match?.[1] === undefined) {
+    throw new Error(`no width found in style "${style}"`)
+  }
+
+  return Number(match[1])
 }
 
 // Preview listens on `window` for R-K2's arrow keys, so a wrapper left mounted between cases would
@@ -355,6 +377,75 @@ describe('Preview', () => {
     expect(uiStore.comparisonTab).toBe('original')
   })
 
+  it('forces Compressed to the front at its own actual size, centred, on a same-image settings change', async () => {
+    seed(['a'])
+    const wrapper = await mountPreview()
+    runs[0]?.settle(completed(256_000, 'a'))
+    await flushPromises()
+    await measureFrameHost(wrapper, { width: 800, height: 600 })
+    await loadFrameImage(wrapper, { width: 4000, height: 3000 })
+
+    await wrapper.get('[data-testid="preview-comparison-toggle"]').trigger('click')
+    await flushPromises()
+    await loadFrameImage(wrapper, { width: 4000, height: 3000 })
+    expect(wrapper.get('[data-testid="preview-image"]').attributes('data-tab')).toBe('original')
+
+    // Zoom in and off-centre on Original, so the forced jump below is provably a reset rather than
+    // a value that happened to already be there.
+    frameViewport(wrapper).setLocal({ center: { x: 0.2, y: 0.3 }, scale: 3 })
+    await nextTick()
+    expect(frameViewport(wrapper).canonical.value.scale).toBe(3)
+
+    useSettingsStore().quality = { kind: 'quality', value: 71 }
+    await flushPromises()
+
+    expect(useUiStore().comparisonTab).toBe('compressed')
+
+    // The regenerate's own encode is still debounced (R-P3) — the "Creating preview" state — so the
+    // `<img>` is gone until it eventually settles. The forced jump itself does not wait on that: it
+    // writes the canonical viewport synchronously, from the best available (placeholder) size.
+    const canonical: InspectorViewport = frameViewport(wrapper).canonical.value
+    expect(canonical.center.x).toBeCloseTo(0.5, 10)
+    expect(canonical.center.y).toBeCloseTo(0.5, 10)
+    expect(canonical.scale).not.toBe(3)
+    // "Actual size" for a 4000x3000 image inside an 800x600 host is a true-pixel scale well past 1
+    // (restBoxSize shrinks it to fit, so 1:1 is several times larger than that shrunk rest state).
+    expect(canonical.scale).toBeGreaterThan(1)
+  })
+
+  it('does not force-switch when stepping to a different image, preserving the tab (R-P7)', async () => {
+    seed(['a', 'b'])
+    const wrapper = await mountPreview()
+    runs[0]?.settle(completed(256_000, 'a'))
+    await flushPromises()
+
+    await wrapper.get('[data-testid="preview-comparison-toggle"]').trigger('click')
+    const uiStore = useUiStore()
+    expect(uiStore.comparisonTab).toBe('original')
+
+    uiStore.openPreview('b' as ImageId)
+    await flushPromises()
+
+    expect(uiStore.comparisonTab).toBe('original')
+  })
+
+  it('does not force-switch on the initial entry encode', async () => {
+    seed(['a'])
+    const uiStore = useUiStore()
+    // Chosen before the pill even renders (it stays hidden while the entry encode is in flight), to
+    // rule out the watcher's own `immediate: true` first run reacting to it.
+    uiStore.setComparisonTab('original')
+    const wrapper = await mountPreview()
+
+    runs[0]?.settle(completed(256_000, 'a'))
+    await flushPromises()
+
+    // The entry encode is an image change, not a settings change, so `regenerateToken` never bumps
+    // for it — the tab chosen above must survive it.
+    expect(uiStore.comparisonTab).toBe('original')
+    expect(wrapper.get('[data-testid="preview-image"]').attributes('data-tab')).toBe('original')
+  })
+
   it('steps through the batch with the arrow keys (R-K2)', async () => {
     seed(['a', 'b', 'c'])
     await mountPreview()
@@ -538,5 +629,78 @@ describe('Preview', () => {
     await wrapper.get('[data-testid="preview-use-smaller-dimensions"]').trigger('click')
 
     expect(useSettingsStore().dimension).toEqual({ kind: 'fit-long-edge', pixels: 720 })
+  })
+
+  it("opens a resized image at exactly Compressed's own 100%, not a density-skewed default (bug fix)", async () => {
+    // Reproduces the reported bug exactly: a 640x640 source resized to a 320x320 long edge, opened
+    // fresh from Gallery, in a host neither tab needs to shrink to fit — precisely the case where the
+    // old "write DEFAULT_VIEWPORT directly into canonical" bug showed Compressed at 200% (the
+    // original/compressed width ratio) instead of 100%, the moment both tabs' sizes became known.
+    seed(['a'], 'a', { width: 640, height: 640 })
+    useSettingsStore().dimension = { kind: 'fit-long-edge', pixels: 320 }
+    const wrapper = await mountPreview()
+    runs[0]?.settle(completed(100_000, 'a'))
+    await flushPromises()
+    await measureFrameHost(wrapper, { width: 800, height: 600 })
+    await loadFrameImage(wrapper, { width: 320, height: 320 })
+
+    expect(frameViewport(wrapper).local.value.scale).toBe(1)
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('100%')
+  })
+
+  it('matches pixel density switching to Original after Actual size on a resized Compressed (bug fix)', async () => {
+    seed(['a'], 'a', { width: 640, height: 640 })
+    useSettingsStore().dimension = { kind: 'fit-long-edge', pixels: 320 }
+    const wrapper = await mountPreview()
+    runs[0]?.settle(completed(100_000, 'a'))
+    await flushPromises()
+    await measureFrameHost(wrapper, { width: 800, height: 600 })
+    await loadFrameImage(wrapper, { width: 320, height: 320 })
+
+    await wrapper.get('[data-testid="preview-zoom-actual-size"]').trigger('click')
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('100%')
+
+    await wrapper.get('[data-testid="preview-comparison-toggle"]').trigger('click')
+    await flushPromises()
+    await loadFrameImage(wrapper, { width: 640, height: 640 })
+
+    // restBoxSize(640x640, 800x600) is 600x600 (640 needs to shrink to fit 600 tall); at the density
+    // match that reproduces Compressed's 320px screen footprint, that's canonical/local scale
+    // 320/600 = 0.5333..., which — fed through displayedZoomPercent's own restBox/natural correction
+    // — reads 50% (640 * 0.5333 * (600/640) / 640, i.e. 320 of Original's 640 true pixels), not a
+    // reset to literal 100%/640x640.
+    expect(frameViewport(wrapper).local.value.scale).toBeCloseTo(320 / 600, 10)
+    expect(wrapper.get('[data-testid="preview-zoom-readout"]').text()).toBe('50%')
+
+    // The readout alone isn't proof: the bug was exactly that the toolbar read 50% correctly while
+    // the drawn image stayed clamped at its own 100% (scale floored back up to MIN_VIEWPORT_SCALE).
+    // The actual rendered width must shrink to match, not just the number beside it.
+    expect(drawnImageWidth(wrapper)).toBeCloseTo(600 * (320 / 600), 5)
+    expect(drawnImageWidth(wrapper)).toBeLessThan(600)
+  })
+
+  it('matches pixel density after a same-image dimension change made while on Original (bug fix)', async () => {
+    // The regenerate's own encode is debounced (R-P3) and never actually settles in this spec (no
+    // fake timers here, matching the other regenerate test above) — the point is the forced jump's
+    // own synchronous write, which must not read a stale natural size left over from the previous
+    // dimension setting (confirmed root cause of the reported "200%": `PreviewFrame`'s watcher that
+    // nulls the stale natural on a `compressedUrl` change had not necessarily run yet).
+    seed(['a'], 'a', { width: 640, height: 640 })
+    const wrapper = await mountPreview()
+    runs[0]?.settle(completed(100_000, 'a'))
+    await flushPromises()
+    await measureFrameHost(wrapper, { width: 800, height: 600 })
+    await loadFrameImage(wrapper, { width: 640, height: 640 })
+
+    await wrapper.get('[data-testid="preview-comparison-toggle"]').trigger('click')
+    await flushPromises()
+    await loadFrameImage(wrapper, { width: 640, height: 640 })
+
+    useSettingsStore().dimension = { kind: 'fit-long-edge', pixels: 320 }
+    await flushPromises()
+    await nextTick()
+
+    expect(useUiStore().comparisonTab).toBe('compressed')
+    expect(frameViewport(wrapper).local.value.scale).toBe(1)
   })
 })

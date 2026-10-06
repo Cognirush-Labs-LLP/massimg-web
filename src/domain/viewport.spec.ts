@@ -8,6 +8,7 @@ import {
   clampViewportScale,
   displayedZoomPercent,
   effectiveMaxScale,
+  nativePixelsPerCanonicalPixel,
   panViewport,
   pixelPerfectScale,
   projectViewportToCompressed,
@@ -24,6 +25,7 @@ import {
   zoomViewportAt,
   type InspectorViewport,
   type ViewportPoint,
+  type ViewportTabSizes,
 } from './viewport'
 import type { EditOp, EditRecord, NormalisedRect, Rgba } from './types'
 
@@ -37,6 +39,28 @@ const TALL_FRAME = { width: 800, height: 900 } as const satisfies PixelSize
 const OPAQUE_WHITE = { r: 255, g: 255, b: 255, a: 1 } as const satisfies Rgba
 
 const QUARTER_TURNS = [0, 1, 2, 3] as const satisfies readonly QuarterTurns[]
+
+/**
+ * Both tabs sharing the same natural size and restBox (no resize) — the density ratio is 1, so the
+ * new scale-conversion math collapses back to plain passthrough. Used by tests that only care about
+ * centre arithmetic, and by a regression test asserting that collapse explicitly.
+ */
+const NO_RESIZE_SIZES = {
+  original: { restBox: FITTED_FRAME, natural: LANDSCAPE },
+  compressed: { restBox: FITTED_FRAME, natural: LANDSCAPE },
+} as const satisfies ViewportTabSizes
+
+/**
+ * Compressed resized to half of Original's natural width, both fit to the same host — a genuine
+ * density difference, used to exercise the actual conversion rather than the no-resize passthrough.
+ */
+const HALVED_SIZES = {
+  original: { restBox: FITTED_FRAME, natural: LANDSCAPE },
+  compressed: {
+    restBox: restBoxSize({ width: 2000, height: 1500 }, FITTED_FRAME),
+    natural: { width: 2000, height: 1500 },
+  },
+} as const satisfies ViewportTabSizes
 
 function viewport(x: number, y: number, scale: number): InspectorViewport {
   return { center: { x, y }, scale }
@@ -87,6 +111,19 @@ describe('clampViewportScale', () => {
     expect(clampViewportScale(Number.NaN)).toBe(MIN_VIEWPORT_SCALE)
     expect(clampViewportScale(Number.POSITIVE_INFINITY)).toBe(MIN_VIEWPORT_SCALE)
     expect(clampViewportScale(Number.NEGATIVE_INFINITY)).toBe(MIN_VIEWPORT_SCALE)
+  })
+
+  it('accepts a lower minScale so a cross-tab density match below 1 is not clamped back up to fit', () => {
+    // Bug fix: a pixel-density match (R-P9) can legitimately land below MIN_VIEWPORT_SCALE on the
+    // target tab — its own fit represents proportionally more true pixels than the match calls for —
+    // and that value must survive rendering, not be floored back to 1 (the old, pre-R-P9 floor,
+    // which made the toolbar correctly read e.g. 50% while the drawn image stayed stuck at its own
+    // 100%).
+    expect(clampViewportScale(0.5333, MAX_VIEWPORT_SCALE, 0.5333)).toBeCloseTo(0.5333, 10)
+    expect(clampViewportScale(0.2, MAX_VIEWPORT_SCALE, 0.5333)).toBeCloseTo(0.5333, 10)
+    // A plain `MIN_VIEWPORT_SCALE` floor is still the default when no minScale is given, so every
+    // in-tab gesture call site that never passes one keeps its existing behaviour unchanged.
+    expect(clampViewportScale(0.5333)).toBe(MIN_VIEWPORT_SCALE)
   })
 })
 
@@ -359,6 +396,23 @@ describe('resolveViewportFrameRect', () => {
 
     expect(zoomed!.width).toBeCloseTo(atRest!.width * 2.5, 10)
     expect(zoomed!.height).toBeCloseTo(atRest!.height * 2.5, 10)
+  })
+
+  it('draws smaller than the rest box when minScale allows a cross-tab density match below 1 (bug fix)', () => {
+    // Without passing a lowered minScale, this would floor back to the rest-box size (the old bug:
+    // the toolbar correctly read e.g. 50%, but the drawn image stayed stuck at its own 100%).
+    const restBox = restBoxSize(LANDSCAPE, FITTED_FRAME)
+    const atRest = resolveViewportFrameRect(restBox, FITTED_FRAME, DEFAULT_VIEWPORT)
+    const subRest = resolveViewportFrameRect(
+      restBox,
+      FITTED_FRAME,
+      viewport(0.5, 0.5, 0.5333),
+      MAX_VIEWPORT_SCALE,
+      0.5333,
+    )
+
+    expect(subRest!.width).toBeCloseTo(atRest!.width * 0.5333, 10)
+    expect(subRest!.height).toBeCloseTo(atRest!.height * 0.5333, 10)
   })
 
   it('never lets the frame see past the image edge, however far the centre is pushed', () => {
@@ -657,7 +711,7 @@ describe('projectViewportToOriginal', () => {
     }
   })
 
-  it('carries the scale through untouched, so both tabs show the image at the same size', () => {
+  it("carries the scale through untouched: canonical scale is pinned to this tab's own convention", () => {
     expect(projectViewportToOriginal(viewport(0.1, 0.2, 3.75), 3).scale).toBe(3.75)
   })
 })
@@ -695,62 +749,140 @@ describe('projectViewportToCompressed', () => {
   /** A crop zoomed out past the fit point: the output contains background on all four sides (R-C9). */
   const SPILLING = { x: -0.5, y: -0.5, width: 2, height: 2 } as const satisfies NormalisedRect
 
-  it('is the identity when no crop is stored', () => {
+  it('is the identity when no crop is stored and the two tabs have no density difference', () => {
     const inspector = viewport(0.4, 0.6, 3)
+    const result = projectViewportToCompressed(inspector, null, 0, NO_RESIZE_SIZES)
 
-    expect(projectViewportToCompressed(inspector, null)).toEqual(inspector)
+    expectPointCloseTo(result.center, inspector.center)
+    expect(result.scale).toBeCloseTo(inspector.scale, 10)
   })
 
   it('expresses the canonical point as a fraction of the crop rect', () => {
-    expectPointCloseTo(projectViewportToCompressed(viewport(0.75, 0.25, 2), RIGHT_HALF).center, {
-      x: 0.5,
-      y: 0.25,
-    })
+    expectPointCloseTo(
+      projectViewportToCompressed(viewport(0.75, 0.25, 2), RIGHT_HALF, 0, NO_RESIZE_SIZES).center,
+      { x: 0.5, y: 0.25 },
+    )
   })
 
   it('reaches the far edge of a cropped output, which a coarse canonical bound would have clamped', () => {
-    expectPointCloseTo(projectViewportToCompressed(viewport(1, 0.5, 2), RIGHT_HALF).center, {
-      x: 1,
-      y: 0.5,
-    })
+    expectPointCloseTo(
+      projectViewportToCompressed(viewport(1, 0.5, 2), RIGHT_HALF, 0, NO_RESIZE_SIZES).center,
+      { x: 1, y: 0.5 },
+    )
   })
 
   it('clamps a canonical point outside the crop to the nearest edge rather than resetting', () => {
-    expectPointCloseTo(projectViewportToCompressed(viewport(0.1, 0.5, 4), RIGHT_HALF).center, {
-      x: 0,
-      y: 0.5,
-    })
+    expectPointCloseTo(
+      projectViewportToCompressed(viewport(0.1, 0.5, 4), RIGHT_HALF, 0, NO_RESIZE_SIZES).center,
+      { x: 0, y: 0.5 },
+    )
   })
 
   it('maps the whole source into the middle of an output that spills on every side', () => {
-    expectPointCloseTo(projectViewportToCompressed(viewport(0.5, 0.5, 2), SPILLING).center, {
-      x: 0.5,
-      y: 0.5,
-    })
-    expectPointCloseTo(projectViewportToCompressed(viewport(0, 1, 2), SPILLING).center, {
-      x: 0.25,
-      y: 0.75,
-    })
+    expectPointCloseTo(
+      projectViewportToCompressed(viewport(0.5, 0.5, 2), SPILLING, 0, NO_RESIZE_SIZES).center,
+      { x: 0.5, y: 0.5 },
+    )
+    expectPointCloseTo(
+      projectViewportToCompressed(viewport(0, 1, 2), SPILLING, 0, NO_RESIZE_SIZES).center,
+      { x: 0.25, y: 0.75 },
+    )
   })
 
   it('round-trips through the canonical space, including outside the unit square', () => {
     for (const rect of [RIGHT_HALF, SPILLING, null]) {
-      for (const local of [viewport(0, 0, 2), viewport(0.5, 0.5, 2), viewport(1, 1, 2)]) {
-        const canonical = unprojectViewportFromCompressed(local, rect)
-        const back = projectViewportToCompressed(canonical, rect)
+      for (const sizes of [NO_RESIZE_SIZES, HALVED_SIZES]) {
+        for (const local of [viewport(0, 0, 2), viewport(0.5, 0.5, 2), viewport(1, 1, 2)]) {
+          const canonical = unprojectViewportFromCompressed(local, rect, 0, sizes)
+          const back = projectViewportToCompressed(canonical, rect, 0, sizes)
 
-        expectPointCloseTo(back.center, local.center)
-        expect(back.scale).toBe(local.scale)
+          expectPointCloseTo(back.center, local.center)
+          expect(back.scale).toBeCloseTo(local.scale, 10)
+        }
       }
     }
+  })
+
+  it('matches true pixel density rather than apparent size when the tabs differ in resolution', () => {
+    // Compressed natural is half of Original's — the user's own worked example (adapted to this
+    // file's fixtures): Compressed viewed at its own 100% should land Original at 50%.
+    const compressedActualSize = viewport(
+      0.5,
+      0.5,
+      pixelPerfectScale(HALVED_SIZES.compressed.restBox, HALVED_SIZES.compressed.natural),
+    )
+    const canonical = unprojectViewportFromCompressed(compressedActualSize, null, 0, HALVED_SIZES)
+
+    expect(canonical.scale).toBeCloseTo(
+      pixelPerfectScale(HALVED_SIZES.original.restBox, HALVED_SIZES.original.natural) / 2,
+      10,
+    )
+  })
+
+  it('is not clamped to the normal zoom ceiling, so a density match can exceed it', () => {
+    const farBeyondCeiling = viewport(0.5, 0.5, MAX_VIEWPORT_SCALE * 10)
+
+    const projected = projectViewportToCompressed(farBeyondCeiling, null, 0, HALVED_SIZES)
+
+    expect(projected.scale).toBeGreaterThan(MAX_VIEWPORT_SCALE)
+  })
+
+  it('falls back to a plain passthrough when a tab size is not usable yet', () => {
+    const unusable = {
+      original: { restBox: { width: 0, height: 0 }, natural: LANDSCAPE },
+      compressed: HALVED_SIZES.compressed,
+    } as const satisfies ViewportTabSizes
+    const inspector = viewport(0.4, 0.6, 2)
+
+    expect(projectViewportToCompressed(inspector, null, 0, unusable).scale).toBe(2)
+    expect(unprojectViewportFromCompressed(inspector, null, 0, unusable).scale).toBe(2)
   })
 
   it('leaves the viewport alone for a degenerate crop rect', () => {
     const inspector = viewport(0.4, 0.6, 2)
     const empty = { x: 0.2, y: 0.2, width: 0, height: 0 } satisfies NormalisedRect
 
-    expect(projectViewportToCompressed(inspector, empty)).toEqual(inspector)
-    expect(unprojectViewportFromCompressed(inspector, empty)).toEqual(inspector)
+    expect(projectViewportToCompressed(inspector, empty, 0, NO_RESIZE_SIZES)).toEqual(inspector)
+    expect(unprojectViewportFromCompressed(inspector, empty, 0, NO_RESIZE_SIZES)).toEqual(inspector)
+  })
+})
+
+describe('nativePixelsPerCanonicalPixel', () => {
+  it('is always 1 for the original tab, regardless of inputs', () => {
+    expect(nativePixelsPerCanonicalPixel('original', HALVED_SIZES, 0, null)).toBe(1)
+    expect(
+      nativePixelsPerCanonicalPixel('original', HALVED_SIZES, 1, {
+        x: 0,
+        y: 0,
+        width: 0.5,
+        height: 1,
+      }),
+    ).toBe(1)
+  })
+
+  it('is the resize ratio for the compressed tab with no crop', () => {
+    // HALVED_SIZES: compressed natural width 2000 against an uncropped 4000-wide source.
+    expect(nativePixelsPerCanonicalPixel('compressed', HALVED_SIZES, 0, null)).toBeCloseTo(0.5, 10)
+  })
+
+  it('folds the crop width fraction into the ratio', () => {
+    const rightHalf = { x: 0.5, y: 0, width: 0.5, height: 1 } as const satisfies NormalisedRect
+
+    // Covered canonical width is now half of 4000 = 2000, matching the compressed natural width
+    // exactly, so the ratio is 1 even though the image was "resized" overall.
+    expect(nativePixelsPerCanonicalPixel('compressed', HALVED_SIZES, 0, rightHalf)).toBeCloseTo(
+      1,
+      10,
+    )
+  })
+
+  it('falls back to 1 rather than NaN/Infinity for an unusable compressed natural size', () => {
+    const unusable = {
+      original: HALVED_SIZES.original,
+      compressed: { restBox: HALVED_SIZES.compressed.restBox, natural: { width: 0, height: 0 } },
+    } as const satisfies ViewportTabSizes
+
+    expect(nativePixelsPerCanonicalPixel('compressed', unusable, 0, null)).toBe(1)
   })
 })
 
@@ -763,7 +895,10 @@ describe('projection between the two tabs', () => {
     // untouched by that clamp, so flipping back lands exactly where the user was.
     const canonical = viewport(0.05, 0.5, 4)
 
-    expectPointCloseTo(projectViewportToCompressed(canonical, CROP).center, { x: 0, y: 0.5 })
+    expectPointCloseTo(projectViewportToCompressed(canonical, CROP, 0, NO_RESIZE_SIZES).center, {
+      x: 0,
+      y: 0.5,
+    })
     expectPointCloseTo(projectViewportToOriginal(canonical, 0).center, { x: 0.05, y: 0.5 })
   })
 
@@ -774,7 +909,10 @@ describe('projection between the two tabs', () => {
     const canonical = unprojectViewportFromOriginal(viewport(0.05, 0.5, 4), 1)
 
     expectPointCloseTo(canonical.center, { x: 0.5, y: 0.05 })
-    expectPointCloseTo(projectViewportToCompressed(canonical, CROP).center, { x: 0, y: 0.05 })
+    expectPointCloseTo(projectViewportToCompressed(canonical, CROP, 1, NO_RESIZE_SIZES).center, {
+      x: 0,
+      y: 0.05,
+    })
     expectPointCloseTo(projectViewportToOriginal(canonical, 1).center, { x: 0.05, y: 0.5 })
   })
 })

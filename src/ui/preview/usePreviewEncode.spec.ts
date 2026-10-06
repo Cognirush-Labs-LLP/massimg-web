@@ -286,6 +286,28 @@ describe('usePreviewEncode', () => {
     expect(run).toHaveBeenCalledTimes(2)
   })
 
+  it('bumps regenerateToken on a same-image settings change, but not on mount or an image step', async () => {
+    const harness = mountEncode()
+    await flushPromises()
+
+    // The watcher's own `immediate: true` first run takes the image-change branch, never this one.
+    expect(harness.state.regenerateToken.value).toBe(0)
+
+    runs[0]?.settle(completed(1234, 'a'))
+    await flushPromises()
+
+    harness.settings.value = batchSettings({ quality: { kind: 'quality', value: 71 } })
+    await flushPromises()
+
+    expect(harness.state.regenerateToken.value).toBe(1)
+
+    harness.image.value = imageRecord('b', { edit: { ops: [], version: 2 } })
+    await flushPromises()
+
+    // Different image id: the image-change branch, not the settings-change branch, so no bump.
+    expect(harness.state.regenerateToken.value).toBe(1)
+  })
+
   it('hides and releases the stale result the moment a setting changes (R-B1, R-P4)', async () => {
     const harness = mountEncode()
     await flushPromises()

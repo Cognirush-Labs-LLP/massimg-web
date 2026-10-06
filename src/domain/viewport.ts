@@ -29,17 +29,24 @@
 //     which an aspect-agnostic `[1/2s, 1 - 1/2s]` bound would clamp away. Under spill
 //     (`rect.x < 0`), canonical values legitimately leave `[0, 1]` altogether.
 //
-// Scale passes through both projections unchanged: scale 1 means "this tab's rest state"
-// (`restBoxSize` — fit to the host, capped at the image's own pixel size) on both tabs, which is
-// what makes the comparison a comparison — a 500x500 output of a 1000x1000 source is shown at the
-// same size as its original, not at half of it. The box actually clipped and panned within
-// (`resolveViewportBox`) grows from there toward the host area as `scale` increases past 1.
+// Scale is pinned to the Original tab's own convention: canonical scale *is* Original-tab scale,
+// with no conversion, because Original always has 1:1 pixel correspondence with canonical space — no
+// crop, no resize, and rotation is magnitude-neutral. Crossing to Compressed converts that scale so
+// that on-screen *pixel density* survives the switch, not apparent box size: a 500x500 output of a
+// 1000x1000 source viewed at Compressed's own 100% shows the Original at 50%, the true fraction of
+// its pixels currently on screen, rather than at the same apparent size
+// (`nativePixelsPerCanonicalPixel`, used by `projectViewportToCompressed`/
+// `unprojectViewportFromCompressed`). The box actually clipped and panned within
+// (`resolveViewportBox`) still grows from `restBox` toward the host area as `scale` increases past 1,
+// on whichever tab is active, using that tab's own `effectiveMaxScale` — but a value arriving from a
+// tab switch may legitimately exceed that normal ceiling (a pixel-density match wins over the usual
+// cap), so callers must not re-clamp a freshly-projected scale down to it.
 //
 // Pure, like every other module in `domain/`: no DOM, no Vue. Every value returned is a fresh object
 // and nothing here mutates its arguments, which is what lets a caller hold the canonical viewport in
 // a `ref` and only ever replace it.
 
-import { addQuarterTurns, fitScale, imageRectInFrame } from './edit'
+import { addQuarterTurns, fitScale, imageRectInFrame, rotateSize } from './edit'
 import type { FrameRect, PixelSize, QuarterTurns } from './edit'
 import type { EditRecord, NormalisedRect } from './types'
 
@@ -65,6 +72,18 @@ export interface InspectorViewport {
   scale: number
 }
 
+/** One tab's own rest box and natural pixel size — everything `projectScale*` needs for that tab. */
+export interface ViewportTabGeometry {
+  restBox: PixelSize
+  natural: PixelSize
+}
+
+/** Both tabs' geometry at once, needed to convert a scale across a tab switch. */
+export interface ViewportTabSizes {
+  original: ViewportTabGeometry
+  compressed: ViewportTabGeometry
+}
+
 /**
  * Rest state (`restBoxSize`), centred — the state R-P6 describes, and the one every image starts in.
  *
@@ -77,8 +96,13 @@ export const DEFAULT_VIEWPORT = {
 } as const satisfies InspectorViewport
 
 /**
- * Scale 1 is the rest state, `restBoxSize` (fit to the host, capped at 100% — never upscaled).
- * Zooming out past it would shrink the image inside its own rest box.
+ * Scale 1 is *this tab's own* rest state, `restBoxSize` (fit to the host, capped at 100% — never
+ * upscaled) — the floor for an ordinary in-tab gesture, where zooming out past fit has nothing left
+ * to show. It is not a universal floor on `scale` itself, though: a cross-tab pixel-density match
+ * (R-P9) can legitimately land below 1 on the target tab (its own fit represents proportionally more
+ * true pixels than the density match calls for), and that value must render smaller than this tab's
+ * own rest box, not be clamped back up to it — every clamp below takes an explicit `minScale`
+ * for exactly this, defaulting to this constant so an ordinary gesture call site is unaffected.
  */
 export const MIN_VIEWPORT_SCALE = 1
 
@@ -155,13 +179,21 @@ function clampAxis(value: number, visible: number): number {
  * Clamps a zoom factor to the inspector's range. `maxScale` defaults to the fixed
  * `MAX_VIEWPORT_SCALE` ceiling, but a caller inspecting a large image passes `effectiveMaxScale`'s
  * result instead, so the ceiling can rise past it (see that function's own comment for why).
+ * `minScale` is the same idea at the other end: defaults to `MIN_VIEWPORT_SCALE` (an ordinary
+ * in-tab gesture has nothing below its own fit), but a caller rendering a cross-tab pixel-density
+ * match passes that match's own scale instead, so a legitimately-sub-1 value is not clamped back up
+ * to fit (R-P9).
  */
-export function clampViewportScale(scale: number, maxScale: number = MAX_VIEWPORT_SCALE): number {
+export function clampViewportScale(
+  scale: number,
+  maxScale: number = MAX_VIEWPORT_SCALE,
+  minScale: number = MIN_VIEWPORT_SCALE,
+): number {
   if (!Number.isFinite(scale)) {
-    return MIN_VIEWPORT_SCALE
+    return minScale
   }
 
-  return Math.min(Math.max(scale, MIN_VIEWPORT_SCALE), maxScale)
+  return Math.min(Math.max(scale, minScale), maxScale)
 }
 
 /**
@@ -169,7 +201,9 @@ export function clampViewportScale(scale: number, maxScale: number = MAX_VIEWPOR
  *
  * At scale 1 the visible fraction is the whole image on both axes, so this collapses the centre to
  * `(0.5, 0.5)` — which is why `resolveViewportFrameRect` at `DEFAULT_VIEWPORT` is plain contain-fit
- * with no special case anywhere (R-P6).
+ * with no special case anywhere (R-P6). The same collapse happens, just as correctly, for any scale
+ * below 1 that still leaves the drawn box no bigger than `host` on an axis — nothing further from
+ * `visibleFraction`'s own `Math.min(1, ...)` cap is needed for that case.
  */
 export function clampViewportCenter(
   center: ViewportPoint,
@@ -177,12 +211,13 @@ export function clampViewportCenter(
   host: PixelSize,
   scale: number,
   maxScale: number = MAX_VIEWPORT_SCALE,
+  minScale: number = MIN_VIEWPORT_SCALE,
 ): ViewportPoint {
   if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return { x: 0.5, y: 0.5 }
   }
 
-  const visible = visibleFraction(restBox, host, clampViewportScale(scale, maxScale))
+  const visible = visibleFraction(restBox, host, clampViewportScale(scale, maxScale, minScale))
 
   return { x: clampAxis(center.x, visible.x), y: clampAxis(center.y, visible.y) }
 }
@@ -257,6 +292,92 @@ export function displayedZoomPercent(
 }
 
 /**
+ * Native pixels per canonical (rotated, uncropped source) pixel, along width. Always 1 for
+ * `'original'`: that tab is never cropped or resized, and rotation only reshuffles axes, so it has
+ * exact 1:1 pixel correspondence with canonical space by definition. For `'compressed'`, the
+ * resize+crop ratio: how many of the output's own pixels cover one canonical pixel. Resize is a
+ * single uniform scale over the whole (possibly cropped) region, so this is one scalar for the
+ * entire image, not something that varies by position.
+ *
+ * Needs `sizes.original.natural` (not just the compressed side) because canonical space is the
+ * *rotated* source: on an odd quarter turn, canonical's width axis is the Original's own height
+ * axis, and `rotateSize` is what re-expresses that correctly rather than assuming width stays width.
+ *
+ * Falls back to `1` (plain passthrough, same as before this ratio existed) rather than `NaN` or
+ * `Infinity` when either natural size or the crop rect isn't usable yet — e.g. before either raster
+ * has been measured, which is exactly the state the inspector starts in.
+ */
+export function nativePixelsPerCanonicalPixel(
+  tab: 'original' | 'compressed',
+  sizes: ViewportTabSizes,
+  quarterTurns: QuarterTurns,
+  cropRect: NormalisedRect | null,
+): number {
+  if (tab === 'original') {
+    return 1
+  }
+
+  if (!isUsableSize(sizes.compressed.natural) || !isUsableSize(sizes.original.natural)) {
+    return 1
+  }
+
+  const rotatedSourceWidth = rotateSize(sizes.original.natural, quarterTurns).width
+  const canonicalWidthCovered =
+    cropRect !== null && isUsableRect(cropRect)
+      ? cropRect.width * rotatedSourceWidth
+      : rotatedSourceWidth
+
+  if (!Number.isFinite(canonicalWidthCovered) || canonicalWidthCovered <= 0) {
+    return 1
+  }
+
+  return sizes.compressed.natural.width / canonicalWidthCovered
+}
+
+/**
+ * Converts a scale from the Original tab's own convention (which canonical scale is pinned to) into
+ * the Compressed tab's. Falls back to plain passthrough when either tab's geometry isn't usable yet,
+ * so a not-yet-measured raster never produces `NaN` mid-gesture.
+ */
+function scaleToCompressed(scale: number, sizes: ViewportTabSizes, ratio: number): number {
+  if (
+    !isUsableSize(sizes.original.restBox) ||
+    !isUsableSize(sizes.original.natural) ||
+    !isUsableSize(sizes.compressed.restBox) ||
+    !isUsableSize(sizes.compressed.natural) ||
+    ratio <= 0
+  ) {
+    return scale
+  }
+
+  return (
+    (scale *
+      (sizes.original.restBox.width / sizes.original.natural.width) *
+      (sizes.compressed.natural.width / sizes.compressed.restBox.width)) /
+    ratio
+  )
+}
+
+/** The inverse of `scaleToCompressed`: Compressed's own scale back into the Original convention. */
+function scaleToOriginal(scale: number, sizes: ViewportTabSizes, ratio: number): number {
+  if (
+    !isUsableSize(sizes.original.restBox) ||
+    !isUsableSize(sizes.original.natural) ||
+    !isUsableSize(sizes.compressed.restBox) ||
+    !isUsableSize(sizes.compressed.natural)
+  ) {
+    return scale
+  }
+
+  return (
+    scale *
+    (sizes.compressed.restBox.width / sizes.compressed.natural.width) *
+    ratio *
+    (sizes.original.natural.width / sizes.original.restBox.width)
+  )
+}
+
+/**
  * The box the inspector actually clips and pans within, at a given zoom `scale`: exactly `restBox`
  * at rest, growing proportionally toward `host` as `scale` increases, capped there per axis since
  * there is no more host to use. Below saturation `box.axis == restBox.axis * scale` exactly, so the
@@ -287,17 +408,18 @@ export function resolveViewportFrameRect(
   host: PixelSize,
   viewport: InspectorViewport,
   maxScale: number = MAX_VIEWPORT_SCALE,
+  minScale: number = MIN_VIEWPORT_SCALE,
 ): FrameRect | null {
   if (!isUsableSize(restBox) || !isUsableSize(host)) {
     return null
   }
 
-  const scale = clampViewportScale(viewport.scale, maxScale)
+  const scale = clampViewportScale(viewport.scale, maxScale, minScale)
   const box = resolveViewportBox(restBox, host, scale)
   // The one place the centred placement is computed, shared with Edit mode's own arithmetic.
   // `restBox` stands in for Edit's `source`: `restBox.width * scale` is the drawn width.
   const centred = imageRectInFrame(restBox, box, scale)
-  const center = clampViewportCenter(viewport.center, restBox, host, scale, maxScale)
+  const center = clampViewportCenter(viewport.center, restBox, host, scale, maxScale, minScale)
   // At DEFAULT_VIEWPORT the clamp above forces (0.5, 0.5), both shifts are exactly 0, and this
   // returns `centred` unchanged: contain-fit, R-P6, by construction rather than by branch.
   const rect: FrameRect = {
@@ -341,9 +463,10 @@ export function zoomViewportAt(
   point: FramePoint,
   nextScale: number,
   maxScale: number = MAX_VIEWPORT_SCALE,
+  minScale: number = MIN_VIEWPORT_SCALE,
 ): InspectorViewport {
-  const scale = clampViewportScale(nextScale, maxScale)
-  const current = resolveViewportFrameRect(restBox, host, viewport, maxScale)
+  const scale = clampViewportScale(nextScale, maxScale, minScale)
+  const current = resolveViewportFrameRect(restBox, host, viewport, maxScale, minScale)
 
   if (current === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
@@ -356,7 +479,11 @@ export function zoomViewportAt(
   // in the next box's own coordinate space before solving for the centre that keeps `fraction`
   // under it — otherwise every tick while the box is resizing drifts the content from the
   // cursor instead of keeping it pinned.
-  const currentBox = resolveViewportBox(restBox, host, clampViewportScale(viewport.scale, maxScale))
+  const currentBox = resolveViewportBox(
+    restBox,
+    host,
+    clampViewportScale(viewport.scale, maxScale, minScale),
+  )
   const nextBox = resolveViewportBox(restBox, host, scale)
   const adjustedPoint: FramePoint = {
     left: point.left + (nextBox.width - currentBox.width) / 2,
@@ -372,7 +499,7 @@ export function zoomViewportAt(
     y: fraction.y + (nextBox.height / 2 - adjustedPoint.top) / nextHeight,
   }
 
-  return { center: clampViewportCenter(center, restBox, host, scale, maxScale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale, maxScale, minScale), scale }
 }
 
 /** Pans by a frame-pixel delta, so the content tracks the pointer 1:1 (docs/ui-design.md §15). */
@@ -382,9 +509,10 @@ export function panViewport(
   viewport: InspectorViewport,
   delta: FramePoint,
   maxScale: number = MAX_VIEWPORT_SCALE,
+  minScale: number = MIN_VIEWPORT_SCALE,
 ): InspectorViewport {
-  const scale = clampViewportScale(viewport.scale, maxScale)
-  const rect = resolveViewportFrameRect(restBox, host, viewport, maxScale)
+  const scale = clampViewportScale(viewport.scale, maxScale, minScale)
+  const rect = resolveViewportFrameRect(restBox, host, viewport, maxScale, minScale)
 
   if (rect === null) {
     return { center: { x: 0.5, y: 0.5 }, scale }
@@ -392,13 +520,13 @@ export function panViewport(
 
   // From the *clamped* centre, which is the one on screen — otherwise a drag that ran into an edge
   // would have to be dragged back out of an offset the user never saw.
-  const base = clampViewportCenter(viewport.center, restBox, host, scale, maxScale)
+  const base = clampViewportCenter(viewport.center, restBox, host, scale, maxScale, minScale)
   const center = {
     x: base.x - delta.left / rect.width,
     y: base.y - delta.top / rect.height,
   }
 
-  return { center: clampViewportCenter(center, restBox, host, scale, maxScale), scale }
+  return { center: clampViewportCenter(center, restBox, host, scale, maxScale, minScale), scale }
 }
 
 /**
@@ -470,8 +598,10 @@ export function rotateViewportBetweenQuarterTurns(
 }
 
 /**
- * Canonical into the Compressed tab's space. Identity without a crop; otherwise the canonical point
- * expressed as a fraction of the crop rect, which is what the output raster actually contains.
+ * Canonical into the Compressed tab's space. Centre: identity without a crop; otherwise the
+ * canonical point expressed as a fraction of the crop rect, which is what the output raster actually
+ * contains. Scale: converted so pixel density survives the switch (see module doc comment), via
+ * `nativePixelsPerCanonicalPixel` — this is the one tab whose density ratio isn't 1.
  *
  * A canonical point outside the crop clamps to the nearest edge rather than resetting: the user was
  * looking at part of the source this output does not contain, and the honest answer is the closest
@@ -480,9 +610,14 @@ export function rotateViewportBetweenQuarterTurns(
 export function projectViewportToCompressed(
   viewport: InspectorViewport,
   cropRect: NormalisedRect | null,
+  quarterTurns: QuarterTurns,
+  sizes: ViewportTabSizes,
 ): InspectorViewport {
+  const ratio = nativePixelsPerCanonicalPixel('compressed', sizes, quarterTurns, cropRect)
+  const scale = scaleToCompressed(viewport.scale, sizes, ratio)
+
   if (cropRect === null || !isUsableRect(cropRect)) {
-    return { center: { x: viewport.center.x, y: viewport.center.y }, scale: viewport.scale }
+    return { center: { x: viewport.center.x, y: viewport.center.y }, scale }
   }
 
   return {
@@ -490,7 +625,7 @@ export function projectViewportToCompressed(
       x: clamp01((viewport.center.x - cropRect.x) / cropRect.width),
       y: clamp01((viewport.center.y - cropRect.y) / cropRect.height),
     },
-    scale: viewport.scale,
+    scale,
   }
 }
 
@@ -498,9 +633,14 @@ export function projectViewportToCompressed(
 export function unprojectViewportFromCompressed(
   viewport: InspectorViewport,
   cropRect: NormalisedRect | null,
+  quarterTurns: QuarterTurns,
+  sizes: ViewportTabSizes,
 ): InspectorViewport {
+  const ratio = nativePixelsPerCanonicalPixel('compressed', sizes, quarterTurns, cropRect)
+  const scale = scaleToOriginal(viewport.scale, sizes, ratio)
+
   if (cropRect === null || !isUsableRect(cropRect)) {
-    return { center: { x: viewport.center.x, y: viewport.center.y }, scale: viewport.scale }
+    return { center: { x: viewport.center.x, y: viewport.center.y }, scale }
   }
 
   return {
@@ -508,7 +648,7 @@ export function unprojectViewportFromCompressed(
       x: cropRect.x + clamp01(viewport.center.x) * cropRect.width,
       y: cropRect.y + clamp01(viewport.center.y) * cropRect.height,
     },
-    scale: viewport.scale,
+    scale,
   }
 }
 

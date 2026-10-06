@@ -139,6 +139,85 @@ Ops are an ordered list rather than named fields. Normal editing produces rotati
 
 `version` is what preview caching compares against. Since we retain nothing (R-B1), it is used to discard a result that arrives after the edit changed, not to look anything up.
 
+### 3.6 The Preview inspector's viewport
+
+R-P9/R-P10's zoom/pan inspector (functional-design §3.3, ui-design §11) stores one `InspectorViewport
+= { center: ViewportPoint; scale: number }` per image, in `domain/viewport.ts`, rather than one per
+tab. `center` is a point in fractions of the image's own width/height (never frame pixels); the
+canonical space it is expressed in is **fractions of the rotated, uncropped source** — the same
+reference frame `rect` already uses in §3.5's `EditOp` crop. Two pure projections read it into each
+tab's own space:
+
+- **Original**: the inverse of the edit's stored quarter turns. No crop, no resize, so this has exact
+  1:1 pixel correspondence with canonical space on both axes (mod the turns reshuffling which axis is
+  which).
+- **Compressed**: the canonical point expressed as a fraction of the stored crop `rect` (identity
+  without one). Resize is a uniform scale over the whole (possibly cropped) region, so it never
+  appears in the *centre* arithmetic at all — only in the *scale* arithmetic below.
+
+**Scale is pinned to the Original tab's own convention**: canonical `scale` *is* Original-tab scale,
+with no conversion, because Original always has that exact 1:1 correspondence. Crossing to Compressed
+converts `scale` so that on-screen **pixel density** survives the switch rather than apparent box
+size (R-P9). The ratio needed is:
+
+```
+rotatedSourceWidth    = rotateSize(originalNatural, quarterTurns).width
+canonicalWidthCovered = cropRect ? cropRect.width * rotatedSourceWidth : rotatedSourceWidth
+ratio                 = compressedNatural.width / canonicalWidthCovered   // 1 for Original, always
+```
+
+and the two scale conversions (each the exact algebraic inverse of the other, so a there-and-back tab
+flip is lossless on scale as well as centre):
+
+```
+scaleToCompressed(scale) = scale * (originalRestBox.width / originalNatural.width)
+                                  / ratio
+                                  * (compressedNatural.width / compressedRestBox.width)
+
+scaleToOriginal(scale)   = scale * (compressedRestBox.width / compressedNatural.width)
+                                  * ratio
+                                  * (originalNatural.width / originalRestBox.width)
+```
+
+`restBox` is each tab's own contain-fit rest size (`restBoxSize`: downscale to fit the host, never
+upscale past the image's own pixels). Both natural/restBox pairs — not just the active tab's — are
+threaded through `usePreviewViewport`'s `tabSizes` option, sourced from whichever is best available:
+the real decoded `<img>` size once loaded, falling back to the *predicted* size from current settings
+(Original from the source dimensions directly; Compressed from the same `singleImageDimensions` the
+job model's dimension rule resolution already uses) before that. This is what makes R-P9 hold from the
+very first, unzoomed view — the predicted sizes are known well before either raster has actually
+decoded.
+
+Rotation is exempt from the pixel-density guarantee by product decision: it changes which axis is
+which, not how many pixels there are, and `rotateViewportBetweenQuarterTurns` (re-expressing canonical
+coordinates when the stored rotation itself changes) keeps `scale` passed straight through.
+
+A density match is explicitly allowed to call for more zoom than a tab's own usual ceiling
+(`effectiveMaxScale`) permits (R-P9) — implemented by raising the ceiling to cover whatever scale a
+tab switch just produced, at the UI layer (`PreviewFrame.vue`'s `zoomCeiling`), rather than by
+changing any clamp inside `domain/viewport.ts` itself; ordinary in-tab gestures stay bounded by their
+own per-tick `nextScale` argument regardless.
+
+The same is true at the *other* end: a density match can legitimately land below `scale: 1` on the
+target tab (that tab's own fit represents proportionally more true pixels than the match calls for),
+and the drawn image must render smaller than that tab's own rest box, not be floored back up to it.
+`domain/viewport.ts`'s clamp functions (`clampViewportScale`, `clampViewportCenter`,
+`resolveViewportFrameRect`, `zoomViewportAt`, `panViewport`) all take an explicit `minScale` parameter
+now, defaulting to `MIN_VIEWPORT_SCALE` so an ordinary in-tab gesture is unaffected; `PreviewFrame.vue`
+pairs this with a `zoomFloor` computed (`Math.min(MIN_VIEWPORT_SCALE, viewport.local.value.scale)`),
+symmetric to `zoomCeiling`, passed everywhere the ceiling already is. Without this, the zoom-percent
+readout (`displayedZoomPercent`, unclamped) and the actual drawn size silently disagreed: the former
+correctly read e.g. 50%, while the latter stayed clamped at the tab's own 100%.
+
+**Forced switch on regenerate (R-P10).** `usePreviewEncode`'s existing settings/edit-change watcher
+(§4.1) already distinguishes a same-image regenerate from an image change or a no-op; it now also
+bumps an exposed `regenerateToken` counter exactly on that same-image branch. `Preview.vue` watches
+it and, on each bump, sets the comparison tab to Compressed and writes the canonical viewport to
+Compressed's own actual-size scale (from the best-available, placeholder-tolerant size — the manual
+"Actual size" button keeps the stricter decoded-only contract, since it should never claim a scale it
+cannot yet prove) centred at `(0.5, 0.5)`. Because the token is bumped only on that one branch, R-P7's
+"the stepper preserves the selected comparison tab" is unaffected by this mechanism.
+
 ---
 
 ## 4. Job model

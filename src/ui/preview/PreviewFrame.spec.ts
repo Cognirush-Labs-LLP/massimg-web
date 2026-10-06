@@ -25,7 +25,7 @@ interface FrameProps {
   originalUrl: string | null
   originalUnrenderable: boolean
   error: PreviewEncodeError | null
-  placeholderSize: PixelSize | null
+  placeholderSizes: { original: PixelSize; compressed: PixelSize } | null
 }
 
 function props(overrides: Partial<FrameProps> = {}): FrameProps {
@@ -39,7 +39,7 @@ function props(overrides: Partial<FrameProps> = {}): FrameProps {
     originalUrl: null,
     originalUnrenderable: false,
     error: null,
-    placeholderSize: null,
+    placeholderSizes: null,
     ...overrides,
   }
 }
@@ -610,20 +610,35 @@ describe('PreviewFrame', () => {
       expect(zoomToolbarApi(wrapper).zoomPercent ?? 0).toBeGreaterThan(100)
     })
 
-    it('carries the scale set by Actual size on one tab over to the other, instead of resetting to 100% of that tab', async () => {
-      const compressedNatural = { width: 2000, height: 1500 } as const satisfies PixelSize
+    it('matches pixel density, not apparent size, when switching tabs after Actual size', async () => {
+      // Compressed is a thumbnail smaller than the host (so its restBox is its own true size, 1:1
+      // without shrinking); Original is far larger than the host (shrunk hard to fit). Picking sizes
+      // where the two tabs' restBoxes actually differ matters: with a shared aspect ratio that
+      // matches the host exactly, both tabs' restBoxes coincide at the host size regardless of
+      // natural size, which would make old (apparent-size) and new (pixel-density) behaviour produce
+      // the same numbers by accident and not actually exercise this change.
+      const compressedNatural = { width: 200, height: 150 } as const satisfies PixelSize
       const originalNatural = { width: 4000, height: 3000 } as const satisfies PixelSize
 
       const wrapper = await mountFrame(
-        { tab: 'compressed', compressedUrl: 'blob:compressed', originalUrl: 'blob:original' },
+        {
+          tab: 'compressed',
+          compressedUrl: 'blob:compressed',
+          originalUrl: 'blob:original',
+          // Both tabs' predicted sizes known up front, same as `Preview.vue` always supplies them
+          // (Original from the source, Compressed from `singleImageDimensions`) — this is what makes
+          // pixel-density matching work from the very first view, before either raster has loaded.
+          placeholderSizes: { original: originalNatural, compressed: compressedNatural },
+        },
         { natural: compressedNatural },
       )
 
       zoomToolbarApi(wrapper).onActualSizeClick()
       await nextTick()
 
-      // pixelPerfectScale(800x600 restBox, 2000x1500 natural) is 2.5.
-      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(2.5, 10)
+      // pixelPerfectScale(200x150 restBox, 200x150 natural) is 1: already smaller than the host, so
+      // "actual size" is its own rest state.
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(1, 10)
       expect(zoomToolbarApi(wrapper).zoomPercent).toBe(100)
 
       await wrapper.setProps({ tab: 'original' })
@@ -638,12 +653,78 @@ describe('PreviewFrame', () => {
       })
       await original.trigger('load')
 
-      // Scale passes through the tab projection unchanged — same canonical magnification, not reset.
-      expect(previewViewport(wrapper).canonical.value.scale).toBeCloseTo(2.5, 10)
-      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(2.5, 10)
-      // restBoxSize(4000x3000, 800x600) is 800x600; at scale 2.5 that is 50% of the original's true
-      // pixel size, not a reset to literal 100%.
-      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(50)
+      // Canonical scale is pinned to the Original tab's own convention, so it now reads as Original's
+      // own scale: the 200px-wide Compressed thumbnail's screen footprint, reproduced on Original
+      // (whose restBox is 800x600), is 800 * scale = 200 -> scale 0.25.
+      expect(previewViewport(wrapper).canonical.value.scale).toBeCloseTo(0.25, 10)
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(0.25, 10)
+      // displayedZoomPercent(800x600 restBox, 4000x3000 natural, 0.25) is 5 — the true fraction of
+      // Original's own pixels now on screen, matching Compressed's screen footprint exactly, not a
+      // reset to literal 100% and not the old apparent-size-preserving 100% either.
+      expect(zoomToolbarApi(wrapper).zoomPercent).toBe(5)
+    })
+
+    it('matches pixel density from placeholder estimates alone, before either raster has loaded', async () => {
+      const compressedNatural = { width: 200, height: 150 } as const satisfies PixelSize
+      const originalNatural = { width: 4000, height: 3000 } as const satisfies PixelSize
+
+      const wrapper = await mountFrame(
+        {
+          tab: 'compressed',
+          compressedUrl: 'blob:compressed',
+          originalUrl: 'blob:original',
+          placeholderSizes: { original: originalNatural, compressed: compressedNatural },
+        },
+        { natural: null },
+      )
+
+      previewViewport(wrapper).setLocal({ center: { x: 0.5, y: 0.5 }, scale: 1 })
+      await wrapper.setProps({ tab: 'original' })
+      await nextTick()
+
+      // Same 200/4000, 800x600-vs-200x150 relationship as the test above, computed purely from
+      // `placeholderSizes` since neither `<img>` has fired `load` in this test at all.
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(0.25, 10)
+      expect(Number.isFinite(previewViewport(wrapper).local.value.scale)).toBe(true)
+    })
+
+    it('raises the zoom ceiling rather than clamping away a cross-tab pixel-density match', async () => {
+      // Original zoomed in hard on detail; Compressed is a much lower-res thumbnail, whose normal
+      // ceiling (`effectiveMaxScale`) would otherwise clamp away the density match on arrival.
+      const compressedNatural = { width: 200, height: 150 } as const satisfies PixelSize
+      const originalNatural = { width: 4000, height: 3000 } as const satisfies PixelSize
+
+      const wrapper = await mountFrame(
+        {
+          tab: 'original',
+          compressedUrl: 'blob:compressed',
+          originalUrl: 'blob:original',
+          placeholderSizes: { original: originalNatural, compressed: compressedNatural },
+        },
+        { natural: originalNatural },
+      )
+
+      // Zoom Original in hard — well past where Compressed's own normal ceiling would sit.
+      previewViewport(wrapper).setLocal({ center: { x: 0.5, y: 0.5 }, scale: 7 })
+      await nextTick()
+
+      await wrapper.setProps({ tab: 'compressed' })
+      const compressed = wrapper.get('[data-testid="preview-image"]')
+      Object.defineProperty(compressed.element, 'naturalWidth', {
+        value: compressedNatural.width,
+        configurable: true,
+      })
+      Object.defineProperty(compressed.element, 'naturalHeight', {
+        value: compressedNatural.height,
+        configurable: true,
+      })
+      await compressed.trigger('load')
+
+      // Compressed's own effectiveMaxScale(200x150 restBox, 200x150 natural) is MAX_VIEWPORT_SCALE
+      // (8), since pixelPerfectScale there is 1. The density match from Original's scale-7 view
+      // needs far more than that to reproduce the same screen footprint on a 200px-wide thumbnail,
+      // and it must not be clamped down to 8.
+      expect(previewViewport(wrapper).local.value.scale).toBeGreaterThan(8)
     })
   })
 })

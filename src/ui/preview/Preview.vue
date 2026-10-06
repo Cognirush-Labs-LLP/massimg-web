@@ -12,7 +12,7 @@
 // purely presentational, and reads/drives `PreviewFrame`'s own viewport state through a template
 // ref rather than owning anything itself, because it renders beside the Original/Compressed pill
 // here rather than as an overlay on the image (that was tried and looked bad).
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { withTrailingResize, type PixelSize } from '@/domain/edit'
 import {
@@ -73,20 +73,29 @@ const standardDimensionSuggestion = computed<PixelSize | null>(() => {
 })
 
 /**
- * The shape to give the frame before the active tab's own raster has loaded: the source's size on
- * the Original tab, the size the current settings will produce on the Compressed tab. Both can be
- * `null` while the background dimension probe has not reached this image.
+ * Both tabs' predicted output sizes, computed unconditionally (not just the active tab's): the
+ * source's own size for Original (always known immediately, no decode required), and what the
+ * current settings will produce for Compressed (`singleImageDimensions`, already correctly
+ * encoding R-D1/R-D4's crop-vs-dimension-rule interaction). `PreviewFrame` needs both at once to
+ * give the "Creating preview" box the right shape before its own raster has loaded, and — unlike
+ * before this was single-tab — to feed the cross-tab pixel-density scale conversion from the very
+ * first view, before either `<img>` has actually fired `load`. `null` (both, together) while the
+ * background dimension probe has not reached this image.
  */
-const placeholderSize = computed<PixelSize | null>(() => {
+const placeholderSizes = computed<{ original: PixelSize; compressed: PixelSize } | null>(() => {
   const current = image.value
 
   if (current === null || current.width === 0 || current.height === 0) {
     return null
   }
 
-  return comparisonTab.value === 'original'
-    ? { width: current.width, height: current.height }
-    : singleImageDimensions(current, settings.value.dimension)
+  const compressed = singleImageDimensions(current, settings.value.dimension)
+
+  if (compressed === null) {
+    return null
+  }
+
+  return { original: { width: current.width, height: current.height }, compressed }
 })
 
 function toggleTab(): void {
@@ -110,6 +119,37 @@ function onZoomFit(): void {
 function onZoomActualSize(): void {
   frame.value?.onActualSizeClick()
 }
+
+/**
+ * Any same-image settings- or edit-driven regenerate (quality, format, dimension, rotation, crop —
+ * `usePreviewEncode`'s `regenerateToken` bumps for all of them) forces Compressed to the front at
+ * its own actual size, centred, so the user is never left looking at an Original that doesn't match
+ * a change they just made. `regenerateToken` is never bumped on an image step or on initial mount
+ * (`usePreviewEncode.ts`'s own watcher guarantees this), so R-P7's "stepper preserves the selected
+ * tab" is untouched by this watcher.
+ *
+ * Centring rather than preserving the old pan point: after a dimension- or crop-affecting change,
+ * the point the user was looking at may no longer correspond to anything meaningful in the new
+ * output, and `projectViewportToCompressed`'s clamp-to-nearest-edge behaviour for an out-of-crop
+ * point would otherwise land somewhere arbitrary-feeling rather than a deliberate centre.
+ *
+ * Waits a tick before reading the target scale: `regenerateToken` and `compressedUrl` change in the
+ * same synchronous batch (both inside `usePreviewEncode`'s watcher), but `PreviewFrame`'s own watcher
+ * that nulls `compressedNatural` when `compressedUrl` changes is a *different* component's watcher
+ * reacting to a *different* piece of state — Vue gives no guarantee it has already run by the time
+ * this one fires. Without the wait, `bestCompressedActualSizeScale` can read the stale natural size
+ * from the *previous* dimension setting instead of falling back to the fresh placeholder, producing
+ * a scale for the wrong pixel size entirely (confirmed: this is exactly what produced the reported
+ * "200%" bug — the stale natural happened to equal Original's own, collapsing the density ratio to 1).
+ */
+watch(encode.regenerateToken, async () => {
+  uiStore.setComparisonTab('compressed')
+  await nextTick()
+
+  const scale = frame.value?.bestCompressedActualSizeScale ?? null
+
+  frame.value?.viewport.setLocal({ center: { x: 0.5, y: 0.5 }, scale: scale ?? 1 })
+})
 
 function fillName(fill: Rgba): string {
   if (fill.r === 255 && fill.g === 255 && fill.b === 255) return t('preview.size.colorWhite')
@@ -325,7 +365,7 @@ onBeforeUnmount(() => {
       :original-url="encode.originalUrl.value"
       :original-unrenderable="encode.originalUnrenderable.value"
       :error="encode.error.value"
-      :placeholder-size="placeholderSize"
+      :placeholder-sizes="placeholderSizes"
       @retry="encode.retry()"
       @original-unrenderable="encode.reportOriginalUnrenderable()"
     />

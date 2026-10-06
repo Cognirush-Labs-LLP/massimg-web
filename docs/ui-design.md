@@ -719,6 +719,36 @@ Leaving Preview cancels queued recovery work and prevents its next step from bei
 dispatched. A codec operation already inside WASM may finish and be discarded;
 returning resumes the warmed pool, so rapid navigation does not grow a work queue.
 
+### Zoom/pan inspector
+
+Beside the comparison pill, a small toolbar: **Fit**, **Actual size**, and a live
+zoom percent readout (e.g. `100%`). The frame itself takes no slider or overlay
+chrome — zoom and pan are direct manipulation only: wheel or pinch to zoom about
+the pointer, drag to pan. "Fit" returns to the contain-fit rest state R-P6
+describes; "Actual size" is true 1:1 pixels of whichever tab is showing, and
+disables itself once the view is already there. Both buttons disable when there
+is nothing to do (already at fit, or already at actual size).
+
+- **R-P9:** flipping between Original and Compressed keeps the same patch of the
+  image in view and preserves true **pixel density**, not apparent on-screen
+  size. A Compressed output viewed at its own 100% shows Original at the
+  fraction of its own pixels that reproduces the same screen footprint — a
+  500×500 output of a 1000×1000 source appears at 50% on Original, not at the
+  same apparent size as Compressed. This holds from the very first, unzoomed
+  view onward, not only once the user has manually zoomed in. A pixel-density
+  match may call for more zoom than a tab's own usual ceiling allows; when it
+  does, the ceiling yields rather than the match being clamped away — the view
+  may look softer/more interpolated at that extreme, which is expected.
+  Rotation is exempt from this: it only reshuffles axes rather than changing
+  pixel counts, so there is no pixel-perfect correspondence to preserve across
+  it, and none is attempted.
+- **R-P10:** changing any setting or edit that causes Compressed to regenerate
+  (quality, size target, dimension rule, format, rotation, crop) brings the
+  Compressed tab to the front at its own actual size, centred — so the user is
+  never left looking at an Original that does not match a change they just
+  made. This is distinct from, and does not override, R-P7 below: stepping to
+  a different image still preserves whichever tab was selected.
+
 ### Toolbar
 
 **Back to images**, **Add more images**, a `3 / 6` stepper (only when the batch

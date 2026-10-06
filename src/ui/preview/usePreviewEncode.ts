@@ -94,6 +94,15 @@ export interface PreviewEncodeState {
   retry: () => void
   /** Called by the frame when the Original tab's `<img>` raises `error`. */
   reportOriginalUnrenderable: () => void
+  /**
+   * Bumped exactly once per same-image settings/edit change (quality, format, dimension, rotation,
+   * crop — anything that causes a new Compressed output), and never on an image change or the
+   * initial mount. `Preview.vue` watches this to force the Compressed tab to the front at its own
+   * actual size, so the user is never left looking at an Original that doesn't match a change they
+   * just made. A counter rather than a boolean: two regenerates in a row with nothing else to diff
+   * against must each still be individually observable by a `watch`.
+   */
+  regenerateToken: Ref<number>
 }
 
 interface EncodeSnapshot {
@@ -119,6 +128,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
   const recoveryPhase = ref<'idle' | 'checking' | 'done'>('idle')
   const jpegSuggestion = ref<JpegRecoveryResult['suggestion']>(null)
   const dimensionSuggestion = ref<DimensionRecoveryResult['suggestion']>(null)
+  const regenerateToken = ref(0)
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   /**
@@ -414,6 +424,11 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       error.value = null
       phase.value = 'encoding'
       scheduleEncode()
+      // Compressed is about to change — the product decision is that the user must see that change,
+      // not a stale Original they were previously looking at. `next.id === previous.id` here, so
+      // this never fires on an image step, and the watcher's own `immediate: true` first run always
+      // takes the branch above instead of this one, so it never fires on initial mount either.
+      regenerateToken.value += 1
     },
     { deep: true, immediate: true },
   )
@@ -462,6 +477,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
     recoveryPhase,
     jpegSuggestion,
     dimensionSuggestion,
+    regenerateToken,
     retry: () => {
       void runEncode()
     },
