@@ -3,6 +3,10 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { routes } from './router'
 import { supportedLocales } from '@/config/site'
 import ToolPage from './ToolPage.vue'
+import FaqPage from './FaqPage.vue'
+import PrivacyPage from './PrivacyPage.vue'
+import TermsPage from './TermsPage.vue'
+import DesktopPage from './DesktopPage.vue'
 
 // Importing router.ts pulls in ToolPage.vue, which pulls in the real
 // @/pipeline/codecs/loader.ts. Its ensureQuantizer() dynamic-imports "imagequant" — a package
@@ -15,15 +19,30 @@ vi.mock('@/pipeline/codecs/loader', () => ({
 }))
 
 describe('router', () => {
-  it('has one route per supported locale (today: just "en")', () => {
-    expect(routes).toHaveLength(supportedLocales.length)
+  it('has one route per page, per supported locale (today: 5 pages × "en")', () => {
+    expect(routes).toHaveLength(5 * supportedLocales.length)
   })
 
-  it('resolves "/" to the tool page under the default (unprefixed) locale', () => {
+  it('resolves "/" to the tool page under the default (unprefixed) locale, marked as the app route', () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
     const resolved = router.resolve('/')
 
     expect(resolved.name).toBe('tool')
     expect(resolved.matched[0]?.components?.default).toBe(ToolPage)
+    expect(resolved.meta.isApp).toBe(true)
+  })
+
+  it.each([
+    ['/faq', 'faq', FaqPage],
+    ['/privacy', 'privacy', PrivacyPage],
+    ['/terms', 'terms', TermsPage],
+    ['/desktop', 'desktop', DesktopPage],
+  ])('resolves %s to the %s page, not marked as the app route', (path, name, component) => {
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    const resolved = router.resolve(path as string)
+
+    expect(resolved.name).toBe(name)
+    expect(resolved.matched[0]?.components?.default).toBe(component)
+    expect(resolved.meta.isApp).toBe(false)
   })
 })

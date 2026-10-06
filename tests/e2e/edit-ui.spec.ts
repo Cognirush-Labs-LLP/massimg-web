@@ -18,6 +18,15 @@ const SOURCE_FILES_MODULE_PATH = '/src/platform/source-files.ts'
 const EDIT_DRAFT_MODULE_PATH = '/src/stores/edit-draft.ts'
 const UI_MODULE_PATH = '/src/stores/ui.ts'
 
+// T43 wrapped the tool route in an outer site shell. The tool route itself gets no outer
+// header, only a compact footer (31px, measured live via .site-footer's boundingBox at the
+// default 1280×720 viewport), which shrinks the Edit frame host below what these
+// pixel-calibrated drag assertions were tuned against. Restoring that 31px keeps the host's
+// on-screen size — and therefore the letterbox geometry `snapMoveToImage`'s snap threshold is
+// checked against — identical to before T43, so this file's existing coordinate math stays
+// valid without touching domain/edit.ts or the test logic itself.
+test.use({ viewport: { width: 1280, height: 720 + 31 } })
+
 interface CanvasContext {
   fillStyle: string
   fillRect(x: number, y: number, width: number, height: number): void

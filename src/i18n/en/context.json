@@ -988,5 +988,40 @@
     "situation": "Shown instead of the normal counter/progress UI when the pre-run storage quota preflight (R-X40, T40) finds the predicted archive will not fit before any image is processed — no job is ever dispatched in this case. {required} and {available} are formatted byte amounts (domain/sizes.ts's UI formatter).",
     "control": "Prominent status text replacing the whole counter/donut/progress view.",
     "maxLength": 160
+  },
+  "site.nav.home": {
+    "situation": "Outer site header's home link (R-S2, T43), icon plus the product wordmark. The header only ever renders on non-app routes (FAQ/Privacy/Terms/Desktop) — SiteShell.vue never mounts it on the tool route — so this is never a duplicate of the tool's own inner wordmark (Header.vue). Links to '/'.",
+    "control": "Visible link text beside the 32x32 site icon, first item in the header; also the header nav landmark's aria-label.",
+    "maxLength": 40
+  },
+  "site.nav.faq": {
+    "situation": "Link to the FAQ page (R-S3), shown in the header's nav (non-app routes only) and in both footer variants.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "site.nav.desktop": {
+    "situation": "Link labelled 'For Desktops' (R-S3) shown in two places with two different destinations: the header's nav (non-app routes only) links to the in-app Desktop page at '/desktop'; the footer (both variants) links straight to the external desktop download URL as a quick funnel. Same visible text in both — the user's own correction, replacing the earlier distinct 'Desktop'/'Try desktop version' wording as inconsistent.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "site.nav.privacy": {
+    "situation": "Link to the Privacy page (R-S3), shown in both the compact and regular footer variants.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "site.nav.terms": {
+    "situation": "Link to the Terms page (R-S3), shown in both the compact and regular footer variants.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "site.footer.githubLabel": {
+    "situation": "Visible label next to the source-code GitHub icon in the regular footer variant only (R-V4). The compact footer shows the same icon with no visible text, relying on site.footer.githubAriaLabel instead.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "site.footer.githubAriaLabel": {
+    "situation": "Accessible name for the icon-only GitHub source-code link in the compact footer variant (R-V4), where no visible text label is shown.",
+    "control": "aria-label on an icon-only link, not rendered as visible text.",
+    "maxLength": 60
   }
 }

@@ -196,5 +196,12 @@
   "processing.total.allFailedOrSkipped": "Nothing to download — see Failed/Skipped below.",
   "processing.halted.memory": "This batch is too large for this browser to compress. Try fewer or smaller images — the desktop application has no such limit.",
   "processing.halted.storage": "Storage stopped working partway through this batch, so the run was halted and no partial file was kept. Try again, or try fewer images.",
-  "processing.quota.rejected": "This batch needs {required} of storage but only {available} is free. Free up space, or try fewer or smaller images."
+  "processing.quota.rejected": "This batch needs {required} of storage but only {available} is free. Free up space, or try fewer or smaller images.",
+  "site.nav.home": "Mass Image Compressor",
+  "site.nav.faq": "FAQ",
+  "site.nav.desktop": "For Desktops",
+  "site.nav.privacy": "Privacy",
+  "site.nav.terms": "Terms",
+  "site.footer.githubLabel": "GitHub",
+  "site.footer.githubAriaLabel": "View source on GitHub"
 }

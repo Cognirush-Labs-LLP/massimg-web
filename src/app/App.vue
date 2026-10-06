@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// vite-ssg root component (T31). Deliberately thin: T43 wraps this with the outer public-site
-// header and footer later, so nothing tool-specific lives here — that's ToolPage.vue's job,
-// mounted through <router-view /> at the '/' route (Technical Design §12.3, R-S1).
+// vite-ssg root component (T31). Wraps every route with the outer public-site header/footer
+// (T43, SiteShell.vue) — nothing tool-specific lives here, that's ToolPage.vue's job, mounted
+// through SiteShell's <router-view /> at the '/' route (Technical Design §12.3, R-S1).
+import SiteShell from './site/SiteShell.vue'
 </script>
 
 <template>
-  <router-view />
+  <SiteShell />
 </template>

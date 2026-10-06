@@ -27,19 +27,48 @@ beforeEach(() => {
   }))
 })
 
+async function mountAt(path: string) {
+  const router = createRouter({ history: createMemoryHistory(), routes })
+  await router.push(path)
+  await router.isReady()
+
+  return mount(App, {
+    global: { plugins: [router, createPinia()] },
+  })
+}
+
 // Proves module resolution matches the real Vite build (the "@" alias, exercised through both
-// this import and the router's dynamic route components) and that the root route renders the
-// tool shell — replacing T04's placeholder-text assertion now that T31 has real routing (§12.3).
+// this import and the router's dynamic route components) and that every route renders its own
+// content beneath the shared outer shell (T43) — replacing T04's placeholder-text assertion now
+// that T31/T43 have real routing (§12.3).
 describe('App', () => {
   it('renders the tool page at the root route', async () => {
-    const router = createRouter({ history: createMemoryHistory(), routes })
-    await router.push('/')
-    await router.isReady()
-
-    const wrapper = mount(App, {
-      global: { plugins: [router, createPinia()] },
-    })
+    const wrapper = await mountAt('/')
 
     expect(wrapper.text()).toContain('Compressor')
+  })
+
+  it('renders the FAQ page at /faq', async () => {
+    const wrapper = await mountAt('/faq')
+
+    expect(wrapper.text()).toContain('Frequently Asked Questions')
+  })
+
+  it('renders the Privacy page at /privacy', async () => {
+    const wrapper = await mountAt('/privacy')
+
+    expect(wrapper.text()).toContain('Privacy Policy')
+  })
+
+  it('renders the Terms page at /terms', async () => {
+    const wrapper = await mountAt('/terms')
+
+    expect(wrapper.text()).toContain('Terms of Service')
+  })
+
+  it('renders the Desktop page at /desktop', async () => {
+    const wrapper = await mountAt('/desktop')
+
+    expect(wrapper.text()).toContain('Desktop version')
   })
 })

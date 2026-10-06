@@ -220,19 +220,12 @@ onMounted(() => {
 .tool-page {
   display: flex;
   flex-direction: column;
-  /* 100vh is the LARGEST viewport (browser chrome hidden); on mobile that overshoots the
-     visible area whenever the URL bar is showing, forcing page scroll with nothing to scroll
-     to. 100dvh tracks the actual visible viewport as browser chrome shows/hides. */
-  block-size: 100vh;
-  min-block-size: 100vh;
+  /* Fills whatever height SiteShell's .site-main gives it (T43) — the viewport-height
+     concern (100dvh vs. the overshooting 100vh on mobile) is handled once, at the
+     SiteShell level, not duplicated here. */
+  block-size: 100%;
+  min-block-size: 0;
   overflow: hidden;
-}
-
-@supports (height: 100dvh) {
-  .tool-page {
-    block-size: 100dvh;
-    min-block-size: 100dvh;
-  }
 }
 
 .tool-body {
@@ -266,10 +259,7 @@ onMounted(() => {
 }
 
 .mobile-action-bar {
-  position: fixed;
-  z-index: 20;
-  inset-inline: 0;
-  inset-block-end: 0;
+  flex: none;
   padding-block: 12px 16px;
   padding-inline: 14px;
   background: var(--color-surface-panel);

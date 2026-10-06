@@ -20,6 +20,9 @@ function handleOptionsClick(event: MouseEvent): void {
 <template>
   <header class="app-header">
     <div class="wordmark">
+      <!-- mic192.png, not mic32.png: displayed at 32px but sourced at 6x that size so it stays
+           sharp on 2x/3x-density screens rather than upscaling an already-32px source. -->
+      <img class="wordmark-icon" src="/icons/mic192.png" alt="" width="32" height="32" />
       <span class="wordmark-text">Mass Image Compressor</span>
     </div>
     <div class="header-spacer" />
@@ -49,19 +52,36 @@ function handleOptionsClick(event: MouseEvent): void {
 
 .wordmark {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  gap: 10px;
   min-inline-size: 0;
   overflow: hidden;
 }
 
+.wordmark-icon {
+  display: block;
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--radius-sm);
+}
+
 .wordmark-text {
   overflow: hidden;
-  font-size: 14.5px;
+  /* Larger on desktop, where there's room for it; one step down from the previous 14.5px on
+     mobile. No uppercase transform either way — matches the outer site header's wordmark style
+     (SiteHeader.vue) now that this header also carries the same icon+text pairing. */
+  font-size: 16px;
   font-weight: var(--font-weight-wordmark);
-  letter-spacing: -0.4px;
-  text-transform: uppercase;
+  letter-spacing: -0.2px;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 899.98px) {
+  .wordmark-text {
+    font-size: 13px;
+  }
 }
 
 .header-spacer {
