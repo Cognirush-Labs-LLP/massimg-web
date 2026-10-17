@@ -1253,7 +1253,7 @@ By dependency and cost, not document order.
 
 ## 9. Public site and delivery
 
-### F1 `TESTED` `95%` `P2` vite-ssg produces genuinely static, crawlable HTML per route
+### F1 `TESTED` `100%` `P2` vite-ssg produces genuinely static, crawlable HTML per route
 
 vite-ssg runs the app once per route at build time and is expected to write real,
 route-specific HTML to disk — not one shared shell that depends on client-side
@@ -1286,6 +1286,17 @@ only "content is real and present for the one route that exists." `@unhead/vue`
 (per-route `<title>`/meta) is deliberately not installed yet (T45's job), so this run
 still carries the same static `<title>` every route will start from. Held back from
 100% for these two reasons, not because anything measured suggested a problem.
+
+**Resolved to 100% (T45).** Both reasons above are now directly observed rather than
+inferred. Five real routes exist (T43/T44) and `@unhead/vue` is installed and called
+once per route via `src/app/seo/useRouteSeo.ts`. `pnpm build && pnpm verify:ssg`'s
+extended T45 check reads all five `dist/*.html` files off disk and confirms every
+route's `<title>` and canonical `<link>` are non-empty and pairwise distinct — e.g.
+`dist/index.html` carries `Mass Image Compressor — Free Online Image Compression`
+while `dist/faq.html` carries `FAQ — Mass Image Compressor`, each with its own
+`og:url`/canonical. The FAQ route's JSON-LD further confirms per-route dynamic content
+works end to end: its `FAQPage` structured data contains all 45 real Q&A pairs parsed
+from `content/en/faq.md` at build time, not a static placeholder.
 
 **Method.** Build the site, fetch a non-tool route's HTML file directly (no script
 execution), and assert its `<title>`, meta description and visible body text are

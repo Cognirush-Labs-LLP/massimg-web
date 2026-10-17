@@ -45,4 +45,30 @@ describe('router', () => {
     expect(resolved.matched[0]?.components?.default).toBe(component)
     expect(resolved.meta.isApp).toBe(false)
   })
+
+  it('marks only the FAQ route as isFaq (R-S7)', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    expect(router.resolve('/faq').meta.isFaq).toBe(true)
+    for (const path of ['/', '/privacy', '/terms', '/desktop']) {
+      expect(router.resolve(path).meta.isFaq).toBe(false)
+    }
+  })
+
+  it('gives every route a non-empty title and description, no two routes sharing either (R-S6)', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    const resolved = ['/', '/faq', '/privacy', '/terms', '/desktop'].map((path) =>
+      router.resolve(path),
+    )
+
+    for (const route of resolved) {
+      expect(typeof route.meta.title).toBe('string')
+      expect(route.meta.title).not.toBe('')
+      expect(typeof route.meta.description).toBe('string')
+      expect(route.meta.description).not.toBe('')
+    }
+
+    expect(new Set(resolved.map((route) => route.meta.title)).size).toBe(resolved.length)
+    expect(new Set(resolved.map((route) => route.meta.description)).size).toBe(resolved.length)
+  })
 })

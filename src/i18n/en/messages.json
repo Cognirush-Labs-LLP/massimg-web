@@ -203,5 +203,15 @@
   "site.nav.privacy": "Privacy",
   "site.nav.terms": "Terms",
   "site.footer.githubLabel": "GitHub",
-  "site.footer.githubAriaLabel": "View source on GitHub"
+  "site.footer.githubAriaLabel": "View source on GitHub",
+  "site.seo.tool.title": "Mass Image Compressor — Free, Open-Source Image Compression",
+  "site.seo.tool.description": "Free, open-source online tool to compress, resize and convert JPEG, PNG, WebP, AVIF and GIF images. Nothing is uploaded — processing happens on your device.",
+  "site.seo.faq.title": "FAQ — Mass Image Compressor",
+  "site.seo.faq.description": "Answers about supported formats, privacy, batch limits, and how compression, resizing and cropping work in Mass Image Compressor.",
+  "site.seo.privacy.title": "Privacy — Mass Image Compressor",
+  "site.seo.privacy.description": "How Mass Image Compressor handles your images: processing happens on your device, and nothing leaves it unless you choose to share a result.",
+  "site.seo.terms.title": "Terms of Service — Mass Image Compressor",
+  "site.seo.terms.description": "The terms covering use of the Mass Image Compressor web app.",
+  "site.seo.desktop.title": "Desktop Version — Mass Image Compressor",
+  "site.seo.desktop.description": "A separate desktop application for processing very large batches or files without any browser limits."
 }

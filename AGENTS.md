@@ -115,6 +115,28 @@ Two rules specific to Vue, load-bearing throughout the codebase (technical-desig
 - Component boundaries follow the stage modes (Gallery/Preview/Edit/Processing); they're mounted
   exclusively so leaving a mode unmounts its state.
 
+## Code comments
+
+Only two kinds of comment earn a place in this codebase:
+
+- **Mechanism explanation** — how something non-obvious works, when the code's own structure and
+  naming can't say it: an invariant, a data-shape constraint, a required call order, a library or
+  browser quirk.
+- **Caution against an "obvious" but wrong fix** — tells a future maintainer that something which
+  looks removable, redundant or buggy is deliberate and tested, and states what breaks if it's
+  "fixed" anyway.
+
+Both describe a fact about the outside world the code can't express by itself — never a fact
+about how the change came to be. An `R-xx` or `T<nn>` tag may ride along as a pointer to the
+spec, but it must never be the comment's only substance — a comment whose entire content is "this
+exists because of R-xx" or "per T<nn>'s decision" is decision-journal narration, not a mechanism
+or a caution, and belongs in the commit message or the task's handover note
+(`docs/task-notes/T<nn>.md`) instead. A tag attached to a comment is also a claim that it was
+traced correctly — a wrong one (citing a requirement that actually governs something else
+entirely) is worse than no tag, because it misleads anyone later auditing requirement coverage.
+
+If removing the comment would lose nothing a maintainer needs, delete it.
+
 ## Licensing
 
 AGPL v3. Every bundled/statically-linked third-party component needs its own directory under

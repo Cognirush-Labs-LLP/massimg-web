@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPinia } from 'pinia'
+import { createHead } from '@unhead/vue/client'
 import SiteShell from './SiteShell.vue'
 import { routes } from '@/app/router'
 
@@ -29,7 +30,7 @@ async function mountAt(path: string) {
   await router.isReady()
 
   return mount(SiteShell, {
-    global: { plugins: [router, createPinia()] },
+    global: { plugins: [router, createPinia(), createHead()] },
   })
 }
 

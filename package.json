@@ -11,7 +11,7 @@
   "packageManager": "pnpm@11.13.0",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite-ssg build",
+    "build": "vue-tsc -b && vite-ssg build && node scripts/generate-seo-files.mjs",
     "preview": "vite preview",
     "verify:ssg": "node scripts/verify-ssg-html.mjs",
     "type-check": "vue-tsc -b --force",
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@imagemagick/magick-wasm": "0.0.43",
+    "@unhead/vue": "^2.1.17",
     "apng-optimizer": "1.2.0",
     "client-zip": "2.5.1",
     "gifsicle-wasm-browser": "1.5.19",

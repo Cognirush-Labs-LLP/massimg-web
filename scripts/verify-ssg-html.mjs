@@ -65,3 +65,101 @@ if (failed) {
 console.log(
   `F1 check: all ${routeChecks.length} routes contain real, route-specific content on disk without executing any script — pass.`,
 )
+
+// T45 (R-S6, Technical Design §12.5): every route's <title> and canonical <link> must be
+// non-empty and distinct from every other route's — proven here the same way F1 was, by reading
+// the built files off disk rather than executing anything.
+
+function extractTitle(html) {
+  return /<title>([^<]*)<\/title>/i.exec(html)?.[1]?.trim() ?? ''
+}
+
+function extractCanonical(html) {
+  return (
+    /<link[^>]*\brel=["']canonical["'][^>]*\bhref=["']([^"']*)["'][^>]*>/i
+      .exec(html)?.[1]
+      ?.trim() ?? ''
+  )
+}
+
+function firstDuplicate(values) {
+  const seen = new Set()
+  for (const value of values) {
+    if (seen.has(value)) {
+      return value
+    }
+    seen.add(value)
+  }
+  return undefined
+}
+
+let seoFailed = false
+
+const seoEntries = routeChecks.map(({ file }) => {
+  const html = readFileSync(file, 'utf8')
+  return { file, title: extractTitle(html), canonical: extractCanonical(html) }
+})
+
+for (const { file, title, canonical } of seoEntries) {
+  if (!title) {
+    console.error(`T45 check: ${file} has no <title>.`)
+    seoFailed = true
+  }
+  if (!canonical) {
+    console.error(`T45 check: ${file} has no canonical <link>.`)
+    seoFailed = true
+  }
+}
+
+const duplicateTitle = firstDuplicate(seoEntries.map((entry) => entry.title))
+if (duplicateTitle) {
+  console.error(`T45 check: title "${duplicateTitle}" is shared by more than one route.`)
+  seoFailed = true
+}
+
+const duplicateCanonical = firstDuplicate(seoEntries.map((entry) => entry.canonical))
+if (duplicateCanonical) {
+  console.error(`T45 check: canonical "${duplicateCanonical}" is shared by more than one route.`)
+  seoFailed = true
+}
+
+// R-S8/R-S9: sitemap.xml lists exactly the real routes, and robots.txt's Sitemap: line matches it.
+
+const sitemapFile = join(dist, 'sitemap.xml')
+const robotsFile = join(dist, 'robots.txt')
+
+if (!existsSync(sitemapFile)) {
+  console.error(`T45 check: ${sitemapFile} not found — run \`pnpm build\` first.`)
+  seoFailed = true
+} else if (!existsSync(robotsFile)) {
+  console.error(`T45 check: ${robotsFile} not found — run \`pnpm build\` first.`)
+  seoFailed = true
+} else {
+  const sitemapXml = readFileSync(sitemapFile, 'utf8')
+  const sitemapLocs = [...sitemapXml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1])
+
+  if (sitemapLocs.length !== routeChecks.length) {
+    console.error(
+      `T45 check: sitemap.xml lists ${sitemapLocs.length} URLs, expected exactly ${routeChecks.length} real routes.`,
+    )
+    seoFailed = true
+  }
+
+  const robotsTxt = readFileSync(robotsFile, 'utf8')
+  const sitemapLine = /^Sitemap:\s*(\S+)$/m.exec(robotsTxt)?.[1]
+
+  if (!sitemapLine || !sitemapLine.endsWith('/sitemap.xml')) {
+    console.error(
+      `T45 check: robots.txt's Sitemap: line ("${sitemapLine}") doesn't name sitemap.xml.`,
+    )
+    seoFailed = true
+  }
+}
+
+if (seoFailed) {
+  process.exit(1)
+}
+
+console.log(
+  `T45 check: all ${seoEntries.length} routes have distinct, non-empty titles and canonical tags, and sitemap.xml/robots.txt agree — pass.`,
+)

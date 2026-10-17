@@ -1,5 +1,6 @@
 import type { RouteRecordRaw, RouteRecordSingleView } from 'vue-router'
 import { defaultLocale, supportedLocales } from '@/config/site'
+import { t } from '@/i18n/t'
 import ToolPage from './ToolPage.vue'
 import FaqPage from './FaqPage.vue'
 import PrivacyPage from './PrivacyPage.vue'
@@ -18,14 +19,59 @@ interface PageRoute {
    * because locale-prefixed tool routes are named `tool-<code>`, not `tool`.
    */
   isApp?: boolean
+  /**
+   * True only for the FAQ page. Read by useRouteSeo() to attach FAQPage JSON-LD (R-S7) — kept
+   * as its own meta flag, the same convention as isApp, rather than name-matching across
+   * locale-prefixed route names.
+   */
+  isFaq?: boolean
+  /**
+   * Per-route title and meta description (R-S6, Technical Design §12.5), sourced from the i18n
+   * catalogue like any other interface string. English only today; a real per-locale pair
+   * arrives with T48, the same as every other interface string.
+   */
+  title: string
+  description: string
 }
 
 const pages: PageRoute[] = [
-  { path: '', name: 'tool', component: ToolPage, isApp: true },
-  { path: 'faq', name: 'faq', component: FaqPage },
-  { path: 'privacy', name: 'privacy', component: PrivacyPage },
-  { path: 'terms', name: 'terms', component: TermsPage },
-  { path: 'desktop', name: 'desktop', component: DesktopPage },
+  {
+    path: '',
+    name: 'tool',
+    component: ToolPage,
+    isApp: true,
+    title: t('site.seo.tool.title'),
+    description: t('site.seo.tool.description'),
+  },
+  {
+    path: 'faq',
+    name: 'faq',
+    component: FaqPage,
+    isFaq: true,
+    title: t('site.seo.faq.title'),
+    description: t('site.seo.faq.description'),
+  },
+  {
+    path: 'privacy',
+    name: 'privacy',
+    component: PrivacyPage,
+    title: t('site.seo.privacy.title'),
+    description: t('site.seo.privacy.description'),
+  },
+  {
+    path: 'terms',
+    name: 'terms',
+    component: TermsPage,
+    title: t('site.seo.terms.title'),
+    description: t('site.seo.terms.description'),
+  },
+  {
+    path: 'desktop',
+    name: 'desktop',
+    component: DesktopPage,
+    title: t('site.seo.desktop.title'),
+    description: t('site.seo.desktop.description'),
+  },
 ]
 
 /**
@@ -38,11 +84,11 @@ const pages: PageRoute[] = [
 function expandLocales(list: PageRoute[]): RouteRecordRaw[] {
   return supportedLocales.flatMap(({ code }) => {
     const prefix = code === defaultLocale ? '' : `/${code}`
-    return list.map(({ path, name, component, isApp }) => ({
+    return list.map(({ path, name, component, isApp, isFaq, title, description }) => ({
       path: (prefix + '/' + path).replace(/\/+$/, '') || '/',
       name: code === defaultLocale ? name : `${name}-${code}`,
       component,
-      meta: { isApp: isApp === true },
+      meta: { isApp: isApp === true, isFaq: isFaq === true, title, description },
     }))
   })
 }

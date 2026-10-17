@@ -11,6 +11,9 @@ importers:
       '@imagemagick/magick-wasm':
         specifier: 0.0.43
         version: 0.0.43
+      '@unhead/vue':
+        specifier: ^2.1.17
+        version: 2.1.17(vue@3.5.42(typescript@5.9.3))
       apng-optimizer:
         specifier: 1.2.0
         version: 1.2.0

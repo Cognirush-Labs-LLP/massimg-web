@@ -1023,5 +1023,55 @@
     "situation": "Accessible name for the icon-only GitHub source-code link in the compact footer variant (R-V4), where no visible text label is shown.",
     "control": "aria-label on an icon-only link, not rendered as visible text.",
     "maxLength": 60
+  },
+  "site.seo.tool.title": {
+    "situation": "The tool route's <title> and Open Graph/Twitter title (R-S6, Technical Design §12.5), set once via useRouteSeo() rather than per component. Never rendered as visible on-page text.",
+    "control": "Document <title> plus og:title/twitter:title meta content. Not an on-screen UI string.",
+    "maxLength": 70
+  },
+  "site.seo.tool.description": {
+    "situation": "The tool route's meta description and Open Graph/Twitter description (R-S6). Must not share wording with any other route's description per R-S6's 'no two routes share a description.'",
+    "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
+    "maxLength": 160
+  },
+  "site.seo.faq.title": {
+    "situation": "The FAQ route's <title> and Open Graph/Twitter title (R-S6).",
+    "control": "Document <title> plus og:title/twitter:title meta content. Not an on-screen UI string.",
+    "maxLength": 70
+  },
+  "site.seo.faq.description": {
+    "situation": "The FAQ route's meta description and Open Graph/Twitter description (R-S6).",
+    "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
+    "maxLength": 160
+  },
+  "site.seo.privacy.title": {
+    "situation": "The Privacy route's <title> and Open Graph/Twitter title (R-S6).",
+    "control": "Document <title> plus og:title/twitter:title meta content. Not an on-screen UI string.",
+    "maxLength": 70
+  },
+  "site.seo.privacy.description": {
+    "situation": "The Privacy route's meta description and Open Graph/Twitter description (R-S6).",
+    "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
+    "maxLength": 160
+  },
+  "site.seo.terms.title": {
+    "situation": "The Terms route's <title> and Open Graph/Twitter title (R-S6).",
+    "control": "Document <title> plus og:title/twitter:title meta content. Not an on-screen UI string.",
+    "maxLength": 70
+  },
+  "site.seo.terms.description": {
+    "situation": "The Terms route's meta description and Open Graph/Twitter description (R-S6).",
+    "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
+    "maxLength": 160
+  },
+  "site.seo.desktop.title": {
+    "situation": "The Desktop route's <title> and Open Graph/Twitter title (R-S6).",
+    "control": "Document <title> plus og:title/twitter:title meta content. Not an on-screen UI string.",
+    "maxLength": 70
+  },
+  "site.seo.desktop.description": {
+    "situation": "The Desktop route's meta description and Open Graph/Twitter description (R-S6).",
+    "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
+    "maxLength": 160
   }
 }

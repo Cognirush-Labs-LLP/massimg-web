@@ -11,10 +11,15 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import SiteHeader from './SiteHeader.vue'
 import SiteFooter from './SiteFooter.vue'
+import { useRouteSeo } from '@/app/seo/useRouteSeo'
 
 const route = useRoute()
 
 const isAppRoute = computed(() => route.meta.isApp === true)
+
+// Every route's title/description/canonical/Open Graph/Twitter/JSON-LD (T45, R-S6, R-S7) is set
+// from this one place — see useRouteSeo.ts.
+useRouteSeo()
 </script>
 
 <template>

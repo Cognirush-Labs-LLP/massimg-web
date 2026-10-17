@@ -20,6 +20,10 @@ export const supportedLocales: readonly SiteLocale[] = [{ code: 'en', label: 'En
 
 export const defaultLocale: SiteLocale['code'] = 'en'
 
+// Reused in Open Graph `og:site_name` and JSON-LD `name` fields (T45, Technical Design §12.5) so
+// every route's structured data agrees with the one name index.html's static fallback title uses.
+export const siteName = 'Mass Image Compressor'
+
 /**
  * Normalises a raw base-URL string: trims whitespace and any trailing slashes. Exported
  * separately from `siteBaseUrl` so it's testable against arbitrary input without having to vary
