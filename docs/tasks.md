@@ -971,6 +971,9 @@ usage-visibility mechanism R-V3 anticipates.
   domain, so a future caching-strategy change cannot silently swallow it.
 - The privacy line (R-V1) is revised to name exactly what the beacon collects, per
   R-V3.
+- Build the beacon against a placeholder token (no Cloudflare account needed to verify
+  the mechanism or the Playwright test below); add a bullet to T51-A naming the token
+  and its file so the real value is not forgotten at release.
 
 **Done when:** the app installs and opens offline after a first visit, a Playwright
 test confirms a page load served entirely from the service worker's cache still fires
@@ -1060,6 +1063,34 @@ routes (FAQ, Privacy, Terms, Desktop, `sitemap.xml`, `robots.txt`) reachable and
 ---
 
 # Phase 9 — Release
+
+### T51-A — Release placeholder audit
+
+**Depends on:** T44, T46
+
+Every non-production stand-in value that earlier tasks shipped so implementation would
+not block on something outside engineering's control, swapped for the real value before
+the production build in T52 reads it.
+
+Known entries, accumulated as earlier tasks created them:
+
+- `VITE_SITE_BASE_URL` (`src/config/site.ts`) — falls back to a non-production placeholder
+  when unset; must resolve to the real canonical production URL.
+- The Cloudflare Web Analytics token (T46) — built against a placeholder token so the
+  beacon mechanism and its Playwright test could be verified without waiting on a
+  Cloudflare account; must resolve to the real token.
+- The Privacy and Terms page copy (T44) — placeholder prose shipped so the routes were
+  not withheld waiting on legal text; must resolve to the final legal copy.
+
+A task that ships a non-production stand-in for a real value (API token, production URL,
+legal or other externally-sourced copy) adds a bullet here, naming the value and the file
+it lives in, at the time it ships it — this list is the only place that tracks them, so an
+item left off here is an item this audit will not know to check.
+
+**Done when:** every bullet above is confirmed resolved to its real value, grepping the
+codebase for known placeholder markers (the non-production URL fallback, any placeholder
+token string) turns up nothing reachable from the production build, and this task's
+handover note records what each value was set to (without committing secrets).
 
 ### T52 — Build and deploy
 
