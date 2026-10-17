@@ -121,7 +121,6 @@ function onHeightInput(event: Event): void {
         type="button"
         class="zoom-reset"
         :disabled="disabled || isDefaultZoom"
-        :aria-label="t('edit.zoom.resetLabel')"
         data-testid="edit-zoom-reset"
         @click="onZoomReset"
       >

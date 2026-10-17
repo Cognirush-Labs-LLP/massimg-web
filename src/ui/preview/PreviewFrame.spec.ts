@@ -727,4 +727,58 @@ describe('PreviewFrame', () => {
       expect(previewViewport(wrapper).local.value.scale).toBeGreaterThan(8)
     })
   })
+
+  describe('keyboard pan/zoom (R-K1)', () => {
+    it('is focusable with an accessible name once the frame can be inspected, not before', async () => {
+      const notReady = await mountFrame({}, { natural: null })
+      const notReadyFrame = notReady.get('[data-testid="preview-frame"]')
+      expect(notReadyFrame.attributes('tabindex')).toBe('-1')
+      expect(notReadyFrame.attributes('aria-label')).toBeUndefined()
+
+      const ready = await mountFrame()
+      const readyFrame = ready.get('[data-testid="preview-frame"]')
+      expect(readyFrame.attributes('tabindex')).toBe('0')
+      expect(readyFrame.attributes('aria-label')).toBe('Zoom and pan')
+    })
+
+    it('+ zooms in, - zooms out, and Shift+0 resets to fit', async () => {
+      const wrapper = await mountFrame()
+      const frame = wrapper.get('[data-testid="preview-frame"]')
+
+      await frame.trigger('keydown', { key: '+' })
+      expect(zoomToolbarApi(wrapper).zoomPercent ?? 0).toBeGreaterThan(100)
+
+      const zoomedScale = previewViewport(wrapper).local.value.scale
+      await frame.trigger('keydown', { key: '-' })
+      expect(previewViewport(wrapper).local.value.scale).toBeLessThan(zoomedScale)
+
+      await frame.trigger('keydown', { key: ')' })
+      expect(previewViewport(wrapper).local.value).toEqual({ center: { x: 0.5, y: 0.5 }, scale: 1 })
+    })
+
+    it('arrow keys pan a zoomed view', async () => {
+      // Scale 2 alone leaves no room to pan here: the 400x300 image at 2x exactly fills the 800x600
+      // host, so `clampViewportCenter` clamps any pan straight back to 0.5/0.5. Scale 4 overflows the
+      // host and actually has somewhere to pan to.
+      const wrapper = await mountFrame()
+      previewViewport(wrapper).setLocal({ center: { x: 0.5, y: 0.5 }, scale: 4 })
+
+      const frame = wrapper.get('[data-testid="preview-frame"]')
+      const centerBefore = previewViewport(wrapper).local.value.center
+
+      await frame.trigger('keydown', { key: 'ArrowRight' })
+
+      expect(previewViewport(wrapper).local.value.center).not.toEqual(centerBefore)
+      expect(previewViewport(wrapper).local.value.scale).toBeCloseTo(4, 10)
+    })
+
+    it('does nothing when the frame cannot be inspected yet', async () => {
+      const wrapper = await mountFrame({}, { natural: null })
+      const before = previewViewport(wrapper).local.value
+
+      await wrapper.get('[data-testid="preview-frame"]').trigger('keydown', { key: '+' })
+
+      expect(previewViewport(wrapper).local.value).toEqual(before)
+    })
+  })
 })

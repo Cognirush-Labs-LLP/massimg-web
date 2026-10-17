@@ -515,6 +515,8 @@ describe('Processing view (T38)', () => {
       expect(wrapper.get('[data-testid="processing-delivered"]').text()).toContain(label)
       expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
+      // R-K5/T42: the delivered state was otherwise visual-only; it must also be announced.
+      expect(wrapper.get('[data-testid="processing-announcement"]').text()).toBe(label)
     })
 
     it('keeps the completed summary and both issue lists visible', async () => {
@@ -632,6 +634,10 @@ describe('Processing view (T38)', () => {
       expect(error.text()).toContain('try again')
       expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="processing-delivered"]').exists()).toBe(false)
+      // R-K5/T42: inline delivery errors were otherwise visual-only; they must also be announced.
+      expect(wrapper.get('[data-testid="processing-announcement"]').text()).toContain(
+        "couldn't be assembled",
+      )
     })
 
     it('states the blocked download inline, with what to do about it', async () => {
@@ -650,6 +656,9 @@ describe('Processing view (T38)', () => {
       expect(error.text()).toContain('browser blocked the download')
       expect(error.text()).toContain('Allow downloads')
       expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="processing-announcement"]').text()).toContain(
+        'browser blocked the download',
+      )
     })
 
     it('states a failed share handoff inline and keeps both actions available', async () => {
@@ -671,6 +680,9 @@ describe('Processing view (T38)', () => {
       expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="processing-download-error"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="processing-announcement"]').text()).toContain(
+        "didn't finish",
+      )
     })
 
     // R-X50: "User cancellation is not an error."
@@ -702,6 +714,9 @@ describe('Processing view (T38)', () => {
       await flushPromises()
 
       expect(wrapper.get('[data-testid="processing-download-error"]').text()).toContain(
+        'browser blocked the download',
+      )
+      expect(wrapper.get('[data-testid="processing-announcement"]').text()).toContain(
         'browser blocked the download',
       )
     })

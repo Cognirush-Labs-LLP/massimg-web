@@ -137,6 +137,22 @@ const downloadErrorText = computed(() => {
   return deliveryError.value === 'download-blocked' ? t('processing.download.blocked') : ''
 })
 
+// R-K5/T42: the delivered state and the three inline delivery errors were otherwise visual-only.
+// Both watchers reuse the same strings already shown on screen (R-K10's reuse convention), rather
+// than inventing screen-reader-specific copy.
+watch(delivery, (state) => {
+  if (state !== 'pending') {
+    announcement.value = deliveredLabel.value
+  }
+})
+
+watch(deliveryError, (error) => {
+  if (error === null) {
+    return
+  }
+  announcement.value = error === 'share' ? t('processing.share.failed') : downloadErrorText.value
+})
+
 onMounted(() => {
   announcement.value = t('processing.announce.started')
   processingRun.start()

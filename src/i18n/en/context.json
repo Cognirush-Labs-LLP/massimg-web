@@ -534,6 +534,11 @@
     "control": "Small monospace text between the 'Fit' and 'Actual size' buttons. Display only, not interactive.",
     "maxLength": 8
   },
+  "preview.frame.inspectorLabel": {
+    "situation": "Accessible name for the focusable preview frame when it can be zoomed/panned (Functional Design R-K1). When focused, arrow keys pan, + and - zoom, and Shift+0 resets to fit — the same moves the pointer/wheel path already offers.",
+    "control": "ARIA label on a focusable group with no visible text of its own; absent when the frame has nothing to inspect yet.",
+    "maxLength": 30
+  },
   "preview.error.decode": {
     "situation": "Inline error in the Preview frame when decoding the image fails (Functional Design §10, \"Corrupt or undecodable file\"). Shown with a retry action beside it. Names the file and says what is wrong rather than \"something went wrong\" (R-E1).",
     "control": "Error text inside the stage frame, above a retry button.",
@@ -833,11 +838,6 @@
     "situation": "Shortcut button beside the zoom readout in Edit mode's toolbar (Functional Design R-C7-R-C9). Resets zoom back to 100% in one click instead of dragging the slider. Disabled when zoom is already exactly 100%.",
     "control": "Small button right after the zoom percentage readout, next to the zoom slider.",
     "maxLength": 10
-  },
-  "edit.zoom.resetLabel": {
-    "situation": "Accessible name for the 100% zoom shortcut button in Edit mode's toolbar, read by screen readers instead of the visible '100%' label which alone wouldn't convey that activating it resets the zoom.",
-    "control": "aria-label on the zoom-reset button; not visible on screen.",
-    "maxLength": 40
   },
   "edit.background.heading": {
     "situation": "Section heading above the background-fill swatches and colour picker in Edit mode, shown only when the crop rectangle spills past the image's own edges (Functional Design R-C13-R-C15).",

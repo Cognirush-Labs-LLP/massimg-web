@@ -774,9 +774,13 @@ Notes that affect behaviour:
 | Background | `#000000` | App background |
 | Surface | `#060606` to `#121212` | Panel, controls, tiles |
 | Border | `#242424` (group), `#2c2c2c` (control) | Grey separators |
-| Muted text | `#6e6e6e` to `#a2a2a2` | Secondary and label text |
+| Muted text | `#7e7e7e` to `#a2a2a2` | Secondary and label text |
 
 Dark theme only. Tint is reserved for action and state. It is never decorative. The donut in R-X4 is the one place where colour distinguishes categories, and it is labelled in text for that reason.
+
+The quiet end of Muted text was raised slightly from its original value (`#6e6e6e`) by T47, a WCAG AA 4.5:1 text-contrast audit actually failed against the panel/tile surface colours it is painted on, not only the pure-black app background. `#7e7e7e` is the smallest nudge along the same hue that clears 4.5:1 in every surface the token is actually used against.
+
+Tint (`#cf0000`) keeps its original value: a handful of places use it as text colour on the black background at sizes/weights below the WCAG AA large-text threshold, where it measures 3.65:1 against the 4.5:1 normal-text minimum (it already clears the 3:1 large-text and non-text-UI-component minimums). Raising it enough to clear 4.5:1 as text would also raise it everywhere it is a button background under white text, landing on a markedly brighter red across the whole interface for one rule at one text size — rejected as visually disruptive for what it fixed. This is a known, accepted exception, not an oversight; see docs/task-notes/T47.md.
 
 ### 14.2 Typography
 

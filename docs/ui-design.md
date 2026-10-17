@@ -52,7 +52,7 @@ file constantly.
 | Surface | `#060606` – `#121212` | Panel, drawer, cards, tiles, inputs |
 | Border (group) | `#242424` | Section separators, header/panel borders |
 | Border (control) | `#2c2c2c` | Input, button, chip borders |
-| Text muted | `#6e6e6e` – `#a2a2a2` | Secondary text, section micro-labels, passive metadata |
+| Text muted | `#7e7e7e` – `#a2a2a2` | Secondary text, section micro-labels, passive metadata |
 
 ### Typefaces — system fonts only
 
@@ -723,11 +723,15 @@ returning resumes the warmed pool, so rapid navigation does not grow a work queu
 
 Beside the comparison pill, a small toolbar: **Fit**, **Actual size**, and a live
 zoom percent readout (e.g. `100%`). The frame itself takes no slider or overlay
-chrome — zoom and pan are direct manipulation only: wheel or pinch to zoom about
+chrome — zoom and pan are primarily direct manipulation: wheel or pinch to zoom about
 the pointer, drag to pan. "Fit" returns to the contain-fit rest state R-P6
 describes; "Actual size" is true 1:1 pixels of whichever tab is showing, and
 disables itself once the view is already there. Both buttons disable when there
 is nothing to do (already at fit, or already at actual size).
+
+- **R-K1 (keyboard):** when the frame itself has focus, arrow keys pan, `+`/`-`
+  zoom in/out, and `Shift+0` resets to fit — the keyboard equivalent of the same
+  gestures, layered on top rather than replacing them (T47).
 
 - **R-P9:** flipping between Original and Compressed keeps the same patch of the
   image in view and preserves true **pixel density**, not apparent on-screen

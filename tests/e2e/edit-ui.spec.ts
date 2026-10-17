@@ -1,4 +1,11 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+
+/** T47: scoped to one stage's own root, so pre-existing site chrome (T43/T45) is out of scope. */
+async function expectNoViolations(page: Page, testId: string): Promise<void> {
+  const results = await new AxeBuilder({ page }).include(`[data-testid="${testId}"]`).analyze()
+  expect(results.violations).toEqual([])
+}
 
 // T37 — Edit mode (Functional Design R-C1-R-C17, R-K4; Technical Design §6; docs/ui-design.md §12).
 //
@@ -418,4 +425,24 @@ test('a genuine crop engages the Dimension accordion override note (closes T35 g
 
   await expect(page.getByTestId('dimension-note-single')).toBeVisible()
   await expect(page.getByTestId('dimension-row-fit-long-edge')).toBeDisabled()
+})
+
+// T47 (R-K1-R-K11): an automated audit of Edit mode, including the richer state after a crop drag
+// so the background row/handles that only appear once the crop spills past the image are covered.
+test('Edit has no automated accessibility violations', async ({ page }) => {
+  await page.goto('/')
+  await seedOne(page)
+  await expect(page.getByTestId('preview-image')).toBeVisible()
+  await openEdit(page)
+
+  const handle = page.getByTestId('edit-frame-handle-bottom-right')
+  const box = await handle.boundingBox()
+  if (box !== null) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 60)
+    await page.mouse.up()
+  }
+
+  await expectNoViolations(page, 'edit-root')
 })

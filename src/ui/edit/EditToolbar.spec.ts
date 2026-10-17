@@ -62,6 +62,10 @@ describe('EditToolbar', () => {
     const wrapper = mount(EditToolbar)
     const resetButton = wrapper.get('[data-testid="edit-zoom-reset"]')
 
+    // R-K10: the button's visible text ("100%") is already its accessible name, so no separate
+    // aria-label is added.
+    expect(resetButton.attributes('aria-label')).toBeUndefined()
+
     expect((resetButton.element as HTMLButtonElement).disabled).toBe(true)
 
     await wrapper.get('[data-testid="edit-zoom-slider"]').setValue('2')

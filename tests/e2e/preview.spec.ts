@@ -1,6 +1,29 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+
+/**
+ * T47: scoped to one stage's own root, so pre-existing site chrome (T43/T45) is out of scope.
+ * `exclude` is for the one documented exception this task leaves in place rather than fixes: tint
+ * (`--color-tint`) kept its original `#cf0000` (docs/functional-design.md §14.1) rather than being
+ * brightened enough to clear text contrast everywhere it is used as text colour below the
+ * large-text threshold — brightening it would also brighten every tint-coloured button background
+ * across the whole interface, rejected as more disruptive than the one rule it would fix. See
+ * docs/task-notes/T47.md.
+ */
+async function expectNoViolations(
+  page: Page,
+  testId: string,
+  exclude: string[] = [],
+): Promise<void> {
+  let builder = new AxeBuilder({ page }).include(`[data-testid="${testId}"]`)
+  for (const selector of exclude) {
+    builder = builder.exclude(selector)
+  }
+  const results = await builder.analyze()
+  expect(results.violations).toEqual([])
+}
 
 // T36 — Preview mode (Functional Design R-P1-R-P8, R-M3, R-I16; Technical Design §4, §5.3).
 //
@@ -712,4 +735,14 @@ test('changing the format re-encodes and updates both the line and the figures',
   expect(await page.getByTestId('preview-compressed-size').textContent()).not.toBe(before)
 
   expect(errors).toEqual([])
+})
+
+// T47 (R-K1-R-K11): an automated audit once Preview has a real, rendered result.
+test('Preview has no automated accessibility violations once ready', async ({ page }) => {
+  await page.goto('/')
+  await seed(page, [{ id: 'one', name: 'photo.jpeg' }])
+  await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
+
+  // '.change.reduction': the one documented tint-as-text contrast exception (see expectNoViolations).
+  await expectNoViolations(page, 'preview-root', ['.change.reduction'])
 })

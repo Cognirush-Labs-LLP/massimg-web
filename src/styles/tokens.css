@@ -34,14 +34,16 @@
   --color-border-control: #2c2c2c; /* control outlines (buttons, inputs, chips) */
 
   /*
-   * Muted text: §14.1 gives a range (#6e6e6e to #a2a2a2) for "secondary and
-   * label text". §14.2 pins the loud end of that range to functional
-   * micro-labels explicitly (#a2a2a2); the quiet end is used for passive
-   * metadata, which §14.2 describes only as "deliberately quiet" — see
-   * docs/task-notes/T07.md.
+   * Muted text: §14.1 gives a range (originally #6e6e6e to #a2a2a2, the quiet
+   * end raised to #7e7e7e by T47) for "secondary and label text". §14.2 pins
+   * the loud end of that range to functional micro-labels explicitly
+   * (#a2a2a2); the quiet end is used for passive metadata, which §14.2
+   * describes only as "deliberately quiet" — see docs/task-notes/T07.md.
    */
   --color-text-muted: #a2a2a2; /* secondary/label text, functional micro-labels */
-  --color-text-muted-quiet: #6e6e6e; /* passive metadata (quietest) */
+  /* passive metadata (quietest). #7e7e7e, not the original #6e6e6e (T47): lightened to clear
+     WCAG AA 4.5:1 against every surface it actually sits on, not just the app background. */
+  --color-text-muted-quiet: #7e7e7e;
 
   /* --- Typography (§14.2) --- */
 

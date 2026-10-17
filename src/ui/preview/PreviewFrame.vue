@@ -15,9 +15,11 @@
 //     *active* aspect, so flipping tabs can change the frame's shape — which is the honest thing for
 //     it to do.
 //
-// Zoom and pan are direct manipulation only, by the user's own decision: wheel or pinch to zoom
-// about the pointer, drag to pan, no slider and no toolbar chrome. The arithmetic is all in
-// `domain/viewport.ts`; this component converts pointer events into frame points and nothing else.
+// Zoom and pan are primarily direct manipulation: wheel or pinch to zoom about the pointer, drag to
+// pan, no slider and no toolbar chrome. The arithmetic is all in `domain/viewport.ts`; this
+// component converts pointer events into frame points and nothing else. A keyboard-equivalent path
+// (R-K1) is layered on top — see `onFrameKeydown` — driving the same domain functions from a fixed
+// step rather than an analog gesture delta.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { t } from '@/i18n/t'
 import type { PixelSize } from '@/domain/edit'
@@ -594,6 +596,71 @@ function onPointerUp(event: PointerEvent): void {
   }
 }
 
+/** Frame-space pixels per keyboard pan step; a fixed stand-in for an analog drag delta. */
+const KEYBOARD_PAN_STEP = 40
+/** Scale multiplier per keyboard zoom step; a fixed stand-in for an analog wheel/pinch factor. */
+const KEYBOARD_ZOOM_FACTOR = 1.2
+
+const KEYBOARD_PAN_DELTAS: Record<string, FramePoint> = {
+  ArrowLeft: { left: KEYBOARD_PAN_STEP, top: 0 },
+  ArrowRight: { left: -KEYBOARD_PAN_STEP, top: 0 },
+  ArrowUp: { left: 0, top: KEYBOARD_PAN_STEP },
+  ArrowDown: { left: 0, top: -KEYBOARD_PAN_STEP },
+}
+
+/**
+ * R-K1: the frame's keyboard-equivalent to drag-to-pan and wheel/pinch-to-zoom, active only while
+ * the frame itself has focus (never a `window` listener), so it can never collide with `Preview.vue`'s
+ * own window-level arrow-key batch-stepping (R-K2) — every key handled here calls
+ * `preventDefault()`, and that handler checks `event.defaultPrevented` before acting.
+ */
+function onFrameKeydown(event: KeyboardEvent): void {
+  const box = restBox.value
+
+  if (!canInspect.value || box === null) {
+    return
+  }
+
+  const panDelta = KEYBOARD_PAN_DELTAS[event.key]
+  if (panDelta !== undefined) {
+    event.preventDefault()
+    viewport.setLocal(
+      panViewport(
+        box,
+        hostSize.value,
+        viewport.local.value,
+        panDelta,
+        zoomCeiling.value,
+        zoomFloor.value,
+      ),
+    )
+    return
+  }
+
+  if (event.key === '+' || event.key === '=' || event.key === '-') {
+    event.preventDefault()
+    const factor = event.key === '-' ? 1 / KEYBOARD_ZOOM_FACTOR : KEYBOARD_ZOOM_FACTOR
+    const center: FramePoint = { left: box.width / 2, top: box.height / 2 }
+    viewport.setLocal(
+      zoomViewportAt(
+        box,
+        hostSize.value,
+        viewport.local.value,
+        center,
+        viewport.local.value.scale * factor,
+        zoomCeiling.value,
+        zoomFloor.value,
+      ),
+    )
+    return
+  }
+
+  if (event.key === ')') {
+    event.preventDefault()
+    onFitClick()
+  }
+}
+
 // A new raster means a new natural size: a dimension rule or a crop changes the compressed output's
 // own pixel size, and the frame must not keep sizing itself from the previous one.
 watch(
@@ -653,12 +720,16 @@ defineExpose({
       class="frame"
       :class="{ grabbable: canInspect && zoomed, grabbing: dragging }"
       :style="frameStyle"
+      :tabindex="canInspect ? 0 : -1"
+      role="group"
+      :aria-label="canInspect ? t('preview.frame.inspectorLabel') : undefined"
       data-testid="preview-frame"
       @wheel="onWheel"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
       @pointercancel="onPointerUp"
+      @keydown="onFrameKeydown"
     >
       <img
         v-if="activeUrl"

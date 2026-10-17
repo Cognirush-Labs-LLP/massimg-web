@@ -1,7 +1,14 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+import { expect, test, type Page } from '@playwright/test'
+
+/** T47: scoped to one stage's own root, so pre-existing site chrome (T43/T45) is out of scope. */
+async function expectNoViolations(page: Page, testId: string): Promise<void> {
+  const results = await new AxeBuilder({ page }).include(`[data-testid="${testId}"]`).analyze()
+  expect(results.violations).toEqual([])
+}
 
 // T33-A: real selection through the actual UI (empty state -> populated -> Clear), proving
 // ingest.ts's classify -> ImageRecord -> store path end to end, distinct from T20's own
@@ -65,4 +72,17 @@ test('Clear empties the batch and returns to the empty state with no confirmatio
 
   await expect(page.getByText('0 SELECTED')).toBeVisible()
   await expect(page.getByTestId('gallery-empty-state')).toBeVisible()
+})
+
+// T47 (R-K1-R-K11): an automated audit of the populated Gallery stage.
+test('the populated gallery has no automated accessibility violations', async ({ page }) => {
+  const { pngA, pngB } = writeFixtures()
+
+  await page.goto('/')
+  const chooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Select images' }).click()
+  await (await chooserPromise).setFiles([pngA, pngB])
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  await expectNoViolations(page, 'gallery-root')
 })
