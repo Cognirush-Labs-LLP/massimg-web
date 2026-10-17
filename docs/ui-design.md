@@ -574,6 +574,31 @@ their controls showing).
   Dimension rule — a rotated-only image still follows the batch setting, applied
   to its rotated dimensions.
 
+### Row help (R-D5)
+
+Each of Fit within long edge, Fixed width, and Fixed height carries a small icon-only "?"
+affordance beside its row label (not Original size — its row already says "none").
+Activating it opens the same small, centred, focus-trapped dialog shape already
+established for the leave-confirmation dialogs (§13/§14): a scrim, a box centred on screen
+(`min(360px, calc(100vw - 32px))` wide) with a title and a body paragraph — one shape for
+both mobile and desktop. Unlike those dialogs, this one is purely informational, not an
+irreversible choice, so it closes by its own Close button, Escape, *or* a scrim click, and
+returns focus to the "?" that opened it.
+
+- **Title:** the row's own label.
+- **Body:** one short, plain sentence — what the rule does, nothing more. No mention of
+  enlarging or shrinking here; that lives in the note below, not the main explanation.
+- **Note:** a small, visually quieter line below the body (and below the diagram, for Fit
+  within long edge) stating whether the rule can enlarge the image — a fragment, not
+  required to be a full sentence ("Shrinks only — never enlarges." / "May enlarge small
+  images."). Secondary information gets secondary typography: smaller size, the quietest
+  text tone (`--color-text-muted-quiet`), not folded into the main sentence.
+- **Diagram (Fit within long edge only):** a small, purely illustrative `aria-hidden`
+  pair of rectangles — one landscape, one portrait — each with their longer side marked,
+  making "long edge" legible at a glance without more prose. Not used for Fixed
+  width/height, which have no ambiguous axis to illustrate. Uses `--color-primary` for the
+  mark, never `--color-tint` (§14.1 reserves tint for action/state, not decoration).
+
 ---
 
 ## 10. Side panel — Format & primary action
@@ -1153,7 +1178,8 @@ requirements themselves.
 - **R-K10:** an accessible name is added *only* where a control has no visible
   text label — the icon-only controls in this interface: the tile remove × (§6),
   the mobile Options and Hide buttons (§2), the rotate and crop-handle controls
-  (§12). A button that already reads "Compress", "Add images" or "Back to
+  (§12), and the Dimension rows' "?" help buttons (§9, R-D5). A button that
+  already reads "Compress", "Add images" or "Back to
   images" gets no `aria-label`; its visible text is already its accessible name,
   and duplicating it only doubles what has to be translated. Each name that *is*
   added is a catalogue key with a context entry like any other string (R-L1,

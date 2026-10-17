@@ -10,6 +10,7 @@ import { hasCropOp } from '@/domain/edit'
 import type { BatchDimension } from '@/domain/types'
 import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
+import HelpDialog from './HelpDialog.vue'
 
 type DimensionKind = BatchDimension['kind']
 
@@ -22,6 +23,12 @@ interface DimensionRowConfig {
   kind: DimensionKind
   labelKey: MessageKey
   chips: DimensionChip[]
+  /** Accessible name for the row's "?" help button (T47-B, R-D5); absent on 'original'. */
+  helpLabelKey?: MessageKey
+  /** Body text of the help dialog the "?" button opens; absent on 'original'. */
+  helpBodyKey?: MessageKey
+  /** Short, de-emphasised enlarge/shrink-only caveat shown below the body; absent on 'original'. */
+  helpNoteKey?: MessageKey
 }
 
 const ROWS: DimensionRowConfig[] = [
@@ -36,6 +43,9 @@ const ROWS: DimensionRowConfig[] = [
       { key: 'panel.dimension.chip4k', value: 3840 },
       { key: 'panel.dimension.chipIg', value: 1080 },
     ],
+    helpLabelKey: 'panel.dimension.helpFitLongEdgeLabel',
+    helpBodyKey: 'panel.dimension.helpFitLongEdgeBody',
+    helpNoteKey: 'panel.dimension.helpFitLongEdgeNote',
   },
   {
     kind: 'fixed-width',
@@ -46,6 +56,9 @@ const ROWS: DimensionRowConfig[] = [
       { key: 'panel.dimension.chipMail', value: 800 },
       { key: 'panel.dimension.chipPrint', value: 3000 },
     ],
+    helpLabelKey: 'panel.dimension.helpFixedWidthLabel',
+    helpBodyKey: 'panel.dimension.helpFixedWidthBody',
+    helpNoteKey: 'panel.dimension.helpFixedWidthNote',
   },
   {
     kind: 'fixed-height',
@@ -55,6 +68,9 @@ const ROWS: DimensionRowConfig[] = [
       { key: 'panel.dimension.chipHd', value: 720 },
       { key: 'panel.dimension.chipFhd', value: 1080 },
     ],
+    helpLabelKey: 'panel.dimension.helpFixedHeightLabel',
+    helpBodyKey: 'panel.dimension.helpFixedHeightBody',
+    helpNoteKey: 'panel.dimension.helpFixedHeightNote',
   },
 ]
 
@@ -125,6 +141,21 @@ function setChip(kind: DimensionKind, value: number): void {
   lastValues.value[kind] = value
   settings.dimension = { kind, pixels: value }
 }
+
+// T47-B, R-D5: one shared HelpDialog instance (content swapped per row) that stays mounted
+// throughout, with `modelValue` as a real, toggled open/close signal — like Drawer.vue, not like
+// ConfirmDialog.vue's mount-equals-open pattern. That distinction matters: useFocusTrap only
+// returns focus to `returnFocusTo` on an `active` true→false *transition*, which never happens if
+// closing instead unmounts the component outright (ConfirmDialog's `returnFocusTo` is a permanent
+// no-op specifically because it is only ever mounted while already open).
+const helpOpenRow = ref<DimensionKind | null>(null)
+const helpReturnFocusTo = ref<HTMLElement | null>(null)
+const helpRow = computed(() => ROWS.find((row) => row.kind === helpOpenRow.value) ?? null)
+
+function openHelp(row: DimensionRowConfig, event: Event): void {
+  helpReturnFocusTo.value = event.currentTarget as HTMLElement
+  helpOpenRow.value = row.kind
+}
 </script>
 
 <template>
@@ -160,6 +191,16 @@ function setChip(kind: DimensionKind, value: number): void {
             @change="selectRow(row.kind)"
           />
           <span>{{ t(row.labelKey) }}</span>
+          <button
+            v-if="row.helpLabelKey"
+            type="button"
+            class="dimension-help-button"
+            :aria-label="t(row.helpLabelKey)"
+            :data-testid="`dimension-help-${row.kind}`"
+            @click.stop="openHelp(row, $event)"
+          >
+            ?
+          </button>
         </label>
 
         <div
@@ -191,6 +232,30 @@ function setChip(kind: DimensionKind, value: number): void {
         </div>
       </div>
     </div>
+
+    <HelpDialog
+      :model-value="helpOpenRow !== null"
+      :return-focus-to="helpReturnFocusTo"
+      :title="helpRow ? t(helpRow.labelKey) : ''"
+      :body="helpRow ? t(helpRow.helpBodyKey!) : ''"
+      :note="helpRow?.helpNoteKey ? t(helpRow.helpNoteKey) : undefined"
+      @update:model-value="helpOpenRow = null"
+    >
+      <template v-if="helpOpenRow === 'fit-long-edge'" #diagram>
+        <svg
+          class="long-edge-diagram"
+          viewBox="0 0 160 72"
+          width="160"
+          height="72"
+          aria-hidden="true"
+        >
+          <rect class="diagram-box" x="4" y="16" width="64" height="40" rx="2" />
+          <line class="diagram-edge" x1="4" y1="9" x2="68" y2="9" />
+          <rect class="diagram-box" x="108" y="4" width="40" height="64" rx="2" />
+          <line class="diagram-edge" x1="155" y1="4" x2="155" y2="68" />
+        </svg>
+      </template>
+    </HelpDialog>
   </div>
 </template>
 
@@ -264,6 +329,42 @@ function setChip(kind: DimensionKind, value: number): void {
   opacity: 0;
   inline-size: 1px;
   block-size: 1px;
+}
+
+/* T47-B, R-D5: pushed to the row's far end regardless of label length, so its position is
+   predictable across the three rows that have one. */
+.dimension-help-button {
+  inline-size: 20px;
+  block-size: 20px;
+  margin-inline-start: auto;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--color-border-control);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Purely illustrative (aria-hidden): landscape and portrait rectangles, each with their longer
+   side marked — the real explanation is HelpDialog's body/note text, this just makes "long edge"
+   intuitive at a glance. --color-primary for the mark, not --color-tint: functional-design.md
+   §14.1 reserves tint for action/state, never decoration. */
+.long-edge-diagram {
+  display: block;
+}
+
+.diagram-box {
+  fill: none;
+  stroke: var(--color-border-control);
+  stroke-width: 2;
+}
+
+.diagram-edge {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .dimension-row-body {

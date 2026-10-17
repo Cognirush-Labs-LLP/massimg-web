@@ -168,4 +168,75 @@ describe('SidePanelDimension', () => {
       undefined,
     )
   })
+
+  describe('row help (T47-B, R-D5)', () => {
+    async function flush(): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+
+    it('Original size has no help button; the other three do', () => {
+      const wrapper = mount(SidePanelDimension)
+
+      expect(wrapper.find('[data-testid="dimension-help-original"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="dimension-help-fit-long-edge"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="dimension-help-fixed-width"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="dimension-help-fixed-height"]').exists()).toBe(true)
+    })
+
+    it('opens a dialog titled with the row label, body, and a de-emphasised enlarge note', async () => {
+      const wrapper = mount(SidePanelDimension)
+
+      await wrapper.find('[data-testid="dimension-help-fixed-width"]').trigger('click')
+
+      const dialog = wrapper.get('[data-testid="help-dialog"]')
+      expect(dialog.text()).toContain('Fixed width')
+      expect(dialog.find('.help-body').text()).toBe('Sets an exact width. Height adjusts to match.')
+      expect(dialog.find('.help-note').text()).toBe('May enlarge small images.')
+    })
+
+    it('Fit within long edge shows the shrink-only note and the landscape/portrait diagram', async () => {
+      const wrapper = mount(SidePanelDimension)
+
+      await wrapper.find('[data-testid="dimension-help-fit-long-edge"]').trigger('click')
+
+      const dialog = wrapper.get('[data-testid="help-dialog"]')
+      expect(dialog.find('.help-note').text()).toBe('Shrinks only — never enlarges.')
+      expect(dialog.find('.long-edge-diagram').exists()).toBe(true)
+    })
+
+    it('Fixed width/height show no diagram (only Fit within long edge does)', async () => {
+      const wrapper = mount(SidePanelDimension)
+
+      await wrapper.find('[data-testid="dimension-help-fixed-width"]').trigger('click')
+      expect(wrapper.find('.long-edge-diagram').exists()).toBe(false)
+
+      await wrapper.get('[data-testid="help-dialog-close"]').trigger('click')
+      await wrapper.find('[data-testid="dimension-help-fixed-height"]').trigger('click')
+      expect(wrapper.find('.long-edge-diagram').exists()).toBe(false)
+    })
+
+    it('does not select the row when its help button is clicked (no label-forwarding)', async () => {
+      const wrapper = mount(SidePanelDimension)
+
+      await wrapper.find('[data-testid="dimension-help-fixed-width"]').trigger('click')
+
+      expect(useSettingsStore().dimension).toEqual({ kind: 'original' })
+      expect(
+        wrapper.find<HTMLInputElement>('[data-testid="dimension-row-fixed-width"]').element.checked,
+      ).toBe(false)
+    })
+
+    it('Close returns focus to the help button that opened the dialog', async () => {
+      const wrapper = mount(SidePanelDimension, { attachTo: document.body })
+
+      await wrapper.find('[data-testid="dimension-help-fixed-width"]').trigger('click')
+      await flush()
+      await wrapper.get('[data-testid="help-dialog-close"]').trigger('click')
+      await flush()
+
+      expect(document.activeElement?.getAttribute('data-testid')).toBe('dimension-help-fixed-width')
+      expect(wrapper.find('[data-testid="help-dialog"]').exists()).toBe(false)
+      wrapper.unmount()
+    })
+  })
 })

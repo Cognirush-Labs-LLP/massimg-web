@@ -86,3 +86,24 @@ test('the populated gallery has no automated accessibility violations', async ({
 
   await expectNoViolations(page, 'gallery-root')
 })
+
+// T47-B: the side panel (`aside.side-panel-static`) is a sibling of `gallery-root` in
+// ToolPage.vue, not nested inside it, so the scan above never covers it or the new Dimension-row
+// help dialogs it added. Scanned separately here, open, since that's the state most likely to
+// surface a contrast issue in new content (the muted note line, the illustrative diagram).
+test('a Dimension help dialog has no automated accessibility violations, open', async ({
+  page,
+}) => {
+  const { pngA, pngB } = writeFixtures()
+
+  await page.goto('/')
+  const chooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Select images' }).click()
+  await (await chooserPromise).setFiles([pngA, pngB])
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  await page.getByTestId('dimension-help-fit-long-edge').click()
+  await expect(page.getByTestId('help-dialog')).toBeVisible()
+
+  await expectNoViolations(page, 'help-dialog')
+})

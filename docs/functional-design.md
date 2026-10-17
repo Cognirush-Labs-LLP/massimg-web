@@ -340,6 +340,7 @@ Exactly one option may be active. Rendered as an accordion of radio rows; the se
 - R-D2 With more than one image and at least one cropped, a note appears in the Dimension section: "Crop applied to N images. Their crop overrides the setting below; the rest follow it."
 - R-D3 With exactly one image, and it is cropped, the Dimension rows are disabled and the note explains why.
 - R-D4 Rotation alone does not override the dimension rule. A rotated but uncropped image follows the batch setting, applied to its rotated dimensions.
+- R-D5 Fit within long edge, Fixed width, and Fixed height each have a "?" help affordance beside the row label that opens a short, focus-trapped, centred dialog explaining the rule. The enlarge/shrink-only behaviour (R-N2: Fixed width and Fixed height can enlarge; Fit within long edge never does) is stated as a brief, visually secondary note rather than folded into the main explanation. Fit within long edge's dialog also shows a simple landscape/portrait diagram marking which side counts as its "long edge." Original size has no help affordance — its row already states "none," and there is nothing to explain.
 
 ### 4.3 Format
 

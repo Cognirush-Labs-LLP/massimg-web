@@ -64,6 +64,11 @@
     "control": "Button with visible text, full accessible name (R-K10).",
     "maxLength": 12
   },
+  "shell.helpDialog.closeLabel": {
+    "situation": "Label on the one dismiss button of HelpDialog.vue, the small centred informational dialog opened by a '?' help affordance (first used by R-D5's Dimension-row help; the component is written to be reusable by future '?' affordances too).",
+    "control": "Text-labeled button, visible text is its full accessible name (R-K10) — the dialog's only interactive control besides the scrim and Escape.",
+    "maxLength": 16
+  },
   "processing.leaveConfirm.title": {
     "situation": "Heading of R-X18's three-way confirmation, raised when navigating away (including via browser back, R-M8) from a completed Processing run whose results haven't been downloaded yet.",
     "control": "Dialog heading text, focus-trapped (R-K9).",
@@ -398,6 +403,51 @@
     "situation": "Fourth row of the Dimension accordion (Functional Design §4.2, R-N1, R-N2): sets output height to an exact value, deriving width to preserve aspect ratio.",
     "control": "Radio row label. When selected, reveals a numeric pixel field and three shortcut chips (IG/HD/FHD).",
     "maxLength": 24
+  },
+  "panel.dimension.helpFitLongEdgeLabel": {
+    "situation": "Accessible name for the icon-only '?' button beside the Fit within long edge row label (Functional Design §4.2 R-D5). The button has no visible text, so this is its only accessible name (R-K10).",
+    "control": "aria-label on a small icon button rendering a literal '?' glyph, sitting inside the same <label> as the row's radio dot and text.",
+    "maxLength": 40
+  },
+  "panel.dimension.helpFitLongEdgeBody": {
+    "situation": "Main, simple one-line explanation in the focus-trapped help dialog (HelpDialog.vue) opened by the Fit within long edge row's '?' button (R-D5). Deliberately short and plain — the shrink-only caveat lives separately in the quieter helpFitLongEdgeNote text below it, and a small landscape/portrait diagram beside it shows which side counts as the 'long edge', so this string does not need to spell either out itself.",
+    "control": "The dialog's main body paragraph, below a title that is the row's own label ('Fit within long edge') and above an illustrative diagram and a smaller, muted note line.",
+    "maxLength": 80
+  },
+  "panel.dimension.helpFitLongEdgeNote": {
+    "situation": "A short, visually de-emphasised caveat below the Fit within long edge help dialog's main body and diagram (R-D5) — a fragment, not required to be a full sentence, stating the rule never enlarges the image (contrast with the Fixed width/height rows' equivalent note, which says the opposite).",
+    "control": "Small, muted text (HelpDialog.vue's .help-note), deliberately quieter than the main body text above it.",
+    "maxLength": 40
+  },
+  "panel.dimension.helpFixedWidthLabel": {
+    "situation": "Accessible name for the icon-only '?' button beside the Fixed width row label (Functional Design §4.2 R-D5). The button has no visible text, so this is its only accessible name (R-K10).",
+    "control": "aria-label on a small icon button rendering a literal '?' glyph, sitting inside the same <label> as the row's radio dot and text.",
+    "maxLength": 40
+  },
+  "panel.dimension.helpFixedWidthBody": {
+    "situation": "Main, simple one-line explanation in the focus-trapped help dialog (HelpDialog.vue) opened by the Fixed width row's '?' button (R-D5). Deliberately short and plain — the enlarge caveat (R-N2) lives separately, in the quieter helpFixedWidthNote text below it, so this string does not need to spell it out itself.",
+    "control": "The dialog's main body paragraph, below a title that is the row's own label ('Fixed width') and above a smaller, muted note line.",
+    "maxLength": 80
+  },
+  "panel.dimension.helpFixedWidthNote": {
+    "situation": "A short, visually de-emphasised caveat below the Fixed width help dialog's main body (R-D5) — a fragment, not required to be a full sentence. Must still convey that this rule can enlarge the image when the source is smaller than the target (R-N2), the one dimension behaviour that works against what a compression tool is otherwise expected to do, even though it is now visually quiet rather than part of the main sentence.",
+    "control": "Small, muted text (HelpDialog.vue's .help-note), deliberately quieter than the main body text above it.",
+    "maxLength": 40
+  },
+  "panel.dimension.helpFixedHeightLabel": {
+    "situation": "Accessible name for the icon-only '?' button beside the Fixed height row label (Functional Design §4.2 R-D5). The button has no visible text, so this is its only accessible name (R-K10).",
+    "control": "aria-label on a small icon button rendering a literal '?' glyph, sitting inside the same <label> as the row's radio dot and text.",
+    "maxLength": 40
+  },
+  "panel.dimension.helpFixedHeightBody": {
+    "situation": "Main, simple one-line explanation in the focus-trapped help dialog (HelpDialog.vue) opened by the Fixed height row's '?' button (R-D5). Deliberately short and plain — the enlarge caveat (R-N2) lives separately, in the quieter helpFixedHeightNote text below it, so this string does not need to spell it out itself.",
+    "control": "The dialog's main body paragraph, below a title that is the row's own label ('Fixed height') and above a smaller, muted note line.",
+    "maxLength": 80
+  },
+  "panel.dimension.helpFixedHeightNote": {
+    "situation": "A short, visually de-emphasised caveat below the Fixed height help dialog's main body (R-D5) — a fragment, not required to be a full sentence. Must still convey that this rule can enlarge the image when the source is smaller than the target (R-N2), the one dimension behaviour that works against what a compression tool is otherwise expected to do, even though it is now visually quiet rather than part of the main sentence.",
+    "control": "Small, muted text (HelpDialog.vue's .help-note), deliberately quieter than the main body text above it.",
+    "maxLength": 40
   },
   "panel.dimension.chipHd": {
     "situation": "A shortcut chip that writes a preset pixel value into the active Dimension row's numeric field (Functional Design §4.2's chip table). 'HD' is reused across two different rows with two different values (1280 on Fit within long edge, 720 on Fixed height) via {value} — the abbreviation itself is translated once here.",

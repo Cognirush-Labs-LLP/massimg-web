@@ -993,6 +993,37 @@ Keyboard operation throughout, live-region announcements, accessible names, redu
 
 **Done when:** every flow is completable by keyboard alone, an automated audit passes on each stage mode, and run progress announces at intervals rather than per image.
 
+### T47-B — Dimension setting help
+
+**Functional Design:** R-D5 (new)
+**Depends on:** T31, T35
+
+A "?" affordance beside each of Fit within long edge, Fixed width, and Fixed height opens a short
+explanation of what that rule does, in a focus-trapped dialog centred on screen — reusing T31's
+`useFocusTrap` composable and the same dialog shell `ConfirmDialog.vue` already established,
+rather than a new tooltip/popover mechanism. One dialog shape for both mobile and desktop avoids
+a second, separately-maintained responsive implementation. Original size gets no help icon: its
+row already states "none" and there is nothing to explain.
+
+- Fixed width's and Fixed height's text must state that the rule can enlarge the image (R-N2) —
+  the one dimension behaviour that works against what a compression tool is otherwise expected to
+  do, and the reason this task exists.
+- The "?" is icon-only and needs an `aria-label` sourced from the message catalogue (R-K10), not
+  duplicated visible text. Each explanation string is itself a catalogue key with a context entry
+  (R-L1, R-L2), not a literal in the template.
+- The dialog closes via its own Close control and Escape, and returns focus to the "?" that opened
+  it — the same contract `useFocusTrap`'s existing callers already follow, not a new one. It also
+  closes on a scrim click, following Drawer.vue's reversible-dismiss precedent rather than
+  ConfirmDialog.vue's deliberate no-click-to-dismiss (that one guards an irreversible choice; this
+  one is just information).
+- Write the new R-D5 requirement into Functional Design §4.2, and the dialog's visual spec into UI
+  Design, before closing out this task.
+
+**Done when:** a "?" icon sits beside each of the three sizing rows (not Original size); activating
+any of them opens a centred, focus-trapped dialog with that rule's explanation; Fixed width's and
+Fixed height's explanations each state the rule can enlarge the image; and the dialog closes via
+Close, Escape, and a click outside it, returning focus to the icon that opened it.
+
 ### T48 — Language completeness
 
 **Functional Design:** R-L1 to R-L5
