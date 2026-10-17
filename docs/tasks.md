@@ -1076,9 +1076,9 @@ Known entries, accumulated as earlier tasks created them:
 
 - `VITE_SITE_BASE_URL` (`src/config/site.ts`) — falls back to a non-production placeholder
   when unset; must resolve to the real canonical production URL.
-- The Cloudflare Web Analytics token (T46) — built against a placeholder token so the
-  beacon mechanism and its Playwright test could be verified without waiting on a
-  Cloudflare account; must resolve to the real token.
+- `VITE_CF_BEACON_TOKEN` (`src/config/analytics.ts`, read via `.env`) — built against a
+  placeholder token (T46) so the beacon mechanism and its Playwright test could be
+  verified without waiting on a Cloudflare account; must resolve to the real token.
 - The Privacy and Terms page copy (T44) — placeholder prose shipped so the routes were
   not withheld waiting on legal text; must resolve to the final legal copy.
 

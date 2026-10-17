@@ -75,3 +75,29 @@ jobs:
           name: playwright-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 7
+
+  e2e-pwa:
+    name: PWA/offline tests (playwright, ${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # No webkit: see playwright.pwa.config.ts's comment — a Playwright/WebKit driver
+        # limitation, not a product issue, reproduced independent of this app's code.
+        project: [chromium, firefox]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps ${{ matrix.project }}
+      - run: pnpm exec playwright test --config=playwright.pwa.config.ts --project=${{ matrix.project }}
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-pwa-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 7

@@ -77,7 +77,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
 | E4 | Multi-file Web Share safely hands off OPFS-backed outputs | 60 | OPEN | P1 |
 | F1 | vite-ssg produces genuinely static per-route HTML | 95 | TESTED | P2 |
-| F2 | Analytics beacon fires on a cache-served page load | 60 | OPEN | P3 |
+| F2 | Analytics beacon fires on a cache-served page load | 90 | TESTED | P3 |
 
 ---
 
@@ -1312,7 +1312,7 @@ engaged — vite-ssg held.)*
 
 ---
 
-### F2 `OPEN` `60%` `P3` The analytics beacon fires when the shell is served from the service worker's cache
+### F2 `TESTED` `90%` `P3` The analytics beacon fires when the shell is served from the service worker's cache
 
 Cloudflare Web Analytics is a client-side script; the concern is whether it still
 executes and reports a page view when the HTML and its scripts are served entirely
@@ -1326,3 +1326,19 @@ network requests.
 **Affects.** Technical Design §12.6. If false, an alternative is a beacon fired from
 the service worker's own lifecycle instead of the page, at the cost of per-view
 granularity.
+
+**Measured (T46).** `tests/e2e-pwa/pwa.spec.ts`, run against a real `pnpm build` +
+`vite preview` (not the dev server — see `playwright.pwa.config.ts`'s comment):
+register the service worker, reload once online to confirm it is actually serving the
+page, then `context.setOffline(true)` and reload again. The shell still renders —
+impossible unless the response came from the service worker's cache, since no network
+is reachable at all — and a request to `static.cloudflareinsights.com` is still
+observed firing. True on Chromium and Firefox.
+
+**Why not higher.** WebKit is not covered: `context.setOffline(true)` followed by any
+navigation at all — reproduced with a minimal case with no service worker involved —
+throws `"WebKit encountered an internal error"` in Playwright 1.63's WebKit driver.
+This is a gap in Playwright's WebKit automation, not evidence against real Safari's
+service-worker/offline behaviour (both are standard, long-shipped platform features
+there); held back from 100% because the claim was not *directly* observed on that
+engine, not because anything suggests it would fail.

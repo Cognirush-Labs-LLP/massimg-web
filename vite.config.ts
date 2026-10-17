@@ -3,13 +3,54 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
+import { VitePWA } from 'vite-plugin-pwa'
 // Pulls in vite-ssg's `ssgOptions` augmentation of Vite's UserConfig type — without this,
 // `ssgOptions` below doesn't type-check as a known Vite config field.
 import type {} from 'vite-ssg'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    // T46, Technical Design §12.6. `manifest: false`: T43 already hand-authored and linked
+    // public/manifest.json with the real icon set — this plugin's only job here is the service
+    // worker. `injectRegister: 'auto'` injects a plain registration script into every
+    // vite-ssg-prerendered route page (the same per-route HTML-transform pass useRouteSeo.ts's
+    // `useHead` calls already ride); nothing here calls `virtual:pwa-register` from app code, so
+    // there's no SSR/Node-prerender hazard to guard against the way `scheduleImageMagickPreload`
+    // (src/app/main.ts) has to for code that touches real browser APIs.
+    VitePWA({
+      manifest: false,
+      injectRegister: 'auto',
+      registerType: 'autoUpdate',
+      workbox: {
+        // Workbox's own default (`**/*.{js,wasm,css,html}`) would put every `.wasm` codec file,
+        // including the 14MB ImageMagick build, in scope for precaching at install time — well
+        // past the 2MB default ceiling, which this plugin version turns into a hard build
+        // error rather than a warning. Codec WASM is deliberately left out of precache and
+        // picked up by the runtimeCaching rule below instead: T22 already lazy-loads every
+        // codec (ImageMagick on idle-after-first-paint, the rest on first use of that format),
+        // so the first real fetch is enough to get it cached for the next offline visit.
+        globPatterns: ['**/*.{js,css,html}', 'manifest.json', 'icons/*.png'],
+        runtimeCaching: [
+          {
+            // Technical Design §12.6: an explicit exclusion for the analytics domain, not
+            // reliance on the precache manifest simply never mentioning it, so a later
+            // runtime-caching change can't silently start swallowing these requests.
+            urlPattern: /^https:\/\/static\.cloudflareinsights\.com\//,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /\.wasm$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'codec-wasm',
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
