@@ -1,7 +1,6 @@
 // Minimal translation lookup + interpolation for the i18n scaffold (T08,
-// docs/technical-design.md §11). Only English exists today, so "current
-// locale" plumbing is hardcoded to 'en' rather than a real switcher — locale
-// routing/switching UI is T44/later's job (docs/tasks.md), out of scope here.
+// docs/technical-design.md §11). The real locale list (src/config/site.ts) still ships only
+// English; the 'pseudo' locale resolved here exists for testing only (T48, ./locale.ts).
 //
 // Interpolation syntax: single curly braces, e.g.
 //   t('action.compressLabel', { count: 6 }) // -> "Compress (6)"
@@ -16,18 +15,23 @@
 // output of two t() calls (or a t() call with other text) — that is enforced
 // separately by the `local/no-translated-string-concat` ESLint rule, see
 // eslint.config.js and eslint-rules/no-translated-string-concat.js.
-import messages from './en/messages.json'
+import enMessages from './en/messages.json'
+import pseudoMessages from './pseudo/messages'
+import { currentLocale, type LocaleCode } from './locale'
 
-type Messages = typeof messages
+type Messages = typeof enMessages
 
-/** A valid message key, inferred from en/messages.json's actual keys. */
+/** A valid message key, inferred from en/messages.json's actual keys (the canonical set). */
 export type MessageKey = keyof Messages
 
 export type InterpolationParams = Record<string, string | number>
 
-// Widened to a plain string-keyed record for runtime lookup; MessageKey (the
-// literal union) is still what callers of t() are constrained to.
-const CURRENT_LOCALE_MESSAGES: Record<string, string> = messages
+// Widened to plain string-keyed records for runtime lookup; MessageKey (the literal union,
+// derived from English) is still what callers of t() are constrained to.
+const LOCALE_MESSAGES: Record<LocaleCode, Record<string, string>> = {
+  en: enMessages,
+  pseudo: pseudoMessages,
+}
 
 /**
  * Look up `key` in the current locale's messages.json and, if `params` is
@@ -39,7 +43,7 @@ const CURRENT_LOCALE_MESSAGES: Record<string, string> = messages
  * (Functional Design P1, "silence is the failure").
  */
 export function t(key: MessageKey, params?: InterpolationParams): string {
-  const template = CURRENT_LOCALE_MESSAGES[key]
+  const template = LOCALE_MESSAGES[currentLocale.value][key]
   if (template === undefined) {
     throw new Error(`i18n: no message for key "${key}"`)
   }

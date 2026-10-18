@@ -23,7 +23,7 @@ function handleOptionsClick(event: MouseEvent): void {
       <!-- mic192.png, not mic32.png: displayed at 32px but sourced at 6x that size so it stays
            sharp on 2x/3x-density screens rather than upscaling an already-32px source. -->
       <img class="wordmark-icon" src="/icons/mic192.png" alt="" width="32" height="32" />
-      <span class="wordmark-text">Mass Image Compressor</span>
+      <span class="wordmark-text">{{ t('site.nav.home') }}</span>
     </div>
     <div class="header-spacer" />
     <button

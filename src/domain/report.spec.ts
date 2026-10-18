@@ -1,5 +1,6 @@
 import { load } from 'js-yaml'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { setLocale } from '../i18n/locale'
 import {
   buildReport,
   describeReportSettings,
@@ -324,5 +325,20 @@ describe('real-run formatters (T41)', () => {
   it('formats a run timestamp as locale-independent YYYY-MM-DD HH:MM:SS', () => {
     expect(formatReportTimestamp(new Date(2026, 8, 13, 14, 22, 5))).toBe('2026-09-13 14:22:05')
     expect(formatReportTimestamp(new Date(2026, 0, 1, 0, 0, 0))).toBe('2026-01-01 00:00:00')
+  })
+})
+
+describe('report is unaffected by interface locale (R-L3, T48)', () => {
+  afterEach(() => {
+    setLocale('en')
+  })
+
+  it('serializes byte-identical YAML under "en" and under the pseudo locale', () => {
+    const enYaml = serializeReport(buildReport(fixtureRun))
+
+    setLocale('pseudo')
+    const pseudoYaml = serializeReport(buildReport(fixtureRun))
+
+    expect(pseudoYaml).toBe(enYaml)
   })
 })

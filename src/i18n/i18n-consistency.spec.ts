@@ -24,9 +24,14 @@
 // second locale) that doesn't exist yet. When a real second locale is added,
 // generalise this file and t.ts's locale plumbing together rather than
 // solving multi-locale discovery here first.
+//
+// context.json lives at src/i18n/context.json (moved up from src/i18n/en/ in T48), not inside
+// en/, because it is shared by every locale rather than per-locale (R-L2, docs/technical-design.md
+// §11) — the 'pseudo' locale added in T48 is test-only infrastructure and deliberately has no
+// context.json entries of its own, since it is generated from English rather than translated.
 import { describe, expect, it } from 'vitest'
 import messages from './en/messages.json'
-import context from './en/context.json'
+import context from './context.json'
 
 describe('i18n locale "en"', () => {
   it('has a context.json entry for every messages.json key (R-L2)', () => {
