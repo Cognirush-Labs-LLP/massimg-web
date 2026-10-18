@@ -13,12 +13,12 @@ It shrinks the file size of your images — and can convert them to a different 
 No. It runs in your browser, and there's no sign-up, no login and no history saved between visits.
 
 **Is there a desktop version too?**
-Yes, a separate desktop application exists for people who need to process very large batches or very large files without any browser limits. This web tool is meant to be independently useful on its own for quick, everyday compression.
+Yes, a separate [desktop application](/desktop) exists for people who need to process very large batches or very large files without any browser limits. This web tool is meant to be independently useful on its own for quick, everyday compression.
 
 ## 2. Privacy
 
 **Do my images ever leave my device?**
-Not unless you send them somewhere yourself. Every image is decoded, edited and compressed locally in your browser, and nothing is ever uploaded to a server. The only way a result leaves your device is if you press Share on a finished batch and pick an app or destination to hand the images to — that choice is yours, and the tool itself still sends nothing anywhere.
+Not unless you send them somewhere yourself. Every image is decoded, edited and compressed locally in your browser, and nothing is ever uploaded to a server. The only way a result leaves your device is if you press Share on a finished batch and pick an app or destination to hand the images to — that choice is yours, and the tool itself still sends nothing anywhere. See our [Privacy Policy](/privacy) for the full details.
 
 **What does Share do, and where do my images go?**
 Share hands your finished images to a system share sheet or app picker, so you can choose where they go — a messaging app, email, cloud storage, whatever your device offers. The app itself doesn't send them anywhere: it passes the files to your operating system in one call and then waits to be told whether that handoff succeeded or you cancelled it. We can't see, and don't control, which app or destination you pick.
@@ -152,7 +152,7 @@ No. Everything runs on your device's regular processor inside the browser — no
 Yes, it's licensed under the GNU AGPL v3.
 
 **Can I see the source code?**
-Yes, the project and its source are public. An in-app link to the source and a credits page listing every bundled library aren't wired into the interface yet, but nothing about the project is private.
+Yes, the [project's source](https://github.com/Cognirush-Labs-LLP/massimg-web) is public, also linked from the footer on every page. A credits page listing every bundled library isn't built yet, but nothing about the project is private.
 
 **What other software does this rely on?**
 A handful of established open-source image libraries handle the actual decoding, compressing and animating under the hood. Each one will be named and credited on the app's credits page once it's built.

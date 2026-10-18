@@ -14,7 +14,7 @@ const html = computed(() => renderMarkdown(loadRawContent(defaultLocale, props.p
 </script>
 
 <template>
-  <article class="content-page" v-html="html" />
+  <article :class="['content-page', `content-page--${page}`]" v-html="html" />
 </template>
 
 <style>
@@ -65,5 +65,20 @@ const html = computed(() => renderMarkdown(loadRawContent(defaultLocale, props.p
 
 .content-page strong {
   font-weight: var(--font-weight-wordmark);
+}
+
+/* Each FAQ entry is one <p> (bold question, soft line break, plain answer) rather than two
+   paragraphs — extractFaqEntries.ts's token walk requires that shape to pull question/answer
+   pairs out for JSON-LD. `display: block` on the leading <strong> gives the question its own
+   line without splitting the paragraph. */
+.content-page--faq p {
+  color: var(--color-text-muted);
+}
+
+.content-page--faq p > strong:first-child {
+  display: block;
+  margin-block: 1.4em 0.35em;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-heading);
 }
 </style>
