@@ -75,10 +75,11 @@ useFocusTrap({
 .drawer-scroll {
   block-size: 100%;
   overflow-y: auto;
-  /* Clears ToolPage.vue's fixed .mobile-action-bar (Compress button) so scrolled-to-bottom
-     drawer content, e.g. the FORMAT select, is never hidden behind it. */
-  padding-block-end: 96px;
-  scroll-padding-block-end: 96px;
+  /* Ordinary breathing room under the last control, matching .stage-body's padding — not
+     clearance for ToolPage.vue's .mobile-action-bar. T31 reserved 96px here when that bar was
+     `position: fixed`; T43 made it an ordinary flex item, and this panel is fixed and
+     full-height, so the drawer now paints over the bar rather than under it. */
+  padding-block-end: 18px;
 }
 
 .drawer-hide-row {

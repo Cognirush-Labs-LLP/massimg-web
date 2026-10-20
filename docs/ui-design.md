@@ -188,9 +188,16 @@ mapping (R-L1/R-L5).
   button that opened it.
 - **Primary action (R-A1):** visible at all times, in both layouts.
   - Desktop: pinned to the side panel's footer, below the settings sections.
-  - Mobile: a **fixed bottom bar outside the drawer**. Opening or hiding the drawer
+  - Mobile: a **bottom bar outside the drawer**. Opening or hiding the drawer
     never covers or removes it — a user can compress without ever opening Options,
-    if the defaults suit them.
+    if the defaults suit them. It is the last item in the tool page's full-height
+    column, not an overlay: always on screen, but taking its own space rather than
+    floating over the stage. **The stage therefore reserves no bottom clearance for
+    it.** T31 did build it as `position: fixed` and gave the stage and the drawer a
+    96px clearance to match; T43 changed it to an ordinary flex item and left both
+    clearances behind, which cost Preview roughly 17% of its frame height on a phone
+    until they were removed. If it ever becomes an overlay again, the clearance has
+    to return with it — `tests/e2e/app.spec.ts` pins the current contract.
 - **Touch targets** are at least 44px in their primary dimension everywhere in the
   stage and panel (R-R3); crop handles get a touch-hit area larger than their
   visual size (R-R4, detailed in §12).

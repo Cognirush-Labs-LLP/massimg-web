@@ -45,11 +45,10 @@
   padding: 18px;
 }
 
-@media (max-width: 899.98px) {
-  /* Clears the fixed mobile bottom action bar (see ToolPage.vue's .mobile-action-bar) so
-     scrolled-to-bottom stage content is never hidden behind it. */
-  .stage-body {
-    padding-block-end: 96px;
-  }
-}
+/* No extra bottom clearance below 900px. T31 reserved 96px here because its
+   .mobile-action-bar (ToolPage.vue) was `position: fixed` and overlapped the scrolled-to-bottom
+   stage; T43 made that bar an ordinary flex item, which takes its own space at the end of
+   .tool-page and overlaps nothing, so the reservation became dead space — 96px of it, costing
+   Preview about 17% of its frame height on a phone. If that bar is ever made an overlay again,
+   this clearance has to come back with it — tests/e2e/app.spec.ts pins the contract. */
 </style>
