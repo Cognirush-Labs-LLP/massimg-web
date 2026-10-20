@@ -41,7 +41,8 @@ test('selecting files populates the batch; a non-image among them is skipped, no
 
   await page.goto('/')
   await expect(page.getByTestId('gallery-empty-state')).toBeVisible()
-  await expect(page.getByText('0 SELECTED')).toBeVisible()
+  // An empty batch renders no populated header at all, so there is no count to read.
+  await expect(page.getByTestId('gallery-meta')).toHaveCount(0)
 
   const chooserPromise = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Select images' }).click()
@@ -49,7 +50,7 @@ test('selecting files populates the batch; a non-image among them is skipped, no
   await chooser.setFiles([pngA, pngB, nonImage])
 
   // Only the two PNGs count — the .txt file is classified as not-image and silently skipped.
-  await expect(page.getByText('2 SELECTED')).toBeVisible()
+  await expect(page.getByTestId('gallery-meta')).toContainText('2 images')
   await expect(page.getByTestId('gallery-empty-state')).toHaveCount(0)
   await expect(page.getByTestId('gallery-grid')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible()
@@ -66,11 +67,11 @@ test('Clear empties the batch and returns to the empty state with no confirmatio
   // Two images, not one — a batch of exactly one auto-opens Preview (R-M1), which has no Clear
   // button; this test wants Gallery's own populated state.
   await (await chooserPromise).setFiles([pngA, pngB])
-  await expect(page.getByText('2 SELECTED')).toBeVisible()
+  await expect(page.getByTestId('gallery-meta')).toContainText('2 images')
 
   await page.getByRole('button', { name: 'Clear' }).click()
 
-  await expect(page.getByText('0 SELECTED')).toBeVisible()
+  await expect(page.getByTestId('gallery-meta')).toHaveCount(0)
   await expect(page.getByTestId('gallery-empty-state')).toBeVisible()
 })
 

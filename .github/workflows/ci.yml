@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Every job runs Node 22, which is a floor rather than a preference: package.json pins
+# pnpm 11.13.0, and that pnpm needs Node >= 22.13 and loads node:sqlite (new in Node 22).
+# On Node 20 every job died inside actions/setup-node — before install, before any of this
+# repo's code ran — because `cache: pnpm` shells out to pnpm to resolve the store path.
+# Keep this in step with package.json's `packageManager` and `engines.node`.
+
 # Cancel superseded runs on the same branch/PR so browser installs and test
 # runs don't queue up behind stale pushes.
 concurrency:
@@ -20,7 +26,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
@@ -38,7 +44,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
@@ -51,7 +57,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
@@ -69,7 +75,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps ${{ matrix.project }}
@@ -95,7 +101,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps ${{ matrix.project }}

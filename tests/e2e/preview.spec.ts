@@ -410,16 +410,17 @@ test('the stepper wraps at both ends and keeps the comparison tab (R-P7)', async
 
   await page.getByTestId('preview-step-previous').click()
   await expect(page.getByTestId('preview-stepper-position')).toHaveText('3 / 3')
-  // R-P7: the tab survives the step. The breadcrumb proves the image really changed.
+  // R-P7: the tab survives the step. The frame's alt text names the file, which proves the
+  // image really changed rather than only the stepper's index moving.
   await expect(page.getByTestId('preview-comparison-toggle')).toHaveAttribute(
     'aria-checked',
     'false',
   )
-  await expect(page.locator('.breadcrumb')).toHaveText('PREVIEW · c.jpeg')
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('alt', /\bc\.jpeg$/)
 
   await page.getByTestId('preview-step-next').click()
   await expect(page.getByTestId('preview-stepper-position')).toHaveText('1 / 3')
-  await expect(page.locator('.breadcrumb')).toHaveText('PREVIEW · a.jpeg')
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('alt', /\ba\.jpeg$/)
 
   expect(errors).toEqual([])
 })
@@ -440,7 +441,7 @@ test('stepping releases the outgoing image before encoding the incoming one (R-B
   const outgoing = await page.getByTestId('preview-image').getAttribute('src')
 
   await page.getByTestId('preview-step-next').click()
-  await expect(page.locator('.breadcrumb')).toHaveText('PREVIEW · b.jpeg')
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('alt', /\bb\.jpeg$/)
 
   // The outgoing image's object URL is revoked, so its bytes are no longer reachable at all. The
   // revoked fetch itself is expected to log a resource-load failure to the console — that log line
@@ -561,7 +562,7 @@ test('a settings change forces Compressed to its own actual size, and a step sti
 
   // Stepping to a different image starts from fit-to-frame again, same as before this change.
   await page.getByTestId('preview-step-next').click()
-  await expect(page.locator('.breadcrumb')).toHaveText('PREVIEW · b.jpeg')
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('alt', /\bb\.jpeg$/)
   await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
   await expect
     .poll(async () => {

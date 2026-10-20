@@ -36,8 +36,21 @@ export function useBackNavigationGuard(): {
   // entry pushed below. Not a ref: read and written synchronously inside the watch/popstate
   // handlers below, never rendered.
   let hasNestedEntry = false
-  // Set just before this module calls history.back() itself, to tell the very next popstate
-  // apart from one the user actually triggered (see the `stageMode` watch's gallery branch).
+  // Pops this module has asked for and must swallow, counted rather than flagged and never
+  // cleared on a timer. Used where `history.back()` is *certain* to produce a popstate because
+  // we know the entry it consumes exists — leaving a nested stage by an on-screen control.
+  //
+  // It is a count with no timeout because the previous timing-based version was wrong in a real
+  // browser: it set a flag, called history.back(), and cleared the flag on setTimeout(..., 0).
+  // Firefox delivers the popstate *after* that timeout, so the flag was already false when the
+  // pop arrived, the guard read its own pop as a user back press, and "Back to images" raised
+  // the leave-intent dialog over the Gallery. Measured: Chromium and Firefox both run the 0ms
+  // timeout before popstate, so the old code was racing on every engine and only Firefox lost.
+  let pendingSelfPops = 0
+  // The same idea for the one case where `history.back()` may legitimately do nothing at all —
+  // "leave" on the leave-intent dialog, where there may be no entry before the SPA's own. A
+  // count would stick at 1 forever there and silently swallow the user's next real press, so
+  // that path keeps a flag with a safety-net timeout instead.
   let expectingSelfTriggeredPop = false
 
   const activeDialog = ref<GuardDialog | null>(null)
@@ -73,6 +86,16 @@ export function useBackNavigationGuard(): {
     }, 0)
   }
 
+  /**
+   * Drops the nested entry we pushed, swallowing the popstate it produces whenever it arrives.
+   * The entry is known to exist (`hasNestedEntry` was true), so the pop is guaranteed and needs
+   * no timeout to recover from — unlike selfConsumeNextPop above.
+   */
+  function consumeNestedEntrySilently(): void {
+    pendingSelfPops += 1
+    history.back()
+  }
+
   watch(
     () => uiStore.stageMode,
     (mode) => {
@@ -89,7 +112,7 @@ export function useBackNavigationGuard(): {
         // e.g. Preview's "Back to images" button — the forward entry it leaves behind would
         // otherwise desync the 1st-back/2nd-back count. Self-consume it silently.
         hasNestedEntry = false
-        selfConsumeNextPop()
+        consumeNestedEntrySilently()
       }
     },
     { flush: 'sync' },
@@ -116,6 +139,11 @@ export function useBackNavigationGuard(): {
   }
 
   function onPopstate(): void {
+    if (pendingSelfPops > 0) {
+      pendingSelfPops -= 1
+      return
+    }
+
     if (expectingSelfTriggeredPop) {
       expectingSelfTriggeredPop = false
       return

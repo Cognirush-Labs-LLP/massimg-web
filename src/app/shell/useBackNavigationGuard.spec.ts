@@ -202,6 +202,26 @@ describe('useBackNavigationGuard', () => {
     expect(guard?.dialog.value).toBeNull()
   })
 
+  it("still swallows the on-screen exit's pop when the browser delivers it late", async () => {
+    mountHost()
+    const ui = useUiStore()
+    ui.openPreview(idA)
+
+    ui.backToGallery()
+
+    // The test above dispatches the pop in the same tick. Real browsers do not: measured in
+    // Playwright, both Chromium and Firefox run a setTimeout(..., 0) scheduled before
+    // history.back() *before* delivering the popstate. The previous implementation cleared its
+    // "this pop is mine" flag on exactly such a timeout, so by the time the pop landed it read
+    // as a user back press and put the leave-intent dialog over the Gallery — which is what
+    // Firefox users saw when they pressed "Back to images".
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    dispatchPopstate()
+
+    expect(ui.stageMode).toBe('gallery')
+    expect(guard?.dialog.value).toBeNull()
+  })
+
   describe('processing (R-X18/R-X19)', () => {
     it('cancels silently when the run is still in flight', () => {
       mountHost()

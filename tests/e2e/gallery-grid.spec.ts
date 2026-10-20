@@ -164,6 +164,22 @@ async function computeExpectedLayout(
   return { containerWidth, tileWidth, thumbSize }
 }
 
+/**
+ * Switches the gallery back to grid view if it is not already showing.
+ *
+ * Seeding more images than `maximumThumbnails` (100) makes the gallery pick list view by itself
+ * (T34, resolveAutomaticGalleryView in src/config/limits.ts) — these tests predate that and seed
+ * 400-500. They are about the *grid's* virtualization, so they switch back the way a user would,
+ * through the toolbar toggle, which also records the choice as the user's and stops anything
+ * switching it back underneath them.
+ */
+async function showGrid(page: Page): Promise<void> {
+  if ((await page.getByTestId('gallery-grid').count()) === 0) {
+    await page.getByTestId('gallery-view-toggle').click()
+  }
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+}
+
 test('renders only a bounded window of tiles for a 500-image batch, at any scroll position (R-G10)', async ({
   page,
 }) => {
@@ -172,7 +188,7 @@ test('renders only a bounded window of tiles for a 500-image batch, at any scrol
   await expect(page.getByTestId('gallery-empty-state')).toBeVisible()
 
   await seedBatch(page, 500)
-  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+  await showGrid(page)
 
   const initialTiles = await page.getByTestId('gallery-tile').count()
   expect(initialTiles).toBeGreaterThan(0)
@@ -190,13 +206,13 @@ test('renders only a bounded window of tiles for a 500-image batch, at any scrol
   expect(errors).toEqual([])
 })
 
-test('thumbnail reads and retained blobs never exceed the runtime budget; the rest are placeholders (R-G10)', async ({
+test('retained thumbnails never exceed the runtime budget, and evicted tiles regenerate (R-G10)', async ({
   page,
 }) => {
   const errors = watchForErrors(page)
   await page.goto('/')
   await seedBatch(page, 400) // comfortably more than the 100 default budget
-  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+  await showGrid(page)
 
   // Step through the whole scrollable range so, between them, every row is visited at least once.
   const scrollHeight = await page.locator('.stage-body').evaluate((el) => el.scrollHeight)
@@ -207,11 +223,26 @@ test('thumbnail reads and retained blobs never exceed the runtime budget; the re
 
   await expect.poll(async () => (await getStats(page)).running).toBe(false)
   const stats = await getStats(page)
-  expect(stats.readsStarted).toBeLessThanOrEqual(stats.budget)
+  // Retention is the cap, not reads. The budget bounds how many thumbnail Blobs are held at
+  // once; scrolling past more than that evicts the least-recently-visible entry and regenerates
+  // it if the tile comes back, so `readsStarted` legitimately exceeds the budget on a long
+  // scroll. An earlier revision did cap reads for the lifetime of the batch, which left any tile
+  // scrolled past before its turn a permanent placeholder — Technical Design §10.4 records that
+  // as a correctness bug and the LRU cache as its replacement.
+  expect(stats.readsStarted).toBeGreaterThan(0)
   expect(stats.retained).toBeLessThanOrEqual(stats.budget)
-  // With 400 images and a 100 budget, most of what's on screen at the end must be unread.
-  const placeholders = await page.locator('[data-testid="gallery-tile"] .thumb.placeholder').count()
-  expect(placeholders).toBeGreaterThan(0)
+
+  // The other half of the LRU contract, and the reason it replaced the lifetime read budget:
+  // scrolling back to the top shows tiles whose thumbnails were evicted hundreds of images ago,
+  // and they must be regenerated rather than left as placeholders for the rest of the session.
+  await scrollStageBody(page, 0)
+  await expect
+    .poll(async () => page.locator('[data-testid="gallery-tile"] .thumb.placeholder').count(), {
+      timeout: 15_000,
+    })
+    .toBe(0)
+  // Still capped afterwards: regeneration evicts, it does not grow the cache.
+  expect((await getStats(page)).retained).toBeLessThanOrEqual(stats.budget)
 
   expect(errors).toEqual([])
 })

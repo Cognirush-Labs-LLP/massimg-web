@@ -6,7 +6,7 @@
   "description": "Mass image compressor: a client-side, local-processing web app for batch image compression, resizing and format conversion.",
   "license": "AGPL-3.0-or-later",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "packageManager": "pnpm@11.13.0",
   "scripts": {

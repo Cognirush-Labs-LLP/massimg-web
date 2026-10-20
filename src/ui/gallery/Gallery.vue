@@ -56,7 +56,7 @@ function onDragOver(event: DragEvent): void {
         <div class="title-row">
           <h2 class="title">{{ t('gallery.title') }}</h2>
           <span class="divider" aria-hidden="true">·</span>
-          <p class="meta">{{ metaText }}</p>
+          <p class="meta" data-testid="gallery-meta">{{ metaText }}</p>
         </div>
         <p class="affordance">{{ t('gallery.affordance') }}</p>
       </div>
