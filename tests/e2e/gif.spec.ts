@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
+import { skipWebKitOutsideMac } from './webkit-platform'
 
 // T28 — the GIF path end to end (Functional Design R-Q8, R-Q9, R-Q10, R-F5, R-I12; Technical Design
 // §4.2's GIF row, §7.3, §7.4).
@@ -399,7 +400,12 @@ for (const source of SOURCES) {
     // Colour only. WebKit's `ImageDecoder` reports 255 for a fully transparent pixel where
     // `createImageBitmap` reports 0 (recorded in T29), so the alpha claim is made against the
     // latter, in its own test below, rather than being skipped on one engine.
-    test('renders the frames in order, in the engine’s own decoder', async ({ page }) => {
+    test('renders the frames in order, in the engine’s own decoder', async ({ page }, testInfo) => {
+      skipWebKitOutsideMac(
+        testInfo.project.name,
+        'Linux WebKit renders animated frames as blank pixels, so per-frame content cannot be checked',
+      )
+
       const encoded = await encodeGif(page, source.name, { points: [BODY, MARKER] })
 
       if (encoded.decodedBy === 'none') {

@@ -155,12 +155,40 @@ describe('downloadFinishedRun — two or more successes (R-X30)', () => {
 })
 
 describe('downloadFinishedRun — the first successful delivery (R-X42, R-X54)', () => {
-  it('deletes every artifact and marks delivery downloaded', async () => {
+  it('marks delivery downloaded but keeps every artifact', async () => {
     succeed(2)
 
     await downloadFinishedRun()
 
-    expect(opfsMocks.deleteRunArtifacts).toHaveBeenCalledOnce()
+    expect(useRunStore().delivery).toBe('downloaded')
+    // The whole point: handing a file to the browser is not a confirmation it was saved, so the
+    // run's only copy must survive the attempt. Cleanup happens when the user leaves Processing
+    // (useProcessingRun's scope disposal), not on an unverifiable signal.
+    expect(opfsMocks.deleteRunArtifacts).not.toHaveBeenCalled()
+  })
+
+  it('keeps the artifacts for a single-image direct download too', async () => {
+    succeed(1)
+    opfsMocks.readOutputCopies.mockResolvedValueOnce([
+      new File(['one'], 'one.png', { type: 'image/png' }),
+    ])
+
+    await expect(downloadFinishedRun()).resolves.toBe('downloaded')
+
+    expect(opfsMocks.deleteRunArtifacts).not.toHaveBeenCalled()
+  })
+
+  it('can be pressed again, delivering the same payload a second time', async () => {
+    succeed(2)
+    opfsMocks.readArchive.mockResolvedValue(new Blob(['zip bytes']))
+
+    await downloadFinishedRun()
+    await downloadFinishedRun()
+
+    // Two real handovers, nothing consumed or destroyed in between — the recovery path for a
+    // download the browser silently declined.
+    expect(downloads).toHaveLength(2)
+    expect(opfsMocks.deleteRunArtifacts).not.toHaveBeenCalled()
     expect(useRunStore().delivery).toBe('downloaded')
   })
 

@@ -447,6 +447,36 @@ describe('useProcessingRun storage-failure halt (T40, §10 "Storage write failur
   })
 })
 
+// R-X42's cleanup. This is the *only* thing that removes a downloaded run's artifacts now:
+// pipeline/run-download.ts deliberately keeps them, because handing a file to the browser is not
+// a confirmation it was saved, so the user can press Download again. That makes leaving
+// Processing the point where the results are genuinely finished with — and makes this test the
+// one that stops the change from becoming a storage leak.
+describe('useProcessingRun cleanup on leaving Processing (R-X42)', () => {
+  beforeEach(async () => {
+    await deleteRunArtifacts()
+  })
+
+  it('removes the run artifacts when the scope is disposed', async () => {
+    seed(['a', 'b'])
+    const { run: api, dispose } = setupRun()
+
+    api.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    runs[1]?.settle(completedOutput('b'))
+    await flush()
+
+    // Still there while the user is on the completed screen, so Download can be pressed again.
+    await expect(readArchive()).resolves.toBeInstanceOf(Blob)
+
+    dispose()
+    await flush()
+
+    await expect(readArchive()).rejects.toThrow()
+  })
+})
+
 describe('useProcessingRun Share availability (T42, R-X47/R-X48/R-X49/R-X53)', () => {
   // platform/opfs's in-memory fallback is module-scoped and survives setActivePinia (see T41's
   // handover note) — these tests read the copies back for real, so each needs a clean slate.

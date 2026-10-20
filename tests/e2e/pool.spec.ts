@@ -194,7 +194,13 @@ test('pool size comes from the runtime limits module, not from a literal in the 
   expect(result.mobile).toBe(1)
   expect(result.injected).toBe(2)
   expect(result.widened).toBe(Math.min(result.hardwareConcurrency ?? 1, 8))
-  expect(result.widened).toBeGreaterThan(result.shipped.maximumWorkers)
+  // Same machine, same pool module, a different limits object — so a different size. Compared
+  // against this machine's own shipped-limits size rather than against the shipped *cap*: a
+  // 2-core CI runner can never exceed a cap of 3, so the old form asserted something only a
+  // developer laptop could satisfy and failed every CI run on Chromium and Firefox.
+  if ((result.hardwareConcurrency ?? 1) >= 2) {
+    expect(result.widened).toBeGreaterThan(result.desktop)
+  }
 })
 
 // T31's fix for ImageMagick loading twice (idle preload on the main thread, then again inside the

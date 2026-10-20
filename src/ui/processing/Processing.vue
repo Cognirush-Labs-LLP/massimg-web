@@ -310,19 +310,31 @@ onMounted(() => {
             <p v-if="delivery !== 'pending'" class="delivered" data-testid="processing-delivered">
               <span aria-hidden="true">✓</span> {{ deliveredLabel }}
             </p>
-            <template v-else>
+            <!-- Download, unlike Share, gets no confirmation back from the platform: the file is
+                 handed over and that is the end of it (see pipeline/run-download.ts). So the
+                 checked state above says "Download started" rather than "Downloaded", and the
+                 action stays available beneath it — if nothing arrived, pressing it again is the
+                 user's only recourse, and the run's outputs are deliberately still on disk for
+                 exactly that. Share resolves only on real acceptance, so it collapses to the
+                 checked state alone. -->
+            <template v-if="delivery === 'pending' || delivery === 'downloaded'">
               <button
                 type="button"
-                class="action action--primary"
+                class="action"
+                :class="{ 'action--primary': delivery === 'pending' }"
                 data-testid="processing-download"
                 @click="onDownload"
               >
-                {{ t('processing.complete.download') }}
+                {{
+                  delivery === 'pending'
+                    ? t('processing.complete.download')
+                    : t('processing.complete.downloadAgain')
+                }}
               </button>
               <!-- R-X14/R-X48: beside Download, and only once the exact completed payload has
                    been accepted by this platform. -->
               <button
-                v-if="shareAvailable"
+                v-if="shareAvailable && delivery === 'pending'"
                 type="button"
                 class="action action--primary"
                 data-testid="processing-share"
@@ -406,11 +418,16 @@ onMounted(() => {
    look pressable, while still sitting in the slot the two delivery actions occupied. */
 .delivered {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
   min-block-size: 44px;
   margin: 0;
-  padding-inline: 20px;
+  /* No button-style side padding: this shares the row with the Download-again action, and the
+     stage column is capped at 520px, so 40px of cosmetic padding was the difference between the
+     row fitting on one line and wrapping. */
+  padding-inline: 0;
   color: var(--color-tint);
   font-weight: var(--font-weight-control);
   font-size: 0.95rem;
@@ -463,12 +480,20 @@ onMounted(() => {
 
 .actions {
   display: flex;
+  /* Wrap the row rather than squeeze its items: with the checked delivery line and two buttons
+     sharing it, a narrow viewport otherwise shrank each button until its label broke onto a
+     second line ("Back to images" measured 154px wide and 44px tall at desktop, 96x58 at 390px).
+     Items keep their natural width and move to the next line instead. */
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 
 .action {
+  flex: none;
   min-block-size: 44px;
   padding-inline: 20px;
+  white-space: nowrap;
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-lg);
   background: var(--color-surface-control);

@@ -1009,6 +1009,24 @@ even on desktop — Processing does not attempt a two-column layout.
   the user no clear moment of "it's done, here it is").
 - **R-X17:** "Back to images" returns to Gallery with the batch, settings and
   edits **intact** — nothing is reset by viewing a completed run.
+- **After a Download, the Download action stays on screen as "Download again",
+  below the checked "Download started" line, as a secondary (outlined) action
+  while **Back to images** takes primary.** The browser reports nothing back
+  about whether a download actually saved — an anchor click resolves nothing and
+  throws nothing — so the app cannot distinguish a saved file from one the
+  browser silently declined. Pressing it again is the user's only recourse, and
+  the run's outputs are deliberately kept on disk until the user leaves
+  Processing (R-X42's cleanup moved to that point) so there is something to
+  deliver. **Share is different and collapses to the checked state alone:**
+  `navigator.share()` resolves only when the platform really accepted the
+  payload, which is a genuine confirmation.
+
+  This refines R-X54's "Download and Share are replaced by a checked,
+  non-interactive completion state": the checked state appears exactly as
+  described, but for Download it sits above a still-live retry rather than
+  replacing the action outright. Deleting a run's only copy on an unverifiable
+  signal destroyed results at the moment the app was least sure anything had
+  been delivered, while telling the user it had worked.
 - **R-X16:** a single successful image downloads directly as that image file
   (its real output extension) — no ZIP, no report file.
 - **R-X30/R-X31:** two or more successful images download as a single ZIP

@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { firefox, test, expect, type Page } from '@playwright/test'
+import { isSafariLikeWebKit, skipWebKitOutsideMac } from './webkit-platform'
 
 // T40/T42 — platform/share.ts. Same DOM/dynamic-import constraint as capability.spec.ts
 // (tests/e2e/** has no DOM lib and can't statically import src/platform/*.ts): the module is
@@ -62,6 +63,7 @@ test('is true on WebKit for a real resolved format, matching real desktop Safari
     testInfo.project.name !== 'webkit',
     'WebKit-only: the one engine whose bundled build reports fileShare: true',
   )
+  skipWebKitOutsideMac(testInfo.project.name, 'Linux has no system share sheet to accept files')
 
   expect(await probe(page, ['jpeg'])).toBe(true)
   expect(await probe(page, ['jpeg', 'png', 'webp', 'avif', 'gif'])).toBe(true)
@@ -93,7 +95,10 @@ test('the exact check agrees with the preliminary probe on this engine (T42)', a
   // Not a tautology: the two use different payloads (one representative file per format vs. the
   // real completed array) and T39-A found a browser can accept one and reject the other. Where
   // they *do* agree, that agreement is the useful recorded fact per engine.
-  const expected = testInfo.project.name === 'webkit'
+  // macOS WebKit only: on Linux the same project has no system share sheet and answers `false`
+  // to both, which is still an agreement worth asserting — hence an adjusted expectation here
+  // rather than a skip.
+  const expected = isSafariLikeWebKit(testInfo.project.name)
   expect(await probe(page, ['jpeg'])).toBe(expected)
   expect(await canShareExact(page, ['image/jpeg'])).toBe(expected)
 })
@@ -105,6 +110,7 @@ test('the exact check accepts a real ten-file mixed-format payload on WebKit (T3
     testInfo.project.name !== 'webkit',
     'WebKit-only: the one bundled engine that reports fileShare: true',
   )
+  skipWebKitOutsideMac(testInfo.project.name, 'Linux has no system share sheet to accept files')
 
   const mimeTypes = [
     'image/jpeg',

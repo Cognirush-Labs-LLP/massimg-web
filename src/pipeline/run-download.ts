@@ -1,4 +1,4 @@
-import { deleteRunArtifacts, readArchive, readOutputCopies } from '@/platform/opfs'
+import { readArchive, readOutputCopies } from '@/platform/opfs'
 import { useRunStore } from '@/stores/run'
 
 // Not a measured or specified name anywhere in the design documents — a plain, generic choice
@@ -19,7 +19,8 @@ function triggerDownload(blob: Blob, fileName: string): void {
 
 /**
  * The outcome of one Download press, matching the two distinct §10 rows this can fail on:
- * - `downloaded` — the browser has the file. R-X42's cleanup has run and delivery is fulfilled.
+ * - `downloaded` — the file was handed to the browser. Not a confirmation that it was saved:
+ *   nothing in the platform reports that back, which is why the artifacts are kept (see below).
  * - `assembly-failed` — §10 "ZIP assembly failure". The payload could not be read back out of
  *   storage, so nothing was handed over and no partial file was delivered.
  * - `blocked` — §10 "Download blocked by browser". The payload was fine; the browser refused the
@@ -77,7 +78,19 @@ export async function downloadFinishedRun(): Promise<DownloadOutcome> {
     return 'blocked'
   }
 
-  await deleteRunArtifacts()
+  // Deliberately no `deleteRunArtifacts()` here, unlike the Share path.
+  //
+  // Handing a file to the browser is a one-way announcement: `anchor.click()` resolves nothing
+  // and throws nothing, so a download the browser silently declines — an insecure-origin block,
+  // a full disk, a policy, a dialog the user dismissed — is indistinguishable from one that
+  // saved. Deleting the run's only copy on that signal destroyed the user's results at the exact
+  // moment the app was least sure anything had been delivered, and told them it had worked.
+  //
+  // The artifacts now live until the user actually leaves Processing, where
+  // `useProcessingRun`'s scope disposal already cleans them up (R-X42's cleanup still happens,
+  // just at the point the results are genuinely finished with). Share keeps deleting on success,
+  // because `navigator.share()` resolves only when the platform really accepted the payload —
+  // that is a confirmation, and this is not.
   runStore.markDownloaded()
   return 'downloaded'
 }

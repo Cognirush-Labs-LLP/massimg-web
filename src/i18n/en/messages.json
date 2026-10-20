@@ -34,6 +34,7 @@
   "processing.complete.download": "Download",
   "processing.complete.share": "Share",
   "processing.complete.downloadStarted": "Download started",
+  "processing.complete.downloadAgain": "Download again",
   "processing.complete.shared": "Shared",
   "processing.download.assemblyFailed": "The download file couldn't be assembled, so nothing was saved and no partial file was kept. Press Download to try again.",
   "processing.download.blocked": "Your browser blocked the download. Allow downloads from this site, then press Download again.",

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
+import { skipWebKitOutsideMac } from './webkit-platform'
 
 // T29 — the animated paths end to end (Functional Design R-F5, R-Q6, R-Q9, R-Q10, R-Q15, R-B6,
 // R-C6, R-C16, R-I9, R-I12, R-I17; Technical Design §4.2's animated rows).
@@ -1236,6 +1237,11 @@ for (const source of SOURCES) {
       test('renders the frames in order, in the engine’s own decoder', async ({
         page,
       }, testInfo) => {
+        skipWebKitOutsideMac(
+          testInfo.project.name,
+          'Linux WebKit renders animated frames as blank pixels, so per-frame content cannot be checked',
+        )
+
         const encoded = await encodeAnimation(page, source.name, format, {
           points: [MARKER, BODY],
         })
@@ -1338,7 +1344,12 @@ test.describe('animated output, transparency and coalescing', () => {
 
   // The sub-rectangle fixture: each output frame must be the full composited canvas, whatever
   // sub-rectangles the encoder chose to store internally.
-  test('writes the coalesced content of a sub-rectangle source', async ({ page }) => {
+  test('writes the coalesced content of a sub-rectangle source', async ({ page }, testInfo) => {
+    skipWebKitOutsideMac(
+      testInfo.project.name,
+      'Linux WebKit renders animated frames as blank pixels, so composited content cannot be checked',
+    )
+
     for (const format of ['webp', 'png'] as const) {
       const encoded = await encodeAnimation(page, 'anim-disposal.gif', format, {
         points: DISPOSAL_SQUARES,

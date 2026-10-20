@@ -90,6 +90,10 @@ src/                   application code — see docs/technical-design.md §2 for
   config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T31)
 verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
 tests/                 permanent browser/e2e test suite, added from T05 onward
+  e2e/webkit-platform.ts  which WebKit tests only hold on macOS, and why — not a test file itself
+CONTRIBUTING.md        contributor guide: what to run, and what a green run on each OS proves
+.github/
+  pull_request_template.md  the PR form, including the required "which OS did you test on"
 LICENSE                AGPL v3 (added by T06)
 ```
 
@@ -170,6 +174,34 @@ Instead, once a task's changes are ready for review, propose a short commit mess
 following `docs/commit-guide.md`, so the user can verify the implementation and commit it themselves
 if it looks good. Keep it to the one-line `type: Short description` form unless the change genuinely
 needs the longer body format.
+
+## Pull requests, and saying which platform you tested on
+
+`CONTRIBUTING.md` is the contributor-facing guide to this repository — what to run, and how
+platform differences affect what a green run actually proves. Read its "Platform coverage" section
+before reporting that tests pass. `.github/pull_request_template.md` is the form those answers go
+into.
+
+**When you hand work over, state the operating system you ran the tests on.** This is not
+bookkeeping. CI runs on Linux, where Playwright's `webkit` project is not Safari: it has no system
+share sheet and renders animated images as blank pixels. Twelve browser tests are therefore scoped
+to macOS (`skipWebKitOutsideMac()` in `tests/e2e/webkit-platform.ts`), so **a green run on Linux has
+not exercised animated-image frame output or the Web Share path at all.** Saying "all tests pass"
+without naming the platform overstates what was verified.
+
+So, when summarising a change for the user or writing a pull-request description:
+
+- Name the commands you ran and the platform you ran them on.
+- Name anything you could not run, and why. "Could not verify on macOS WebKit" is a useful
+  sentence; silence is not.
+- If a test failed, say whether it also fails on `main`, whether it fails on only one engine or
+  only one OS, and whether it passes when run alone — the three questions `CONTRIBUTING.md` lists.
+  A failure that reproduces on `main` is not yours; one that appears only in a full parallel run is
+  usually memory pressure on the machine.
+- Never weaken or delete an assertion to get a green run without saying so explicitly and
+  explaining what changed in the application to make it stale. Tests in this repository have drifted
+  behind the code before, and the only defence is that each such change is argued rather than
+  assumed.
 
 ## English variant to use in documentation and code
 Use US English in code and documentation.

@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { firefox, webkit, test, expect, type Page } from '@playwright/test'
+import { isSafariLikeWebKit } from './webkit-platform'
 
 // T17 — platform/capability.ts. tests/e2e/** is type-checked by tsconfig.node.json (lib: ES2022,
 // no DOM, not project-referenced to tsconfig.app.json), so this file can neither statically import
@@ -56,7 +57,10 @@ test('detects capabilities in the standard fixture context', async ({ page }, te
   // the warning T39-A's own task text carried ("Playwright engine presence is not evidence for a
   // native share sheet"). Playwright's WebKit reports `true` even in this headless context,
   // consistent with desktop Safari genuinely supporting file Share per T39-A.
-  const expectedFileShare = testInfo.project.name === 'webkit'
+  // ...and only where that WebKit is macOS's: the Linux build of the same project has no system
+  // share sheet and answers `false`. Every other assertion in this test holds on both, so the
+  // expectation is narrowed rather than the test skipped.
+  const expectedFileShare = isSafariLikeWebKit(testInfo.project.name)
   expect(capabilities.fileShare).toBe(expectedFileShare)
 })
 

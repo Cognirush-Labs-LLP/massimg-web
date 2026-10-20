@@ -515,7 +515,7 @@ describe('Processing view (T38)', () => {
     it.each([
       { action: 'processing-download', mock: 'download', label: 'Download started' },
       { action: 'processing-share', mock: 'share', label: 'Shared' },
-    ] as const)('$mock replaces both actions with "$label"', async ({ action, mock, label }) => {
+    ] as const)('$mock shows the checked "$label" state', async ({ action, mock, label }) => {
       seed(['a'])
       vi.mocked(canShareExactFiles).mockResolvedValue(true)
       if (mock === 'download') {
@@ -536,10 +536,54 @@ describe('Processing view (T38)', () => {
       await flushPromises()
 
       expect(wrapper.get('[data-testid="processing-delivered"]').text()).toContain(label)
-      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+      // Share is gone either way: one delivery is enough, and it reports real acceptance.
       expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
       // R-K5/T42: the delivered state was otherwise visual-only; it must also be announced.
       expect(wrapper.get('[data-testid="processing-announcement"]').text()).toBe(label)
+    })
+
+    // The browser never reports back whether a download saved, so the one action that cannot be
+    // confirmed stays available. Share, which resolves only on real acceptance, does not.
+    it('keeps Download available after a download, and drops it after a share', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      vi.mocked(downloadFinishedRun).mockImplementation(async () => {
+        useRunStore().markDownloaded()
+        return 'downloaded'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-download"]').trigger('click')
+      await flushPromises()
+
+      const retry = wrapper.find('[data-testid="processing-download"]')
+      expect(retry.exists()).toBe(true)
+      expect(retry.text()).toBe('Download again')
+      // No longer the primary action — Back to images is, per R-X54.
+      expect(retry.classes()).not.toContain('action--primary')
+
+      // Pressing it again really does deliver again.
+      await retry.trigger('click')
+      await flushPromises()
+      expect(downloadFinishedRun).toHaveBeenCalledTimes(2)
+    })
+
+    it('drops Download after a share, which the platform does confirm', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      vi.mocked(shareFinishedRun).mockImplementation(async () => {
+        useRunStore().markShared()
+        return 'shared'
+      })
+      const wrapper = await mountProcessing()
+      await completeAll()
+
+      await wrapper.get('[data-testid="processing-share"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="processing-download"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(false)
     })
 
     it('keeps the completed summary and both issue lists visible', async () => {
