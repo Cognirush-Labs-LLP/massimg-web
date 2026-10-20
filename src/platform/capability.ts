@@ -27,7 +27,14 @@ export interface Capabilities {
   fileShare: boolean
 }
 
-const OPFS_PROBE_NAME = '.icompress-capability-probe'
+// Prefix only — each probe appends a random suffix. A fixed name let two overlapping probes
+// destroy each other: each one deletes the file in its `finally`, so the slower probe's handle
+// pointed at a file the faster one had already removed. WebKit surfaces that as
+// `NotFoundError: The object can not be found here.` from `createWritable()`, and probeOpfs()
+// below reports no OPFS at all — a browser that fully supports it falls back to in-memory
+// storage for the whole session. Reproduced consistently on WebKit by probing while the app's
+// own startup probe was still in flight; Chromium and Firefox tolerated the same overlap.
+const OPFS_PROBE_PREFIX = '.icompress-capability-probe'
 
 // A minimal valid 1x1 transparent PNG, used only as a non-empty, real image/png payload for the
 // fileShare functional probe below — canShare looks at File.type and size, not pixel validity
@@ -61,16 +68,19 @@ async function probeOpfs(): Promise<boolean> {
     return false
   }
 
+  // Unique per call, so concurrent probes cannot delete each other's file.
+  const name = `${OPFS_PROBE_PREFIX}-${Math.random().toString(36).slice(2, 10)}`
+
   try {
     const root = await navigator.storage.getDirectory()
     try {
-      const handle = await root.getFileHandle(OPFS_PROBE_NAME, { create: true })
+      const handle = await root.getFileHandle(name, { create: true })
       const writable = await handle.createWritable()
       await writable.write(new Uint8Array([0]))
       await writable.close()
       return true
     } finally {
-      await root.removeEntry(OPFS_PROBE_NAME).catch(() => {})
+      await root.removeEntry(name).catch(() => {})
     }
   } catch {
     return false
