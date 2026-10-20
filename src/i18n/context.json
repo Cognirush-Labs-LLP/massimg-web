@@ -1123,5 +1123,60 @@
     "situation": "The Desktop route's meta description and Open Graph/Twitter description (R-S6).",
     "control": "<meta name=\"description\"> plus og:description/twitter:description content. Not an on-screen UI string.",
     "maxLength": 160
+  },
+  "gallery.emptyState.privacy": {
+    "situation": "The privacy claim inside the Gallery empty-state drop zone (R-V1), below the two Select buttons. The first of two adjacent sentences; the second (gallery.emptyState.privacyAnalytics) states what the site measures. It must stay literally true of what the app does (R-V2): no image bytes, names, dimensions or sizes are sent anywhere, and the only path off the device is the user pressing Share and picking a system target (R-V5). Do not soften 'never' into a hedge, and do not imply the app knows which target was chosen.",
+    "control": "Small, quiet, centred body text below the buttons. Not interactive, and not a link.",
+    "maxLength": 170
+  },
+  "gallery.emptyState.privacyAnalytics": {
+    "situation": "Second sentence of the empty state's privacy block (R-V3): it names exactly what the site's analytics beacon collects — anonymous, aggregate, cookie-free visit counts, and nothing about the user or their files. This is the user-facing disclosure rather than a general reassurance, so if the analytics mechanism changes, this string changes with it.",
+    "control": "Small, quiet, centred body text, directly below gallery.emptyState.privacy. Not interactive, and not a link.",
+    "maxLength": 170
+  },
+  "site.nav.credits": {
+    "situation": "Link to the Credits page (R-V4), shown in both the compact and regular footer variants. Not in the site header's nav.",
+    "control": "Visible link text.",
+    "maxLength": 20
+  },
+  "credits.heading": {
+    "situation": "The <h1> of the Credits page (R-V4), which lists every third-party component bundled into the build. The list itself is generated from 3rd_party_licenses/components.json, so no component name, license name or URL on that page passes through this catalogue.",
+    "control": "Page <h1>.",
+    "maxLength": 40
+  },
+  "credits.appLicense": {
+    "situation": "A line above the Credits page's component table stating the license of this application itself, as distinct from the bundled third-party components below it (Technical Design §7.2). It is the visible text of a link to the project's own source repository.",
+    "control": "Visible link text, one short emphasised line under the heading. Links to the source repository.",
+    "maxLength": 80
+  },
+  "credits.intro": {
+    "situation": "One sentence under the Credits page heading explaining what the table below lists.",
+    "control": "Single body paragraph. Not interactive.",
+    "maxLength": 140
+  },
+  "site.seo.credits.title": {
+    "situation": "Document <title> for the Credits page, plus the og:title/twitter:title meta content (R-S6). Not an on-screen UI string.",
+    "control": "Browser tab title and search-result heading.",
+    "maxLength": 70
+  },
+  "site.seo.credits.description": {
+    "situation": "Meta description for the Credits page, plus the og:description/twitter:description meta content (R-S6). Not an on-screen UI string.",
+    "control": "Search-result and link-preview snippet.",
+    "maxLength": 160
+  },
+  "credits.labelLicense": {
+    "situation": "Label beside one component's license on the Credits page. The value next to it is a license name and SPDX identifier taken verbatim from 3rd_party_licenses/components.json and is never translated.",
+    "control": "Short label in a two-column label/value row. Not interactive.",
+    "maxLength": 20
+  },
+  "credits.labelSource": {
+    "situation": "Label beside the link to one component's upstream project on the Credits page. The link's own text is the URL itself rather than a word, so it is not translated.",
+    "control": "Short label in a two-column label/value row. Not interactive.",
+    "maxLength": 20
+  },
+  "credits.labelLicenseText": {
+    "situation": "Label beside the links to one component's actual license files on the Credits page (LICENSE, COPYING, PATENTS and so on). Each link's text is the filename, which is not translated.",
+    "control": "Short label in a two-column label/value row. Not interactive.",
+    "maxLength": 24
   }
 }

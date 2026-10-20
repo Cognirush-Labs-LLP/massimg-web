@@ -45,6 +45,8 @@ beforeEach(() => {
   shareMocks.shareFiles.mockImplementation(async () => 'shared')
 })
 
+// The other half of R-V5 — that nothing reaches this function until the user presses Share —
+// is asserted in src/ui/processing/Processing.spec.ts, where the button lives.
 describe('shareFinishedRun — the payload (R-X49, R-V5)', () => {
   it('hands over exactly the individual output copies, in the order storage returns them', async () => {
     finishedRunWithSuccesses(3)

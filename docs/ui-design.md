@@ -356,7 +356,7 @@ mechanism compares to invalidate a stale encode.
 
 ## 5. Gallery — empty state
 
-**Satisfies:** R-G1–R-G6, functional-design §3.2.
+**Satisfies:** R-G1–R-G6, R-V1, R-V3, functional-design §3.2, §8.
 
 Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
 
@@ -371,6 +371,21 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
   (`platform/capability.ts`) rather than appearing and failing.
 - Drag-and-drop is accepted **anywhere on the stage**, for both loose files and
   dropped directory entries, not just onto the dashed box.
+- **The privacy block** (R-V1, R-V3; added by T49, which is past this document's
+  T31–T39 cross-reference table — the table was deliberately not widened): small,
+  quiet, centred text below the buttons, in the same register as the formats line.
+  Two complete sentences in **two separate elements** — the claim itself (processing
+  on the device; a result leaves only when the user presses Share) and the analytics
+  disclosure naming exactly what the site measures. Never one sentence assembled
+  from two translated fragments (R-L5), and never a link: the footer on the same
+  screen already links the Privacy page, and a third link inside the drop zone
+  would compete with the drop target and the two calls to action. R-V1's other half —
+  the claim staying *reachable* once images are loaded — is carried by the site
+  footer's existing **Privacy** link, present in every stage mode. A longer privacy
+  line in the compact footer was tried and rejected: below roughly 600px it wrapped
+  that row onto a second line and took 30px off the stage, which showed up as a
+  shorter Preview frame. Shortening the wording does not help, because the wrap is
+  driven by the number of items on the row.
 
 ---
 

@@ -425,15 +425,16 @@ A second question sits underneath: whether separately compiled WASM modules exch
 
 ```
 3rd_party_licenses/
+  components.json     the credited set (see Manifest, below)
   imagemagick/        LICENSE, NOTICE
   libde265/           COPYING
   libheif/            COPYING
-  libwebp/            COPYING
+  libwebp/            COPYING, PATENTS
   aom/                LICENSE, PATENTS
   lcms2/              COPYING
   libjpeg-turbo/      LICENSE
   libpng/             LICENSE
-  gifsicle/           COPYING, README licence section
+  gifsicle/           COPYING, README-LICENSE-SECTION.md, LICENSE-gifsicle-wasm-browser
   oxipng/             LICENSE, LICENSE-jsquash-wrapper
   libimagequant/      COPYING
   upng-js/            LICENSE
@@ -443,11 +444,19 @@ A second question sits underneath: whether separately compiled WASM modules exch
 
 Note that the ImageMagick WASM binary statically links many of these. Their licence texts are not recoverable from the shipped artefact, so each must be sourced from upstream and committed deliberately. A build step that only walks `node_modules` will miss every one of them.
 
+**Manifest.** `components.json` is the single source of truth for which components are credited, holding a display name, licence name, SPDX identifier (or `null` where no single identifier is honest for a dual-licensed component), upstream source URL and licence filenames for each. It is read by `scripts/check-licenses.mjs`, by `scripts/copy-licenses.mjs` and by the credits page itself, so the audited set, the served set and the credited set cannot drift apart.
+
+It holds 16 entries over 14 directories: two directories carry a JavaScript wrapper's own licence alongside the upstream library's (`gifsicle-wasm-browser` beside gifsicle, the jSquash wrapper beside oxipng), and crediting each separately is what lets the wrapper's licence be stated accurately rather than folded into a compound string.
+
+`scripts/check-licenses.mjs` checks both directions: a manifest entry with no licence text on disk fails, and licence text on disk that no entry claims — a whole directory or a single file — fails too. The second direction is what keeps R-V4 true as dependencies change, rather than only at the moment someone last looked. It runs as its own CI step rather than inside `pnpm check`, which deliberately excludes this tree from its lint and format tooling.
+
+`scripts/copy-licenses.mjs` copies the listed files into `dist/3rd_party_licenses/` after the build, so each credits row links the real text on our own origin rather than an upstream URL that can rot. It runs after Workbox has written the service worker, so the texts cannot enter the precache manifest. The files keep their verbatim, mostly extensionless names; a dev/preview middleware in `vite.config.ts` serves them as `text/plain`, and production does the same through `.htaccess` (T52).
+
 **Obligations to satisfy in the application itself.**
 
 - A `LICENSE` file at the repository root and per-file notices.
-- A credits page listing every bundled component, its licence, and a link to its source.
-- A prominent link to the application's own source. AGPL's network provision is written for server-side software, and this application runs in the browser, but a visible source link satisfies it plainly rather than by argument.
+- A credits page listing every bundled component, its licence, and a link to its source. Built in T49 at `/credits`, generated from `components.json`.
+- A prominent link to the application's own source. In the site footer on every route, including the tool's (T43). AGPL's network provision is written for server-side software, and this application runs in the browser, but a visible source link satisfies it plainly rather than by argument.
 
 **Firewall against the desktop product.** AGPL reaches further than GPL. No module may be shared between this application and the proprietary desktop product. They are separate codebases today; the risk is a future convenience, copying a helper across, which would place the desktop product's source under obligation.
 
@@ -892,7 +901,7 @@ The base URL is read from an environment variable rather than hardcoded, so a lo
 - `vite-ssg` needs no Node server: it runs the app once per route at build time and writes real HTML to disk, which fits static hosting on Hostinger (§12) and keeps "everything happens in the browser" true after the crawler has left. A full SSR framework would add a server process this project has deliberately never had.
 - The same build step produces the locale-prefixed paths §11 already requires (`massimg.com/es/`), so locale routing is not a second mechanism bolted on beside page routing.
 
-Routes: `/` (the tool), `/faq`, `/privacy`, `/terms`, `/desktop`, each repeated under every locale prefix in `src/config/site.ts`. None of the tool's internal stage modes is a route.
+Routes: `/` (the tool), `/faq`, `/privacy`, `/terms`, `/credits`, `/desktop`, each repeated under every locale prefix in `src/config/site.ts`. None of the tool's internal stage modes is a route.
 
 **F1**: that `vite-ssg` produces genuinely static, fetchable HTML per route — not one shared shell that depends on client-side JavaScript to show route-specific content — is assumed rather than proven; verified in T31 by fetching a built route's file directly and asserting its title, meta description and body content without executing any script.
 
@@ -901,6 +910,8 @@ Routes: `/` (the tool), `/faq`, `/privacy`, `/terms`, `/desktop`, each repeated 
 FAQ, Privacy, Terms and Desktop are markdown, one file per locale, under `content/<locale>/<page>.md`. The FAQ already lives there, at `content/en/faq.md`; `AGENTS.md` carries the rule for keeping it true as behaviour changes. A locale with no file for a given page falls back to the English file for that page rather than a missing page or an error.
 
 This is a separate mechanism from the interface string catalogue in §11: a content page is continuous prose a person writes and edits, not decomposed into keyed strings, and the CI check in §11 does not apply to it.
+
+The credits page (`/credits`, §7.2) is a sixth public route but is not one of these pages and takes no locale fallback: it is generated from `3rd_party_licenses/components.json`, and component names, licence names, URLs and filenames are data rather than prose. Only its own chrome — heading, intro and column headers — goes through §11's catalogue.
 
 Privacy and Terms ship with placeholder content. The legal text is out of scope for this design and is not an engineering task; the routes and the fallback mechanism are built now so nothing about the pipeline blocks on it later.
 

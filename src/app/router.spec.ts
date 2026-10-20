@@ -6,6 +6,7 @@ import ToolPage from './ToolPage.vue'
 import FaqPage from './FaqPage.vue'
 import PrivacyPage from './PrivacyPage.vue'
 import TermsPage from './TermsPage.vue'
+import CreditsPage from './credits/CreditsPage.vue'
 import DesktopPage from './DesktopPage.vue'
 
 // Importing router.ts pulls in ToolPage.vue, which pulls in the real
@@ -19,8 +20,8 @@ vi.mock('@/pipeline/codecs/loader', () => ({
 }))
 
 describe('router', () => {
-  it('has one route per page, per supported locale (today: 5 pages × "en")', () => {
-    expect(routes).toHaveLength(5 * supportedLocales.length)
+  it('has one route per page, per supported locale (today: 6 pages × "en")', () => {
+    expect(routes).toHaveLength(6 * supportedLocales.length)
   })
 
   it('resolves "/" to the tool page under the default (unprefixed) locale, marked as the app route', () => {
@@ -36,6 +37,7 @@ describe('router', () => {
     ['/faq', 'faq', FaqPage],
     ['/privacy', 'privacy', PrivacyPage],
     ['/terms', 'terms', TermsPage],
+    ['/credits', 'credits', CreditsPage],
     ['/desktop', 'desktop', DesktopPage],
   ])('resolves %s to the %s page, not marked as the app route', (path, name, component) => {
     const router = createRouter({ history: createMemoryHistory(), routes })
@@ -50,14 +52,14 @@ describe('router', () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
 
     expect(router.resolve('/faq').meta.isFaq).toBe(true)
-    for (const path of ['/', '/privacy', '/terms', '/desktop']) {
+    for (const path of ['/', '/privacy', '/terms', '/credits', '/desktop']) {
       expect(router.resolve(path).meta.isFaq).toBe(false)
     }
   })
 
   it('gives every route a non-empty title and description, no two routes sharing either (R-S6)', () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
-    const resolved = ['/', '/faq', '/privacy', '/terms', '/desktop'].map((path) =>
+    const resolved = ['/', '/faq', '/privacy', '/terms', '/credits', '/desktop'].map((path) =>
       router.resolve(path),
     )
 

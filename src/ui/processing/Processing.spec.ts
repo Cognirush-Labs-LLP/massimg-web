@@ -469,6 +469,29 @@ describe('Processing view (T38)', () => {
       expect(shareFinishedRun).toHaveBeenCalledOnce()
     })
 
+    // R-V5 (T49): the handoff is user-directed, so nothing may reach platform/share.ts until
+    // the user presses Share. The payload half of R-V5 — that only the completed output files
+    // are handed over, never the archive or the report — is asserted in
+    // src/pipeline/run-share.spec.ts; together the two describe the whole requirement.
+    it('reaches the platform wrapper only on an explicit activation, never on its own', async () => {
+      seed(['a'])
+      vi.mocked(canShareExactFiles).mockResolvedValue(true)
+      const wrapper = await mountProcessing()
+
+      // Mounted, mid-run, and with the run complete and Share on screen: still untouched.
+      expect(shareFinishedRun).not.toHaveBeenCalled()
+      await completeAll()
+      expect(wrapper.find('[data-testid="processing-share"]').exists()).toBe(true)
+      expect(shareFinishedRun).not.toHaveBeenCalled()
+
+      await wrapper.get('[data-testid="processing-share"]').trigger('click')
+      await flushPromises()
+
+      // Called with nothing: the component passes no argument the user did not ask for.
+      expect(shareFinishedRun).toHaveBeenCalledOnce()
+      expect(vi.mocked(shareFinishedRun).mock.calls[0]).toEqual([])
+    })
+
     it('is absent with zero successes, alongside Download (§10)', async () => {
       seed(['a'])
       vi.mocked(canShareExactFiles).mockResolvedValue(true)

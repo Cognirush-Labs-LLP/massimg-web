@@ -35,6 +35,10 @@ const routeChecks = [
     checks: [[/Terms of Service/, 'renders the Terms page heading']],
   },
   {
+    file: join(dist, 'credits.html'),
+    checks: [[/Credits and licenses/, 'renders the Credits page heading']],
+  },
+  {
     file: join(dist, 'desktop.html'),
     checks: [[/Desktop version/, 'renders the Desktop page heading']],
   },
@@ -162,4 +166,53 @@ if (seoFailed) {
 
 console.log(
   `T45 check: all ${seoEntries.length} routes have distinct, non-empty titles and canonical tags, and sitemap.xml/robots.txt agree — pass.`,
+)
+
+// T49 (R-V4): the licence texts the credits page links must actually be in dist/, and must stay
+// out of the service worker's precache. scripts/copy-licenses.mjs runs after Workbox, so the
+// second check is what fails loudly if workbox.globPatterns is ever widened to reach them —
+// precaching 200KB+ of legal text on every install would be a silent regression otherwise.
+
+const { loadValidatedManifest } = await import('./licenses-manifest.mjs')
+
+let licenceFailed = false
+let licenceFileCount = 0
+
+try {
+  for (const component of loadValidatedManifest()) {
+    for (const file of component.files) {
+      const served = join(dist, '3rd_party_licenses', component.directory, file)
+      licenceFileCount += 1
+      if (!existsSync(served)) {
+        console.error(`T49 check: ${served} not found — did scripts/copy-licenses.mjs run?`)
+        licenceFailed = true
+      } else if (readFileSync(served, 'utf8').trim() === '') {
+        console.error(`T49 check: ${served} is empty.`)
+        licenceFailed = true
+      }
+    }
+  }
+} catch (error) {
+  console.error(`T49 check: ${error.message}`)
+  licenceFailed = true
+}
+
+const serviceWorker = join(dist, 'sw.js')
+if (
+  existsSync(serviceWorker) &&
+  readFileSync(serviceWorker, 'utf8').includes('3rd_party_licenses')
+) {
+  console.error(
+    'T49 check: sw.js references 3rd_party_licenses — the licence texts have entered the ' +
+      'precache manifest. Narrow workbox.globPatterns in vite.config.ts.',
+  )
+  licenceFailed = true
+}
+
+if (licenceFailed) {
+  process.exit(1)
+}
+
+console.log(
+  `T49 check: all ${licenceFileCount} credited licence files are served from dist/ and none is precached — pass.`,
 )

@@ -23,6 +23,14 @@ const { folderPicker } = useCapabilities()
         {{ t('gallery.emptyState.selectFolder') }}
       </button>
     </div>
+    <!-- R-V1/R-V3. Two complete sentences in two elements, never one sentence assembled from two
+         translated fragments (R-L5), and neither is a link: a third link inside the drop zone
+         would compete with the drop target and the two calls to action, and the footer on the
+         same screen already links the Privacy page. -->
+    <div class="privacy">
+      <p>{{ t('gallery.emptyState.privacy') }}</p>
+      <p>{{ t('gallery.emptyState.privacyAnalytics') }}</p>
+    </div>
   </div>
 </template>
 
@@ -57,6 +65,21 @@ const { folderPicker } = useCapabilities()
   font-family: var(--font-family-mono);
   font-size: 11.5px;
   letter-spacing: 0.04em;
+  color: var(--color-text-muted-quiet);
+}
+
+.privacy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-inline-size: 48ch;
+}
+
+.privacy p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  text-wrap: balance;
   color: var(--color-text-muted-quiet);
 }
 

@@ -1,3 +1,5 @@
+import { createReadStream, existsSync, statSync } from 'node:fs'
+import { join, normalize } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
@@ -8,10 +10,64 @@ import { VitePWA } from 'vite-plugin-pwa'
 // `ssgOptions` below doesn't type-check as a known Vite config field.
 import type {} from 'vite-ssg'
 
+// Serves 3rd_party_licenses/** as readable plain text in dev and preview (T49, R-V4). The
+// licence files are LICENSE/COPYING/PATENTS with no extension, so neither Vite's static
+// middleware nor Apache gives them a Content-Type and a browser offers a download instead of
+// displaying them. In production the files are real files under dist/ (copied by
+// scripts/copy-licenses.mjs) and the header comes from .htaccess (T52); this plugin exists so
+// that the URL behaves identically in `vite dev`, `vite preview` and the Playwright suites.
+const serveThirdPartyLicenses = () => {
+  const root = fileURLToPath(new URL('./3rd_party_licenses', import.meta.url))
+  const middleware = (
+    request: { url?: string },
+    response: {
+      setHeader: (name: string, value: string) => void
+      statusCode: number
+      end: (body?: string) => void
+    },
+    next: () => void,
+  ): void => {
+    const path = (request.url ?? '').split('?')[0]
+    if (path === undefined || !path.startsWith('/3rd_party_licenses/')) return next()
+
+    const relative = decodeURIComponent(path.slice('/3rd_party_licenses/'.length))
+    // Reject traversal before touching the filesystem: this middleware maps a URL straight
+    // onto a repository directory, so `..` must never be resolved, not merely cleaned up.
+    if (relative.includes('..') || normalize(relative) !== relative) {
+      response.statusCode = 400
+      return response.end('Bad request')
+    }
+    // Only `<component>/<file>` is licence text. components.json sits at the root of the tree
+    // and is a module the credits page imports through Vite (componentsManifest.ts) — serving
+    // it as text/plain here would shadow that import and break the page.
+    if (relative.split('/').length !== 2) return next()
+
+    const file = join(root, relative)
+    if (!existsSync(file) || !statSync(file).isFile()) {
+      response.statusCode = 404
+      return response.end('Not found')
+    }
+
+    response.setHeader('Content-Type', 'text/plain; charset=utf-8')
+    createReadStream(file).pipe(response as unknown as NodeJS.WritableStream)
+  }
+
+  return {
+    name: 'serve-third-party-licenses',
+    configureServer(server: { middlewares: { use: (fn: typeof middleware) => void } }) {
+      server.middlewares.use(middleware)
+    },
+    configurePreviewServer(server: { middlewares: { use: (fn: typeof middleware) => void } }) {
+      server.middlewares.use(middleware)
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
+    serveThirdPartyLicenses(),
     // T46, Technical Design §12.6. `manifest: false`: T43 already hand-authored and linked
     // public/manifest.json with the real icon set — this plugin's only job here is the service
     // worker. `injectRegister: 'auto'` injects a plain registration script into every

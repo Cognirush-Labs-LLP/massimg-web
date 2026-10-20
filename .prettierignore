@@ -10,3 +10,6 @@ CLAUDE.md
 NOTICE.txt
 LICENSE
 src/pipeline/codecs/oxipng-wasm.generated.*
+
+# The licence manifest is ours, not upstream text — it must stay formatted.
+!3rd_party_licenses/components.json

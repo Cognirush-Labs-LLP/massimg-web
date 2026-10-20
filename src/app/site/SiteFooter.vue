@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // Outer site footer (R-S2, T43). Carries the source-code link R-V4 requires, plus every
-// site-level link (For Desktops, Privacy, Terms, FAQ) — on the tool route the footer is the
-// *only* outer-shell chrome (no header there at all, see SiteHeader.vue), so it has to carry
+// site-level link (For Desktops, Privacy, Terms, Credits, FAQ) — on the tool route the footer is
+// the *only* outer-shell chrome (no header there at all, see SiteHeader.vue), so it has to carry
 // everything a header would otherwise. Two density variants, chosen by SiteShell.vue purely by
-// route: compact (tool route, any viewport — tight padding and an icon-only GitHub link, so
-// the tool still fits the viewport with no page scroll) and regular (every other route —
-// GitHub link carries a visible label too, roomier padding).
+// route: compact (tool route, any viewport — tight padding and an icon-only GitHub link, so the
+// tool still fits the viewport with no page scroll) and regular (every other route — GitHub link
+// carries a visible label too, roomier padding).
 import { t } from '@/i18n/t'
 
 const GITHUB_URL = 'https://github.com/Cognirush-Labs-LLP/massimg-web'
@@ -43,11 +43,17 @@ defineProps<{ compact: boolean }>()
       </svg>
       <span v-if="!compact" class="github-label">{{ t('site.footer.githubLabel') }}</span>
     </a>
+    <!-- Just 'Privacy', in both variants. A longer privacy line was tried here (R-V1's
+         persistent half) and removed: at tool width below ~600px it wrapped the footer onto a
+         second row, costing 30px of stage height — measured, and visible as a shorter Preview
+         frame. R-V1's reachability is carried by this link; the claim itself is stated in full in
+         the Gallery empty state. -->
+    <RouterLink :to="{ name: 'privacy' }">{{ t('site.nav.privacy') }}</RouterLink>
     <a class="for-desktops-link" :href="DESKTOP_DOWNLOAD_URL" target="_blank" rel="noopener">
       {{ t('site.nav.desktop') }}
     </a>
-    <RouterLink :to="{ name: 'privacy' }">{{ t('site.nav.privacy') }}</RouterLink>
     <RouterLink :to="{ name: 'terms' }">{{ t('site.nav.terms') }}</RouterLink>
+    <RouterLink :to="{ name: 'credits' }">{{ t('site.nav.credits') }}</RouterLink>
     <RouterLink :to="{ name: 'faq' }">{{ t('site.nav.faq') }}</RouterLink>
   </footer>
 </template>

@@ -152,10 +152,10 @@ No. Everything runs on your device's regular processor inside the browser — no
 Yes, it's licensed under the GNU AGPL v3.
 
 **Can I see the source code?**
-Yes, the [project's source](https://github.com/Cognirush-Labs-LLP/massimg-web) is public, also linked from the footer on every page. A credits page listing every bundled library isn't built yet, but nothing about the project is private.
+Yes, the [project's source](https://github.com/Cognirush-Labs-LLP/massimg-web) is public, also linked from the footer on every page, alongside a [credits page](/credits) listing every bundled library with its licence and a link to its own source. Nothing about the project is private.
 
 **What other software does this rely on?**
-A handful of established open-source image libraries handle the actual decoding, compressing and animating under the hood. Each one will be named and credited on the app's credits page once it's built.
+A handful of established open-source image libraries handle the actual decoding, compressing and animating under the hood. Each one is named and credited on the [credits page](/credits), with its licence text and a link to its source.
 
 ## 10. What's still being finished
 

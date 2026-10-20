@@ -1,0 +1,132 @@
+{
+  "components": [
+    {
+      "directory": "imagemagick",
+      "name": "ImageMagick",
+      "license": "ImageMagick License",
+      "licenseId": "ImageMagick",
+      "sourceUrl": "https://github.com/ImageMagick/ImageMagick",
+      "files": ["LICENSE", "NOTICE"]
+    },
+    {
+      "directory": "libde265",
+      "name": "libde265",
+      "license": "LGPL-3.0-or-later for the library; MIT for the sample applications",
+      "licenseId": null,
+      "sourceUrl": "https://github.com/strukturag/libde265",
+      "files": ["COPYING"]
+    },
+    {
+      "directory": "libheif",
+      "name": "libheif",
+      "license": "LGPL-3.0-or-later for the library; MIT for the wrappers and samples",
+      "licenseId": null,
+      "sourceUrl": "https://github.com/strukturag/libheif",
+      "files": ["COPYING"]
+    },
+    {
+      "directory": "libwebp",
+      "name": "libwebp",
+      "license": "BSD-3-Clause, with an additional patent grant",
+      "licenseId": "BSD-3-Clause",
+      "sourceUrl": "https://github.com/webmproject/libwebp",
+      "files": ["COPYING", "PATENTS"]
+    },
+    {
+      "directory": "aom",
+      "name": "AOMedia AV1 Codec (libaom)",
+      "license": "BSD-2-Clause, with the Alliance for Open Media Patent License 1.0",
+      "licenseId": "BSD-2-Clause",
+      "sourceUrl": "https://aomedia.googlesource.com/aom/",
+      "files": ["LICENSE", "PATENTS"]
+    },
+    {
+      "directory": "lcms2",
+      "name": "Little CMS (lcms2)",
+      "license": "MIT",
+      "licenseId": "MIT",
+      "sourceUrl": "https://github.com/mm2/Little-CMS",
+      "files": ["COPYING"]
+    },
+    {
+      "directory": "libjpeg-turbo",
+      "name": "libjpeg-turbo",
+      "license": "IJG License and BSD-3-Clause",
+      "licenseId": null,
+      "sourceUrl": "https://github.com/libjpeg-turbo/libjpeg-turbo",
+      "files": ["LICENSE"]
+    },
+    {
+      "directory": "libpng",
+      "name": "libpng",
+      "license": "PNG Reference Library License version 2",
+      "licenseId": "Libpng",
+      "sourceUrl": "https://github.com/pnggroup/libpng",
+      "files": ["LICENSE"]
+    },
+    {
+      "directory": "gifsicle",
+      "name": "gifsicle",
+      "license": "GPL-2.0-only, with the author's alternative grant",
+      "licenseId": "GPL-2.0-only",
+      "sourceUrl": "https://github.com/kohler/gifsicle",
+      "files": ["COPYING", "README-LICENSE-SECTION.md"]
+    },
+    {
+      "directory": "gifsicle",
+      "name": "gifsicle-wasm-browser",
+      "license": "MIT",
+      "licenseId": "MIT",
+      "sourceUrl": "https://github.com/renzhezhilu/gifsicle-wasm-browser",
+      "files": ["LICENSE-gifsicle-wasm-browser"]
+    },
+    {
+      "directory": "oxipng",
+      "name": "oxipng",
+      "license": "MIT",
+      "licenseId": "MIT",
+      "sourceUrl": "https://github.com/oxipng/oxipng",
+      "files": ["LICENSE"]
+    },
+    {
+      "directory": "oxipng",
+      "name": "jSquash oxipng wrapper",
+      "license": "Apache-2.0",
+      "licenseId": "Apache-2.0",
+      "sourceUrl": "https://github.com/jamsinclair/jSquash",
+      "files": ["LICENSE-jsquash-wrapper"]
+    },
+    {
+      "directory": "libimagequant",
+      "name": "libimagequant",
+      "license": "GPL-3.0-or-later, with pngquant's original license for the derived code",
+      "licenseId": null,
+      "sourceUrl": "https://github.com/ImageOptim/libimagequant",
+      "files": ["COPYING"]
+    },
+    {
+      "directory": "upng-js",
+      "name": "UPNG.js",
+      "license": "MIT",
+      "licenseId": "MIT",
+      "sourceUrl": "https://github.com/photopea/UPNG.js",
+      "files": ["LICENSE"]
+    },
+    {
+      "directory": "apng-optimizer",
+      "name": "apng-optimizer",
+      "license": "ISC",
+      "licenseId": "ISC",
+      "sourceUrl": "https://github.com/mljsgto222/apng-optimizer",
+      "files": ["LICENSE"]
+    },
+    {
+      "directory": "client-zip",
+      "name": "client-zip",
+      "license": "MIT",
+      "licenseId": "MIT",
+      "sourceUrl": "https://github.com/Touffy/client-zip",
+      "files": ["LICENSE"]
+    }
+  ]
+}

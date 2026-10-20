@@ -5,6 +5,7 @@ import ToolPage from './ToolPage.vue'
 import FaqPage from './FaqPage.vue'
 import PrivacyPage from './PrivacyPage.vue'
 import TermsPage from './TermsPage.vue'
+import CreditsPage from './credits/CreditsPage.vue'
 import DesktopPage from './DesktopPage.vue'
 
 // One entry per logical page, locale-agnostic.
@@ -64,6 +65,15 @@ const pages: PageRoute[] = [
     component: TermsPage,
     title: t('site.seo.terms.title'),
     description: t('site.seo.terms.description'),
+  },
+  {
+    // Generated from 3rd_party_licenses/components.json rather than markdown, so it is not a
+    // content page and takes no locale fallback (T49, R-V4).
+    path: 'credits',
+    name: 'credits',
+    component: CreditsPage,
+    title: t('site.seo.credits.title'),
+    description: t('site.seo.credits.description'),
   },
   {
     path: 'desktop',

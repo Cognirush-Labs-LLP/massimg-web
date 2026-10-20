@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   check:
-    name: check (vue-tsc + eslint + prettier)
+    name: check (vue-tsc + eslint + prettier + licences)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +24,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      # A separate step, not folded into `pnpm check`: that script audits application code
+      # quality and deliberately excludes 3rd_party_licenses/ from its tooling (T06). This
+      # audits a different thing — that every bundled component is credited (R-V4), which the
+      # credits page depends on being true.
+      - run: pnpm check:licenses
 
   unit:
     name: unit tests (vitest)

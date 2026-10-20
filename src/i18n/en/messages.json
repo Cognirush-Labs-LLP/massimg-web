@@ -223,5 +223,16 @@
   "site.seo.terms.title": "Terms of Service — Mass Image Compressor",
   "site.seo.terms.description": "The terms covering use of the Mass Image Compressor web app.",
   "site.seo.desktop.title": "Desktop Version — Mass Image Compressor",
-  "site.seo.desktop.description": "A separate desktop application for processing very large batches or files without any browser limits."
+  "site.seo.desktop.description": "A separate desktop application for processing very large batches or files without any browser limits.",
+  "gallery.emptyState.privacy": "Your images are compressed on this device and are never uploaded — a finished result leaves only if you press Share and choose where it goes.",
+  "gallery.emptyState.privacyAnalytics": "The site itself counts anonymous visits through a cookie-free analytics service, and sends nothing about you, your files or what you did with them.",
+  "site.nav.credits": "Credits",
+  "credits.heading": "Credits and licenses",
+  "credits.appLicense": "Mass Image Compressor is licensed under the GNU AGPL v3.",
+  "credits.intro": "Every third-party component bundled into this app, with its license and a link to its source.",
+  "site.seo.credits.title": "Credits and Licenses — Mass Image Compressor",
+  "site.seo.credits.description": "Every open-source component bundled into Mass Image Compressor, with its license and a link to its source.",
+  "credits.labelLicense": "License",
+  "credits.labelSource": "Source",
+  "credits.labelLicenseText": "License text"
 }

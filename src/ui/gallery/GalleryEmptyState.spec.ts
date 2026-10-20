@@ -47,6 +47,36 @@ describe('GalleryEmptyState', () => {
     expect(wrapper.find('.select-folder').exists()).toBe(false)
   })
 
+  // R-V1/R-V3. Two sentences in two elements, neither a link: the claim must be readable as
+  // whole sentences (R-L5), and the footer on the same screen owns the Privacy link.
+  it('states the privacy claim and the analytics disclosure as two separate sentences', async () => {
+    getCapabilities.mockResolvedValue({
+      opfs: true,
+      folderPicker: true,
+      crossOriginIsolated: false,
+    })
+    const wrapper = mount(GalleryEmptyState)
+    const sentences = wrapper.findAll('.privacy p')
+
+    expect(sentences).toHaveLength(2)
+    expect(sentences[0]?.text()).toContain('never uploaded')
+    expect(sentences[0]?.text()).toContain('Share')
+    expect(sentences[1]?.text()).toContain('cookie-free analytics')
+    expect(wrapper.find('.privacy a').exists()).toBe(false)
+  })
+
+  it('states the privacy claim whether or not the platform offers a folder picker', async () => {
+    getCapabilities.mockResolvedValue({
+      opfs: true,
+      folderPicker: false,
+      crossOriginIsolated: false,
+    })
+    const wrapper = mount(GalleryEmptyState)
+    await flushCapabilityProbe()
+
+    expect(wrapper.findAll('.privacy p')).toHaveLength(2)
+  })
+
   it('calls addViaFilePicker/addViaFolderPicker on click', async () => {
     getCapabilities.mockResolvedValue({
       opfs: true,

@@ -1087,7 +1087,8 @@ Functional Design §5.7 carries real numbers instead of placeholders.
 The full fixture set and journeys across three engines: single image, mixed batch, folder tree,
 animated batch, a run with failures, cancellation, leaving without delivery, stubbed Share
 availability/success/cancellation/failure, the 10-versus-11 starting-count boundary, and the public
-routes (FAQ, Privacy, Terms, Desktop, `sitemap.xml`, `robots.txt`) reachable and rendering correctly.
+routes (FAQ, Privacy, Terms, Credits, Desktop, `sitemap.xml`, `robots.txt`) reachable and rendering
+correctly.
 
 **Done when:** the suite passes on all three engines in CI and takes an acceptable time to run.
 
@@ -1131,6 +1132,12 @@ handover note records what each value was set to (without committing secrets).
 Production build, content-hashed WASM with long cache lifetimes, deployment to Hostinger, `.htaccess` headers.
 
 - Verify COOP and COEP actually apply and that `crossOriginIsolated` is true. If headers cannot be set, the threaded build is unavailable and single-threaded is the baseline.
+- Serve `dist/3rd_party_licenses/**` as `text/plain; charset=utf-8`. Those files are the licence
+  texts the credits page links (R-V4), copied into `dist/` by `scripts/copy-licenses.mjs` (T49),
+  and most are extensionless (`LICENSE`, `COPYING`, `PATENTS`), so without the header a browser
+  offers a download instead of displaying them. T49 made dev and preview behave this way through a
+  Vite middleware; production is this task's half, and `tests/e2e/credits.spec.ts` asserts the
+  content type, so a missing rule is visible rather than silent.
 - Locale routing as real paths with `hreflang` is built in T43, not here; this task verifies it survives the production deploy rather than building it.
 
 **Done when:** the site serves over HTTPS, headers verified by fetching them, B6 and B9 updated, and first paint measured on a throttled mobile connection.
@@ -1142,7 +1149,7 @@ Production build, content-hashed WASM with long cache lifetimes, deployment to H
 
 Final pass before release.
 
-- Every bundled component, including everything statically linked inside the ImageMagick WASM, has its licence text committed and is credited.
+- Every bundled component, including everything statically linked inside the ImageMagick WASM, has its licence text committed and is credited. Since T49 the audit script reads `3rd_party_licenses/components.json` and fails on an uncredited *directory or file*, not just a missing one, so "the audit script reports nothing missing" is now a stronger statement than it was when this task was written.
 - The gifsicle question in A12 has a recorded answer. If it went against us, remove gifsicle and fall back to ImageMagick's GIF writer.
 - No module is shared with the proprietary desktop product.
 
