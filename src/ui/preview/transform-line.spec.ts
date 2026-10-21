@@ -47,6 +47,7 @@ function batch(overrides: Partial<BatchSettings> = {}): BatchSettings {
     quality: { kind: 'quality', value: 70 },
     dimension: { kind: 'original' },
     format: 'dont-change',
+    animatedAsWebp: true,
     ...overrides,
   }
 }
@@ -203,6 +204,19 @@ describe('describeTransformLine', () => {
     expect(line.notes).toEqual(['animation-substituted'])
     expect(line.outputFormat).toBe('webp')
     expect(line.outputName).toBe('loop.webp')
+  })
+
+  it('states that only the first frame is written when WebP for animated images is off', () => {
+    const line = described(
+      describeTransformLine(
+        image({ name: 'loop.gif', sourceFormat: 'gif', isAnimated: true, hasTransparency: false }),
+        batch({ format: 'jpeg', animatedAsWebp: false }),
+      ),
+    )
+
+    expect(line.notes).toEqual(['animation-flattened'])
+    expect(line.outputFormat).toBe('jpeg')
+    expect(line.outputName).toBe('loop.jpg')
   })
 
   it('never pairs the two disclosures, because R-F6 substitutes WebP and WebP carries alpha', () => {

@@ -1096,6 +1096,34 @@ test('a run carries the job-level resolution caveat ahead of the stage caveats (
   expect(outcomes[1]?.result?.caveats).toEqual([])
 })
 
+// An animated source written as JPEG with WebP for animated images off: the job is a still job, the
+// worker decodes the first frame, and the resolution-time caveat is the one that reaches the report.
+test('the shipped worker writes an animated source as a single-frame JPEG when asked', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const { outcomes } = await runShipped(page, [
+    {
+      imageId: 'first-frame',
+      source: 'animated-gif',
+      settings: {
+        format: 'jpeg',
+        alpha: { kind: 'flatten', background: { r: 255, g: 255, b: 255, a: 1 } },
+        isAnimated: false,
+        sourceFormat: 'gif',
+      },
+      intent: 'run',
+      caveats: [{ kind: 'animation-flattened' }],
+    },
+  ])
+
+  expect(outcomes[0]?.outcome).toBe('completed')
+  expect(outcomes[0]?.result?.format).toBe('jpeg')
+  expect(outcomes[0]?.result?.head.slice(0, 3)).toEqual([0xff, 0xd8, 0xff])
+  expect(outcomes[0]?.result?.caveats.map((c) => c.kind)).toContain('animation-flattened')
+})
+
 // T30: a size target through a real module worker. T28's lesson is why this is here and not only in
 // `size.spec.ts` — the stage passed every test in the page while the shipped pipeline hung, so a path
 // is not proven until a job has gone through `pipeline/worker.ts`.

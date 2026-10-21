@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { FormatSetting } from '@/domain/format'
-import type { QualitySetting } from '@/domain/job'
+import type { BatchSettings, QualitySetting } from '@/domain/job'
 import type { BatchDimension } from '@/domain/types'
 
 /**
@@ -32,5 +32,16 @@ export const useSettingsStore = defineStore('settings', () => {
   // R-F1: "Don't change" is the explicit default.
   const format = ref<FormatSetting>('dont-change')
 
-  return { quality, dimension, format }
+  // An animated source written as a format that cannot animate (JPEG, AVIF) is saved as animated
+  // WebP rather than losing its animation; unchecking it takes the first frame instead.
+  const animatedAsWebp = ref(true)
+
+  const batch = computed<BatchSettings>(() => ({
+    quality: quality.value,
+    dimension: dimension.value,
+    format: format.value,
+    animatedAsWebp: animatedAsWebp.value,
+  }))
+
+  return { quality, dimension, format, animatedAsWebp, batch }
 })

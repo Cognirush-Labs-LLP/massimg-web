@@ -425,7 +425,8 @@ Full-stage dashed drop zone (border `1.5px dashed #303030`, radius ~14px):
 - `W×H · size` on one line, using the UI size formatter.
 - Badges, top-left, in this fixed order when more than one applies:
   **EDITED** (rotation, crop, or recovery resize stored) → **ANIMATED** (multi-frame source written
-  as an animated format) → **SKIPPED** (the last completed run could not meet its size ceiling)
+  as an animated format; **FIRST FRAME** replaces it when the animation will not survive the
+  chosen format, R-F9) → **SKIPPED** (the last completed run could not meet its size ceiling)
   or **FAILED** (processing failed, §14). Badges are text
   labels with their own background, not colour-only indicators (§1's
   colour-never-alone rule).
@@ -635,10 +636,10 @@ Six entries, in this exact order — **the sample mockup ships only four
 | Option | Notes |
 |---|---|
 | **Don't change** (default) | Each image keeps its own input format independently. |
-| JPEG | No alpha, no animation. |
+| JPEG | No alpha, no animation. Shows the "WebP for animated images" checkbox (R-F9). |
 | PNG | Still or animated; still PNG quantized below slider value 85 (R-Q11); animated PNG always lossless (R-Q15). |
 | WebP | Still or animated. |
-| AVIF | Still only — animated AVIF output is not supported. |
+| AVIF | Still only — animated AVIF output is not supported. Shows the "WebP for animated images" checkbox (R-F9). |
 | GIF | For graphics and animation; carries inline warning copy that it produces worse results than JPEG for photographs. |
 
 - **R-F1/R-F2:** "Don't change" resolves per-image; where the input format can't
@@ -648,11 +649,19 @@ Six entries, in this exact order — **the sample mockup ships only four
 - **R-F4:** with "Don't change" selected, the primary action's meta line reads
   **"Original formats"** rather than naming one format.
 - **R-F6:** choosing a still-only format (JPEG or AVIF) for a batch containing an
-  animated source does **not** flatten that source to one frame — it's written as
-  animated WebP instead, and the substitution is stated on the tile, in the
-  Preview transform line, and in the report. There is no separate panel control
-  for this; it's a resolved-settings behaviour surfaced through existing display
-  text.
+  animated source does **not**, by default, flatten that source to one frame — it's
+  written as animated WebP instead, and the substitution is stated on the tile, in the
+  Preview transform line, and in the report.
+- **R-F9:** a **"WebP for animated images"** checkbox sits beneath the dropdown
+  whenever JPEG or AVIF is selected — independent of what is in the batch, so
+  choosing the format before adding images still shows it. It is checked by
+  default. Unchecked, animated sources are written from their first frame only,
+  and the loss is disclosed in four places, none of them requiring a visit to
+  Preview: a hint under the checkbox counting the affected animated images (amber
+  with a ⚠ when unchecked, muted when checked); a **FIRST FRAME** badge in place
+  of ANIMATED on each affected tile and row (amber text, still a text label); an
+  amber ⚠ note on the Preview transform line; and the report's `Animation
+  flattened` caveat. The hint is absent while the batch has no animated image.
 - **R-F7/R-F8:** animated AVIF is never produced as output; animated AVIF as
   *input* is rejected at selection time (§14), not silently accepted and
   mishandled.

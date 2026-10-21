@@ -98,7 +98,7 @@ A color you choose, or transparency if your chosen output format supports it. JP
 ## 6. Animated images (GIF, animated WebP, animated PNG)
 
 **Will my animated GIF/WebP/PNG still animate after compressing?**
-Yes — frame timing and loop count are preserved. If you choose a format that can't animate (JPEG or AVIF), your animation isn't flattened to a single frame: it's saved as an animated WebP instead, so nothing is lost.
+Yes — frame timing and loop count are preserved. If you choose a format that can't animate (JPEG or AVIF), your animation isn't flattened to a single frame by default: it's saved as an animated WebP instead, so nothing is lost. A "WebP for animated images" checkbox appears under the format menu for those two formats. If you untick it, animated images are saved from their first frame only, and the app warns you in the side panel, on the image's tile, in Preview and in the report.
 
 **Does the quality slider affect animated PNG?**
 No. Animated PNG is always saved at full, lossless quality no matter where the slider is set. This avoids a quality-control issue in the underlying tool that could otherwise introduce visible banding in animated PNGs.

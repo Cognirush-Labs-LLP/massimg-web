@@ -5,9 +5,11 @@
 // through t() — same convention `domain/sizes.ts` already uses for KB/MB, since these are
 // standardised acronyms rather than natural-language sentences (docs/task-notes/T35.md, Decisions
 // made). "Don't change" is the one option that is an actual sentence and is translated.
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
-import type { FormatSetting } from '@/domain/format'
+import { supportsAnimation, type FormatSetting } from '@/domain/format'
+import { useBatchStore } from '@/stores/batch'
 import { useSettingsStore } from '@/stores/settings'
 
 interface FormatOption {
@@ -28,7 +30,20 @@ const OPTIONS: FormatOption[] = [
 ]
 
 const settings = useSettingsStore()
-const { format } = storeToRefs(settings)
+const { format, animatedAsWebp } = storeToRefs(settings)
+const { images } = storeToRefs(useBatchStore())
+
+// Offered whenever the chosen format cannot animate, whatever the batch holds: a user who picks the
+// format first and adds images afterwards must still find the choice already on screen.
+const showAnimatedChoice = computed(
+  () => format.value !== 'dont-change' && !supportsAnimation(format.value),
+)
+
+const animatedCount = computed(() => images.value.filter((image) => image.isAnimated).length)
+
+function onAnimatedChange(event: Event): void {
+  settings.animatedAsWebp = (event.target as HTMLInputElement).checked
+}
 
 function onChange(event: Event): void {
   settings.format = (event.target as HTMLSelectElement).value as FormatSetting
@@ -50,6 +65,28 @@ function onChange(event: Event): void {
     </select>
     <p v-if="format === 'gif'" class="format-note" data-testid="format-gif-warning">
       {{ t('panel.format.gifWarning') }}
+    </p>
+    <label v-if="showAnimatedChoice" class="animated-choice">
+      <input
+        type="checkbox"
+        :checked="animatedAsWebp"
+        data-testid="format-animated-webp"
+        @change="onAnimatedChange"
+      />
+      <span>{{ t('panel.format.animatedWebpLabel') }}</span>
+    </label>
+    <p
+      v-if="showAnimatedChoice && animatedCount > 0"
+      class="format-note"
+      :class="{ 'format-note-warning': !animatedAsWebp }"
+      data-testid="format-animated-hint"
+    >
+      <span v-if="!animatedAsWebp" aria-hidden="true">⚠ </span>
+      {{
+        t(animatedAsWebp ? 'panel.format.animatedWebpHintOn' : 'panel.format.animatedWebpHintOff', {
+          count: animatedCount,
+        })
+      }}
     </p>
   </div>
 </template>
@@ -82,5 +119,26 @@ function onChange(event: Event): void {
   color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.format-note-warning {
+  border-color: var(--color-border-warning);
+  color: var(--color-text-warning);
+}
+
+.animated-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.animated-choice input {
+  inline-size: 16px;
+  block-size: 16px;
+  margin: 0;
+  accent-color: var(--color-tint);
 }
 </style>

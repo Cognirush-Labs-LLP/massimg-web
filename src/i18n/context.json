@@ -304,6 +304,11 @@
     "control": "Small text label with its own background, same treatment as gallery.badge.edited. Not interactive.",
     "maxLength": 12
   },
+  "gallery.badge.firstFrame": {
+    "situation": "Tile/row badge shown when the source is a multi-frame image and the user has turned off \"WebP for animated images\" while the chosen output format cannot animate (JPEG, AVIF), so only the first frame will be written. Replaces the ANIMATED badge because the animation will not survive; it is a warning, not a status.",
+    "control": "Small text label with its own background in the warning colour, plus text so colour is never the only signal (R-K10). Not interactive.",
+    "maxLength": 14
+  },
   "gallery.badge.failed": {
     "situation": "Tile/row badge shown when processing failed for this image (Functional Design §10). Last in display order when more than one badge applies.",
     "control": "Small text label with its own background, same treatment as gallery.badge.edited. Not interactive.",
@@ -514,6 +519,21 @@
     "control": "Informational note text, not a button.",
     "maxLength": 80
   },
+  "panel.format.animatedWebpLabel": {
+    "situation": "Label of the checkbox beneath the output-format dropdown, shown only while the chosen format cannot hold animation (JPEG or AVIF). Checked (the default), an animated source is saved as animated WebP instead; unchecked, only its first frame is saved in the chosen format. WebP is a format name and is not translated.",
+    "control": "Visible label of a native checkbox.",
+    "maxLength": 32
+  },
+  "panel.format.animatedWebpHintOn": {
+    "situation": "Hint under the \"WebP for animated images\" checkbox while it is checked and the batch contains animated images. {count} is how many animated images are in the batch. Written so it reads correctly for a count of one. WebP is a format name and is not translated.",
+    "control": "Small muted hint text beneath the checkbox. Not interactive.",
+    "maxLength": 90
+  },
+  "panel.format.animatedWebpHintOff": {
+    "situation": "Warning under the \"WebP for animated images\" checkbox while it is unchecked and the batch contains animated images: those images lose their animation and only the first frame is written. {count} is how many animated images are in the batch. Written so it reads correctly for a count of one.",
+    "control": "Warning-coloured hint text beneath the checkbox, with an icon so colour is not the only signal. Not interactive.",
+    "maxLength": 90
+  },
   "action.meta.multiOriginal": {
     "situation": "Primary action meta line (Functional Design §4.4, R-A2, R-F4) for a batch of more than one image with the format setting on 'Don’t change'. {count} is the batch size. Shown beneath the Compress button's label, states facts only — never an estimated output size.",
     "control": "Small mono meta text under the primary button. Exact wording per docs/ui-design.md §10 example: '6 images · Original formats · ZIP'. 'Original formats' itself is not re-translated here — it's baked into this template rather than composed from panel.format.optionDontChange, since R-L5 forbids building a sentence by concatenating two translated fragments.",
@@ -687,6 +707,11 @@
   "preview.transform.animationSubstituted": {
     "situation": "Shown under the transform line when the image is animated and the chosen output format cannot hold animation, so WebP is written instead of dropping the frames. R-F6 requires the substitution to be stated on the tile, on this line, and in the report. WebP is a format name and is not translated.",
     "control": "Small muted note under the transform line. Not interactive.",
+    "maxLength": 120
+  },
+  "preview.transform.animationFlattened": {
+    "situation": "Shown under the transform line when the image is animated, the chosen output format cannot hold animation, and the user turned off \"WebP for animated images\", so only the first frame is written. This is a warning: the animation is lost.",
+    "control": "Small warning-coloured note under the transform line, with an icon so colour is not the only signal. Not interactive.",
     "maxLength": 120
   },
   "preview.transform.originalKeptTarget": {

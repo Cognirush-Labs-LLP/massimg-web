@@ -367,7 +367,8 @@ APNG is not a separate entry. An animated source written as PNG produces an anim
 **Animated sources**
 
 - R-F5 Animated output is supported for GIF, WebP and PNG. An animated source keeps its animation when the selected format is one of these, or when the format is "Don't change" and the source is one of these.
-- R-F6 When a still-only format (JPEG, AVIF) is selected for a batch containing an animated source, that image is written as animated WebP rather than flattened to one frame. The tile, the Preview transform line and the report all state the substitution (P1).
+- R-F6 When a still-only format (JPEG, AVIF) is selected and "WebP for animated images" is on, an animated source is written as animated WebP rather than flattened to one frame. The tile, the Preview transform line and the report all state the substitution (P1).
+- R-F9 Whenever the selected format is JPEG or AVIF, the Format section shows a "WebP for animated images" checkbox, on by default, whether or not the batch currently holds an animated image. Off, each animated source is written in the selected format from its first frame only, which is what the desktop compressor does. That loss is disclosed (P1) where users look rather than only in Preview: the side panel states how many animated images are affected, the tile shows FIRST FRAME in place of ANIMATED, the Preview transform line carries a warning, and the report records an `Animation flattened` caveat.
 - R-F7 Animated AVIF output is not supported. AVIF remains available as a still format, where it is the main reason people want it.
 - R-F8 Animated AVIF input is rejected at selection time with a message naming the reason. It is not silently flattened (P1) and not partially supported (P2).
 
@@ -557,6 +558,7 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 | --- | --- |
 | Transparency flattened | Source had transparent pixels, output format has no alpha. States the fill colour used. |
 | Animation substituted | Animated source written as WebP because the chosen format cannot animate. |
+| Animation flattened | Animated source written as its first frame only, because the chosen format cannot animate and "WebP for animated images" was off. |
 | Metadata removed | EXIF, IPTC or XMP was present and has been stripped. States whether GPS data was among it. |
 | Original kept | The byte-for-byte original won under R-Q2 or R-X24. States whether it already met the size target or the re-encode was not smaller. |
 | Output larger than input | R-X45 applied. States both sizes. |
@@ -776,6 +778,7 @@ Notes that affect behaviour:
 | Surface | `#060606` to `#121212` | Panel, controls, tiles |
 | Border | `#242424` (group), `#2c2c2c` (control) | Grey separators |
 | Muted text | `#7e7e7e` to `#a2a2a2` | Secondary and label text |
+| Warning | `#f5c04a` text, `#7a5b13` border | A consequence the user may not expect, such as an animation reduced to its first frame. Always paired with an icon or text |
 
 Dark theme only. Tint is reserved for action and state. It is never decorative. The donut in R-X4 is the one place where colour distinguishes categories, and it is labelled in text for that reason.
 

@@ -326,6 +326,18 @@ describe('Preview', () => {
     )
   })
 
+  it('warns on the line that only the first frame is written when WebP for animated images is off', async () => {
+    seed(['a'], 'a', { sourceFormat: 'gif', isAnimated: true })
+    const settings = useSettingsStore()
+    settings.format = 'jpeg'
+    settings.animatedAsWebp = false
+    const wrapper = await mountPreview()
+
+    const note = wrapper.get('[data-testid="preview-transform-note"]')
+    expect(note.text()).toContain('only the first frame')
+    expect(note.classes()).toContain('note-warning')
+  })
+
   it('stays silent about flattening for a JPEG source, which can never carry transparency', async () => {
     seed(['a'])
     useSettingsStore().format = 'jpeg'

@@ -21,6 +21,8 @@ export interface BatchSettings {
   quality: QualitySetting
   dimension: BatchDimension
   format: FormatSetting
+  /** What an animated source does when the chosen format cannot animate: WebP, or its first frame. */
+  animatedAsWebp: boolean
 }
 
 /** Familiar lower output edges offered beside a measured dimension recovery, smallest first. */
@@ -192,7 +194,12 @@ function opaque(background: Rgba): Rgba {
 
 /** Resolves batch-wide controls into the settings used for one image job. */
 export function resolveSettings(image: SettingsImage, batch: BatchSettings): SettingsResolution {
-  const format = resolveFormat(image.sourceFormat, image.isAnimated, batch.format)
+  const format = resolveFormat(
+    image.sourceFormat,
+    image.isAnimated,
+    batch.format,
+    batch.animatedAsWebp,
+  )
 
   if (format.kind === 'rejected') {
     return format
@@ -214,6 +221,42 @@ export function resolveSettings(image: SettingsImage, batch: BatchSettings): Set
     },
     caveats: format.caveats,
   }
+}
+
+/** What the batch format does to an animated source whose own format cannot be kept as animated. */
+export type AnimationOutcome = 'webp' | 'first-frame'
+
+/**
+ * The format-driven fate of one image's animation, or `null` when the format leaves it alone (a still
+ * source, or an animated source written as GIF, PNG or WebP). Shared by the gallery badge, the side
+ * panel hint and the Preview transform line so the three cannot disagree.
+ */
+export function animationOutcome(
+  image: Pick<SettingsImage, 'sourceFormat' | 'isAnimated'>,
+  batch: BatchSettings,
+): AnimationOutcome | null {
+  if (!image.isAnimated) {
+    return null
+  }
+
+  const resolution = resolveFormat(
+    image.sourceFormat,
+    image.isAnimated,
+    batch.format,
+    batch.animatedAsWebp,
+  )
+
+  if (resolution.kind !== 'resolved') {
+    return null
+  }
+
+  if (resolution.caveats.some((caveat) => caveat.kind === 'animation-flattened')) {
+    return 'first-frame'
+  }
+
+  return resolution.caveats.some((caveat) => caveat.kind === 'animation-substituted')
+    ? 'webp'
+    : null
 }
 
 /**
@@ -303,7 +346,12 @@ export function describePrimaryActionOutput(
     return { kind: 'single', formatLabel: 'original', dimensions }
   }
 
-  const resolution = resolveFormat(image.sourceFormat, image.isAnimated, batch.format)
+  const resolution = resolveFormat(
+    image.sourceFormat,
+    image.isAnimated,
+    batch.format,
+    batch.animatedAsWebp,
+  )
 
   return {
     kind: 'single',

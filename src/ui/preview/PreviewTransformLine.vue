@@ -102,11 +102,16 @@ const notes = computed(() => {
     return []
   }
 
-  return line.notes.map((note) =>
-    note === 'animation-substituted'
-      ? t('preview.transform.animationSubstituted')
-      : t('preview.transform.flatten', { format: FORMAT_DISPLAY_NAME[line.outputFormat] }),
-  )
+  return line.notes.map((note) => ({
+    key: note,
+    warning: note === 'animation-flattened',
+    text:
+      note === 'animation-substituted'
+        ? t('preview.transform.animationSubstituted')
+        : note === 'animation-flattened'
+          ? t('preview.transform.animationFlattened')
+          : t('preview.transform.flatten', { format: FORMAT_DISPLAY_NAME[line.outputFormat] }),
+  }))
 })
 
 const outputSelectionNote = computed(() => {
@@ -134,8 +139,14 @@ const outputSelectionNote = computed(() => {
       <span class="arrow"> → </span>
       <span v-if="compactArrowParts.after">{{ compactArrowParts.after }}</span>
     </p>
-    <p v-for="note in notes" :key="note" class="note" data-testid="preview-transform-note">
-      {{ note }}
+    <p
+      v-for="note in notes"
+      :key="note.key"
+      class="note"
+      :class="{ 'note-warning': note.warning }"
+      data-testid="preview-transform-note"
+    >
+      <span v-if="note.warning" aria-hidden="true">⚠ </span>{{ note.text }}
     </p>
     <p v-if="outputSelectionNote" class="note" data-testid="preview-output-selection-note">
       {{ outputSelectionNote }}
@@ -164,6 +175,10 @@ const outputSelectionNote = computed(() => {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 11.5px;
+}
+
+.note-warning {
+  color: var(--color-text-warning);
 }
 
 /* The compact line's arrow carries more weight than the rest of the (already muted) line, so the

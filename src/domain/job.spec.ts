@@ -149,6 +149,7 @@ const BASE_BATCH = {
   quality: { kind: 'quality', value: 70 },
   dimension: { kind: 'fit-long-edge', pixels: 1920 },
   format: 'jpeg',
+  animatedAsWebp: true,
 } as const satisfies BatchSettings
 
 function resolved(image: SettingsImage, batch: BatchSettings) {
@@ -349,6 +350,18 @@ describe('settings resolution', () => {
       expect(result.caveats).toEqual([{ kind: 'animation-substituted' }])
     })
 
+    it('writes an animated source as a still of its first frame, with a flatten caveat, when WebP is off', () => {
+      const result = resolved(
+        { ...BASE_IMAGE, sourceFormat: 'gif', isAnimated: true },
+        { ...BASE_BATCH, format: 'jpeg', animatedAsWebp: false },
+      )
+
+      expect(result.settings.format).toBe('jpeg')
+      expect(result.settings.isAnimated).toBe(false)
+      expect(result.settings.alpha.kind).toBe('flatten')
+      expect(result.caveats).toEqual([{ kind: 'animation-flattened' }])
+    })
+
     // T29: the source format is carried into the resolved settings because two pipeline decisions
     // key off it rather than off the output — which codecs a job loads, and which decoder the
     // animated path uses. R-F6's substitution changes the output and must not touch the source.
@@ -539,6 +552,7 @@ describe('describePrimaryActionOutput', () => {
     quality: { kind: 'quality', value: 70 },
     dimension: { kind: 'original' },
     format: 'dont-change',
+    animatedAsWebp: true,
     ...overrides,
   })
 

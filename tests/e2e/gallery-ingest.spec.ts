@@ -1,6 +1,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
@@ -107,4 +108,45 @@ test('a Dimension help dialog has no automated accessibility violations, open', 
   await expect(page.getByTestId('help-dialog')).toBeVisible()
 
   await expectNoViolations(page, 'help-dialog')
+})
+
+test('WebP for animated images: offered before any image is added, and the warning follows the choice', async ({
+  page,
+}) => {
+  const animatedGif = fileURLToPath(new URL('../fixtures/animated/anim-6f.gif', import.meta.url))
+  const { pngA } = writeFixtures()
+  const checkbox = page.getByTestId('format-animated-webp')
+
+  await page.goto('/')
+  await expect(checkbox).toHaveCount(0)
+
+  // Choosing the format first still shows the choice, with the default on.
+  await page.getByTestId('format-select').selectOption('jpeg')
+  await expect(checkbox).toBeChecked()
+  await expect(page.getByTestId('format-animated-hint')).toHaveCount(0)
+
+  const chooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Select images' }).click()
+  await (await chooserPromise).setFiles([animatedGif, pngA])
+  await expect(page.getByTestId('gallery-grid')).toBeVisible()
+
+  await expect(page.getByTestId('format-animated-hint')).toContainText('animated WebP')
+  await expect(page.locator('.badge-animated')).toHaveText('ANIMATED')
+
+  await checkbox.uncheck()
+
+  await expect(page.getByTestId('format-animated-hint')).toContainText('first frame')
+  await expect(page.locator('.badge-first-frame')).toHaveText('FIRST FRAME')
+  await expect(page.locator('.badge-animated')).toHaveCount(0)
+
+  const results = await new AxeBuilder({ page })
+    .include('[data-testid="format-animated-hint"]')
+    .include('.badge-first-frame')
+    .analyze()
+  expect(results.violations).toEqual([])
+
+  // Switching to a format that can animate removes the choice and restores the ANIMATED badge.
+  await page.getByTestId('format-select').selectOption('webp')
+  await expect(checkbox).toHaveCount(0)
+  await expect(page.locator('.badge-animated')).toHaveText('ANIMATED')
 })

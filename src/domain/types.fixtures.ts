@@ -72,6 +72,7 @@ export const jobFixture = {
 export const caveatFixtures = [
   { kind: 'transparency-flattened', fill: { r: 255, g: 255, b: 255, a: 1 } },
   { kind: 'animation-substituted' },
+  { kind: 'animation-flattened' },
   { kind: 'metadata-removed', gpsDataRemoved: true },
   { kind: 'original-kept', reason: 'encoded-not-smaller' },
   { kind: 'output-larger-than-input', inputBytes: 100, outputBytes: 120 },

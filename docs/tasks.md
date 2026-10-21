@@ -610,6 +610,19 @@ Quality with mode toggle and chips, the Dimension accordion, the Format dropdown
 
 **Done when:** every control writes to the settings store, the Dimension accordion allows only one selection, and the crop notes appear under the conditions in R-D2 and R-D3.
 
+### T35-B — WebP for animated images
+
+**Functional Design:** R-F6, R-F9, R-X46
+**Assumptions:** A3
+**Depends on:** T35, T36, T29
+
+A batch-wide "WebP for animated images" checkbox, on by default, offered whenever the chosen format is JPEG or AVIF. Off, an animated source is written from its first frame only, matching the desktop compressor.
+
+- The choice is always visible for those formats, not only once an animated image is in the batch.
+- The loss is disclosed outside Preview: a side-panel hint with the affected count, a FIRST FRAME badge on the tile and row, a Preview transform-line warning, and an `Animation flattened` report caveat.
+
+**Done when:** the unchecked path produces a single-frame JPEG or AVIF from an animated GIF, WebP and APNG on all three engines, the checked path is byte-for-byte what it was before, and the four disclosures appear.
+
 ### T36 — Preview mode
 
 **Functional Design:** R-P1 to R-P8, R-M3

@@ -63,6 +63,7 @@ function batchSettings(overrides: Partial<BatchSettings> = {}): BatchSettings {
     quality: { kind: 'quality', value: 70 },
     dimension: { kind: 'original' },
     format: 'dont-change',
+    animatedAsWebp: true,
     ...overrides,
   }
 }

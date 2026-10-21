@@ -32,6 +32,7 @@ const BATCH: BatchSettings = {
   quality: { kind: 'quality', value: 80 },
   dimension: { kind: 'original' },
   format: 'png',
+  animatedAsWebp: true,
 }
 
 function pngQuality(slider: number): QualitySettings {

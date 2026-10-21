@@ -253,6 +253,7 @@ export function useProcessingRun(): ProcessingRunState {
       quality: toRaw(settingsStore.quality),
       dimension: toRaw(settingsStore.dimension),
       format: settingsStore.format,
+      animatedAsWebp: settingsStore.animatedAsWebp,
     }
 
     // Resolved once, up front, in batch order — not lazily per image as before T40. Naming must

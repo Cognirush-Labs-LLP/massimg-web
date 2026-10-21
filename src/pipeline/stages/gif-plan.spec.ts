@@ -24,6 +24,7 @@ const BATCH: BatchSettings = {
   quality: { kind: 'quality', value: 80 },
   dimension: { kind: 'original' },
   format: 'gif',
+  animatedAsWebp: true,
 }
 
 function gifQuality(slider: number): QualitySettings {

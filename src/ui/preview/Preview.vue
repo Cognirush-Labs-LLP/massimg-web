@@ -50,6 +50,7 @@ const settings = computed<BatchSettings>(() => ({
   quality: settingsStore.quality,
   dimension: settingsStore.dimension,
   format: settingsStore.format,
+  animatedAsWebp: settingsStore.animatedAsWebp,
 }))
 
 const encode = usePreviewEncode({

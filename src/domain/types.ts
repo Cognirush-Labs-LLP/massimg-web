@@ -107,7 +107,7 @@ export interface Job {
   intent: 'preview' | 'run'
   /**
    * Caveats already decided before the job was built — `resolveFormat`'s `animation-substituted`
-   * is the one today. Optional because most jobs have none and most tests build one directly rather
+   * and `animation-flattened`. Optional because most jobs have none and most tests build one directly rather
    * than through `resolveSettings`; `executeJob` merges whatever is here ahead of what its own
    * stages produce, so this is the one place a resolution-time caveat can still reach the report.
    */
@@ -143,6 +143,7 @@ export type OriginalKeptReason = 'already-within-size-target' | 'encoded-not-sma
 export type Caveat =
   | { kind: 'transparency-flattened'; fill: Rgba }
   | { kind: 'animation-substituted' }
+  | { kind: 'animation-flattened' }
   | { kind: 'metadata-removed'; gpsDataRemoved: boolean }
   | { kind: 'original-kept'; reason: OriginalKeptReason }
   | { kind: 'output-larger-than-input'; inputBytes: number; outputBytes: number }

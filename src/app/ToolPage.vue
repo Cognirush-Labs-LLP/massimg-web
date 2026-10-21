@@ -73,6 +73,7 @@ const primaryActionMeta = computed(() => {
     quality: settingsStore.quality,
     dimension: settingsStore.dimension,
     format: settingsStore.format,
+    animatedAsWebp: settingsStore.animatedAsWebp,
   })
 
   if (summary.kind === 'empty') {

@@ -45,6 +45,12 @@
      WCAG AA 4.5:1 against every surface it actually sits on, not just the app background. */
   --color-text-muted-quiet: #7e7e7e;
 
+  /* Warning: a consequence the user may not expect, such as an animation reduced to one frame. Amber
+     rather than the tint red, which is reserved for the primary action. Always paired with an icon or
+     text so colour is never the only signal. */
+  --color-text-warning: #f5c04a;
+  --color-border-warning: #7a5b13;
+
   /* --- Typography (§14.2) --- */
 
   /* System fonts only — no webfont is bundled. A bundled Latin face would cover

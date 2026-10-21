@@ -218,9 +218,40 @@ describe('format routing', () => {
   it.each(FORMAT_CASES)(
     'routes $inputFormat (animated=$isAnimated) under $setting',
     ({ inputFormat, isAnimated, setting, expected }) => {
-      expect(resolveFormat(inputFormat, isAnimated, setting)).toEqual(expected)
+      expect(resolveFormat(inputFormat, isAnimated, setting, true)).toEqual(expected)
     },
   )
+
+  describe('without WebP for animated images', () => {
+    it.each([
+      ['gif', 'jpeg', 'jpeg'],
+      ['gif', 'avif', 'avif'],
+      ['png', 'jpeg', 'jpeg'],
+      ['webp', 'avif', 'avif'],
+      ['heic', 'dont-change', 'jpeg'],
+    ] as const)(
+      'writes animated %s as a still %s from its first frame under %s',
+      (inputFormat, setting, format) => {
+        expect(resolveFormat(inputFormat, true, setting, false)).toEqual({
+          kind: 'resolved',
+          format: setting === 'dont-change' ? format : setting,
+          isAnimated: false,
+          caveats: [{ kind: 'animation-flattened' }],
+        })
+      },
+    )
+
+    it.each(
+      FORMAT_CASES.filter(
+        ({ expected }) => expected.kind !== 'resolved' || !expected.caveats.length,
+      ),
+    )(
+      'leaves $inputFormat (animated=$isAnimated) under $setting as it was',
+      ({ inputFormat, isAnimated, setting, expected }) => {
+        expect(resolveFormat(inputFormat, isAnimated, setting, false)).toEqual(expected)
+      },
+    )
+  })
 
   it.each([
     ['jpeg', false],

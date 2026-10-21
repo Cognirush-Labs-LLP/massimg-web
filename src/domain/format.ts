@@ -40,7 +40,8 @@ export function isAlphaCapable(
   isAnimated: boolean,
   setting: FormatSetting,
 ): boolean {
-  const resolution = resolveFormat(inputFormat, isAnimated, setting)
+  // Animated sources never reach Edit, so the animated fallback cannot change the answer here.
+  const resolution = resolveFormat(inputFormat, isAnimated, setting, true)
   return resolution.kind === 'resolved' && supportsAlpha(resolution.format)
 }
 
@@ -84,11 +85,17 @@ export function sizeTargetDisabledReason(format: EncodableFormat): string | null
   }
 }
 
-/** Resolves a batch format choice for one input image. */
+/**
+ * Resolves a batch format choice for one input image.
+ *
+ * `animatedAsWebp` decides what an animated source does when the requested format cannot animate:
+ * written as animated WebP (true), or as a still of its first frame in the requested format (false).
+ */
 export function resolveFormat(
   inputFormat: Format,
   isAnimated: boolean,
   setting: FormatSetting,
+  animatedAsWebp: boolean,
 ): FormatResolution {
   if (inputFormat === 'avif' && isAnimated) {
     return { kind: 'rejected', reason: 'animated-avif-input' }
@@ -98,11 +105,20 @@ export function resolveFormat(
     setting === 'dont-change' ? (isEncodableFormat(inputFormat) ? inputFormat : 'jpeg') : setting
 
   if (isAnimated && !supportsAnimation(requestedFormat)) {
+    if (animatedAsWebp) {
+      return {
+        kind: 'resolved',
+        format: 'webp',
+        isAnimated: true,
+        caveats: [{ kind: 'animation-substituted' }],
+      }
+    }
+
     return {
       kind: 'resolved',
-      format: 'webp',
-      isAnimated: true,
-      caveats: [{ kind: 'animation-substituted' }],
+      format: requestedFormat,
+      isAnimated: false,
+      caveats: [{ kind: 'animation-flattened' }],
     }
   }
 

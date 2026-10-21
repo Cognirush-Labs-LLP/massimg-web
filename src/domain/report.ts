@@ -110,6 +110,8 @@ export function formatCaveat(caveat: Caveat): string {
       return `Transparency flattened to ${formatFill(caveat.fill)}; output format has no alpha channel`
     case 'animation-substituted':
       return 'Animation substituted; output written as WebP because the chosen format cannot animate'
+    case 'animation-flattened':
+      return 'Animation flattened; only the first frame was written because the chosen format cannot animate'
     case 'metadata-removed':
       return caveat.gpsDataRemoved
         ? 'Metadata removed, including GPS data'
@@ -209,7 +211,9 @@ function describeDimensionSetting(dimension: BatchDimension): string {
 
 /** Hardcoded English for the report (R-L3) — mirrors the batch settings used for the run, never
  * the translated side-panel copy (`panel.quality.*`/`panel.dimension.*`/`panel.format.*`). */
-export function describeReportSettings(settings: BatchSettings): ReportSettings {
+export function describeReportSettings(
+  settings: Omit<BatchSettings, 'animatedAsWebp'>,
+): ReportSettings {
   return {
     quality: describeQualitySetting(settings.quality),
     format: describeFormatSetting(settings.format),

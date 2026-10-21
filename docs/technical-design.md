@@ -257,7 +257,7 @@ bytes it accompanies and makes no second selection.
 Batch settings become per-image settings before the job is built, in `domain/job.ts`. This is where most of the Functional Design's conditional behaviour lives, and it is entirely pure:
 
 - Format resolution under "Don't change" (R-F1, R-F2).
-- Animated substitution when a still-only format is chosen (R-F6).
+- Animated substitution when a still-only format is chosen (R-F6), or a still of the first frame when the batch's `animatedAsWebp` setting is off (R-F9). In the second case the job is an ordinary still job (`isAnimated: false`) and the stills path decodes frame 0 with `decodeFrame`, carrying an `animation-flattened` caveat.
 - Crop overriding the batch dimension rule (R-D1); rotation not overriding it (R-D4); a trailing applied recovery resize resolving to an internal exact dimension after the crop.
 - PNG quality rescale and lossless threshold (R-Q11, R-Q12).
 - Lossless selection above 95 (R-Q5).

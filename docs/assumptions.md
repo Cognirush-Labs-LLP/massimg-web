@@ -109,6 +109,8 @@ Six frames at 400×400 written and read back as six. WebP 279 ms, GIF 439 ms, AV
 
 **Method.** Build a `MagickImageCollection`, set `format` on each frame, `write(format, cb)`, read back, assert frame count.
 
+**Extended for R-F9 (first frame through the still decoder).** With "WebP for animated images" off, an animated GIF, WebP or APNG written as JPEG or AVIF goes through `decodeFrame` (`ImageMagick.read`), not `decodeAnimation`. Measured on Chromium, Firefox and WebKit (`tests/e2e/animation.spec.ts`, "the still decoder on an animated source"): it returns the **full-canvas first frame** for all three, including a GIF whose later frames are sub-rectangles, with the transparent region transparent. No fallback to `decodeAnimation` is needed. This is the same silent single-frame behaviour D6/C7 record for APNG, here relied on deliberately rather than guarded against.
+
 **Note.** Animated AVIF was dropped by decision (R-F7), not capability. It encodes correctly. Given D7, the cost argument against it is weaker than it was when the decision was made, and it is reasonable to revisit.
 
 ---

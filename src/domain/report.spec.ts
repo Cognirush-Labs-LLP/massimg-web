@@ -188,10 +188,11 @@ describe('report model and YAML serialization', () => {
 })
 
 describe('the closed R-X46 caveat set', () => {
-  it('formats all eight and only the eight caveat variants', () => {
+  it('formats all nine and only the nine caveat variants', () => {
     expect(caveatFixtures.map(formatCaveat)).toEqual([
       'Transparency flattened to white; output format has no alpha channel',
       'Animation substituted; output written as WebP because the chosen format cannot animate',
+      'Animation flattened; only the first frame was written because the chosen format cannot animate',
       'Metadata removed, including GPS data',
       'Original kept; re-encoding was not smaller',
       'Output larger than input; input 100.00 B, output 120.00 B',

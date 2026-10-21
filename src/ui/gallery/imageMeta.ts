@@ -3,26 +3,32 @@
 // (docs/ui-design.md §7: "Same badge set and order as grid tiles").
 import { t } from '@/i18n/t'
 import { formatUiSize } from '@/domain/sizes'
+import type { AnimationOutcome } from '@/domain/job'
 import type { ImageRecord } from '@/domain/types'
 import { dimensionErrors } from './ingest'
 
-export type BadgeKind = 'edited' | 'animated' | 'failed' | 'skipped'
+export type BadgeKind = 'edited' | 'animated' | 'first-frame' | 'failed' | 'skipped'
 
 export const badgeLabel: Record<BadgeKind, string> = {
   edited: t('gallery.badge.edited'),
   animated: t('gallery.badge.animated'),
+  'first-frame': t('gallery.badge.firstFrame'),
   failed: t('gallery.badge.failed'),
   skipped: t('gallery.badge.skipped'),
 }
 
-// Fixed order per docs/ui-design.md §6/§7: EDITED -> ANIMATED -> SKIPPED/FAILED.
-export function badgesFor(image: ImageRecord): BadgeKind[] {
+// Fixed order per docs/ui-design.md §6/§7: EDITED -> ANIMATED -> SKIPPED/FAILED. FIRST FRAME takes
+// ANIMATED's place when the animation will not survive the chosen format.
+export function badgesFor(
+  image: ImageRecord,
+  outcome: AnimationOutcome | null = null,
+): BadgeKind[] {
   const list: BadgeKind[] = []
   if (image.edit) {
     list.push('edited')
   }
   if (image.isAnimated) {
-    list.push('animated')
+    list.push(outcome === 'first-frame' ? 'first-frame' : 'animated')
   }
   if (image.status === 'failed') {
     list.push('failed')

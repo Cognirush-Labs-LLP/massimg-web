@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { ImageId } from '@/domain/types'
 import { imageRecordFixture } from '@/domain/types.fixtures'
+import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 
 const removeIngestedImage = vi.fn()
@@ -89,6 +90,37 @@ describe('GalleryTile', () => {
       },
     })
     expect(wrapper.findAll('.badge')).toHaveLength(0)
+  })
+
+  it('swaps ANIMATED for FIRST FRAME when the format cannot animate and WebP is off', () => {
+    const settings = useSettingsStore()
+    settings.format = 'jpeg'
+    settings.animatedAsWebp = false
+    const wrapper = mount(GalleryTile, {
+      props: {
+        image: { ...imageRecordFixture, edit: null, sourceFormat: 'gif', isAnimated: true },
+        thumbnailUrl: null,
+        thumbSize: 200,
+      },
+    })
+
+    const badges = wrapper.findAll('.badge').map((badge) => badge.text())
+    expect(badges).toContain('FIRST FRAME')
+    expect(badges).not.toContain('ANIMATED')
+  })
+
+  it('keeps ANIMATED when the animation survives, including as WebP', () => {
+    const settings = useSettingsStore()
+    settings.format = 'jpeg'
+    const wrapper = mount(GalleryTile, {
+      props: {
+        image: { ...imageRecordFixture, edit: null, sourceFormat: 'gif', isAnimated: true },
+        thumbnailUrl: null,
+        thumbSize: 200,
+      },
+    })
+
+    expect(wrapper.findAll('.badge').map((badge) => badge.text())).toEqual(['ANIMATED'])
   })
 
   it('shows the pending placeholder for width/height still at 0', () => {

@@ -1578,3 +1578,73 @@ test.describe('APNG is always lossless', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------------------------
+// An animated source written as a still: the first frame, through the still decoder.
+// ---------------------------------------------------------------------------------------------
+
+const DECODE_MODULE_PATH = '/src/pipeline/stages/decode.ts'
+
+/** Decodes one fixture through the still `decodeFrame` and samples the named points. */
+async function decodeStill(
+  page: Page,
+  name: string,
+  points: Point[],
+): Promise<{ width: number; height: number; samples: number[][] }> {
+  return page.evaluate(
+    async ({ modulePath, bytes, points: at }) => {
+      const { decodeFrame } = await import(/* @vite-ignore */ modulePath)
+      const frame = await decodeFrame(new Uint8Array(bytes))
+
+      return {
+        width: frame.width,
+        height: frame.height,
+        samples: at.map((point) => {
+          const index = (point.y * frame.width + point.x) * 4
+
+          return [
+            frame.pixels[index],
+            frame.pixels[index + 1],
+            frame.pixels[index + 2],
+            frame.pixels[index + 3],
+          ]
+        }),
+      }
+    },
+    { modulePath: DECODE_MODULE_PATH, bytes: fixture(name), points },
+  )
+}
+
+test.describe('the still decoder on an animated source', () => {
+  for (const source of SOURCES) {
+    // Unchecked "WebP for animated images" resolves an animated source to a still job, which reads the
+    // file with `decodeFrame`. What it returns has to be the whole first frame, not a later one and
+    // not a sub-rectangle of the canvas.
+    test(`${source.label} yields the full first frame`, async ({ page }) => {
+      const still = await decodeStill(page, source.name, [BODY, HOLE])
+
+      expect(still.width).toBe(WIDTH)
+      expect(still.height).toBe(HEIGHT)
+      expectChannelsNear(
+        still.samples[0] as number[],
+        [...(FRAME_COLOURS[0] as number[]), 255],
+        'body',
+      )
+      expect((still.samples[1] as number[])[3]).toBe(0)
+    })
+  }
+
+  test('GIF yields the whole canvas when later frames are sub-rectangles', async ({ page }) => {
+    const still = await decodeStill(page, 'anim-disposal.gif', DISPOSAL_SQUARES)
+
+    expect(still.width).toBe(WIDTH)
+    expect(still.height).toBe(HEIGHT)
+
+    for (const [square, sample] of still.samples.entries()) {
+      const expected =
+        square === 0 ? [...(FRAME_COLOURS[0] as number[]), 255] : [...DISPOSAL_FIELD, 255]
+
+      expectChannelsNear(sample, expected, `square ${square}`)
+    }
+  })
+})

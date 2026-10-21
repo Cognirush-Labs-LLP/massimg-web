@@ -22,10 +22,12 @@ import type { EncodableFormat, ImageRecord } from '@/domain/types'
  *
  * - `animation-substituted` is R-F6's own requirement: the substitution is stated on the tile, on
  *   *this line*, and in the report.
+ * - `animation-flattened` is the same disclosure for an animated source the user chose to write as
+ *   its first frame only.
  * - `alpha-flattened` is R-C17's: "where transparency will be flattened, the Preview transform line
  *   says so".
  */
-export type TransformNote = 'animation-substituted' | 'alpha-flattened'
+export type TransformNote = 'animation-substituted' | 'animation-flattened' | 'alpha-flattened'
 
 export type TransformLine =
   | {
@@ -55,6 +57,10 @@ export function describeTransformLine(image: ImageRecord, batch: BatchSettings):
 
   if (resolution.caveats.some((caveat) => caveat.kind === 'animation-substituted')) {
     notes.push('animation-substituted')
+  }
+
+  if (resolution.caveats.some((caveat) => caveat.kind === 'animation-flattened')) {
+    notes.push('animation-flattened')
   }
 
   // Three states, and they are not the same (D5): `hasTransparency` is `true` (measured, has alpha),

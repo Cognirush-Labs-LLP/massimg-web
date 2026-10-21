@@ -140,6 +140,7 @@ describe('dimension rule and edits', () => {
     quality: { kind: 'quality', value: 70 },
     dimension,
     format: 'jpeg',
+    animatedAsWebp: true,
   })
 
   function outputSize(

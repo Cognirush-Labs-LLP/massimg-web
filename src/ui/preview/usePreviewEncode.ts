@@ -300,6 +300,7 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
       quality: toRaw(options.settings.value.quality),
       dimension: toRaw(options.settings.value.dimension),
       format: options.settings.value.format,
+      animatedAsWebp: options.settings.value.animatedAsWebp,
     }
 
     const resolution = resolveSettings(image, settings)

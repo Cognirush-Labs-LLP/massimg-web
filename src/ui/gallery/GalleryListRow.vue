@@ -11,6 +11,8 @@ import { splitPath } from '@/domain/naming'
 import type { ImageRecord } from '@/domain/types'
 import { useUiStore } from '@/stores/ui'
 import { removeIngestedImage } from './ingest'
+import { animationOutcome } from '@/domain/job'
+import { useSettingsStore } from '@/stores/settings'
 import { badgeLabel, badgesFor, metaTextFor } from './imageMeta'
 
 const props = defineProps<{
@@ -18,8 +20,11 @@ const props = defineProps<{
 }>()
 
 const uiStore = useUiStore()
+const settingsStore = useSettingsStore()
 
-const badges = computed(() => badgesFor(props.image))
+const badges = computed(() =>
+  badgesFor(props.image, animationOutcome(props.image, settingsStore.batch)),
+)
 const metaText = computed(() => metaTextFor(props.image))
 const removeLabel = computed(() => t('gallery.tile.remove', { filename: props.image.name }))
 
@@ -97,6 +102,11 @@ function remove(event: MouseEvent): void {
   font-size: 10px;
   font-weight: var(--font-weight-control);
   letter-spacing: 0.04em;
+}
+
+.badge-first-frame {
+  border-color: var(--color-border-warning);
+  color: var(--color-text-warning);
 }
 
 .open-button {
