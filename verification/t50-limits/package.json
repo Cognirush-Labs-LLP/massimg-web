@@ -1,0 +1,16 @@
+{
+  "name": "t50-limits",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway Playwright harness for T50 — does ImageMagick's ResourceLimits turn a decompression bomb into a catchable error in every engine (see docs/task-notes/T50.md).",
+  "scripts": {
+    "pretest": "node scripts/copy-assets.mjs",
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "@imagemagick/magick-wasm": "0.0.43"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

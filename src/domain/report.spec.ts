@@ -253,6 +253,28 @@ describe('real-run formatters (T41)', () => {
     expect(
       formatRejectionReason({ kind: 'file-too-large', actualBytes: 2000, capBytes: 1000 }),
     ).toBe('File size 2.00 KB exceeds the 1.00 KB limit for this browser')
+    expect(
+      formatRejectionReason({
+        kind: 'image-too-large',
+        width: 9000,
+        height: 7000,
+        capPixels: 52_428_800,
+      }),
+    ).toBe(
+      'Image size 9000 × 7000 (63.0 megapixels) exceeds the 52.4-megapixel limit for this browser',
+    )
+    expect(
+      formatRejectionReason({
+        kind: 'animation-too-large',
+        width: 1200,
+        height: 800,
+        frames: 900,
+        capFrames: 500,
+        capFramePixels: 34_952_533,
+      }),
+    ).toBe(
+      'Animation of 900 frames at 1200 × 800 exceeds the limit for this browser (500 frames, 35.0 million pixels across all frames)',
+    )
     expect(formatRejectionReason({ kind: 'batch-count-exceeded', actual: 250, cap: 200 })).toBe(
       'Selection exceeded the 200-image batch limit',
     )

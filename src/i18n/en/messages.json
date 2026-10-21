@@ -205,6 +205,8 @@
   "rejection.reason.animatedAvif": "{name}: animated AVIF isn't supported. Convert it to WebP or GIF, or choose a still image.",
   "rejection.reason.heicUnavailable": "{name}: this browser can't decode HEIC. Try a different browser, or use the desktop application, which has no such limit.",
   "rejection.reason.fileTooLarge": "{name} is {actual}, over the {cap} limit for this browser. Try a smaller image, or use the desktop application, which has no such limit.",
+  "rejection.reason.imageTooLarge": "{name} is {width} × {height} ({actual} megapixels), over the {cap}-megapixel limit for this device. Try a smaller image, or use the desktop application, which has no such limit.",
+  "rejection.reason.animationTooLarge": "{name} has {frames} frames of {width} × {height}, more than this device can process (up to {capFrames} frames and {capTotal} million pixels across all frames). Try a shorter or smaller animation, or use the desktop application, which has no such limit.",
   "rejection.reason.batchCountExceeded": "This selection has {actual} images, over the {cap}-image limit per batch. Select fewer images, or process them in smaller groups.",
   "rejection.reason.folderEmpty": "This folder didn't contain any images this app can process.",
   "rejection.reason.folderDepthExceeded": "This folder is nested {actual} levels deep, over the {cap}-level limit. Flatten it or choose a shallower folder.",

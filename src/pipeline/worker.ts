@@ -6,7 +6,7 @@
 // protocol is `protocol.ts`, so the pool can speak the protocol without importing this module and
 // the stages can be unit-tested without a worker.
 
-import { ensureImageMagick } from './codecs/loader'
+import { configureCodecLimits, ensureImageMagick } from './codecs/loader'
 import { JobExecutionError, executePipelineJob } from './execute'
 import type { JobFailure, WorkerRequest, WorkerResponse } from './protocol'
 import { DecodeError } from './stages/decode'
@@ -47,6 +47,11 @@ scope.addEventListener('message', (event) => {
 
   if (message.kind === 'cancel') {
     cancelledThrough = Math.max(cancelledThrough, message.through)
+    return
+  }
+
+  if (message.kind === 'configure') {
+    configureCodecLimits(message.codecLimits)
     return
   }
 

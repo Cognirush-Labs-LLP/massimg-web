@@ -75,6 +75,7 @@ test.beforeEach(async ({ page }) => {
           cancelledThrough = Math.max(cancelledThrough, message.through)
           return
         }
+        if (message.kind === 'configure') return
         const token = message.token
         const imageId = message.job.imageId
         if (token <= cancelledThrough) {

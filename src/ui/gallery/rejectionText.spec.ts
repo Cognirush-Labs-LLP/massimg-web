@@ -40,6 +40,37 @@ describe('describeRejection', () => {
     expect(text).toContain(formatUiSize(capBytes))
   })
 
+  it('states the dimensions, the megapixels and the cap for an over-size image, and names the desktop app', () => {
+    const text = describeRejection(
+      entry({ kind: 'image-too-large', width: 9000, height: 7000, capPixels: 52_428_800 }),
+    )
+    expect(text).toContain('photo.jpg')
+    expect(text).toContain('9000')
+    expect(text).toContain('7000')
+    expect(text).toContain('63')
+    expect(text).toContain('52.4')
+    expect(text).toMatch(/desktop/i)
+  })
+
+  it('states the frames, the size and both caps for an over-size animation, and names the desktop app', () => {
+    const text = describeRejection(
+      entry({
+        kind: 'animation-too-large',
+        width: 1200,
+        height: 800,
+        frames: 900,
+        capFrames: 500,
+        capFramePixels: 34_952_533,
+      }),
+    )
+    expect(text).toContain('photo.jpg')
+    expect(text).toContain('900')
+    expect(text).toContain('1200')
+    expect(text).toContain('500')
+    expect(text).toContain('35')
+    expect(text).toMatch(/desktop/i)
+  })
+
   it('states the actual and cap figures for batch-count-exceeded with no file name', () => {
     const text = describeRejection(
       entry({ kind: 'batch-count-exceeded', actual: 650, cap: 500 }, null),

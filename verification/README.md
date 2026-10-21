@@ -21,6 +21,7 @@ recorded in each folder's `results.json` and written up in `docs/task-notes/TNN.
 | [t30-size](t30-size) | Size-target search cost across formats (D1) | Optional — degrades gracefully |
 | [t39a-web-share](t39a-web-share) | Multi-file Web Share on real iOS/Android/desktop browsers (E4) — manual, no `run.mjs` | **Required** |
 | [t40-archive-memory](t40-archive-memory) | Streaming many entries through client-zip into OPFS, peak tab memory per browser (E1) | No — synthetic bytes |
+| [t50-limits](t50-limits) | ImageMagick `ResourceLimits` as a decompression-bomb guard, and its per-pixel cost (C3) | No — synthetic bombs |
 
 ## Real-photo fixtures
 

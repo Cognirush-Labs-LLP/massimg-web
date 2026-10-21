@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>T50 resource-limits harness</title></head>
+<body>
+<p id="status">loading…</p>
+<script type="module">
+  const { initializeImageMagick, ImageMagick, ResourceLimits, MagickImageCollection } = await import('./vendor/magick-wasm/index.js');
+  const big = (v) => (typeof v === 'bigint' ? v.toString() : String(v));
+
+  window.__ready = (async () => {
+    await initializeImageMagick(new URL('./vendor/magick-wasm/x86/magick.wasm', import.meta.url));
+    document.getElementById('status').textContent = 'ready';
+  })();
+
+  window.__defaults = () => Object.fromEntries(
+    ['area', 'disk', 'height', 'listLength', 'maxMemoryRequest', 'maxProfileSize', 'memory', 'time', 'width']
+      .map((k) => [k, big(ResourceLimits[k])]));
+
+  window.__setLimits = (limits) => {
+    for (const [k, v] of Object.entries(limits)) ResourceLimits[k] = BigInt(v);
+    return window.__defaults();
+  };
+
+  // Decodes one fixture exactly as the pipeline does (ImageMagick.read on the bytes) and reports
+  // the outcome, never throwing, so the harness can tell "catchable error" from "page died".
+  // A real JPEG (made here, 64x64) with its SOF0 dimensions rewritten to w x h: a few hundred bytes
+  // that claim an enormous image.
+  const jpegBomb = (w, h) => {
+    let bytes;
+    ImageMagick.read(makePng(), (image) => {
+      image.write('JPEG', (data) => { bytes = data.slice(); });
+    });
+    for (let i = 0; i < bytes.length - 9; i++) {
+      if (bytes[i] === 0xff && bytes[i + 1] === 0xc0) {
+        bytes[i + 5] = h >> 8; bytes[i + 6] = h & 0xff; bytes[i + 7] = w >> 8; bytes[i + 8] = w & 0xff;
+        return bytes;
+      }
+    }
+    throw new Error('no SOF0');
+  };
+  const makePng = () => {
+    // 1x1 grey PNG, enough for ImageMagick to re-encode as a JPEG.
+    return Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+  };
+
+  window.__decode = async (url) => {
+    const synthetic = /^fixtures\/synthetic-jpeg-(\d+)x(\d+)$/.exec(url);
+    const bytes = synthetic ? jpegBomb(Number(synthetic[1]), Number(synthetic[2]))
+      : new Uint8Array(await (await fetch(url)).arrayBuffer());
+    const started = performance.now();
+    try {
+      let size = null;
+      if (url.endsWith('.gif')) {
+        // The pipeline's animated path: readCollection, then coalesce (every frame becomes full-size).
+        MagickImageCollection.use((collection) => {
+          collection.read(bytes);
+          const frames = collection.length;
+          collection.coalesce();
+          size = { width: collection[0].width, height: collection[0].height, frames };
+        });
+      } else {
+        ImageMagick.read(bytes, (image) => { size = { width: image.width, height: image.height }; });
+      }
+      return { ok: true, size, ms: Math.round(performance.now() - started) };
+    } catch (err) {
+      return {
+        ok: false,
+        errorName: err && err.constructor && err.constructor.name,
+        message: String((err && err.message) || err).slice(0, 200),
+        ms: Math.round(performance.now() - started),
+      };
+    }
+  };
+</script>
+</body>
+</html>

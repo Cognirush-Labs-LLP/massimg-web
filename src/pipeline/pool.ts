@@ -12,7 +12,8 @@
 // ones that are cancelled, superseded or killed — a caller tracking a batch needs every promise to
 // settle, or its counter never reaches the end.
 
-import { resolveWorkerPoolSize, runtimeLimits } from '@/config/limits'
+import { resolveCodecLimits, resolveWorkerPoolSize, runtimeLimits } from '@/config/limits'
+import { detectMobile } from '@/platform/device'
 import { nextToken } from './protocol'
 import type { JobFailure, JobResult, JobToken, WorkerRequest, WorkerResponse } from './protocol'
 import type { ImageId, PipelineJob } from '@/domain/types'
@@ -60,7 +61,7 @@ export interface PoolStats {
 }
 
 export interface WorkerPoolOptions {
-  /** Overrides the §5.1 sizing. Tests and T46 use this; application code should not need it. */
+  /** Overrides the §5.1 sizing. Tests use this; application code should not need it. */
   size?: number
   /** Overrides mobile detection. */
   mobile?: boolean
@@ -138,27 +139,13 @@ interface Entry {
   timer: ReturnType<typeof setTimeout> | null
 }
 
-/**
- * Feature detection, never user-agent sniffing (the rule `platform/capability.ts` states). `hover:
- * none` is what separates a phone or tablet from a desktop that happens to have a touchscreen, which
- * `pointer: coarse` alone would misclassify. The design documents define "mobile" only as a layout
- * breakpoint, so this is a heuristic standing in for the device class §5.1 means; it is injectable,
- * and T46 replaces it when C3/C4 are measured.
- */
-function detectMobile(): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return false
-  }
-
-  return window.matchMedia('(pointer: coarse) and (hover: none)').matches
-}
-
 function defaultWorkerFactory(): Worker {
   return new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
 }
 
 export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
   const limits = options.limits ?? runtimeLimits
+  const mobile = options.mobile ?? detectMobile()
   const size = Math.max(
     1,
     options.size ??
@@ -166,12 +153,13 @@ export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
         {
           hardwareConcurrency:
             typeof navigator === 'undefined' ? undefined : navigator.hardwareConcurrency,
-          mobile: options.mobile ?? detectMobile(),
+          mobile,
         },
         limits,
       ),
   )
   const createWorker = options.workerFactory ?? defaultWorkerFactory
+  const codecLimits = resolveCodecLimits(mobile, limits)
   // `??` would be wrong here: an explicit `null` means "no watchdog for this pool" and must not fall
   // through to the configured limit once that limit stops being null.
   const jobTimeoutMs =
@@ -299,6 +287,9 @@ export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
     } catch {
       return null
     }
+
+    const configure: WorkerRequest = { kind: 'configure', codecLimits }
+    worker.postMessage(configure)
 
     worker.addEventListener('message', (event: MessageEvent<WorkerResponse>) => {
       onResponse(slot, event.data)

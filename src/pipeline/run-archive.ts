@@ -37,11 +37,6 @@ export interface NamingEntry {
   sizeBytes: number
 }
 
-// Technical Design §9.2's "per-file overhead" for the Share-copy quota preflight. Not a measured
-// figure — a conservative filesystem/metadata allowance; T46/T50 owns replacing it if a real one
-// ever matters.
-const SHARE_PER_FILE_OVERHEAD_BYTES = 4096
-
 export interface RunArchivePreflight {
   /** Whether the ordinary Download artifact (archive, or the lone output for a 1-image run) fits. */
   archive: QuotaCheck
@@ -76,7 +71,10 @@ export async function preflightRunArchive(
 
   const countEligible = preliminaryShareProbe && entries.length <= runtimeLimits.maximumShareFiles
   const shareBytes = countEligible
-    ? entries.reduce((sum, entry) => sum + entry.sizeBytes + SHARE_PER_FILE_OVERHEAD_BYTES, 0)
+    ? entries.reduce(
+        (sum, entry) => sum + entry.sizeBytes + runtimeLimits.shareCopyOverheadBytes,
+        0,
+      )
     : 0
 
   const { archive, combined } = await checkCombinedQuota(archiveBytes, shareBytes)

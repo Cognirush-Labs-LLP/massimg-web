@@ -11,6 +11,15 @@ export type RejectionReason =
   | { kind: 'unhandled'; reason: UnhandledReason }
   | { kind: 'heic-decoder-unavailable' }
   | { kind: 'file-too-large'; actualBytes: number; capBytes: number }
+  | { kind: 'image-too-large'; width: number; height: number; capPixels: number }
+  | {
+      kind: 'animation-too-large'
+      width: number
+      height: number
+      frames: number
+      capFrames: number
+      capFramePixels: number
+    }
   | { kind: 'batch-count-exceeded'; actual: number; cap: number }
   | { kind: 'folder-empty' }
   | { kind: 'folder-depth-exceeded'; actual: number; cap: number }

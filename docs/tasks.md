@@ -1084,14 +1084,33 @@ One runtime configuration module holding every limit, including `maximumThumbnai
 enforced at selection time; operational limits such as the thumbnail budget are injected into their
 owning service.
 
-- Derive values by measurement on desktop and on a real phone. The 200-file figure inherited from the original design draft is not defended by anything.
-- C4 needs a physical iPhone, including an older low-memory model.
-- Re-run T39-A's ten-file and maximum-byte Share cases on that older iPhone. Keep the product ceiling
-  at ten only if it survives; lower the byte or file limit and update E4 and §5.7 if measurement says
-  otherwise.
+**Approach, settled with the user.** A device's failure point cannot be measured in general, so limits
+are *derived* from a memory model and a stated floor device, and each value is tagged measured, derived
+or estimated (Technical Design §8.3, assumptions C3). Best guesses are acceptable for what cannot be
+measured yet, as long as they are tagged. The task is expected to stay open for a long time as devices
+become available, and its handover note lists exactly which tags are still "estimated".
 
-**Done when:** every limit has a measured value with its evidence, C3, C4 and E4 are updated, and
-Functional Design §5.7 carries real numbers instead of placeholders.
+- **Two layers.** ImageMagick's resource limits are the always-on guard for anything the header reader
+  cannot judge. The header reader is a bounded, never-throwing selection-time check for the formats
+  where a tiny file can declare a huge image. A file whose header cannot be parsed is **not rejected**;
+  it goes through the normal path and the guard decides.
+- **Enforcement must never be the crash and never an allocation a file can steer.** The header reader
+  reads through `file.slice` only, under fixed byte and iteration budgets, sizes no buffer from a number
+  in the file, bounds-checks every read, and returns *unknown* instead of throwing.
+- **Over-cap images are removed at selection through the existing rejection list** (the dimension probe
+  becomes a header read, so nothing decodes before it passes). Reduce code: extend `domain/classify.ts`
+  if it can carry the dimensions rather than writing a second parser.
+- A budget breach is a per-image failure, never the `out-of-memory` kind, which halts a whole run.
+- The reference mobile device is the Android phone for now. C4 needs a physical iPhone, including an
+  older low-memory model, when one exists.
+- Re-run T39-A's ten-file and maximum-byte Share cases on that older iPhone when available. Keep the
+  product ceiling at ten only if it survives; lower the byte or file limit and update E4 and §5.7 if
+  measurement says otherwise.
+
+**Done when:** every limit carries a value and a tag with its evidence or model, C3, C4 and E4 are
+updated, Functional Design §5.7 carries real numbers instead of placeholders, the bomb and
+malformed-header tests pass on three engines, and the Android confirmation run is recorded. The
+iPhone-dependent values may stay *estimated*; the handover note names them.
 
 ### T51 — End-to-end suite
 

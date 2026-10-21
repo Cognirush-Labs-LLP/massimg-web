@@ -1,0 +1,20 @@
+jpeg-12mp              completed 2251ms out=596318B                   peakPSS=446MB (+211) minAvail=1421MB
+jpeg-24mp              completed 3982ms out=1189538B                  peakPSS=613MB (+379) minAvail=1301MB
+jpeg-36mp              completed 5671ms out=1788782B                  peakPSS=776MB (+547) minAvail=1225MB
+jpeg-50mp              completed 7615ms out=2478230B                  peakPSS=986MB (+757) minAvail=1199MB
+jpeg-52mp              failed (decode-failed) 369ms out=-B            peakPSS=245MB (+16) minAvail=1879MB
+jpeg-rotate-36mp       completed 6518ms out=1848204B                  peakPSS=913MB (+685) minAvail=1275MB
+jpeg-rotate-50mp       completed 8314ms out=2854243B                  peakPSS=1170MB (+940) minAvail=1192MB
+jpeg-rotate-52mp       failed (decode-failed) 387ms out=-B            peakPSS=252MB (+21) minAvail=2031MB
+jpeg-rgba-50mp         completed 8544ms out=3349865B                  peakPSS=986MB (+757) minAvail=1289MB
+webp-24mp              page: page.evaluate: Execution context was destroyed, most likely because of a navigation. peakPSS=683MB (+441) minAvail=1598MB
+webp-50mp              completed 51033ms out=16876B                   peakPSS=1252MB (+963) minAvail=1147MB
+png-24mp               completed 53499ms out=268135B                  peakPSS=1248MB (+1005) minAvail=1207MB
+png-50mp               completed 109896ms out=538256B                 peakPSS=2324MB (+2083) minAvail=722MB
+avif-12mp              completed 4538ms out=451955B                   peakPSS=603MB (+363) minAvail=1944MB
+avif-24mp              completed 8357ms out=904511B                   peakPSS=942MB (+701) minAvail=1540MB
+avif-50mp              completed 16266ms out=1888753B                 peakPSS=1648MB (+1409) minAvail=930MB
+anim-webp-35m          failed (encode-failed) 4335ms out=-B           peakPSS=639MB (+400) minAvail=1900MB
+anim-gif-35m           completed 15230ms out=1520B                    peakPSS=638MB (+398) minAvail=1896MB
+over-cap-53mp          failed (decode-failed) 592ms out=-B            peakPSS=308MB (+69) minAvail=1797MB
+over-cap-anim-300m     failed (decode-failed) 2020ms out=-B           peakPSS=804MB (+566) minAvail=1209MB

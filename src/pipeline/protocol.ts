@@ -5,6 +5,7 @@
 // level installs a message listener, and separate from pool.ts so the worker does not pull main-thread
 // code into its bundle. Same split as thumbnail-render.ts / thumbnail-worker.ts / thumbnails.ts.
 
+import type { CodecLimits } from '@/config/limits'
 import type {
   Caveat,
   EncodableFormat,
@@ -112,6 +113,11 @@ export type WorkerRequest =
    * landing afterwards shares the same memoised promise inside `ensureImageMagick()`.
    */
   | { kind: 'warm' }
+  /**
+   * The codec budget for this worker's device class. The pool posts it first, before any `warm` or
+   * `run`, because ImageMagick reads it once while it initialises.
+   */
+  | { kind: 'configure'; codecLimits: CodecLimits }
 
 export type WorkerResponse =
   | { kind: 'result'; token: JobToken; imageId: ImageId; result: JobResult }

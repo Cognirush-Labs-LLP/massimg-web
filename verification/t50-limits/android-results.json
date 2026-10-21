@@ -1,0 +1,646 @@
+[
+  {
+    "id": "jpeg-12mp",
+    "fixture": "rgb-12mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 234.8154296875,
+      "rssMB": 409.11328125,
+      "availableMB": 1525.50390625
+    },
+    "wallMs": 2465,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 596318,
+      "ms": 2251
+    },
+    "peak": {
+      "pssMB": 445.921875,
+      "rssMB": 621.19140625,
+      "minAvailableMB": 1421.30859375,
+      "samples": 5,
+      "growthPssMB": 211.1064453125
+    },
+    "after": {
+      "pssMB": 124.5048828125,
+      "rssMB": 218.4296875,
+      "availableMB": 1727.93359375
+    }
+  },
+  {
+    "id": "jpeg-24mp",
+    "fixture": "rgb-24mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 234.671875,
+      "rssMB": 408.98828125,
+      "availableMB": 1590.25
+    },
+    "wallMs": 4430,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 1189538,
+      "ms": 3982
+    },
+    "peak": {
+      "pssMB": 613.3974609375,
+      "rssMB": 787.984375,
+      "minAvailableMB": 1301.4921875,
+      "samples": 9,
+      "growthPssMB": 378.7255859375
+    },
+    "after": {
+      "pssMB": 117.7890625,
+      "rssMB": 203.57421875,
+      "availableMB": 1868.42578125
+    }
+  },
+  {
+    "id": "jpeg-36mp",
+    "fixture": "rgb-36mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 228.923828125,
+      "rssMB": 395.08984375,
+      "availableMB": 1696.51953125
+    },
+    "wallMs": 5952,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 1788782,
+      "ms": 5671
+    },
+    "peak": {
+      "pssMB": 775.7978515625,
+      "rssMB": 922.50390625,
+      "minAvailableMB": 1225.140625,
+      "samples": 13,
+      "growthPssMB": 546.8740234375
+    },
+    "after": {
+      "pssMB": 117.8056640625,
+      "rssMB": 178.421875,
+      "availableMB": 1948.77734375
+    }
+  },
+  {
+    "id": "jpeg-50mp",
+    "fixture": "rgb-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 228.59375,
+      "rssMB": 369.5859375,
+      "availableMB": 1790.16015625
+    },
+    "wallMs": 8014,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 2478230,
+      "ms": 7615
+    },
+    "peak": {
+      "pssMB": 985.873046875,
+      "rssMB": 1127.01171875,
+      "minAvailableMB": 1198.8046875,
+      "samples": 18,
+      "growthPssMB": 757.279296875
+    },
+    "after": {
+      "pssMB": 118.23828125,
+      "rssMB": 178.171875,
+      "availableMB": 2096.140625
+    }
+  },
+  {
+    "id": "jpeg-52mp",
+    "fixture": "rgb-52mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 228.1474609375,
+      "rssMB": 368.23828125,
+      "availableMB": 1916.1875
+    },
+    "wallMs": 795,
+    "result": {
+      "outcome": "failed",
+      "reason": "decode-failed",
+      "outputBytes": null,
+      "ms": 369
+    },
+    "peak": {
+      "pssMB": 244.5771484375,
+      "rssMB": 384.83984375,
+      "minAvailableMB": 1878.68359375,
+      "samples": 2,
+      "growthPssMB": 16.4296875
+    },
+    "after": {
+      "pssMB": 118.279296875,
+      "rssMB": 178.21875,
+      "availableMB": 2027.65234375
+    }
+  },
+  {
+    "id": "jpeg-rotate-36mp",
+    "fixture": "rgb-36mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 227.85546875,
+      "rssMB": 367.8828125,
+      "availableMB": 1977.3671875
+    },
+    "wallMs": 6895,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 1848204,
+      "ms": 6518
+    },
+    "peak": {
+      "pssMB": 912.978515625,
+      "rssMB": 1054.12109375,
+      "minAvailableMB": 1275.43359375,
+      "samples": 15,
+      "growthPssMB": 685.123046875
+    },
+    "after": {
+      "pssMB": 118.34765625,
+      "rssMB": 178.30078125,
+      "availableMB": 2087.83984375
+    }
+  },
+  {
+    "id": "jpeg-rotate-50mp",
+    "fixture": "rgb-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 229.890625,
+      "rssMB": 369.9765625,
+      "availableMB": 1966.76171875
+    },
+    "wallMs": 8678,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 2854243,
+      "ms": 8314
+    },
+    "peak": {
+      "pssMB": 1169.5380859375,
+      "rssMB": 1309.01953125,
+      "minAvailableMB": 1191.51953125,
+      "samples": 18,
+      "growthPssMB": 939.6474609375
+    },
+    "after": {
+      "pssMB": 120.037109375,
+      "rssMB": 175.5703125,
+      "availableMB": 2263.8125
+    }
+  },
+  {
+    "id": "jpeg-rotate-52mp",
+    "fixture": "rgb-52mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 230.6083984375,
+      "rssMB": 366.19921875,
+      "availableMB": 2091.42578125
+    },
+    "wallMs": 946,
+    "result": {
+      "outcome": "failed",
+      "reason": "decode-failed",
+      "outputBytes": null,
+      "ms": 387
+    },
+    "peak": {
+      "pssMB": 251.681640625,
+      "rssMB": 387.4609375,
+      "minAvailableMB": 2031.01171875,
+      "samples": 2,
+      "growthPssMB": 21.0732421875
+    },
+    "after": {
+      "pssMB": 119.3203125,
+      "rssMB": 175.01953125,
+      "availableMB": 2195.73046875
+    }
+  },
+  {
+    "id": "jpeg-rgba-50mp",
+    "fixture": "rgba-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 229.2080078125,
+      "rssMB": 364.875,
+      "availableMB": 2046.875
+    },
+    "wallMs": 9015,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 3349865,
+      "ms": 8544
+    },
+    "peak": {
+      "pssMB": 986.005859375,
+      "rssMB": 1122.6328125,
+      "minAvailableMB": 1288.76171875,
+      "samples": 19,
+      "growthPssMB": 756.7978515625
+    },
+    "after": {
+      "pssMB": 119.3671875,
+      "rssMB": 175.09375,
+      "availableMB": 2176.1015625
+    }
+  },
+  {
+    "id": "webp-24mp",
+    "fixture": "rgb-24mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 236.5830078125,
+      "rssMB": 339.921875,
+      "availableMB": 1757.09765625
+    },
+    "wallMs": 24826,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 8164,
+      "ms": 24455
+    },
+    "peak": {
+      "pssMB": 757.4501953125,
+      "rssMB": 874.6328125,
+      "minAvailableMB": 1416.13671875,
+      "samples": 55,
+      "growthPssMB": 520.8671875
+    },
+    "after": {
+      "pssMB": 121.57421875,
+      "rssMB": 164.48046875,
+      "availableMB": 2063.37109375
+    }
+  },
+  {
+    "id": "webp-50mp",
+    "fixture": "rgb-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 288.8271484375,
+      "rssMB": 459.01953125,
+      "availableMB": 1979.44921875
+    },
+    "wallMs": 51491,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 16876,
+      "ms": 51033
+    },
+    "peak": {
+      "pssMB": 1251.6083984375,
+      "rssMB": 1423.61328125,
+      "minAvailableMB": 1147.3828125,
+      "samples": 114,
+      "growthPssMB": 962.78125
+    },
+    "after": {
+      "pssMB": 134.33984375,
+      "rssMB": 222.97265625,
+      "availableMB": 2279.0390625
+    }
+  },
+  {
+    "id": "png-24mp",
+    "fixture": "rgba-24mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 242.69140625,
+      "rssMB": 413.24609375,
+      "availableMB": 2130.07421875
+    },
+    "wallMs": 54109,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 268135,
+      "ms": 53499
+    },
+    "peak": {
+      "pssMB": 1247.7626953125,
+      "rssMB": 1334.30859375,
+      "minAvailableMB": 1206.97265625,
+      "samples": 108,
+      "growthPssMB": 1005.0712890625
+    },
+    "after": {
+      "pssMB": 132.5849609375,
+      "rssMB": 172.63671875,
+      "availableMB": 2374.99609375
+    }
+  },
+  {
+    "id": "png-50mp",
+    "fixture": "rgba-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 240.9619140625,
+      "rssMB": 362.5859375,
+      "availableMB": 2175.25390625
+    },
+    "wallMs": 110524,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 538256,
+      "ms": 109896
+    },
+    "peak": {
+      "pssMB": 2324.2490234375,
+      "rssMB": 1931.36328125,
+      "minAvailableMB": 721.90234375,
+      "samples": 231,
+      "growthPssMB": 2083.287109375
+    },
+    "after": {
+      "pssMB": 118.603515625,
+      "rssMB": 140.99609375,
+      "availableMB": 2491.41796875
+    }
+  },
+  {
+    "id": "avif-12mp",
+    "fixture": "rgb-12mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 239.9072265625,
+      "rssMB": 332.19140625,
+      "availableMB": 2308.57421875
+    },
+    "wallMs": 4895,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 451955,
+      "ms": 4538
+    },
+    "peak": {
+      "pssMB": 603.0537109375,
+      "rssMB": 696.4765625,
+      "minAvailableMB": 1944.20703125,
+      "samples": 10,
+      "growthPssMB": 363.146484375
+    },
+    "after": {
+      "pssMB": 119.3837890625,
+      "rssMB": 142.90234375,
+      "availableMB": 2424.25
+    }
+  },
+  {
+    "id": "avif-24mp",
+    "fixture": "rgb-24mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 241.291015625,
+      "rssMB": 334.36328125,
+      "availableMB": 2237.81640625
+    },
+    "wallMs": 8891,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 904511,
+      "ms": 8357
+    },
+    "peak": {
+      "pssMB": 942.2509765625,
+      "rssMB": 1036.30859375,
+      "minAvailableMB": 1539.609375,
+      "samples": 19,
+      "growthPssMB": 700.9599609375
+    },
+    "after": {
+      "pssMB": 119.1279296875,
+      "rssMB": 143.04296875,
+      "availableMB": 2348.9296875
+    }
+  },
+  {
+    "id": "avif-50mp",
+    "fixture": "rgb-50mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 238.7578125,
+      "rssMB": 331.7421875,
+      "availableMB": 2214.6328125
+    },
+    "wallMs": 16665,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 1888753,
+      "ms": 16266
+    },
+    "peak": {
+      "pssMB": 1648.025390625,
+      "rssMB": 1742.12109375,
+      "minAvailableMB": 929.56640625,
+      "samples": 36,
+      "growthPssMB": 1409.267578125
+    },
+    "after": {
+      "pssMB": 119.0537109375,
+      "rssMB": 143.27734375,
+      "availableMB": 2447.29296875
+    }
+  },
+  {
+    "id": "anim-webp-35m",
+    "fixture": "anim-590x100.gif",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 244.3125,
+      "rssMB": 345.30078125,
+      "availableMB": 1768.41796875
+    },
+    "wallMs": 15406,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 7058,
+      "ms": 15127
+    },
+    "peak": {
+      "pssMB": 645.3115234375,
+      "rssMB": 745.3828125,
+      "minAvailableMB": 1520.33984375,
+      "samples": 29,
+      "growthPssMB": 400.9990234375
+    },
+    "after": {
+      "pssMB": 119.17578125,
+      "rssMB": 148.4296875,
+      "availableMB": 2042.921875
+    }
+  },
+  {
+    "id": "anim-gif-35m",
+    "fixture": "anim-590x100.gif",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 239.5400390625,
+      "rssMB": 340.05859375,
+      "availableMB": 1954.6328125
+    },
+    "wallMs": 19619,
+    "result": {
+      "outcome": "completed",
+      "outputBytes": 95233,
+      "ms": 19450
+    },
+    "peak": {
+      "pssMB": 804.5791015625,
+      "rssMB": 906.15234375,
+      "minAvailableMB": 1371.54296875,
+      "samples": 42,
+      "growthPssMB": 565.0390625
+    },
+    "after": {
+      "pssMB": 119.140625,
+      "rssMB": 149.25390625,
+      "availableMB": 2050.234375
+    }
+  },
+  {
+    "id": "over-cap-53mp",
+    "fixture": "rgb-53mp.png",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 239.1123046875,
+      "rssMB": 335.41015625,
+      "availableMB": 1852.00390625
+    },
+    "wallMs": 879,
+    "result": {
+      "outcome": "failed",
+      "reason": "decode-failed",
+      "outputBytes": null,
+      "ms": 592
+    },
+    "peak": {
+      "pssMB": 308.224609375,
+      "rssMB": 404.75,
+      "minAvailableMB": 1797.1875,
+      "samples": 1,
+      "growthPssMB": 69.1123046875
+    },
+    "after": {
+      "pssMB": 117.7724609375,
+      "rssMB": 144.21875,
+      "availableMB": 1916.2265625
+    }
+  },
+  {
+    "id": "over-cap-anim-300m",
+    "fixture": "anim-1000x300.gif",
+    "device": {
+      "mobile": true,
+      "cacheMiB": 800,
+      "maximumImagePixels": 52428800
+    },
+    "before": {
+      "pssMB": 239.859375,
+      "rssMB": 340.56640625,
+      "availableMB": 1872.2109375
+    },
+    "wallMs": 7198,
+    "result": {
+      "outcome": "failed",
+      "reason": "decode-failed",
+      "outputBytes": null,
+      "ms": 7034
+    },
+    "peak": {
+      "pssMB": 1044.4541015625,
+      "rssMB": 1145.33203125,
+      "minAvailableMB": 1326.03125,
+      "samples": 16,
+      "growthPssMB": 804.5947265625
+    },
+    "after": {
+      "pssMB": 120.69921875,
+      "rssMB": 150.375,
+      "availableMB": 2200.0390625
+    }
+  }
+]

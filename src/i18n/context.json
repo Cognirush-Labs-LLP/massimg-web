@@ -1024,6 +1024,16 @@
     "control": "Plain text in a dismissible list row.",
     "maxLength": 180
   },
+  "rejection.reason.imageTooLarge": {
+    "situation": "Per-row reason text when a selected image's own header declares more pixels than this device class can process (R-I19, R-I20, R-I21). {name} is the file name; {width} and {height} are its pixel dimensions; {actual} and {cap} are megapixel figures with at most one decimal.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 220
+  },
+  "rejection.reason.animationTooLarge": {
+    "situation": "Per-row reason text when a selected animation declares more frames, or more pixels across all its frames, than this device class can process (R-I20, R-I21, R-I22). {name} is the file name; {frames}, {width} and {height} describe the animation; {capFrames} is the frame cap and {capTotal} the cap on pixels across all frames in millions.",
+    "control": "Plain text in a dismissible list row.",
+    "maxLength": 260
+  },
   "rejection.reason.batchCountExceeded": {
     "situation": "Summary reason text (no single file) when a selection would push the batch over its total-image-count cap (§10 'Batch exceeds file count', R-I20). {actual} is the uncapped total this selection would have produced; {cap} is the limit.",
     "control": "Plain text in a dismissible list row, with no associated file name.",

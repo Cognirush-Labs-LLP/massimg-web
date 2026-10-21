@@ -1,6 +1,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 
 // T39: selection-time rejections through the real UI — classify()'s `unhandled` class surfaces as
@@ -105,4 +106,30 @@ test('a new selection replaces the previous rejection list rather than accumulat
   await expect(page.getByTestId('rejection-entry')).toHaveCount(1)
   await expect(page.getByTestId('rejection-list')).toContainText('icon.svg')
   await expect(page.getByTestId('rejection-list')).not.toContainText('bad.psd')
+})
+
+// Header-declared size, through the real picker: a 39 KB PNG that declares 324 megapixels is named
+// and turned away before anything decodes it (R-I19, R-I20, R-I21), while the ordinary images in the
+// same selection are added. The fixture is tests/fixtures/limits/bomb-18k-area.png.
+test('an image whose header declares more pixels than the device can hold is named, with its size and the cap', async ({
+  page,
+}) => {
+  const { png, png2 } = writeFixtures()
+  const bomb = fileURLToPath(new URL('../fixtures/limits/bomb-18k-area.png', import.meta.url))
+
+  await page.goto('/')
+  const chooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Select images' }).click()
+  await (await chooserPromise).setFiles([png, png2, bomb])
+
+  await expect(
+    page.getByTestId('gallery-root').getByText('2 images', { exact: false }),
+  ).toBeVisible()
+
+  const entry = page.getByTestId('rejection-entry')
+  await expect(entry).toHaveCount(1)
+  await expect(entry).toContainText('bomb-18k-area.png')
+  await expect(entry).toContainText('18000 × 18000')
+  await expect(entry).toContainText('megapixel')
+  await expect(entry).toContainText('desktop application')
 })

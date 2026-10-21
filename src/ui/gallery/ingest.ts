@@ -13,11 +13,13 @@
 // silent (R-I2's third class — ordinary non-images are never listed).
 import { reactive, watch } from 'vue'
 import { classify } from '@/domain/classify'
+import { findCapBreach, readImageHeader } from '@/domain/image-header'
 import type { RejectionEntry } from '@/domain/rejection'
 import type { ImageId, ImageRecord } from '@/domain/types'
-import { runtimeLimits } from '@/config/limits'
+import { resolveCodecLimits, runtimeLimits } from '@/config/limits'
 import { getCapabilities } from '@/platform/capability'
 import type { Capabilities } from '@/platform/capability'
+import { detectMobile } from '@/platform/device'
 import { createDimensionProbeService } from '@/platform/dimension-probe'
 import type { DimensionProbeService } from '@/platform/dimension-probe'
 import { pickFolder, readDroppedFolder } from '@/platform/folder'
@@ -37,6 +39,9 @@ import { getThumbnailService } from './thumbnail-service'
 // T33-B/T34's tile/row components read this to show "error" in place of `W×H`; `width`/`height`
 // staying `0` is what they read to show the pending `_×_` state.
 export const dimensionErrors = reactive(new Set<ImageId>())
+
+// Enough for any supported format's signature (and an SVG's tag) to be recognised.
+const PREFIX_BYTES = 64 * 1024
 
 function mintImageId(): ImageId {
   return crypto.randomUUID() as ImageId
@@ -101,8 +106,12 @@ async function buildIngestOutcome(
   capabilities: Capabilities,
 ): Promise<IngestOutcome> {
   // classify() needs the complete file, not a header slice — a GIF's second-frame marker can sit
-  // arbitrarily far into the file (domain/classify.ts's own doc comment).
-  const bytes = new Uint8Array(await item.file.arrayBuffer())
+  // arbitrarily far into the file (domain/classify.ts's own doc comment). A file over the size cap
+  // is rejected whatever its animation, so only enough of it is read to name what it is: the rest
+  // of a multi-gigabyte file must never be pulled into memory just to be turned away.
+  const source =
+    item.file.size > runtimeLimits.maximumFileBytes ? item.file.slice(0, PREFIX_BYTES) : item.file
+  const bytes = new Uint8Array(await source.arrayBuffer())
   const classification = classify(bytes)
 
   if (classification.class === 'not-image') {
@@ -135,6 +144,16 @@ async function buildIngestOutcome(
     }
   }
 
+  // The header decides before anything decodes. A format it cannot read, or a header it cannot
+  // parse, is not a reason to refuse the file: it goes on, and ImageMagick's resource limits fail
+  // it as a single image if it turns out to be too large (Technical Design §8.3).
+  const header = readImageHeader(bytes, classification.format)
+  const breach = header && findCapBreach(header, resolveCodecLimits(detectMobile()))
+
+  if (breach) {
+    return { kind: 'rejected', entry: rejectionEntry(item, breach) }
+  }
+
   return {
     kind: 'image',
     record: {
@@ -142,14 +161,14 @@ async function buildIngestOutcome(
       name: item.file.name,
       relativePath: item.relativePath,
       sizeBytes: item.file.size,
-      // Not yet known (T33-A's dimension-probe design decision) — 0 is the pending sentinel a
-      // tile/row renders as `_×_` until updateImage() patches in the real value, or
-      // `dimensionErrors` gains this id and it renders `error` instead.
-      width: 0,
-      height: 0,
+      // 0 is the pending sentinel a tile/row renders as `_×_` until the background probe patches
+      // in the real value, or `dimensionErrors` gains this id and it renders `error` instead. It
+      // is only used for what the header reader could not size.
+      width: header?.width ?? 0,
+      height: header?.height ?? 0,
       sourceFormat: classification.format,
       isAnimated: classification.isAnimated,
-      frameCount: null,
+      frameCount: header && classification.isAnimated ? header.frames : null,
       hasTransparency: null,
       edit: null,
       status: 'ready',
@@ -227,7 +246,9 @@ export async function ingestSelectedFiles(
     }
 
     setSourceFile(outcome.record.id, item.file)
-    service.enqueue(outcome.record.id, item.file)
+    if (outcome.record.width === 0) {
+      service.enqueue(outcome.record.id, item.file)
+    }
     pending.push(outcome.record)
     addedCount += 1
 

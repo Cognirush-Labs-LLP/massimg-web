@@ -152,6 +152,11 @@ export function formatFailureReason(reason: FailureReason): string {
   }
 }
 
+/** One decimal and a dot, whatever the interface locale (R-L3). */
+function formatReportMegapixels(pixels: number): string {
+  return (pixels / 1_000_000).toFixed(1)
+}
+
 /** Hardcoded English for the report (R-L3) — a shorter, file-name-less sibling of
  * `rejectionText.ts`'s `describeRejection`, which produces translatable on-screen copy with a
  * call to action. The report already carries the file name as its own field. */
@@ -175,6 +180,10 @@ export function formatRejectionReason(reason: RejectionReason): string {
       return 'This browser cannot decode HEIC'
     case 'file-too-large':
       return `File size ${formatReportSize(reason.actualBytes)} exceeds the ${formatReportSize(reason.capBytes)} limit for this browser`
+    case 'image-too-large':
+      return `Image size ${reason.width} × ${reason.height} (${formatReportMegapixels(reason.width * reason.height)} megapixels) exceeds the ${formatReportMegapixels(reason.capPixels)}-megapixel limit for this browser`
+    case 'animation-too-large':
+      return `Animation of ${reason.frames} frames at ${reason.width} × ${reason.height} exceeds the limit for this browser (${reason.capFrames} frames, ${formatReportMegapixels(reason.capFramePixels)} million pixels across all frames)`
     case 'batch-count-exceeded':
       return `Selection exceeded the ${reason.cap}-image batch limit`
     case 'folder-empty':

@@ -1,3 +1,4 @@
+import { runtimeLimits } from '@/config/limits'
 import type { SelectedFile } from './picker'
 
 // Folder selection and recursive traversal (Technical Design §10.1, Functional Design §5.3).
@@ -6,12 +7,6 @@ export type FolderSelection =
   | { ok: true; files: SelectedFile[] }
   | { ok: false; reason: 'depth-exceeded'; actual: number; cap: number }
   | { ok: false; reason: 'file-count-exceeded'; actual: number; cap: number }
-
-// Provisional. No measured value exists yet (Technical Design §8.3 assigns real limits to T46, from
-// one shared configuration module). Chosen generous enough for any real folder tree; T46 may retune
-// or relocate these.
-const MAX_TRAVERSAL_DEPTH = 32
-const MAX_TRAVERSAL_FILES = 2000
 
 const SYSTEM_FILE_NAMES = new Set(['thumbs.db', 'desktop.ini'])
 
@@ -72,15 +67,20 @@ function resolvePickedFolder(files: File[]): FolderSelection {
     }
   }
 
-  if (maxDepth > MAX_TRAVERSAL_DEPTH) {
-    return { ok: false, reason: 'depth-exceeded', actual: maxDepth, cap: MAX_TRAVERSAL_DEPTH }
+  if (maxDepth > runtimeLimits.maximumTraversalDepth) {
+    return {
+      ok: false,
+      reason: 'depth-exceeded',
+      actual: maxDepth,
+      cap: runtimeLimits.maximumTraversalDepth,
+    }
   }
-  if (survivors.length > MAX_TRAVERSAL_FILES) {
+  if (survivors.length > runtimeLimits.maximumTraversalFiles) {
     return {
       ok: false,
       reason: 'file-count-exceeded',
       actual: survivors.length,
-      cap: MAX_TRAVERSAL_FILES,
+      cap: runtimeLimits.maximumTraversalFiles,
     }
   }
 
@@ -111,12 +111,12 @@ export async function readDroppedFolder(dataTransfer: DataTransfer): Promise<Fol
     }
 
     const files = (await Promise.all(traversals)).flat()
-    if (files.length > MAX_TRAVERSAL_FILES) {
+    if (files.length > runtimeLimits.maximumTraversalFiles) {
       return {
         ok: false,
         reason: 'file-count-exceeded',
         actual: files.length,
-        cap: MAX_TRAVERSAL_FILES,
+        cap: runtimeLimits.maximumTraversalFiles,
       }
     }
 
@@ -139,13 +139,17 @@ async function walk(
   if (depth > 0 && isHiddenOrSystem(entry.name)) {
     return
   }
-  if (depth > MAX_TRAVERSAL_DEPTH) {
-    throw new TraversalBreach('depth-exceeded', depth, MAX_TRAVERSAL_DEPTH)
+  if (depth > runtimeLimits.maximumTraversalDepth) {
+    throw new TraversalBreach('depth-exceeded', depth, runtimeLimits.maximumTraversalDepth)
   }
 
   if (entry.isFile) {
-    if (acc.length + 1 > MAX_TRAVERSAL_FILES) {
-      throw new TraversalBreach('file-count-exceeded', acc.length + 1, MAX_TRAVERSAL_FILES)
+    if (acc.length + 1 > runtimeLimits.maximumTraversalFiles) {
+      throw new TraversalBreach(
+        'file-count-exceeded',
+        acc.length + 1,
+        runtimeLimits.maximumTraversalFiles,
+      )
     }
     const file = await fileFromEntry(entry as FileSystemFileEntry)
     acc.push({ file, relativePath: path })

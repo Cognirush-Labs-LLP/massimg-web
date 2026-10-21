@@ -687,11 +687,20 @@ If a browser test shows the heap does not return, workers are recycled after a t
 
 ### 8.3 Limits
 
-The device-dependent values in Functional Design §5.7 remain placeholders. **C3 is 30% confident and C4 is 25%.** They are derived from measurement, not chosen, and the code reads them from one configuration module so that changing them is a single edit. The ten-file Share ceiling is the one product limit chosen up front, contingent on E4's real-device verification; its total-byte companion is still measured.
+Limits are not found by driving devices to failure, because a failure point belongs to one device on one day. They come from a memory model and a stated floor device, and the code reads them from one configuration module (`src/config/limits.ts`) so that changing one is a single edit. Functional Design §5.7 tags every value *measured*, *derived* or *estimated*. **C3 is 55% confident and C4 is 25%.**
 
-The 200-file limit inherited from the original design draft is not defended by anything and should be assumed wrong until measured.
+**One number per device class.** `CodecLimits.cacheBytes` is ImageMagick's pixel-cache budget for one worker. `deriveCodecLimits` turns it into the caps: a still may be `cacheBytes / 16` pixels (8 bytes per RGBA16 pixel, measured, times the two caches an edit holds at once), and an animation `cacheBytes / 24` frame-pixels (C7's copies). There are two classes, desktop (1 GiB, three workers) and mobile (800 MiB, one worker, **estimated**; sized so a 50 MP phone photo is admitted), chosen by the same mobile test the pool uses. An unknown class gets the mobile budget.
 
-`RuntimeLimits` also owns `maximumShareFiles`, fixed at the product limit of 10, and `maximumShareBytes`, whose shipped value is set by T39-A and rechecked on the older low-memory iPhone in T50. The first decides before the run whether individual outputs may be retained; the second is applied to the exact successful output bytes before Share is exposed.
+**Two layers, so that enforcement can never be the crash.**
+
+1. *The guard, always on.* When ImageMagick initialises, the loader applies `disk = 0`, `memory`, `maxMemoryRequest`, `area` and `listLength` from the worker's budget. `disk = 0` is what makes the others bite: without it an over-budget cache spills into the same WASM heap and the decode succeeds (measured, T50). An over-budget file then fails in milliseconds with a catchable error and the worker stays usable. Whatever the header reader cannot judge reaches this layer, so an unusual file is never rejected for being unusual: if ImageMagick can read it within budget, it is processed.
+2. *The header reader, at selection* (`domain/image-header.ts`). It learns the dimensions and frame count of JPEG, PNG/APNG, GIF, WebP and AVIF/HEIC, the formats where a tiny file can declare a huge image, and an over-cap image is turned away with a message naming its size and the cap. It runs on bytes already in memory, reads through bounds-checked `DataView` accesses inside a single `try`, advances at least one box, chunk or segment per loop iteration, and allocates nothing from a number in the file; it never decodes, never throws, and returns *unknown* for anything it cannot parse or has no reader for (BMP, TIFF, JXL, JPEG 2000). Unknown is allowed through to layer 1. A file over the size cap is classified from a 64 KiB prefix only, so a huge file is never read into memory just to be refused.
+
+The bytes-per-pixel constants are measured on desktop ImageMagick, and the mobile budget was run through the real pipeline on an Android phone (C3): a 50 MP photo completed for every output format with no tab loss. The limits above govern ImageMagick's pixel cache only; the PNG and AVIF encoders add their own memory on top (about 2.1 GB and 1.4 GB at 50 MP on that phone), which no limit here bounds. The iPhone floor is the part no model can replace (C4). The worker's `out-of-memory` failure halts a whole run (§10), so a budget breach must be reported as a per-image failure and never as that kind.
+
+`RuntimeLimits` also owns `maximumShareFiles`, fixed at the product limit of 10, and `maximumShareBytes`, measured in T39-A on desktop and Android. The first decides before the run whether individual outputs may be retained; the second is applied to the exact successful output bytes before Share is exposed.
+
+The 200-file figure inherited from the original design draft was never defended; the shipped batch limit is an estimate, tagged as one.
 
 ---
 
@@ -971,8 +980,8 @@ Which sections change if an entry fails.
 | **D7** | 99 | §7.3 | Confirmed on twenty real photographs (T02); residual risk is untested content types, not the direction |
 | **D1** | 99 | §7.5 | **Settled in T30.** The search costs 1, 2, 3 or 8 encodes and nothing between; AVIF at §7.3's speed is 10.8× quicker than at the library default, so **R-Q4 excludes no format**. Residual risk is wall time on hardware slower than a desktop, not the structure |
 | **C2** | 92 | §8.2 | Workers recycle on a pixel budget; throughput drops |
-| **C4** | 25 | §8.3 | Mobile caps fall, possibly far |
-| **C3** | 30 | §8.3 | Every limit value changes; no structural change |
+| **C4** | 25 | §8.3 | Mobile caps fall, possibly far. No iPhone yet: mobile values are tagged estimated |
+| **C3** | 55 | §8.3 | Reframed in T50: limits are derived from a memory model and a floor device, each tagged measured, derived or estimated. ImageMagick's guard is measured on three engines |
 | **D8** | 95 | §7.2 | **Refuted in T27.** ImageMagick's own quantizer is worse at equal colour count and has no quality floor at all, which is the mechanism R-Q11's floor is made of. libimagequant stays, at 347 KB. The floor stays at 70 |
 | **C7** | 95 | §8.1, §4.2 | **Refuted in T29.** Peak memory is linear in frame count *and* in frame area, at a marginal 2.29×–2.73× the coalesced frame data and up to **2.80×** measured total, on all three engines. No structural change — coalescing is forced by R-Q9 and by resize correctness — but §5.7's animated frame budget is set from this rather than guessed, and it binds before the pixel cap does |
 | **C8** | 80 | §5.2 | Codecs split across workers; pool becomes heterogeneous. Measured in T22 for one worker on desktop; the 3-concurrent-worker case is the residual risk |

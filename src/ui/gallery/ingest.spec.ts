@@ -47,6 +47,48 @@ function selectedFile(name: string, relativePath: string | null = null): Selecte
   return { file: new File(['x'], name, { type: 'image/jpeg' }), relativePath }
 }
 
+// The smallest JPEG header the header reader will size: SOI, then a frame header declaring `width`
+// x `height`. Nothing after it is decodable, which is the point — a few bytes claim a huge image.
+function jpegDeclaring(width: number, height: number): Uint8Array<ArrayBuffer> {
+  return Uint8Array.from([
+    0xff,
+    0xd8,
+    0xff,
+    0xc0,
+    0x00,
+    0x11,
+    0x08,
+    height >> 8,
+    height & 0xff,
+    width >> 8,
+    width & 0xff,
+    ...new Array<number>(10).fill(0),
+  ])
+}
+
+// A GIF whose canvas is `side` x `side` and which holds `frames` one-pixel frames.
+function gifWithFrames(side: number, frames: number): Uint8Array<ArrayBuffer> {
+  const frame = [0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0x02, 0x02, 0x44, 0x01, 0x00]
+  return Uint8Array.from([
+    ...Array.from('GIF89a', (c) => c.charCodeAt(0)),
+    side & 0xff,
+    side >> 8,
+    side & 0xff,
+    side >> 8,
+    0x80,
+    0,
+    0,
+    0,
+    0,
+    0,
+    255,
+    255,
+    255,
+    ...new Array<number>(frames).fill(0).flatMap(() => frame),
+    0x3b,
+  ])
+}
+
 const originalMaximumFileBytes = runtimeLimits.maximumFileBytes
 const originalMaximumBatchFiles = runtimeLimits.maximumBatchFiles
 
@@ -287,6 +329,94 @@ describe('selection-time rejections (T39)', () => {
         reason: { kind: 'file-too-large', actualBytes: 9, capBytes: 5 },
       }),
     ])
+  })
+
+  it('reads only a prefix of a file over the size cap, so a huge file is never pulled into memory', async () => {
+    runtimeLimits.maximumFileBytes = 100
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    const file = new File([new Uint8Array(5000)], 'huge.jpg')
+    const arrayBuffer = vi.spyOn(file, 'arrayBuffer')
+    const slice = vi.spyOn(file, 'slice')
+    pickFilesMock.mockResolvedValue([{ file, relativePath: null }])
+
+    await addViaFilePicker()
+
+    expect(arrayBuffer).not.toHaveBeenCalled()
+    expect(slice).toHaveBeenCalledWith(0, 64 * 1024)
+    expect(useBatchStore().rejections[0]?.reason).toMatchObject({ kind: 'file-too-large' })
+  })
+
+  it('rejects an image whose own header declares more pixels than the device can hold, naming both figures', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    pickFilesMock.mockResolvedValue([
+      { file: new File([jpegDeclaring(60000, 60000)], 'bomb.jpg'), relativePath: null },
+    ])
+
+    await addViaFilePicker()
+
+    expect(useBatchStore().images).toHaveLength(0)
+    expect(useBatchStore().rejections).toEqual([
+      expect.objectContaining({
+        name: 'bomb.jpg',
+        reason: {
+          kind: 'image-too-large',
+          width: 60000,
+          height: 60000,
+          capPixels: expect.any(Number),
+        },
+      }),
+    ])
+  })
+
+  it('rejects an animation with too many frames, from its header alone', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'gif', isAnimated: true })
+    pickFilesMock.mockResolvedValue([
+      { file: new File([gifWithFrames(10, 600)], 'loop.gif'), relativePath: null },
+    ])
+
+    await addViaFilePicker()
+
+    expect(useBatchStore().images).toHaveLength(0)
+    expect(useBatchStore().rejections[0]?.reason).toMatchObject({
+      kind: 'animation-too-large',
+      frames: 600,
+      width: 10,
+      height: 10,
+    })
+  })
+
+  it('records the size the header gave, so a tile need not wait for the background probe', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    pickFilesMock.mockResolvedValue([
+      { file: new File([jpegDeclaring(4000, 3000)], 'ok.jpg'), relativePath: null },
+    ])
+
+    await addViaFilePicker()
+
+    expect(useBatchStore().images[0]).toMatchObject({ width: 4000, height: 3000, frameCount: null })
+  })
+
+  it('records the frame count of an animation that is within the caps', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'gif', isAnimated: true })
+    pickFilesMock.mockResolvedValue([
+      { file: new File([gifWithFrames(10, 6)], 'ok.gif'), relativePath: null },
+    ])
+
+    await addViaFilePicker()
+
+    expect(useBatchStore().images[0]).toMatchObject({ width: 10, height: 10, frameCount: 6 })
+  })
+
+  it('does not reject a file whose header it cannot read; it is left to the decoder', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    pickFilesMock.mockResolvedValue([
+      { file: new File([new Uint8Array(40).fill(7)], 'odd.jpg'), relativePath: null },
+    ])
+
+    await addViaFilePicker()
+
+    expect(useBatchStore().rejections).toEqual([])
+    expect(useBatchStore().images[0]).toMatchObject({ name: 'odd.jpg', width: 0, height: 0 })
   })
 
   it('accepts images up to the batch-count cap and summarizes the remainder in one entry', async () => {

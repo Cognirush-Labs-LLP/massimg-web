@@ -1,3 +1,4 @@
+import { countGifFrames } from './gif-frames'
 import type { Format } from './types'
 
 export type UnhandledReason = 'psd' | 'ico' | 'svg' | 'camera-raw' | 'animated-avif'
@@ -69,65 +70,9 @@ function classifyPng(bytes: Uint8Array): Classification | undefined {
   return { class: 'supported', format: 'png', isAnimated: false }
 }
 
-function skipGifSubBlocks(bytes: Uint8Array, start: number): number | undefined {
-  let offset = start
-  for (;;) {
-    if (offset >= bytes.length) return undefined
-    const blockSize = bytes[offset]!
-    offset += 1
-    if (blockSize === 0) return offset
-    if (offset + blockSize > bytes.length) return undefined
-    offset += blockSize
-  }
-}
-
 function classifyGif(bytes: Uint8Array): Classification | undefined {
-  if (
-    bytes.length < 13 ||
-    (!matchesAscii(bytes, 0, 'GIF87a') && !matchesAscii(bytes, 0, 'GIF89a'))
-  ) {
-    return undefined
-  }
-
-  const screenPacked = bytes[10]!
-  let offset = 13
-  if (screenPacked & 0x80) {
-    offset += 3 * (1 << ((screenPacked & 0x07) + 1))
-  }
-
-  let frameCount = 0
-  outer: while (offset < bytes.length) {
-    const marker = bytes[offset]!
-    offset += 1
-    switch (marker) {
-      case 0x21: {
-        if (offset >= bytes.length) break outer
-        offset += 1
-        const next = skipGifSubBlocks(bytes, offset)
-        if (next === undefined) break outer
-        offset = next
-        break
-      }
-      case 0x2c: {
-        frameCount += 1
-        if (offset + 9 > bytes.length) break outer
-        const localPacked = bytes[offset + 8]!
-        offset += 9
-        if (localPacked & 0x80) {
-          offset += 3 * (1 << ((localPacked & 0x07) + 1))
-        }
-        if (offset >= bytes.length) break outer
-        offset += 1
-        const next = skipGifSubBlocks(bytes, offset)
-        if (next === undefined) break outer
-        offset = next
-        break
-      }
-      default:
-        break outer
-    }
-  }
-
+  const frameCount = countGifFrames(bytes)
+  if (frameCount === undefined) return undefined
   return { class: 'supported', format: 'gif', isAnimated: frameCount > 1 }
 }
 

@@ -472,17 +472,22 @@ That directory-scoped rule applies to the ZIP. A share payload has no directory 
 
 Selection limits are enforced before processing. Delivery limits are enforced at the earliest point at which the completed output facts they depend on exist.
 
-| Limit | Value | Behaviour on breach |
-| --- | --- | --- |
-| Files per batch | to be set in Technical Design | Excess files rejected, count stated |
-| Single file size | to be set in Technical Design | File rejected with its size and the cap |
-| Single image pixels | to be set in Technical Design | File rejected with its dimensions and the cap |
-| Animated frame count | to be set in Technical Design | File rejected |
-| Animated total pixels | to be set in Technical Design | File rejected |
-| Folder traversal depth | to be set in Technical Design | Selection rejected, depth stated |
-| Available storage quota | from `navigator.storage.estimate()` | Reject if Download cannot fit; otherwise disable only Share when its extra copies cannot fit, §6.7 |
-| Files eligible for Share | 10 accepted images at run start | Share output is not retained or offered; Download is unchanged |
-| Total Share output bytes | to be set by T39-A and confirmed by T50 | Share is omitted after the run; Download remains available |
+Each value is tagged. **Measured** is a number taken on real hardware. **Derived** is computed from measured constants and a stated budget (Technical Design §8.3). **Estimated** is a best guess kept conservative, awaiting a device the project does not have yet. Limits are not found by driving devices to failure; the floor is a desktop with 8 GB of memory and, for mobile, a mid-range phone, held back by a margin where the phone is better than the weakest supported one.
+
+| Limit | Desktop | Mobile | Basis | Behaviour on breach |
+| --- | --- | --- | --- | --- |
+| Files per batch | 500 | 500 | Estimated: files are lazy handles and output streams to disk, so memory does not bind; no scale run yet | Excess files rejected, count stated |
+| Single file size | 100 MiB | 100 MiB | Estimated: bounds only the source copy; pixels are the real constraint | File rejected with its size and the cap |
+| Single image pixels | 67.1 MP | 52.4 MP | Derived from a 1 GiB (desktop) or 800 MiB (mobile) pixel-cache budget at 16 bytes per pixel; the budget is measured on desktop and on one Android phone, and **estimated** for iPhone (needs iPhone) | File rejected with its dimensions and the cap |
+| Animated frame count | 500 | 500 | Estimated: bounds time, not memory | File rejected |
+| Animated total pixels (frames x width x height) | 44.7 M | 35.0 M | Derived at 24 bytes per frame-pixel from the same budget (C7); mobile **estimated** | File rejected |
+| Folder traversal depth | 32 | 32 | Structural | Selection rejected, depth stated |
+| Folder traversal files | 2000 | 2000 | Structural | Selection rejected, count stated |
+| Available storage quota | from `navigator.storage.estimate()` | same | Measured at run time | Reject if Download cannot fit; otherwise disable only Share when its extra copies cannot fit, §6.7 |
+| Files eligible for Share | 10 accepted images at run start | same | Product limit; 10 real files shared on every engine tested | Share output is not retained or offered; Download is unchanged |
+| Total Share output bytes | 40 MB | 40 MB | Measured on desktop and a real Android phone (T39-A); 50 MB passed and 60 MB failed on Chrome. **Not yet measured on iOS** | Share is omitted after the run; Download remains available |
+
+A file the selection-time check cannot judge (an unusual format, a damaged header) is not rejected on that account. It is processed, and ImageMagick's own resource limits (Technical Design §8.3) fail it as a single image if it exceeds the budget.
 
 - R-I19 Limits are lower on memory-constrained browsers where this can be detected. The tool prefers rejecting a file up front to having the tab killed mid-batch.
 - R-I20 Every limit message names the actual value and the cap, so the user can see how far over they are.

@@ -1,11 +1,67 @@
 // The single runtime configuration module for operational limits (Technical Design §8.3).
 //
-// T46 owns the measured values and will grow this module to cover every limit in Functional Design
-// §5.7. Everything here is a shipped default named by a design document, not a measured figure:
-// services read them from here and accept an override, so changing a limit is one edit and needs no
-// change to the service that enforces it.
+// Services read their limits from here and accept an override, so changing a limit is one edit and
+// needs no change to the service that enforces it. Each value's provenance (measured, derived or
+// estimated, and from what) is tabulated in Functional Design §5.7; this file does not repeat it.
+
+/**
+ * What one pipeline worker's ImageMagick may hold, and the selection-time caps derived from it.
+ * Produced only by `deriveCodecLimits`, so the three numbers cannot drift apart.
+ */
+export interface CodecLimits {
+  /**
+   * ImageMagick's pixel-cache budget for one worker. Applied as `ResourceLimits.memory` with the
+   * disk spill switched off, which turns an over-budget decode into a catchable error instead of an
+   * allocation that runs until the tab dies.
+   */
+  cacheBytes: number
+  /** Largest single image, in pixels (`ResourceLimits.area`, and the selection-time cap). */
+  maximumImagePixels: number
+  /** Largest animation, in frames x width x height. */
+  maximumAnimationFramePixels: number
+  /** Most frames an animation may have. */
+  maximumAnimationFrames: number
+}
+
+/**
+ * Worst-case bytes ImageMagick's cache charges per pixel: RGBA at 16-bit quantum. Measured (T50):
+ * a 48 MP RGBA image decoded under a 384 MiB limit and not under 256 MiB (5.6 to 8.4 bytes per pixel).
+ */
+const CACHE_BYTES_PER_PIXEL = 8
+
+/**
+ * A still keeps its source cache alive while an edit or resize builds the next one, so the budget
+ * has to hold two. A rotation at the cap would otherwise fail on an image the cap admitted.
+ */
+const STILL_CACHES = 2
+
+/**
+ * An animation's frames exist twice in ImageMagick (read, then coalesced) and once more as the
+ * owned buffers the worker transfers (C7: 2.3x to 2.8x the RGBA8 frame data in total). Eight bytes
+ * for the cache and one RGBA8 copy on top, doubled for the second set, rounds to this.
+ */
+const ANIMATION_BYTES_PER_PIXEL = 24
+
+export function deriveCodecLimits(cacheBytes: number, maximumAnimationFrames: number): CodecLimits {
+  return {
+    cacheBytes,
+    maximumImagePixels: Math.floor(cacheBytes / (CACHE_BYTES_PER_PIXEL * STILL_CACHES)),
+    maximumAnimationFramePixels: Math.floor(cacheBytes / ANIMATION_BYTES_PER_PIXEL),
+    maximumAnimationFrames,
+  }
+}
 
 export interface RuntimeLimits {
+  /** Codec budget for a worker on a desktop. Three of these run at once (`maximumWorkers`). */
+  desktopCodec: CodecLimits
+
+  /**
+   * Codec budget for a worker on a mobile device, where there is one worker. **Estimated**, not
+   * measured: no iPhone was available. It must keep admitting a 50 MP phone photo; if a device
+   * cannot hold that, the answer is a cheaper pipeline for that photo, not a lower cap.
+   */
+  mobileCodec: CodecLimits
+
   /**
    * Ceiling on both source-read attempts and retained thumbnail Blobs, per batch (R-G3, R-G10).
    * An attempt is charged when a read starts and is never refunded or replenished.
@@ -51,10 +107,24 @@ export interface RuntimeLimits {
    * Selection-time rejection cap on total images per batch (§5.7 "Files per batch", R-I20, §10
    * "Batch exceeds file count"). **Provisional** — the inherited 200-file figure was never measured
    * (assumptions.md C3); T50 owns the real figure. Distinct from `folder.ts`'s own
-   * `MAX_TRAVERSAL_FILES`, which caps one folder's traversal, not the whole batch across every
+   * `maximumTraversalFiles`, which caps one folder's traversal, not the whole batch across every
    * selection made so far.
    */
   maximumBatchFiles: number
+
+  /**
+   * Deepest folder nesting a selection may have, and most files one folder selection may contain
+   * (Functional Design §5.3, R-I30). **Structural**: generous enough for any real tree, and a
+   * bound on the traversal itself rather than on memory.
+   */
+  maximumTraversalDepth: number
+  maximumTraversalFiles: number
+
+  /**
+   * Allowance per individual Share copy in the quota preflight (Technical Design §9.2). **Estimated**:
+   * a conservative filesystem and metadata figure, not a measurement.
+   */
+  shareCopyOverheadBytes: number
 
   /**
    * Fixed product ceiling on accepted images a run may start with and still retain Share output
@@ -76,7 +146,11 @@ export interface RuntimeLimits {
   maximumShareBytes: number
 }
 
+const MiB = 1024 * 1024
+
 export const runtimeLimits: RuntimeLimits = {
+  desktopCodec: deriveCodecLimits(1024 * MiB, 500),
+  mobileCodec: deriveCodecLimits(800 * MiB, 500),
   maximumThumbnails: 100,
   maximumWorkers: 3,
   mobileWorkers: 1,
@@ -84,6 +158,9 @@ export const runtimeLimits: RuntimeLimits = {
   jobTimeoutMs: null,
   maximumFileBytes: 100 * 1024 * 1024,
   maximumBatchFiles: 500,
+  maximumTraversalDepth: 32,
+  maximumTraversalFiles: 2000,
+  shareCopyOverheadBytes: 4096,
   maximumShareFiles: 10,
   maximumShareBytes: 40 * 1024 * 1024,
 }
@@ -121,6 +198,17 @@ export function resolveWorkerPoolSize(
   }
 
   return Math.max(1, Math.min(Math.floor(cores) - limits.reservedCores, limits.maximumWorkers))
+}
+
+/**
+ * The codec budget for this device class. The strict mobile budget is the answer when the class is
+ * unknown, because a budget that is too small fails one image and one that is too large loses the tab.
+ */
+export function resolveCodecLimits(
+  mobile: boolean | undefined,
+  limits: RuntimeLimits = runtimeLimits,
+): CodecLimits {
+  return mobile === false ? limits.desktopCodec : limits.mobileCodec
 }
 
 /**

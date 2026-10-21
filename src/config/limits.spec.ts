@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  deriveCodecLimits,
   resolveAutomaticGalleryView,
+  resolveCodecLimits,
   resolveWorkerPoolSize,
   runtimeLimits,
   type RuntimeLimits,
@@ -99,8 +101,53 @@ describe('runtimeLimits Share limits', () => {
 describe('runtimeLimits.jobTimeoutMs', () => {
   it('is null until a re-init cost has actually been measured (R-X29)', () => {
     // §5.3: the threshold "is set from measured re-init cost, not guessed". It lives here rather
-    // than in the pool's options so that T46's sweep of this module finds it and asks for evidence;
+    // than in the pool's options so that T50's sweep of this module finds it and asks for evidence;
     // a guessed default would terminate healthy jobs on slow devices.
     expect(runtimeLimits.jobTimeoutMs).toBeNull()
+  })
+})
+
+describe('deriveCodecLimits', () => {
+  const MiB = 1024 * 1024
+
+  it('admits two RGBA16 caches per still and charges an animation for its copies', () => {
+    // 1 GiB / (8 bytes per pixel x 2 caches) and 1 GiB / 24 bytes per animated frame-pixel.
+    expect(deriveCodecLimits(1024 * MiB, 500)).toEqual({
+      cacheBytes: 1024 * MiB,
+      maximumImagePixels: 67_108_864,
+      maximumAnimationFramePixels: 44_739_242,
+      maximumAnimationFrames: 500,
+    })
+  })
+
+  it('scales with the budget, so a device class is one number', () => {
+    const small = deriveCodecLimits(640 * MiB, 500)
+    const large = deriveCodecLimits(1280 * MiB, 500)
+
+    expect(large.maximumImagePixels).toBe(small.maximumImagePixels * 2)
+    expect(large.maximumAnimationFramePixels).toBeGreaterThanOrEqual(
+      small.maximumAnimationFramePixels * 2 - 1,
+    )
+  })
+
+  it('keeps an animation no larger than a still of the same budget', () => {
+    const limits = deriveCodecLimits(1024 * MiB, 500)
+
+    expect(limits.maximumAnimationFramePixels).toBeLessThan(limits.maximumImagePixels)
+  })
+})
+
+describe('the shipped mobile budget', () => {
+  it('admits a 50 megapixel phone photo, a product requirement rather than a tuning choice', () => {
+    expect(runtimeLimits.mobileCodec.maximumImagePixels).toBeGreaterThanOrEqual(50_000_000)
+  })
+})
+
+describe('resolveCodecLimits', () => {
+  it('gives mobile the smaller budget and treats an unknown class as mobile', () => {
+    expect(resolveCodecLimits(false)).toBe(runtimeLimits.desktopCodec)
+    expect(resolveCodecLimits(true)).toBe(runtimeLimits.mobileCodec)
+    expect(resolveCodecLimits(undefined)).toBe(runtimeLimits.mobileCodec)
+    expect(runtimeLimits.mobileCodec.cacheBytes).toBeLessThan(runtimeLimits.desktopCodec.cacheBytes)
   })
 })

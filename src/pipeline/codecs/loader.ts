@@ -22,6 +22,7 @@
 
 import { codecsForSettings } from './routing'
 import type { CodecName } from './routing'
+import { resolveCodecLimits, type CodecLimits } from '@/config/limits'
 import type { ResolvedSettings } from '@/domain/types'
 
 export type { CodecName } from './routing'
@@ -33,6 +34,39 @@ export { codecsForSettings } from './routing'
 // ---------------------------------------------------------------------------------------------
 
 let imageMagickPromise: Promise<typeof import('@imagemagick/magick-wasm')> | null = null
+let codecLimits: CodecLimits = resolveCodecLimits(undefined)
+
+/**
+ * Sets the budget `ensureImageMagick` applies. Must run before the first call: the limits are
+ * written once, as ImageMagick initialises. A worker never learns whether it is on a phone by
+ * itself, so its pool tells it (`protocol.ts` `configure`).
+ */
+export function configureCodecLimits(limits: CodecLimits): void {
+  codecLimits = limits
+}
+
+/**
+ * Without `disk = 0` the other limits are decoration. ImageMagick answers an over-budget pixel cache
+ * by spilling it to "disk", which in this build is the same WASM heap, so a 324 MP decode under a
+ * 100 MP `area` and a 1 GiB `memory` limit still succeeded (T50). With the spill refused the same
+ * decode fails in milliseconds with a catchable `CacheResourcesExhausted` and the instance stays
+ * usable. `memory` also bounds the sum over an animation's frames, which `area` (per image) cannot;
+ * and `listLength` stops a frame bomb that would otherwise end in an `exit(1)` that leaves the
+ * instance dead. Its margin covers the coalesced list ImageMagick holds beside the original.
+ */
+function applyResourceLimits(
+  { ResourceLimits }: typeof import('@imagemagick/magick-wasm'),
+  limits: CodecLimits,
+): void {
+  ResourceLimits.disk = 0n
+  ResourceLimits.memory = BigInt(limits.cacheBytes)
+  ResourceLimits.maxMemoryRequest = BigInt(limits.cacheBytes)
+  // ImageMagick refuses an image whose area equals this limit, so the limit sits one above the
+  // largest image the selection-time check admits; otherwise an image exactly at the cap passes
+  // selection and fails here (measured on the Android phone: 8192 x 6400 against a 52,428,800 cap).
+  ResourceLimits.area = BigInt(limits.maximumImagePixels) + 1n
+  ResourceLimits.listLength = BigInt(Math.ceil(limits.maximumAnimationFrames * 1.25) + 16)
+}
 
 /**
  * The x86/wasm32 build, not x64 — B7 is only 80% confident memory64 is usable, and T20's harness and
@@ -45,6 +79,7 @@ export function ensureImageMagick(): Promise<typeof import('@imagemagick/magick-
       const magick = await import('@imagemagick/magick-wasm')
       const wasmUrl = new URL('@imagemagick/magick-wasm/magick.wasm', import.meta.url)
       await magick.initializeImageMagick(wasmUrl)
+      applyResourceLimits(magick, codecLimits)
       return magick
     })()
   }

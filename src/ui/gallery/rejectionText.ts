@@ -9,6 +9,10 @@ import { formatUiSize } from '@/domain/sizes'
 import type { RejectionEntry } from '@/domain/rejection'
 import { t } from '@/i18n/t'
 
+function formatMegapixels(pixels: number): string {
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(pixels / 1_000_000)
+}
+
 export function describeRejection(entry: RejectionEntry): string {
   const reason = entry.reason
 
@@ -34,6 +38,23 @@ export function describeRejection(entry: RejectionEntry): string {
         name: entry.name ?? '',
         actual: formatUiSize(reason.actualBytes),
         cap: formatUiSize(reason.capBytes),
+      })
+    case 'image-too-large':
+      return t('rejection.reason.imageTooLarge', {
+        name: entry.name ?? '',
+        width: reason.width,
+        height: reason.height,
+        actual: formatMegapixels(reason.width * reason.height),
+        cap: formatMegapixels(reason.capPixels),
+      })
+    case 'animation-too-large':
+      return t('rejection.reason.animationTooLarge', {
+        name: entry.name ?? '',
+        frames: reason.frames,
+        width: reason.width,
+        height: reason.height,
+        capFrames: reason.capFrames,
+        capTotal: formatMegapixels(reason.capFramePixels),
       })
     case 'batch-count-exceeded':
       return t('rejection.reason.batchCountExceeded', { actual: reason.actual, cap: reason.cap })

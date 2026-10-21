@@ -58,7 +58,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | B9 | Host can set custom response headers | 70 | OPEN | P2 |
 | C1 | File handles are not backed by memory | 90 | DOC | P1 |
 | C2 | WASM memory is reclaimed after large images | 92 | TESTED | P1 |
-| C3 | Practical per-image and per-batch limits | 30 | OPEN | P2 |
+| C3 | Practical per-image and per-batch limits | 65 | OPEN | P2 |
 | C4 | iOS Safari termination threshold | 25 | OPEN | P1 |
 | C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
 | C7 | Animated sources processed incrementally | 95 | REFUTED | P2 |
@@ -437,11 +437,51 @@ Phase 2, the 8000×6000 (48 MP) image repeated 25 times in the same tab: WASM he
 
 ---
 
-### C3 `OPEN` `30%` `P2` Practical per-image and per-batch limits
+### C3 `OPEN` `65%` `P2` Practical per-image and per-batch limits
 
-The values in §5.7 are placeholders. The 200-file limit is inherited from the original design draft and was never measured.
+**Reframed in T50.** A device's true failure point cannot be measured: it depends on RAM, what else is open, the OS and the browser, and a ramp-to-failure on one machine says little about the next. So limits are not found by crashing devices. They are **derived from a memory model and a stated floor device**, and every value in Functional Design §5.7 carries one of three tags:
 
-**Method.** On each platform, process images of increasing megapixel count until failure. Repeat varying animated frame count and frame size independently, since the two multiply. Repeat for batch size. Derive caps with a margin, lower on iOS.
+- **measured**: a number taken on real hardware, with the evidence named;
+- **derived**: computed from measured constants and a stated budget;
+- **estimated**: a best guess, kept deliberately conservative, awaiting a device we do not yet have.
+
+The model is `deriveCodecLimits` in `src/config/limits.ts`. It is one number per device class, ImageMagick's pixel-cache budget for one worker, and the caps follow from it.
+
+**Measured in T50** (`verification/t50-limits`, magick-wasm 0.0.43 x86 build, Chromium, Firefox and WebKit on macOS):
+
+- **ImageMagick's defaults allow decompression bombs.** A 40000x40000 one-bit PNG (195 KB) decoded to completion on Firefox and WebKit in 17 to 37 seconds. An 18000x18000 PNG (324 MP, 39 KB) decoded on all three engines. A 3000-frame GIF of a 3000x3000 canvas (45 KB) ended in `exit(1)`, which leaves the WASM instance unusable for every later image.
+- **`area` and `memory` alone do not stop that.** Over budget, ImageMagick spills the pixel cache to "disk", which in this build is the same WASM heap. Only with `disk = 0` does an over-budget decode fail, in 1 to 6 ms, with a catchable `CacheResourcesExhausted` and a reusable instance.
+- **`memory` bounds the sum over an animation's frames; `area` is per image.** Both are needed. `listLength` stops a frame bomb before the heap is touched; it needs about 1.0 to 1.3 times the frame count, because the coalesced list sits beside the original.
+- **Cost per pixel:** a 48 MP RGBA image decoded under 384 MiB and not under 256 MiB, so up to 8 bytes per pixel (RGBA, 16-bit quantum). Grey and RGB-without-alpha fit in 192 MiB.
+- **The combined guard** (`disk 0`, `memory`, `maxMemoryRequest`, `area`, `listLength`) turned every bomb tried (PNG, JPEG with rewritten dimensions, lossless WebP, GIF frame bomb) into a catchable error on all three engines, left the instance reusable, and still decoded 48 MP images. It is a permanent regression test: `tests/e2e/resource-limits.spec.ts`.
+
+**Measured on a real phone** (T50, `verification/t50-limits/android-ramp.mjs`). Samsung SM-E346B (Galaxy M34 5G), Android 16, 5.5 GB RAM with about 1.8 GB available at idle, Chrome 155, driven over USB with the real pipeline worker and the shipped mobile budget (800 MiB, 52.4 MP). Memory is the summed PSS of Chrome's renderer processes above an idle tab; the app was served by the Vite dev server, so figures include a little development overhead. Each step ran in a fresh tab. **No tab crashed in 20 steps, and memory returned to the idle level (about 120 MB) after every one.**
+
+| Step (RGB photo unless noted) | Wall time | Memory above idle | Lowest free memory |
+| --- | --- | --- | --- |
+| 12 / 24 / 36 / 50 MP to JPEG | 2.3 / 4.0 / 5.7 / 7.6 s | +211 / +379 / +547 / +757 MB | 1421 / 1301 / 1225 / 1199 MB |
+| 50 MP to JPEG with a full-size rotation | 8.3 s | +940 MB | 1192 MB |
+| 50 MP with alpha to JPEG | 8.5 s | +757 MB | 1289 MB |
+| 24 / 50 MP to WebP | 24 / 51 s | +521 / +963 MB | 1416 / 1147 MB |
+| 24 / 50 MP with alpha to PNG | 53 / 110 s | +1005 / +2083 MB | 1207 / **722 MB** |
+| 12 / 24 / 50 MP to AVIF | 4.5 / 8.4 / 16.3 s | +363 / +701 / +1409 MB | 1944 / 1540 / 930 MB |
+| 100 frames of 590x590 (34.8 M frame-pixels) to animated WebP / GIF | 15 / 19 s | +401 / +565 MB | 1520 / 1372 MB |
+| 53 MP (over the cap) | refused in 0.6 s | +69 MB | 1797 MB |
+| 300 frames of 1000x1000 (over the cap) | refused in 7 s | +805 MB, then released | 1209 MB |
+
+- **A 50 MP photo works on this phone for every output format**, with a rotation, and with alpha.
+- **Plain JPEG costs about 15 MB per megapixel** (757 MB at 49.9 MP), so the 800 MiB cache budget is close to the whole footprint for the common path.
+- **The encoders sit outside the budget.** ImageMagick's limits govern its own pixel cache only. The PNG path (quantizer, then oxipng) added 2.1 GB at 50 MP, 2.7 times the cache budget, and left 722 MB free on a 5.5 GB phone. AVIF added 1.4 GB. On a phone with 3 to 4 GB these two are the first to fail, and no limit in this module catches them. They are the open risk behind C4.
+- **A boundary bug found on the phone:** ImageMagick refuses an image whose area *equals* its `area` limit, so an 8192x6400 photo exactly at the cap passed selection and failed in the worker. The loader now sets the limit one above the cap; a permanent test covers it.
+- **Over-cap input fails cleanly:** the 53 MP image in 0.6 s, and the oversized animation after ImageMagick had used its whole 800 MiB budget (+805 MB), which it then released.
+
+**Model.** A still needs two caches at once (an edit or resize builds the next before releasing the first), so `maximumImagePixels = cacheBytes / 16`. An animation's frames exist twice in ImageMagick and once more as owned buffers (C7), so `maximumAnimationFramePixels = cacheBytes / 24`.
+
+**Floor device.** There is no usage data, so "covers 95% of devices" cannot be computed. It is defined instead: desktop is an 8 GB machine running three workers; mobile is the reference Android phone below, held back by a margin because the iPhone floor is unmeasured (C4).
+
+**Why 65 and not higher.** The guard, the per-pixel constants and the mobile budget on one Android phone are measured. The iPhone floor is not, and the encoders' memory (PNG, AVIF) is not bounded by any limit here. Desktop numbers are confirmed on one Apple-silicon Mac only. The file-count and file-size limits have no memory evidence behind them at all.
+
+**Method.** Run the guard's bomb set and a stepped-size ramp (12 to 80 MP, and animations by frame-pixels) through the real pipeline on each engine, then on the Android phone over CDP, sampling process memory. Set each budget below what the device tolerates, not at it.
 
 ---
 
@@ -451,7 +491,9 @@ iOS Safari kills tabs on memory pressure without a catchable error, so rejection
 
 **Why so low.** No figure exists yet, and it varies by device and iOS version.
 
-**Method.** On a real iPhone, process progressively larger batches until the tab reloads. Record the threshold and whether any error surfaces first. Repeat on an older low-memory device, not only a current model.
+**Status after T50.** No iPhone is available, so this is unchanged and the mobile limits that depend on it are **estimated**. The Android phone (Samsung SM-E346B, Android 16, 5.5 GB RAM, Chrome) stands in as the mobile floor for now; its ramp is recorded under C3. It is a better phone than the 3 to 4 GB iPhones this assumption worries about, and its PNG and AVIF runs already left only 722 and 930 MB free, so the first things to check on an iPhone are a 50 MP photo to PNG and to AVIF. Mobile values stay tagged "needs iPhone".
+
+**Method.** On a real iPhone, process progressively larger batches until the tab reloads. Record the threshold and whether any error surfaces first. Repeat on an older low-memory device, not only a current model. When one is available, T50's tagged values are re-checked and the tags updated.
 
 ---
 
@@ -1178,7 +1220,7 @@ Full records: `verification/t39a-web-share/results.json`. Runbook: that folder's
 
 **Affects.** R-X47 to R-X53, the extra OPFS sink in Technical Design §9.1, `maximumShareBytes`, and whether Share can be offered on the mobile platforms that motivate it.
 
-**Method.** T39-A shares 1, 2 and 10 OPFS-backed files on real iOS Safari and Android Chrome, plus every available desktop implementation. It covers each supported output MIME type and a mixed array; exact `canShare` results; a successful native handoff; user cancellation; increasing total payload sizes while observing memory or, where process memory is unavailable, tab survival and reload; and the in-memory private-browsing fallback separately. The result records a support matrix and the largest safe total-byte bound rather than inferring either from API presence. *(Completed for macOS Safari/Chrome/Firefox, Windows Chrome and real Android Chrome, including the byte-size ramp and a private/incognito repeat. Real iOS Safari remains open — the only iOS hardware available predates the feature — deferred to T50, same reasoning as B4/B5.)*
+**Method.** T39-A shares 1, 2 and 10 OPFS-backed files on real iOS Safari and Android Chrome, plus every available desktop implementation. It covers each supported output MIME type and a mixed array; exact `canShare` results; a successful native handoff; user cancellation; increasing total payload sizes while observing memory or, where process memory is unavailable, tab survival and reload; and the in-memory private-browsing fallback separately. The result records a support matrix and the largest safe total-byte bound rather than inferring either from API presence. *(Completed for macOS Safari/Chrome/Firefox, Windows Chrome and real Android Chrome, including the byte-size ramp and a private/incognito repeat. Real iOS Safari remains open — the only iOS hardware available predates the feature. T50 closed with caveats without an iPhone, so this is now the one piece of E4 still waiting on a device: `maximumShareFiles` (10) and `maximumShareBytes` (40 MB) stay as set, tagged unmeasured on iOS, and are re-checked there when one exists.)*
 
 **Fallback if false.** Scope Share by capability and exact payload, lower the file or total-byte cap to the measured safe value, or withhold it entirely on the affected platform. Delete unused individual copies and keep the existing direct-file/ZIP Download path unchanged. A receiving application rejecting a payload after the operating system accepted it cannot be recovered by the sender and is stated as an OS-target limitation, not reported as app success beyond the handoff the API confirms. **Engaged by measurement:** recommend `maximumShareBytes` around 40 MB — a safety margin under the measured 50 MB-safe/60 MB-failing Chrome boundary, the most restrictive engine tested, and Chrome is also the engine on the lowest-memory mobile hardware (Android) — pending T50's confirmation that a real phone's lower available memory doesn't lower it further. File count itself is not the constraint: ten real files well under this byte total shared successfully everywhere tested.
 

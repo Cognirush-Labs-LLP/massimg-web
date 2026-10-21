@@ -210,7 +210,7 @@ export async function estimateQuota(): Promise<{ usage: number; quota: number }>
 }
 
 // R-X40. In fallback mode there is no OPFS quota to preflight against - the reduced batch cap that
-// applies instead is a T46/T50-owned measured number, not something this module invents.
+// applies instead is a T50-owned number, not something this module invents.
 export async function checkQuota(requiredBytes: number): Promise<QuotaCheck> {
   const { opfs } = await getCapabilities()
   if (!opfs) {
