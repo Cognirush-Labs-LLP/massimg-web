@@ -16,14 +16,15 @@ pnpm exec playwright install --with-deps chromium firefox webkit
 
 ## What to run before opening a pull request
 
-| Command                         | What it covers                                                  |
-| ------------------------------- | --------------------------------------------------------------- |
-| `pnpm check`                    | Types, lint, stylesheet lint, formatting                        |
-| `pnpm check:licenses`           | Every bundled component is credited (see `3rd_party_licenses/`) |
-| `pnpm test`                     | Unit tests (Vitest)                                             |
-| `pnpm test:e2e`                 | Browser tests, all three engines (Playwright)                   |
-| `pnpm build && pnpm verify:ssg` | Production build, plus the static-HTML and licence checks       |
-| `pnpm test:e2e:pwa`             | Offline/service-worker tests, against a real production build   |
+| Command                         | What it covers                                                                |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm check`                    | Types, lint, stylesheet lint, formatting                                      |
+| `pnpm check:licenses`           | Every bundled component is credited (see `3rd_party_licenses/`)               |
+| `pnpm test`                     | Unit tests (Vitest)                                                           |
+| `pnpm test:e2e`                 | Browser tests, all three engines (Playwright)                                 |
+| `pnpm build && pnpm verify:ssg` | Production build, plus the static-HTML and licence checks                     |
+| `pnpm test:e2e:pwa`             | Offline/service-worker tests, against a real production build                 |
+| `pnpm test:e2e:site`            | Public pages, `sitemap.xml` and `robots.txt`, against a real production build |
 
 If you changed anything under `src/pipeline/` or `src/platform/`, run the browser tests. They are
 the only thing that exercises real codecs, workers and storage.

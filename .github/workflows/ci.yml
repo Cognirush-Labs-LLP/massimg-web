@@ -112,3 +112,27 @@ jobs:
           name: playwright-pwa-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 7
+
+  e2e-site:
+    name: public routes and SEO files (playwright, ${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps ${{ matrix.project }}
+      - run: pnpm exec playwright test --config=playwright.site.config.ts --project=${{ matrix.project }}
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-site-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 7

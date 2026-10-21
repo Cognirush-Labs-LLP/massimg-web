@@ -91,6 +91,8 @@ src/                   application code — see docs/technical-design.md §2 for
 verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
 tests/                 permanent browser/e2e test suite, added from T05 onward
   e2e/webkit-platform.ts  which WebKit tests only hold on macOS, and why — not a test file itself
+  e2e/journeys/           whole-run journeys through the real interface, Share stubbed (T51)
+  e2e-site/               public pages, sitemap.xml and robots.txt, against a production build (T51)
 CONTRIBUTING.md        contributor guide: what to run, and what a green run on each OS proves
 .github/
   pull_request_template.md  the PR form, including the required "which OS did you test on"
