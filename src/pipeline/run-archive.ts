@@ -207,6 +207,7 @@ export function openRunArchiveSink(options: {
   let successCount = 0
   let queue: EntryQueue | null = null
   let archiveDone: Promise<void> = Promise.resolve()
+  let candidateWrite: Promise<void> | undefined
 
   if (multiImage) {
     queue = new EntryQueue()
@@ -255,8 +256,14 @@ export function openRunArchiveSink(options: {
     }
 
     if (successCount === 1) {
-      await writeOutputCopy(0, bytes, meta) // the R-X16 candidate, until/unless a 2nd success lands
+      candidateWrite = writeOutputCopy(0, bytes, meta) // the R-X16 candidate, until/unless a 2nd success lands
+      await candidateWrite
     } else if (successCount === 2) {
+      // Submits from different workers overlap, so the 2nd success can arrive while the 1st
+      // success is still writing. Deleting the entry between the writer's `getFileHandle` and
+      // `createWritable` makes the write fail with NoModificationAllowedError and halts the whole
+      // run as a storage failure. The 1st submit reports its own write failure; only ordering matters here.
+      await candidateWrite?.catch(() => {})
       await deleteOutputCopy(0) // ZIP delivery is now certain; the candidate is no longer needed
     }
   }

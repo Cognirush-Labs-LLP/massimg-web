@@ -137,6 +137,69 @@ describe('openRunArchiveSink — multi-image, not Share-eligible', () => {
     expect(collected.map((e) => e.name)).toEqual(['a.jpg', 'sub/b.png', 'c.webp'])
   })
 
+  it('does not release the candidate while the 1st success is still writing it', async () => {
+    // Two workers finishing close together submit concurrently; the delete must wait for the write.
+    const events: string[] = []
+    let finishWrite: () => void = () => {}
+    opfsMocks.writeOutputCopy.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishWrite = () => {
+            events.push('write finished')
+            resolve()
+          }
+        }),
+    )
+    opfsMocks.deleteOutputCopy.mockImplementationOnce(async () => {
+      events.push('delete')
+    })
+
+    await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+      ]),
+      multiImage: true,
+      shareEligible: false,
+    })
+
+    const first = sink.submit(idA, bytes(1), 'jpeg')
+    const second = sink.submit(idB, bytes(2), 'png')
+
+    // Let every microtask that can run, run: the delete must still be held back.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(opfsMocks.deleteOutputCopy).not.toHaveBeenCalled()
+
+    finishWrite()
+    await Promise.all([first, second])
+    await sink.finish()
+
+    expect(events).toEqual(['write finished', 'delete'])
+  })
+
+  it('still releases the candidate when the 1st success failed to write it', async () => {
+    opfsMocks.writeOutputCopy.mockRejectedValueOnce(new Error('disk full'))
+
+    await drainArchive()
+    const sink = openRunArchiveSink({
+      pathsByImage: new Map([
+        [idA, 'a.jpg'],
+        [idB, 'b.png'],
+      ]),
+      multiImage: true,
+      shareEligible: false,
+    })
+
+    const first = sink.submit(idA, bytes(1), 'jpeg')
+    const second = sink.submit(idB, bytes(2), 'png')
+
+    // The 1st submit reports its own failure; the 2nd must neither inherit it nor skip the delete.
+    await expect(first).rejects.toThrow('disk full')
+    await expect(second).resolves.toBeUndefined()
+    expect(opfsMocks.deleteOutputCopy).toHaveBeenCalledWith(0)
+  })
+
   it('appends a given report entry last, before the queue closes (T41)', async () => {
     const collected = await drainArchive()
     const sink = openRunArchiveSink({
