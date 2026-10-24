@@ -82,9 +82,14 @@ export const useBatchStore = defineStore('batch', () => {
     Object.assign(target, 'edit' in patch ? { ...patch, edit: sanitizedEdit(patch.edit) } : patch)
   }
 
+  // Each rebuilder below spreads `toRaw(image)`, never the element read off `images.value`: that
+  // element is a reactive Proxy, and spreading it reads every field through the Proxy's `get` trap,
+  // so the new record's `edit` would be a nested Proxy that `toRaw` at the job-building sites
+  // cannot reach — the same `DataCloneError` `sanitizedEdit` above exists to prevent, surfacing on
+  // the second Compress of an edited image.
   function clearRunStatuses(): void {
     images.value = images.value.map((image) => ({
-      ...image,
+      ...toRaw(image),
       status: 'ready',
       failure: null,
       skipReason: null,
@@ -95,14 +100,14 @@ export const useBatchStore = defineStore('batch', () => {
     const index = images.value.findIndex((image) => image.id === id)
     const image = images.value[index]
     if (image === undefined) return
-    images.value[index] = { ...image, status: 'failed', failure, skipReason: null }
+    images.value[index] = { ...toRaw(image), status: 'failed', failure, skipReason: null }
   }
 
   function markSkipped(id: ImageId, skipReason: SizeTargetSkipReason): void {
     const index = images.value.findIndex((image) => image.id === id)
     const image = images.value[index]
     if (image === undefined) return
-    images.value[index] = { ...image, status: 'skipped', failure: null, skipReason }
+    images.value[index] = { ...toRaw(image), status: 'skipped', failure: null, skipReason }
   }
 
   // R-G6: no confirmation, since re-selecting files is cheap. Routed through the same

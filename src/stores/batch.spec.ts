@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { toRaw } from 'vue'
 import type { ImageId, ImageRecord } from '@/domain/types'
-import { imageRecordFixture } from '@/domain/types.fixtures'
+import { editRecordFixture, imageRecordFixture } from '@/domain/types.fixtures'
 import { useBatchStore } from './batch'
 import { useUiStore } from './ui'
 
@@ -189,6 +190,53 @@ describe('useBatchStore.updateImage', () => {
 
     expect(batch.images[0]?.status).toBe('failed')
     expect(batch.images[1]?.status).toBe('ready')
+  })
+})
+
+// The pipeline worker receives `edit` via `postMessage`, which throws `DataCloneError` on any
+// reactive Proxy left inside it. Each status rebuilder must keep `edit` clonable, or the second
+// Compress of an edited image fails.
+describe('useBatchStore status rebuilders keep edit structured-clonable', () => {
+  function editedBatch(): ReturnType<typeof useBatchStore> {
+    const batch = useBatchStore()
+    batch.addImages([recordWithId('a')])
+    batch.updateImage('a' as ImageId, { edit: editRecordFixture })
+    return batch
+  }
+
+  function rawEdit(batch: ReturnType<typeof useBatchStore>): unknown {
+    return toRaw(batch.images[0])?.edit
+  }
+
+  it('clearRunStatuses', () => {
+    const batch = editedBatch()
+
+    batch.clearRunStatuses()
+
+    expect(() => structuredClone(rawEdit(batch))).not.toThrow()
+  })
+
+  it('markFailed', () => {
+    const batch = editedBatch()
+
+    batch.markFailed('a' as ImageId, { kind: 'encode-failed' })
+
+    expect(() => structuredClone(rawEdit(batch))).not.toThrow()
+  })
+
+  it('markSkipped', () => {
+    const batch = editedBatch()
+
+    batch.markSkipped('a' as ImageId, {
+      kind: 'size-target-unreachable',
+      targetBytes: 1000,
+      achievedBytes: 2000,
+      format: 'jpeg',
+      width: 10,
+      height: 10,
+    })
+
+    expect(() => structuredClone(rawEdit(batch))).not.toThrow()
   })
 })
 
