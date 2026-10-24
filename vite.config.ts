@@ -95,9 +95,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html}', 'manifest.json', 'icons/*.png'],
         runtimeCaching: [
           {
-            // Technical Design §12.6: an explicit exclusion for the analytics domain, not
-            // reliance on the precache manifest simply never mentioning it, so a later
-            // runtime-caching change can't silently start swallowing these requests.
+            // Technical Design §12.6: Cloudflare injects its analytics script at the edge, so
+            // the build never mentions this domain. An explicit exclusion, rather than
+            // relying on that silence, keeps a later runtime-caching change from swallowing
+            // the script's requests.
             urlPattern: /^https:\/\/static\.cloudflareinsights\.com\//,
             handler: 'NetworkOnly',
           },

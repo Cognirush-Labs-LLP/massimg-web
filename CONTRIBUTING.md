@@ -131,5 +131,9 @@ You are welcome to run your own copy under the AGPL. To make it yours and not ou
 - **Branding.** The site name in `src/config/site.ts`, the title in `index.html`, the name in
   `public/manifest.json` and the icons in `public/icons/`. Our name, logo and branding are not
   licensed for your use (`NOTICE.txt`).
-- **Deployment values.** `VITE_SITE_BASE_URL` and `VITE_CF_BEACON_TOKEN`; see `.env.example`.
+- **Deployment values.** `VITE_SITE_BASE_URL`; see `.env.example`.
+- **Analytics.** The code carries none. We switch on Cloudflare Web Analytics for our domain in
+  the Cloudflare dashboard, which injects the script at the edge. A fork gets no analytics unless
+  you do the same, or add a script of your own. If you add one, update the analytics sentence in
+  `content/en/privacy.md` and `gallery.emptyState.privacyAnalytics` in `src/i18n/en/messages.json`.
 - **README.md** and the Cognirush links in it.

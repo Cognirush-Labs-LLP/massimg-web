@@ -77,7 +77,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | E3 | ZIP compression level not worth paying for | 80 | OPEN | P3 |
 | E4 | Multi-file Web Share safely hands off OPFS-backed outputs | 60 | OPEN | P1 |
 | F1 | vite-ssg produces genuinely static per-route HTML | 95 | TESTED | P2 |
-| F2 | Analytics beacon fires on a cache-served page load | 90 | TESTED | P3 |
+| F2 | Analytics beacon fires on a cache-served page load (superseded: beacon removed) | 90 | TESTED | P3 |
 
 ---
 
@@ -1358,6 +1358,11 @@ engaged — vite-ssg held.)*
 ---
 
 ### F2 `TESTED` `90%` `P3` The analytics beacon fires when the shell is served from the service worker's cache
+
+**Superseded.** The in-page beacon was removed; Cloudflare now injects the analytics script at the
+edge (Technical Design §12.6). What follows records what was measured for the removed tag. Whether
+the edge-injected script also reaches a page served from the service worker's cache is open and is
+checked on the live site, not in a test, because the injection happens only on Cloudflare.
 
 Cloudflare Web Analytics is a client-side script; the concern is whether it still
 executes and reports a page view when the HTML and its scripts are served entirely

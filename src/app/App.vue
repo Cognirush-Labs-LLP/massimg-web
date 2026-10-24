@@ -3,15 +3,10 @@
 // (T43, SiteShell.vue) — nothing tool-specific lives here, that's ToolPage.vue's job, mounted
 // through SiteShell's <router-view /> at the '/' route (Technical Design §12.3, R-S1).
 import SiteShell from './site/SiteShell.vue'
-import { useAnalyticsBeacon } from './seo/useAnalyticsBeacon'
 import { useLocaleDirection } from '@/i18n/useLocaleDirection'
 
-// T46, Technical Design §12.6: mounted here rather than per-route (SiteShell.vue) since the
-// beacon script is identical on every route.
-useAnalyticsBeacon()
-
-// T48, R-L4: <html dir> is a document-level concern, identical on every route, same reasoning
-// as the beacon above.
+// T48, R-L4: <html dir> is a document-level concern, identical on every route, so it is
+// mounted here rather than per-route (SiteShell.vue).
 useLocaleDirection()
 </script>
 

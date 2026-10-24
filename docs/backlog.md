@@ -16,6 +16,11 @@ also flagged AVIF's "lossless" quality as a specification conflict, but that was
 accepted, tested deviation (`docs/assumptions.md` D9) disclosed in the FAQ, so it isn't tracked
 here either.
 
+BL-016 (our own analytics beacon or Cloudflare's automatic one) was resolved by removing the beacon
+from the code: Cloudflare Web Analytics is switched on for the domain in the Cloudflare dashboard
+(Real User Measurements set to "Enable") and injects its script at the edge. See Technical Design
+§12.6.
+
 ## BL-001 — R-Q2 pass-through keeps the source's metadata (CORE-002)
 
 - **Requirements:** P1, R-Q2, R-I17, R-X46
@@ -188,18 +193,6 @@ here either.
 - **Why backlog:** belongs with T51-A and T52. Either set the variable in the build's environment
   (for example `VITE_SITE_BASE_URL=https://massimg.com pnpm build`, or a GitHub Actions `env:`
   block), or make the script load `.env` the way Vite does.
-
-## BL-016 — Cloudflare analytics: our own beacon or Cloudflare's automatic one
-
-- **Requirements:** R-V3
-- **Disclosed:** `content/en/faq.md` §2 ("Does the app track me…") describes the behavior; it does
-  not say which mechanism supplies it.
-- **Why backlog:** a decision for release. Cloudflare can inject its Web Analytics beacon at the
-  edge once the site is proxied, which would need no token in our code. The design (§12.6) chose
-  a beacon fired from the page so that visits served from the service worker's cache are still
-  counted, which edge injection might miss. Running both would count visits twice. Suggested:
-  keep our beacon with the real token (`VITE_CF_BEACON_TOKEN`, T51-A) and turn automatic
-  injection off for the site. Verify in the Cloudflare dashboard before release.
 
 ## BL-017 — Pre-release browser checks not yet done
 

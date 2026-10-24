@@ -1140,9 +1140,10 @@ Known entries, accumulated as earlier tasks created them:
 
 - `VITE_SITE_BASE_URL` (`src/config/site.ts`) — falls back to a non-production placeholder
   when unset; must resolve to the real canonical production URL.
-- `VITE_CF_BEACON_TOKEN` (`src/config/analytics.ts`, read via `.env`) — built against a
-  placeholder token (T46) so the beacon mechanism and its Playwright test could be
-  verified without waiting on a Cloudflare account; must resolve to the real token.
+- Analytics: no entry. The in-page beacon and `VITE_CF_BEACON_TOKEN` were removed; Cloudflare
+  injects the script at the edge. Before release, confirm in the Cloudflare dashboard that Real
+  User Measurements is set to "Enable" for the hostname, and on the live site that the script
+  still loads on a reload served from the service worker's cache (Technical Design §12.6).
 
 A task that ships a non-production stand-in for a real value (API token, production URL,
 legal or other externally-sourced copy) adds a bullet here, naming the value and the file
@@ -1171,8 +1172,8 @@ name) kept in one place so a fork can replace them, and the repository's front d
 - `CONTRIBUTING.md`: where help is welcome, the simple-mental-model principle, the rules for using
   AI, why a green run is not the whole proof, and a forking checklist. The pull-request template
   asks about AI use and manual checks.
-- No massimg.com-specific build script: `VITE_SITE_BASE_URL` and `VITE_CF_BEACON_TOKEN` already
-  carry what differs, and T51-A and T52 set them.
+- No massimg.com-specific build script: `VITE_SITE_BASE_URL` already carries what differs, and
+  T51-A and T52 set it. (`VITE_CF_BEACON_TOKEN` was removed later with the in-page beacon.)
 
 **Done when:** no `cognirush` or `massimg-web` string appears under `src/` or `content/` outside the
 `operator` block and Terms sections 10 and 11, enforced by a unit test; the built pages are the

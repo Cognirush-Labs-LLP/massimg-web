@@ -25,8 +25,8 @@ import { expect, test, type Request } from '@playwright/test'
 // (the pre-existing download assertion in accessibility.spec.ts fails there for the same
 // reason). The log is re-checked after delivery wherever the page survives it.
 //
-// The beacon's payload is the other half of this requirement and cannot be tested here, because
-// it only fires in a production build: see src/app/seo/useAnalyticsBeacon.spec.ts.
+// The site's analytics script is injected by Cloudflare at the edge (Technical Design §12.6), so
+// neither this suite nor any local build can observe it.
 
 const ALLOWED_ORIGINS = ['http://localhost:5173']
 
@@ -169,8 +169,8 @@ test('no network request carries image bytes, file names, dimensions or sizes (R
   ).toEqual([])
 
   // 5. Nothing is sent to a third party. On the dev server the allowlist is the whole list: the
-  //    analytics beacon is production-only and the app bundles no webfont, so any cross-origin
-  //    request at all is a regression.
+  //    app bundles no analytics script and no webfont, so any cross-origin request at all is a
+  //    regression.
   function foreignOrigins(entries: Recorded[]): string[] {
     const origins = entries
       .map((entry) => new URL(entry.url).origin)

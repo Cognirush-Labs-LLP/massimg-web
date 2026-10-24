@@ -1165,7 +1165,7 @@
     "maxLength": 170
   },
   "gallery.emptyState.privacyAnalytics": {
-    "situation": "Second sentence of the empty state's privacy block (R-V3): it names exactly what the site's analytics beacon collects — anonymous, aggregate, cookie-free visit counts, and nothing about the user or their files. This is the user-facing disclosure rather than a general reassurance, so if the analytics mechanism changes, this string changes with it.",
+    "situation": "Second sentence of the empty state's privacy block (R-V3): it names exactly what the site's analytics service collects — anonymous, aggregate, cookie-free visit counts, and nothing about the user or their files. This is the user-facing disclosure rather than a general reassurance, so if the analytics mechanism changes, this string changes with it.",
     "control": "Small, quiet, centred body text, directly below gallery.emptyState.privacy. Not interactive, and not a link.",
     "maxLength": 170
   },

@@ -31,21 +31,6 @@ const ROUTES: PublicRoute[] = [
   { path: '/desktop', file: 'desktop.html', title: /^Desktop/, heading: 'Desktop version' },
 ]
 
-// The production build carries the analytics beacon (T46), which talks to Cloudflare. A test of our
-// own pages must not depend on a third party being reachable — or on its CORS answer to an origin
-// of localhost — so that host is answered locally. What the beacon itself sends is covered by
-// src/app/seo/useAnalyticsBeacon.spec.ts and tests/e2e-pwa/pwa.spec.ts.
-test.beforeEach(async ({ context }) => {
-  await context.route(/cloudflareinsights\.com/, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/javascript',
-      headers: { 'access-control-allow-origin': '*' },
-      body: '',
-    }),
-  )
-})
-
 /** Records page errors and console errors, so a page that renders but throws still fails. */
 function watchForErrors(page: Page): string[] {
   const errors: string[] = []

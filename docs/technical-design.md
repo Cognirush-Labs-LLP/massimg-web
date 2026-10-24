@@ -22,7 +22,7 @@ Where an assumption is below 75% confidence, the decision is written together wi
 | Static generation | vite-ssg | Static HTML per route at build time, no Node server (§12.3) |
 | Head management | `@unhead/vue` | Per-route title, meta, Open Graph and JSON-LD (§12.5) |
 | PWA | vite-plugin-pwa | Manifest and service worker (§12.6) |
-| Analytics | Cloudflare Web Analytics | Client-triggered, cookieless beacon (§12.6); a single script tag, no SDK dependency |
+| Analytics | Cloudflare Web Analytics | Cookieless; injected by Cloudflare at the edge, so the code carries no analytics (§12.6) |
 
 **Vitest rather than Jest.** Jest against a Vite project needs a parallel transform configuration that drifts from the real build. The specific pain here is ESM plus WASM plus workers, which is where Jest's module handling is weakest. Vitest runs through the same resolution and transform as production. Its API is close enough to Jest that agent-written tests transfer without retraining.
 
@@ -940,11 +940,11 @@ No content described in this subsection is hidden from a visual reader — R-K11
 
 `vite-plugin-pwa` generates the manifest and the service worker, consistent with the app already being fully local and offline-capable.
 
-Usage visibility does not read server or edge access logs: a repeat visit served entirely by the service worker never reaches the origin, which would undercount exactly the returning, offline-capable users the product is for. Instead, a client-triggered, cookieless beacon (Cloudflare Web Analytics) fires from the page itself on every load, cached shell or not.
+Usage visibility comes from Cloudflare Web Analytics, switched on for the production domain in the Cloudflare dashboard (Real User Measurements set to "Enable", for all visitors). Because the domain is proxied, Cloudflare injects its cookieless script into the HTML it serves. The code carries no analytics: no script tag, no token and no environment variable, so a fork with no Cloudflare account has no analytics and nothing to remove. A fork that wants analytics enables its own in the same way, or adds its own script and updates the privacy text (`CONTRIBUTING.md`, "Forking").
 
-The service worker's generated runtime-caching rules must not intercept requests to the analytics domain: an explicit `NetworkOnly` (or equivalent exclusion) rule is added for it, rather than relying on the default precache manifest simply not mentioning a domain it was never told about, so a later change to the caching strategy cannot silently swallow it.
+The earlier design put the script tag in the prerendered HTML, so that a repeat visit served entirely by the service worker would still count. That is **F2**, in the register as superseded. The tag was removed because edge injection needs no token in the code, and the HTML the service worker caches is itself fetched through Cloudflare, so it should carry the injected script. That last point is not proven. Check it on the live site: reload with the service worker serving the shell and confirm the request to `cloudflareinsights.com` fires.
 
-**F2**: that the beacon still fires reliably when the page shell is served from the service worker's cache rather than the network is assumed rather than proven; verified in T46 with a Playwright test that forces a cache-served load and asserts the analytics request still fires.
+The service worker's runtime-caching rules still carry an explicit `NetworkOnly` rule for `static.cloudflareinsights.com`, rather than relying on the precache manifest never mentioning a domain the build does not know about, so a later change to the caching strategy cannot silently swallow the script's requests. Edge injection also does not happen when the origin sends `Cache-Control: no-transform`, so the host's headers must not add it.
 
 This is the concrete mechanism for Functional Design R-V3's "if analytics are added" clause; no other tracking is planned.
 

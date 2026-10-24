@@ -1,11 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// T46, Technical Design §12.6, assumption F2 (docs/assumptions.md). Separate from
-// playwright.config.ts on purpose: that config deliberately runs every spec against the
-// plain `vite` dev server (T05's recorded decision, to avoid paying for a full production
-// build on every e2e run), but `vite-plugin-pwa`'s generated service worker is a
-// production-build artifact — the dev server has no real precache manifest, so F2's test
-// ("a page load served entirely from the service worker's cache") cannot be verified
+// T46, Technical Design §12.6. Separate from playwright.config.ts on purpose: that config
+// deliberately runs every spec against the plain `vite` dev server (T05's recorded decision, to
+// avoid paying for a full production build on every e2e run), but `vite-plugin-pwa`'s generated
+// service worker is a production-build artifact — the dev server has no real precache manifest,
+// so a test of "a page load served entirely from the service worker's cache" cannot run
 // against it. This config pays for one `pnpm build` and runs only the PWA/offline spec
 // against the real built output via `vite preview`.
 export default defineConfig({
