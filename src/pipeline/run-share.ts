@@ -1,4 +1,4 @@
-import { deleteRunArtifacts, readOutputCopies } from '@/platform/opfs'
+import { readOutputCopies } from '@/platform/opfs'
 import { shareFiles, type ShareOutcome } from '@/platform/share'
 import { useRunStore } from '@/stores/run'
 
@@ -18,10 +18,16 @@ import { useRunStore } from '@/stores/run'
  * measured about that.
  *
  * Mirrors `run-download.ts`'s shape, including its rule that only a *successful* delivery touches
- * storage or the delivery state:
- * - `shared` — R-X42 cleanup runs and the run is fulfilled.
+ * the delivery state:
+ * - `shared` — the run is fulfilled. Storage is left alone (see below).
  * - `cancelled` — R-X50: not an error. Nothing is written, nothing is deleted, nothing is said.
  * - `failed` — the retryable inline error; results, Download and Share all remain.
+ *
+ * Deliberately no `deleteRunArtifacts()` on `shared`, exactly as in `run-download.ts`: the
+ * handed-over files are lazy OPFS handles, and `share()` resolving does not mean the target has
+ * read them. Chrome on Windows resolves as the share sheet opens; deleting then left the sheet
+ * showing 0 bytes and WhatsApp receiving nothing (T51 follow-up, measured by hand). Leaving
+ * Processing, and application start, still clean up (R-X42).
  */
 export async function shareFinishedRun(): Promise<ShareOutcome> {
   const runStore = useRunStore()
@@ -29,7 +35,6 @@ export async function shareFinishedRun(): Promise<ShareOutcome> {
   const outcome = await shareFiles(files)
 
   if (outcome === 'shared') {
-    await deleteRunArtifacts()
     runStore.markShared()
   } else if (outcome === 'failed') {
     runStore.markDeliveryFailed('share')

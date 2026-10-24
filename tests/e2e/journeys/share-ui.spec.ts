@@ -12,7 +12,7 @@ import {
 } from './support'
 
 // Journey: Share, with the platform stubbed (T51, R-X47 to R-X50, R-V5, R-X54). Real engines
-// differ — Chromium and Firefox cannot share files at all, Playwright's WebKit only can on macOS —
+// differ — Playwright's Chromium and Firefox cannot share files at all, its WebKit only on macOS —
 // so `navigator.canShare`/`navigator.share` are replaced before the page loads and every engine
 // walks the same four branches: available, accepted, dismissed, refused. What each branch does to
 // the screen is the application's behaviour and is identical everywhere.

@@ -78,7 +78,7 @@ export async function downloadFinishedRun(): Promise<DownloadOutcome> {
     return 'blocked'
   }
 
-  // Deliberately no `deleteRunArtifacts()` here, unlike the Share path.
+  // Deliberately no `deleteRunArtifacts()` here, and none on the Share path either.
   //
   // Handing a file to the browser is a one-way announcement: `anchor.click()` resolves nothing
   // and throws nothing, so a download the browser silently declines — an insecure-origin block,
@@ -88,9 +88,9 @@ export async function downloadFinishedRun(): Promise<DownloadOutcome> {
   //
   // The artifacts now live until the user actually leaves Processing, where
   // `useProcessingRun`'s scope disposal already cleans them up (R-X42's cleanup still happens,
-  // just at the point the results are genuinely finished with). Share keeps deleting on success,
-  // because `navigator.share()` resolves only when the platform really accepted the payload —
-  // that is a confirmation, and this is not.
+  // just at the point the results are genuinely finished with). Share stopped deleting on success
+  // for a related reason: `navigator.share()` resolving does not mean the target has read the
+  // files yet (see `run-share.ts`).
   runStore.markDownloaded()
   return 'downloaded'
 }

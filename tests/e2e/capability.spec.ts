@@ -48,9 +48,9 @@ test('detects capabilities in the standard fixture context', async ({ page }, te
   const expectedOpfs = testInfo.project.name !== 'webkit'
   expect(capabilities.opfs).toBe(expectedOpfs)
 
-  // T40. Firefox has no navigator.share support for files at all (T39-A,
-  // verification/t39a-web-share/results.json) — a structural absence of the API, so `false` here
-  // is the same fact as T39-A's real-browser finding, not an artefact of this fixture context.
+  // T40. Playwright's Firefox has no navigator.share support for files, like real macOS Firefox
+  // (T39-A, verification/t39a-web-share/results.json) — a structural absence of the API, not an
+  // artefact of this fixture context. Real Windows Firefox does share files (E4).
   // Chromium and WebKit, by contrast, genuinely differ from T39-A's real-browser findings here:
   // real macOS/Android Chrome shared files successfully, but Playwright's bundled Chromium has no
   // OS-level share-target registration and so reports `fileShare: false` — confirming in practice

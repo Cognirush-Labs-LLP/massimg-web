@@ -223,9 +223,11 @@ here either.
   - A compression run in real GNOME Web. Only page navigation was checked there, using
     WebKitGTK 2.52.6 through WebKitWebDriver (`webkitgtk-webdriver` and `xvfb` are installed on
     the Linux test machine), and WebDriver cannot read the browser's console.
-  - A hand click-through on Windows, and Edge. The automated suites ran on Windows 11 with
-    Chromium and Firefox (T51 follow-up) and pass; nobody has used the app there by hand, and
-    Edge has not been run at all.
+  - Windows is done apart from BL-019. The automated suites ran on Windows 11 with Chromium and
+    Firefox (T51 follow-up) and pass, and the app was used by hand in Chrome, Edge and Firefox
+    (`pnpm preview`): a mixed JPEG and animated batch compressed, downloaded and shared to
+    WhatsApp. The first hand test found Share delivering nothing; after the fix (T51 follow-up)
+    it works in all three.
   - Other Android phones. One phone has been measured (Galaxy M34, Android 16, Chrome 155, 5.5 GB;
     T50), and the FAQ says only that. A 3 to 4 GB phone is where the PNG and AVIF encoder memory
     (not bounded by any limit) is expected to fail first.
@@ -239,6 +241,19 @@ here either.
   following the footer line finds nothing about it. A one-sentence addition for §2 was drafted
   during T49 and is waiting for the owner's approval; it is legal copy, so it is not an
   engineering change.
+
+## BL-019 — Windows share sheet: Copy pastes nothing
+
+- **Disclosed:** `content/en/faq.md` §8 (Windows paragraph).
+- **What happens:** in Chrome, Edge and Firefox on Windows 11, choosing Copy in the system share sheet and
+  pasting into a File Explorer folder pastes nothing. Sharing to an app (WhatsApp) works, in the
+  app itself as well as in the probe. Measured in Chrome with
+  a stand-alone probe page, files intact and the sheet showing their real sizes: the clipboard
+  then holds only `FileGroupDescriptorW` (three names, each declaring 0 bytes), with no
+  `FileContents`, `FileDrop` or image format, so there is nothing to paste.
+- **Why backlog:** it happens with in-memory files too, so it lies between Chrome and Windows, not
+  in the app. To be tested later: pasting into Paint or Word, and newer Chrome and Edge releases.
+  Nothing to fix in the app unless that changes.
 
 ---
 

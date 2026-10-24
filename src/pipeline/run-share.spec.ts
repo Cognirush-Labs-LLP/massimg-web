@@ -76,7 +76,7 @@ describe('shareFinishedRun — the payload (R-X49, R-V5)', () => {
 })
 
 describe('shareFinishedRun — resolved (R-X42, R-X50, R-X54)', () => {
-  it('deletes every artifact and marks the run shared', async () => {
+  it('marks the run shared and keeps every artifact for the target to read', async () => {
     finishedRunWithSuccesses(2)
     opfsMocks.readOutputCopies.mockResolvedValueOnce([outputCopy('a.jpg'), outputCopy('b.jpg')])
 
@@ -85,7 +85,7 @@ describe('shareFinishedRun — resolved (R-X42, R-X50, R-X54)', () => {
     const run = useRunStore()
     expect(run.delivery).toBe('shared')
     expect(run.deliveryError).toBeNull()
-    expect(opfsMocks.deleteRunArtifacts).toHaveBeenCalledOnce()
+    expect(opfsMocks.deleteRunArtifacts).not.toHaveBeenCalled()
   })
 })
 

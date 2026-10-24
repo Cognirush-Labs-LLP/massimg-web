@@ -139,7 +139,7 @@ Chrome, Firefox and Safari on a Mac have all been tested and are supported. One 
 
 On Linux, Chrome and Firefox have been tested and work the same as on a Mac. GNOME Web, the browser that comes with the GNOME desktop, is built on the same technology as Safari. We have confirmed that the pages open and you can move around them in it, but we haven't yet run an actual compression in GNOME Web itself, so treat that as untested for now.
 
-On Windows, Chrome and Firefox have been tested with our automated tests and pass. Edge is built on the same engine as Chrome, so it's expected to work, but it hasn't been checked on its own.
+On Windows, Chrome, Edge and Firefox have been tested and work. One thing to know when you press Share there: pick an app from the list, like WhatsApp or Outlook. The window's Copy button doesn't actually copy your images, so pasting afterwards gives you nothing. If you just want the files on your computer, use Download.
 
 **Does it work on an iPhone or iPad?**
 It should run, but its specific memory behavior on mobile Safari hasn't been verified yet, so treat that as untested for now.

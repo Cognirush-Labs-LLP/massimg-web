@@ -47,10 +47,11 @@ test('is false with no formats, regardless of platform support', async ({ page }
   expect(await probe(page, [])).toBe(false)
 })
 
-test('is always false on Firefox: no navigator.share support for files at all', async ({
+// Real Firefox on Windows does share files (E4); this pins only Playwright's bundled build.
+test("is false on Playwright's Firefox build: no navigator.share support for files", async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'firefox', 'Firefox-only: T39-A found hasShare: false')
+  test.skip(testInfo.project.name !== 'firefox', 'Firefox-only: bundled build has hasShare: false')
 
   expect(await probe(page, ['jpeg'])).toBe(false)
   expect(await probe(page, ['jpeg', 'png', 'webp', 'avif', 'gif'])).toBe(false)
@@ -133,7 +134,7 @@ test('the exact check is false on Chromium and Firefox, for different reasons (T
 }, testInfo) => {
   test.skip(testInfo.project.name === 'webkit', 'WebKit accepts files; covered above')
 
-  // Firefox has no file sharing at all; Chromium's bundled build has no OS-level share target.
+  // Playwright's Firefox has no file sharing at all; its Chromium has no OS-level share target.
   expect(await canShareExact(page, ['image/jpeg'])).toBe(false)
 })
 
