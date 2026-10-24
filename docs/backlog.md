@@ -223,8 +223,9 @@ here either.
   - A compression run in real GNOME Web. Only page navigation was checked there, using
     WebKitGTK 2.52.6 through WebKitWebDriver (`webkitgtk-webdriver` and `xvfb` are installed on
     the Linux test machine), and WebDriver cannot read the browser's console.
-  - A run on Windows. Only the Share handoff was measured there (Chrome, T39-A); the app itself
-    has never been run on Windows, and `content/en/faq.md` §8 says so.
+  - A hand click-through on Windows, and Edge. The automated suites ran on Windows 11 with
+    Chromium and Firefox (T51 follow-up) and pass; nobody has used the app there by hand, and
+    Edge has not been run at all.
   - Other Android phones. One phone has been measured (Galaxy M34, Android 16, Chrome 155, 5.5 GB;
     T50), and the FAQ says only that. A 3 to 4 GB phone is where the PNG and AVIF encoder memory
     (not bounded by any limit) is expected to fail first.

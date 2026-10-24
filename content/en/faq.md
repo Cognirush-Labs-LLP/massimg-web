@@ -139,7 +139,7 @@ Chrome, Firefox and Safari on a Mac have all been tested and are supported. One 
 
 On Linux, Chrome and Firefox have been tested and work the same as on a Mac. GNOME Web, the browser that comes with the GNOME desktop, is built on the same technology as Safari. We have confirmed that the pages open and you can move around them in it, but we haven't yet run an actual compression in GNOME Web itself, so treat that as untested for now.
 
-We haven't tested on Windows yet. Chrome, Edge and Firefox there are built on the same browser engines we did test, so it's expected to work, but that isn't confirmed.
+On Windows, Chrome and Firefox have been tested with our automated tests and pass. Edge is built on the same engine as Chrome, so it's expected to work, but it hasn't been checked on its own.
 
 **Does it work on an iPhone or iPad?**
 It should run, but its specific memory behavior on mobile Safari hasn't been verified yet, so treat that as untested for now.
@@ -167,13 +167,16 @@ Yes, the [project's source](https://github.com/Cognirush-Labs-LLP/massimg-web) i
 **What other software does this rely on?**
 A handful of established open-source image libraries handle the actual decoding, compressing and animating under the hood. Each one is named and credited on the [credits page](/credits), with its licence text and a link to its source.
 
-## 10. What's still being finished
+## 10. Contributing & contact
 
-The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above, and so are the on-screen gallery, preview and rotate/crop editing screens, the compression run itself, and downloading or sharing the finished result. Some parts of the app are still not finished, including:
+**Can I help translate the app into my language?**
+Yes, we'd welcome that. The app is in English only for now. Open a pull request on the [project's GitHub page](https://github.com/Cognirush-Labs-LLP/massimg-web), or email [support@cognirush.com](mailto:support@cognirush.com) to tell us which language you'd like to work on.
 
-- Finalized limits on batch size, file size and image dimensions
-- A fix for Firefox sometimes not delivering the file when you choose “Download and leave”
-- Full keyboard and screen-reader accessibility
-- Translations into languages other than English
+**Can I contribute to the software itself, for example a bug fix or support for a newer image format?**
+Yes. Open a pull request on [GitHub](https://github.com/Cognirush-Labs-LLP/massimg-web), or email [support@cognirush.com](mailto:support@cognirush.com) first if you'd like to talk the idea through.
 
-These are all planned and underway — this FAQ will be updated as they land.
+**Can I use AI tools to write my changes?**
+Yes, and we encourage it — the project is set up to work well with AI coding assistants. But this project is engineered, not "vibe coded": the changes must be made by a programmer, and an AI tool must not make the engineering decisions or decide what the app should do. Only open a pull request if you understand every change in it and can explain and defend it yourself.
+
+**How can I contact you?**
+Email [support@cognirush.com](mailto:support@cognirush.com) with questions, feedback or bug reports. If a problem involves a particular image, you can attach it; the [Privacy Policy](/privacy) explains how we handle it.

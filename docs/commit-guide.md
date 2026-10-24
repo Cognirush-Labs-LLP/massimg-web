@@ -40,6 +40,13 @@ chore: Update dependencies
 - Add a longer description after a blank line when the reason for the change is not obvious.
 - Reference an issue when useful, for example `Fixes #123`.
 
+## AI Agents
+
+Nearly all code is now written with help from some AI agent, so naming it adds nothing. This
+project is engineered, not vibe coded: the author is responsible for every commit, morally and
+legally, and an agent cannot share that responsibility. Leave out AI attribution such as
+`Co-Authored-By:` trailers. It is allowed, but not encouraged.
+
 ## Example With Details
 
 ```text

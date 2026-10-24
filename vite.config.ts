@@ -1,5 +1,5 @@
 import { createReadStream, existsSync, statSync } from 'node:fs'
-import { join, normalize } from 'node:path'
+import { join, posix } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
@@ -33,7 +33,9 @@ const serveThirdPartyLicenses = () => {
     const relative = decodeURIComponent(path.slice('/3rd_party_licenses/'.length))
     // Reject traversal before touching the filesystem: this middleware maps a URL straight
     // onto a repository directory, so `..` must never be resolved, not merely cleaned up.
-    if (relative.includes('..') || normalize(relative) !== relative) {
+    // posix, not the host `normalize`: on Windows that rewrites every `/` to `\`, so the
+    // comparison would fail — and 400 — for every legitimate URL.
+    if (relative.includes('..') || posix.normalize(relative) !== relative) {
       response.statusCode = 400
       return response.end('Bad request')
     }
@@ -66,7 +68,10 @@ const serveThirdPartyLicenses = () => {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    vue(),
+    // Absolute template URLs (`/icons/...`) point into public/ and need no bundling. Left as
+    // imports, Vitest resolves them to a drive-less `file:///icons/...` that Node rejects on
+    // Windows, failing every spec that mounts a header.
+    vue({ template: { transformAssetUrls: { includeAbsolute: false } } }),
     serveThirdPartyLicenses(),
     // T46, Technical Design §12.6. `manifest: false`: T43 already hand-authored and linked
     // public/manifest.json with the real icon set — this plugin's only job here is the service
