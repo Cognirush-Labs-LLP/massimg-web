@@ -91,6 +91,30 @@ describe('SidePanelDimension', () => {
     expect(useSettingsStore().dimension).toEqual({ kind: 'fixed-height', pixels: 900 })
   })
 
+  it('an emptied or zero field leaves the last valid value in the store', async () => {
+    const wrapper = mount(SidePanelDimension)
+    await wrapper.find('[data-testid="dimension-row-fit-long-edge"]').trigger('change')
+    const field = wrapper.find('[data-testid="dimension-field-fit-long-edge"]')
+
+    await field.setValue('1')
+    await field.setValue('0')
+    expect(useSettingsStore().dimension).toEqual({ kind: 'fit-long-edge', pixels: 1 })
+
+    await field.setValue('')
+    expect(useSettingsStore().dimension).toEqual({ kind: 'fit-long-edge', pixels: 1 })
+  })
+
+  it('reselecting a row whose field was left at 0 writes the default, not 0', async () => {
+    const wrapper = mount(SidePanelDimension)
+    await wrapper.find('[data-testid="dimension-row-fixed-width"]').trigger('change')
+    await wrapper.find('[data-testid="dimension-field-fixed-width"]').setValue('')
+    await wrapper.find('[data-testid="dimension-row-fixed-height"]').trigger('change')
+
+    await wrapper.find('[data-testid="dimension-row-fixed-width"]').trigger('change')
+
+    expect(useSettingsStore().dimension).toEqual({ kind: 'fixed-width', pixels: 1080 })
+  })
+
   it('a chip sets the field value and writes the store', async () => {
     const wrapper = mount(SidePanelDimension)
     await wrapper.find('[data-testid="dimension-row-fixed-width"]').trigger('change')

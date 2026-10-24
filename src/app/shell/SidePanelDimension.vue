@@ -116,8 +116,13 @@ function selectRow(kind: DimensionKind): void {
   if (disabled.value) {
     return
   }
-  settings.dimension =
-    kind === 'original' ? { kind: 'original' } : { kind, pixels: lastValues.value[kind] }
+  if (kind === 'original') {
+    settings.dimension = { kind }
+    return
+  }
+  // A field left empty or at 0 remembers 0 for display; the store must never see it.
+  const remembered = lastValues.value[kind]
+  settings.dimension = { kind, pixels: remembered >= 1 ? remembered : DEFAULT_PIXELS[kind] }
 }
 
 function onFieldInput(kind: DimensionKind, event: Event): void {
@@ -129,7 +134,9 @@ function onFieldInput(kind: DimensionKind, event: Event): void {
   target.value = sanitized
   const pixels = sanitized === '' ? 0 : Number(sanitized)
   lastValues.value[kind] = pixels
-  if (dimension.value.kind === kind) {
+  // resolveResizedSize throws on a non-positive value, and the store feeds computeds that render
+  // the whole page — an empty or 0 field (mid-edit) keeps the last valid value in the store.
+  if (pixels >= 1 && dimension.value.kind === kind) {
     settings.dimension = { kind, pixels }
   }
 }
