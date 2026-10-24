@@ -7,6 +7,7 @@ import PrivacyPage from './PrivacyPage.vue'
 import TermsPage from './TermsPage.vue'
 import CreditsPage from './credits/CreditsPage.vue'
 import DesktopPage from './DesktopPage.vue'
+import NotFoundPage from './NotFoundPage.vue'
 
 // One entry per logical page, locale-agnostic.
 interface PageRoute {
@@ -103,4 +104,22 @@ function expandLocales(list: PageRoute[]): RouteRecordRaw[] {
   })
 }
 
-export const routes: RouteRecordRaw[] = expandLocales(pages)
+// Any address that is not a page above. The server answers such requests with the prerendered
+// 404.html (see public/.htaccess), and this record is what makes the client render the same
+// page for the address the browser is actually on. One record for every locale prefix: the
+// page has no per-locale content to fall back from. `noindex` keeps it out of search results
+// and drops its canonical URL (see buildRouteSeo.ts).
+const notFoundRoute: RouteRecordRaw = {
+  path: '/:pathMatch(.*)*',
+  name: 'not-found',
+  component: NotFoundPage,
+  meta: {
+    isApp: false,
+    isFaq: false,
+    noindex: true,
+    title: t('site.seo.notFound.title'),
+    description: t('site.seo.notFound.description'),
+  },
+}
+
+export const routes: RouteRecordRaw[] = [...expandLocales(pages), notFoundRoute]

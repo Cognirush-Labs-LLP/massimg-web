@@ -1,0 +1,86 @@
+# Served by Hostinger (LiteSpeed, which reads Apache .htaccess). Vite copies this file from public/
+# into dist/ unchanged. `scripts/verify-deploy.mjs` fetches a live URL and checks every rule below
+# actually took effect, because a host that ignores a directive does so silently.
+
+# --- Static site: no server-side scripting --------------------------------------------------
+# Nothing here is PHP. A rewrite rule refuses .php requests on every PHP handler setup, where
+# `php_flag engine off` would answer 500 on any host that runs PHP outside mod_php.
+RewriteEngine On
+RewriteRule \.(php[0-9]?|phtml|phar)$ - [F,L,NC]
+# Dotfiles (.htaccess, .git) are never served; .well-known stays open for certificate checks.
+RewriteRule (^|/)\.(?!well-known) - [F,L]
+
+Options -Indexes -MultiViews
+
+# --- Routing --------------------------------------------------------------------------------
+# vite-ssg writes /faq as faq.html. Serve it at the extensionless URL the sitemap and canonical
+# tags use, and send the .html spelling there with a redirect so one page has one address.
+# THE_REQUEST holds what the client asked for, so the internal rewrite below cannot loop back
+# through the redirect. The first character after the slash may not be another slash:
+# `//host/x.html` would otherwise redirect to the scheme-relative `//host/x`.
+RewriteCond %{THE_REQUEST} \s/((?:[^\s?/]+/)*)index\.html[\s?]
+RewriteRule ^ /%1 [R=301,L]
+RewriteCond %{THE_REQUEST} \s/([^\s?/][^\s?]*)\.html[\s?]
+RewriteRule ^ /%1 [R=301,L]
+# /faq/ is /faq: the app's router treats them as one page, so the server must too, or the
+# not-found page would flash before the app swapped in the FAQ.
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(.+)/$ /$1 [R=301,L]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*[^/])$ $1.html [L]
+
+# Any address that is not a page gets the prerendered not-found page, with a real 404 status.
+# The page is built by the app (src/app/NotFoundPage.vue) and links back to the home page.
+ErrorDocument 404 /404.html
+
+# --- Content types --------------------------------------------------------------------------
+# application/wasm is required for WebAssembly.instantiateStreaming; a generic type makes the
+# browser fall back to a full download before compiling.
+AddType application/wasm .wasm
+AddType text/javascript .js .mjs
+AddDefaultCharset UTF-8
+
+# The licence texts are LICENSE/COPYING/PATENTS with no extension, which a browser offers as a
+# download. The credits page links them to be read.
+RewriteRule ^3rd_party_licenses/ - [T=text/plain]
+
+# --- Compression ----------------------------------------------------------------------------
+# magick-*.wasm is 14 MB uncompressed.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript text/xml
+  AddOutputFilterByType DEFLATE application/json application/xml application/wasm image/svg+xml
+</IfModule>
+
+# --- Caching --------------------------------------------------------------------------------
+# Every file revalidates by ETag unless its name carries a content hash. The ETag is built from
+# modification time and size only: Apache's default also hashes the inode number, which changes
+# whenever the files are re-uploaded, so a re-upload of unchanged files would invalidate every
+# visitor's cache.
+FileETag MTime Size
+
+<IfModule mod_headers.c>
+  # mod_deflate appends "-gzip" to the ETag of a compressed response, and Apache then compares
+  # the browser's If-None-Match against the ETag without that suffix, so it never matches and
+  # every compressed file would be re-sent in full on each visit instead of answered 304.
+  # (DeflateAlterETag, which fixes this properly, is not allowed in .htaccess.)
+  RequestHeader edit If-None-Match '^"(.*)-gzip"$' '"$1"'
+
+  Header set Cache-Control "no-cache"
+
+  # Vite names every file under assets/ <name>-<8 hash characters>.<ext> (and Workbox names its
+  # runtime workbox-<hash>.js), so a changed file is a new URL and the old one never changes.
+  # sw.js and registerSW.js have no hash and must keep revalidating: a service worker cached for
+  # a year would never update. No `no-transform` anywhere: Cloudflare skips its analytics
+  # injection for responses that carry it (Technical Design §12.6).
+  # The pattern matches on file name alone, so an unhashed file that happens to end in a hyphen
+  # and eight characters would be cached for a year; scripts/verify-deploy.mjs checks that no
+  # such file exists in dist/.
+  <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|wasm)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # `always` so that 403, 404 and redirect responses carry them too.
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>

@@ -52,7 +52,9 @@ function canonicalOf(html: string): string {
 
 test('every page the build produced is covered by this file', () => {
   const built = readdirSync(DIST)
-    .filter((name) => name.endsWith('.html'))
+    // 404.html is the page the host serves for an unknown address, not a page of the site: it
+    // has its own tests below and is not in the sitemap.
+    .filter((name) => name.endsWith('.html') && name !== '404.html')
     .map(routePathFor)
     .sort()
 
@@ -92,6 +94,37 @@ for (const route of ROUTES) {
     })
   })
 }
+
+test.describe('not-found page', () => {
+  test('is real HTML that search engines are told to skip, with no canonical URL', async ({
+    request,
+  }) => {
+    // The file the host serves for an unknown address, fetched as a file: the preview server
+    // answers unknown addresses with the tool page, so it cannot stand in for the host here.
+    const response = await request.get('/404.html')
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+
+    expect(/<title>([^<]*)<\/title>/i.exec(html)?.[1] ?? '').toMatch(/^Page not found/)
+    expect(html).toContain('<meta name="robots" content="noindex">')
+    expect(canonicalOf(html)).toBe('')
+    expect(html).toContain('Page not found')
+  })
+
+  test('is what the browser shows for an unknown address, and leads home', async ({ page }) => {
+    const errors = watchForErrors(page)
+    await page.goto('/this/is/not/a/page')
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+
+    await page.getByRole('main').getByRole('link', { name: 'Back to the home page' }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('button', { name: 'Select images' })).toBeVisible()
+
+    expect(errors).toEqual([])
+  })
+})
 
 test('the footer and header reach every public page without a reload', async ({ page }) => {
   const errors = watchForErrors(page)
@@ -144,6 +177,7 @@ test.describe('sitemap.xml', () => {
 
     expect(new Set(locations).size, 'no page is listed twice').toBe(locations.length)
     expect(locations).toHaveLength(ROUTES.length)
+    expect(locations.some((location) => location.includes('404'))).toBe(false)
 
     for (const route of ROUTES) {
       const page = await request.get(route.file === 'index.html' ? '/' : `/${route.file}`)

@@ -242,5 +242,10 @@
   "site.seo.credits.description": "Every open-source component bundled into Mass Image Compressor, with its license and a link to its source.",
   "credits.labelLicense": "License",
   "credits.labelSource": "Source",
-  "credits.labelLicenseText": "License text"
+  "credits.labelLicenseText": "License text",
+  "notFound.heading": "Page not found",
+  "notFound.body": "There is nothing at this address. The link may be mistyped or out of date.",
+  "notFound.homeLink": "Back to the home page",
+  "site.seo.notFound.title": "Page not found — Mass Image Compressor",
+  "site.seo.notFound.description": "This page does not exist. Go back to Mass Image Compressor to compress, resize and convert your images."
 }

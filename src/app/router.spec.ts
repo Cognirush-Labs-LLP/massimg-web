@@ -8,6 +8,7 @@ import PrivacyPage from './PrivacyPage.vue'
 import TermsPage from './TermsPage.vue'
 import CreditsPage from './credits/CreditsPage.vue'
 import DesktopPage from './DesktopPage.vue'
+import NotFoundPage from './NotFoundPage.vue'
 
 // Importing router.ts pulls in ToolPage.vue, which pulls in the real
 // @/pipeline/codecs/loader.ts. Its ensureQuantizer() dynamic-imports "imagequant" — a package
@@ -20,8 +21,30 @@ vi.mock('@/pipeline/codecs/loader', () => ({
 }))
 
 describe('router', () => {
-  it('has one route per page, per supported locale (today: 6 pages × "en")', () => {
-    expect(routes).toHaveLength(6 * supportedLocales.length)
+  it('has one route per page, per supported locale (today: 6 pages × "en"), plus the not-found route', () => {
+    expect(routes).toHaveLength(6 * supportedLocales.length + 1)
+  })
+
+  it.each(['/nope', '/faq.html', '/a/b/c', '/es/faq'])(
+    'resolves the unknown address %s to the not-found page, which search engines are told to skip',
+    (path) => {
+      const router = createRouter({ history: createMemoryHistory(), routes })
+      const resolved = router.resolve(path)
+
+      expect(resolved.name).toBe('not-found')
+      expect(resolved.matched[0]?.components?.default).toBe(NotFoundPage)
+      expect(resolved.meta.noindex).toBe(true)
+      expect(resolved.meta.isApp).toBe(false)
+    },
+  )
+
+  it('lets no real page match the not-found route first', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    for (const path of ['/', '/faq', '/privacy', '/terms', '/credits', '/desktop']) {
+      expect(router.resolve(path).name).not.toBe('not-found')
+      expect(router.resolve(path).meta.noindex).toBeUndefined()
+    }
   })
 
   it('resolves "/" to the tool page under the default (unprefixed) locale, marked as the app route', () => {

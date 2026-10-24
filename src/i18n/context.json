@@ -1218,5 +1218,30 @@
     "situation": "Label on the Download action after a download has already been started, on the completed Processing screen. The browser never tells the app whether a download actually saved, so this stays available as the user's only recourse when nothing arrived — the run's outputs are deliberately kept on disk for it. Not shown after Share, which does report real acceptance.",
     "control": "Outlined (non-primary) button below the checked 'Download started' line. Back to images is the primary action at this point.",
     "maxLength": 24
+  },
+  "notFound.heading": {
+    "situation": "The <h1> of the page shown for any address that is not a page of the site. The server answers such requests with this page and a 404 status.",
+    "control": "Page <h1>.",
+    "maxLength": 40
+  },
+  "notFound.body": {
+    "situation": "One sentence under the not-found heading saying the address leads nowhere. Neutral about whose mistake it was.",
+    "control": "Body paragraph, one line to two on a phone.",
+    "maxLength": 100
+  },
+  "notFound.homeLink": {
+    "situation": "The only action on the not-found page: a link to the site's home page, which is the compressor itself.",
+    "control": "Visible link text, below the body paragraph. Links to '/'.",
+    "maxLength": 40
+  },
+  "site.seo.notFound.title": {
+    "situation": "The <title> of the not-found page, which is also its link text in a browser history list. Search engines are told not to index this page.",
+    "control": "Browser tab title.",
+    "maxLength": 60
+  },
+  "site.seo.notFound.description": {
+    "situation": "The meta description of the not-found page. Search engines are told not to index the page, so this is read mainly by link-preview tools.",
+    "control": "Meta description tag.",
+    "maxLength": 160
   }
 }

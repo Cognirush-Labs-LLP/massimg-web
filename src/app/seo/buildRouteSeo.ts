@@ -9,6 +9,11 @@ export interface RouteSeoInput {
   description: string
   /** True only for the tool route — adds WebApplication structured data (R-S7). */
   isApp: boolean
+  /**
+   * True only for the not-found page: tells search engines to skip it, and leaves out the
+   * canonical URL and `og:url`, which would name an address that is not a page.
+   */
+  noindex?: boolean
   /** Present only for the FAQ route — adds FAQPage structured data built from the real FAQ content. */
   faqEntries?: FaqEntry[]
 }
@@ -42,12 +47,13 @@ export function buildRouteSeo(input: RouteSeoInput): RouteSeoHead {
     { name: 'description', content: input.description },
     { property: 'og:title', content: input.title },
     { property: 'og:description', content: input.description },
-    { property: 'og:url', content: canonical },
+    ...(input.noindex ? [] : [{ property: 'og:url', content: canonical }]),
     { property: 'og:type', content: 'website' },
     { property: 'og:site_name', content: siteName },
     { name: 'twitter:card', content: 'summary' },
     { name: 'twitter:title', content: input.title },
     { name: 'twitter:description', content: input.description },
+    ...(input.noindex ? [{ name: 'robots', content: 'noindex' }] : []),
   ]
 
   const script: RouteSeoHead['script'] = []
@@ -89,7 +95,7 @@ export function buildRouteSeo(input: RouteSeoInput): RouteSeoHead {
   return {
     title: input.title,
     meta,
-    link: [{ rel: 'canonical', href: canonical }],
+    link: input.noindex ? [] : [{ rel: 'canonical', href: canonical }],
     script,
   }
 }

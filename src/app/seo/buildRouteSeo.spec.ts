@@ -35,6 +35,32 @@ describe('buildRouteSeo', () => {
     expect(byName('twitter:description')).toBe('FAQ description.')
   })
 
+  it('tells search engines to skip a noindex route and names no canonical URL for it', () => {
+    const head = buildRouteSeo({
+      path: '/some/unknown/address',
+      title: 'Not found',
+      description: 'Not found description.',
+      isApp: false,
+      noindex: true,
+    })
+
+    expect(head.meta).toContainEqual({ name: 'robots', content: 'noindex' })
+    expect(head.link).toEqual([])
+    expect(head.meta.find((m) => m.property === 'og:url')).toBeUndefined()
+    expect(head.script).toHaveLength(0)
+  })
+
+  it('leaves ordinary routes indexable', () => {
+    const head = buildRouteSeo({
+      path: '/faq',
+      title: 'FAQ',
+      description: 'FAQ description.',
+      isApp: false,
+    })
+
+    expect(head.meta.find((m) => m.name === 'robots')).toBeUndefined()
+  })
+
   it('adds no JSON-LD for an ordinary content route', () => {
     const head = buildRouteSeo({
       path: '/privacy',

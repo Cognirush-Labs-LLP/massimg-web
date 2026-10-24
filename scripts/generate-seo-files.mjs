@@ -12,9 +12,9 @@
 // src/app/seo/useRouteSeo.ts during the prerender pass), so this script also reuses those
 // instead of a second, separately-authored copy.
 //
-// Assumes every dist/*.html is a real page route — true today because vite-ssg only emits one
-// file per route in src/app/router.ts. If a non-route HTML file (e.g. a custom 404 page) is ever
-// added to dist/, this assumption needs revisiting.
+// Assumes every dist/*.html is a real page route, except 404.html: the not-found page is written
+// by vite-ssg too, but it is what the host serves for an address that is not a page, so it must
+// not be listed. Any other non-route HTML file added to dist/ needs the same treatment.
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -40,7 +40,7 @@ const AI_CRAWLERS = ['GPTBot', 'ClaudeBot', 'Google-Extended']
 
 function routeHtmlFiles() {
   return readdirSync(dist)
-    .filter((name) => name.endsWith('.html'))
+    .filter((name) => name.endsWith('.html') && name !== '404.html')
     .sort()
 }
 

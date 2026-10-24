@@ -62,6 +62,28 @@ for (const { file, checks } of routeChecks) {
   }
 }
 
+// The not-found page is built like a route but is not one: it has no canonical URL, is not in the
+// sitemap and is excluded from the per-route SEO checks below, so it is checked on its own here.
+const notFoundFile = join(dist, '404.html')
+if (!existsSync(notFoundFile)) {
+  console.error(`404 check: ${notFoundFile} not found — run \`pnpm build\` first.`)
+  failed = true
+} else {
+  const html = readFileSync(notFoundFile, 'utf8')
+  const notFoundChecks = [
+    [/Page not found/.test(html), 'renders the not-found heading'],
+    [/<a [^>]*href="\/"/.test(html), 'links to the home page'],
+    [/<meta name="robots" content="noindex">/.test(html), 'tells search engines not to index it'],
+    [!/rel="canonical"/.test(html), 'declares no canonical URL'],
+  ]
+  for (const [ok, label] of notFoundChecks) {
+    if (!ok) {
+      console.error(`404 check: ${notFoundFile} — ${label} failed`)
+      failed = true
+    }
+  }
+}
+
 if (failed) {
   process.exit(1)
 }

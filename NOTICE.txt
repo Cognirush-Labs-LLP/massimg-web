@@ -2,16 +2,40 @@
 
 **Software:** Mass Image Compressor (Web version)
 **Copyright:** © 2026 Cognirush Labs LLP
-**License:** GNU Affero General Public License v3.0 (AGPL-3.0)
+**License:** GNU Affero General Public License v3.0 (AGPL-3.0), see LICENSE
 
-**Key Provisions:**
+This notice supplements the AGPL-3.0 and does not replace it. Where the two differ, the license
+text in LICENSE governs. The terms below are additional terms under section 7 of the AGPL: they
+preserve author attribution (7(b)), forbid misrepresenting the origin of modified versions (7(c)),
+and decline to grant trademark rights (7(e)).
 
-The license permits redistribution and modification under AGPL v3.0 terms. However, redistributors must "clearly state all modifications made to the original, including new features or changes."
+**What the AGPL already gives you:**
 
-Usage of Cognirush Labs LLP's branding requires prior written permission. Redistributed versions cannot be linked to the company's support resources, though "credit Cognirush Labs LLP as the original author" is required without implying official endorsement.
+You may run, study, modify and redistribute this software, including by hosting it as a website.
+Running it on your own machine carries no conditions. If you modify it and let others use it over
+a network, section 13 requires you to offer those users the source of your modified version, and
+section 5(a) requires a prominent notice that you modified it, with the date.
 
-**Notable Restriction:**
+**Additional terms:**
 
-The company reserves "the exclusive right to distribute this software or its derivatives under alternative licensing terms," prohibiting third-party relicensing without authorization from Cognirush Labs LLP.
+1. **Credit.** Keep the copyright notice and credit Cognirush Labs LLP as the original author in
+   any version you redistribute or host publicly. Do not imply that Cognirush Labs LLP endorses
+   your version.
 
-This notice supplements rather than modifies the underlying AGPL-3.0 license terms.
+2. **Modified versions.** If you redistribute or host a modified copy for the public, you must do
+   at least one of the following (the same condition as section 11 of the site's Terms):
+   - not present it as, or distribute it alongside, Cognirush Labs LLP's own support contact or
+     other official branding, since we cannot support a build we did not ship; or
+   - clearly indicate that your copy has been modified and is distributed independently of
+     Cognirush Labs LLP, so users are not misled into thinking it is our official, unmodified build.
+
+3. **Branding.** The names "Mass Image Compressor" and "massimg.com", the logo, the icons and the
+   site's design and branding are not licensed for your use. Using them requires prior written
+   permission from Cognirush Labs LLP, beyond what is needed to refer to this software accurately
+   (section 10 of the site's Terms).
+
+**Other licensing:**
+
+As copyright holder, Cognirush Labs LLP may offer this software under other terms as well. That
+does not reduce the rights the AGPL gives you. Anyone else who redistributes it must do so under
+the AGPL.

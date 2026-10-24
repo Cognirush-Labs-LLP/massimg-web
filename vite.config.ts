@@ -138,6 +138,10 @@ export default defineConfig({
   ssgOptions: {
     script: 'async',
     formatting: 'minify',
+    // `paths` includes the not-found route's wildcard pattern, which is not a page address, so
+    // it is dropped and the route is rendered once at /404 instead. That writes dist/404.html,
+    // the page the host serves for an unknown address.
+    includedRoutes: (paths) => [...paths.filter((path) => !path.includes(':')), '/404'],
   },
   optimizeDeps: {
     // `imagequant` is a wasm-bindgen "bundler" target: `imagequant.js` imports the `.wasm`, hands the
