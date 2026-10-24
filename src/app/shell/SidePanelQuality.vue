@@ -58,9 +58,21 @@ function selectQualityTarget(): void {
   settings.quality = { kind: 'quality', value: 70 }
 }
 
+// The size search throws on a target under one byte, so an empty, zero or unparsable field never
+// reaches the store — it keeps the last valid target instead.
+function usableTargetBytes(value: number, unit: SizeUnit): number | null {
+  const bytes = bytesFor(value, unit)
+
+  return Number.isFinite(bytes) && bytes >= 1 ? bytes : null
+}
+
 function selectSizeTarget(): void {
   if (quality.value.kind === 'size' || sizeDisabled.value) {
     return
+  }
+  // The field may have been left empty before switching to Quality and back.
+  if (usableTargetBytes(sizeValue.value, sizeUnit.value) === null) {
+    sizeValue.value = DEFAULT_SIZE_VALUE
   }
   settings.quality = { kind: 'size', targetBytes: bytesFor(sizeValue.value, sizeUnit.value) }
 }
@@ -76,16 +88,25 @@ function setQualityChip(value: number): void {
 
 function onSizeFieldInput(event: Event): void {
   const target = event.target as HTMLInputElement
-  const sanitized = target.value.replace(/[^\d.]/g, '')
+  const [whole = '', ...fraction] = target.value.replace(/[^\d.]/g, '').split('.')
+  // Only the first decimal point counts; Number('1.2.3') would be NaN.
+  const sanitized = fraction.length > 0 ? `${whole}.${fraction.join('')}` : whole
   target.value = sanitized
-  const value = sanitized === '' ? 0 : Number(sanitized)
+  const parsed = sanitized === '' ? 0 : Number(sanitized)
+  const value = Number.isFinite(parsed) ? parsed : 0
   sizeValue.value = value
-  settings.quality = { kind: 'size', targetBytes: bytesFor(value, sizeUnit.value) }
+  const bytes = usableTargetBytes(value, sizeUnit.value)
+  if (bytes !== null) {
+    settings.quality = { kind: 'size', targetBytes: bytes }
+  }
 }
 
 function setUnit(unit: SizeUnit): void {
   sizeUnit.value = unit
-  settings.quality = { kind: 'size', targetBytes: bytesFor(sizeValue.value, unit) }
+  const bytes = usableTargetBytes(sizeValue.value, unit)
+  if (bytes !== null) {
+    settings.quality = { kind: 'size', targetBytes: bytes }
+  }
 }
 </script>
 

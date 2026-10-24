@@ -71,6 +71,52 @@ describe('SidePanelQuality', () => {
     )
   })
 
+  it('an emptied, zero or unparsable size field leaves the last valid target in the store', async () => {
+    const wrapper = mount(SidePanelQuality)
+    await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
+    const field = wrapper.find<HTMLInputElement>('[data-testid="quality-size-field"]')
+    await field.setValue('300')
+
+    for (const typed of ['', '0', '.', '0.0001']) {
+      await field.setValue(typed)
+      expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 300 * 1000 })
+    }
+    expect(field.element.value).not.toContain('NaN')
+  })
+
+  it('a second decimal point is dropped rather than turning the value into NaN', async () => {
+    const wrapper = mount(SidePanelQuality)
+    await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
+    const field = wrapper.find<HTMLInputElement>('[data-testid="quality-size-field"]')
+
+    await field.setValue('1.2.3')
+
+    expect(field.element.value).toBe('1.23')
+    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 1230 })
+  })
+
+  it('changing the unit with an empty field keeps the last valid target', async () => {
+    const wrapper = mount(SidePanelQuality)
+    await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
+    await wrapper.find('[data-testid="quality-size-field"]').setValue('300')
+    await wrapper.find('[data-testid="quality-size-field"]').setValue('')
+
+    await wrapper.find('[data-testid="quality-unit-mb"]').trigger('click')
+
+    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 300 * 1000 })
+  })
+
+  it('returning to Size after leaving the field empty restores the default, not 0', async () => {
+    const wrapper = mount(SidePanelQuality)
+    await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
+    await wrapper.find('[data-testid="quality-size-field"]').setValue('')
+    await wrapper.find('[data-testid="quality-target-quality"]').trigger('click')
+
+    await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
+
+    expect(useSettingsStore().quality).toEqual({ kind: 'size', targetBytes: 500 * 1000 })
+  })
+
   it('switching back to Quality target after Size resets to the store default of 70', async () => {
     const wrapper = mount(SidePanelQuality)
     await wrapper.find('[data-testid="quality-target-size"]').trigger('click')
