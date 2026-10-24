@@ -561,48 +561,105 @@ test('stop() during a fallback decode terminates it and nothing lands afterwards
 
 // The other half of the same guarantee, and the one that actually distinguishes a worker fallback
 // from a main-thread one: `ImageMagick.read` is synchronous, so on the main thread it would stall
-// the event loop for the whole decode. This samples the main thread's own responsiveness while a
-// fallback runs to completion.
-test('the fallback decode does not block the main thread', async ({ page }) => {
+// the event loop for the whole decode.
+//
+// This asserts *which thread* does the decode instead of timing how long the page stays responsive.
+// A responsiveness bound cannot tell "decode ran on the main thread" from "the main thread was
+// briefly starved of CPU": the fallback's 14.8 MB module is being compiled on other threads at the
+// moment it would matter, and on a two-core machine (a CI runner) WebKit on Linux showed 270 to
+// 560 ms gaps against a 250 ms bound, with 80 to 180 ms gaps even for a plain PNG and an idle page.
+// The worker has its own WebAssembly, so a WebAssembly call in the page's own realm can only come
+// from the main thread — deterministic, and no tighter on a faster machine than on a slower one.
+test('the fallback decode runs in a worker, not on the main thread', async ({ page }) => {
+  await page.goto('/')
   const result = await page.evaluate(
-    async ({ thumbnailsPath, bytes }) => {
-      const module = await import(/* @vite-ignore */ thumbnailsPath)
-      const blob = new Blob([new Uint8Array(bytes)], { type: 'image/jp2' })
+    async ({ thumbnailsPath, fallbackPath, bytes }) => {
+      const wasmCalls: string[] = []
+      const workerScripts: string[] = []
 
-      let longestGapMs = 0
-      let last = performance.now()
-      const timer = setInterval(() => {
-        const now = performance.now()
-        longestGapMs = Math.max(longestGapMs, now - last)
-        last = now
-      }, 10)
+      const scope = globalThis as unknown as {
+        WebAssembly: Record<string, unknown>
+        Worker: new (url: string | URL, options?: object) => object
+      }
+      const originals: Record<string, unknown> = {}
+      for (const name of ['instantiate', 'instantiateStreaming', 'compile', 'compileStreaming']) {
+        const original = scope.WebAssembly[name] as ((...args: unknown[]) => unknown) | undefined
+        if (typeof original !== 'function') continue
+        originals[name] = original
+        scope.WebAssembly[name] = function (...args: unknown[]) {
+          wasmCalls.push(name)
+          return original.apply(scope.WebAssembly, args)
+        }
+      }
+      for (const name of ['Module', 'Instance']) {
+        const original = scope.WebAssembly[name] as object | undefined
+        if (typeof original !== 'function') continue
+        originals[name] = original
+        scope.WebAssembly[name] = new Proxy(original, {
+          construct(target, args, newTarget) {
+            wasmCalls.push(`new ${name}`)
+            return Reflect.construct(target, args, newTarget)
+          },
+        })
+      }
+      const OriginalWorker = scope.Worker
+      scope.Worker = class extends OriginalWorker {
+        constructor(url: string | URL, options?: object) {
+          workerScripts.push(String(url))
+          super(url, options)
+        }
+      }
 
-      const service = module.createThumbnailService({ maxEdge: 32 })
-      const startedAt = performance.now()
-      service.setVisible([{ id: 'jp2', blob, source: { width: 4000, height: 3000 }, edit: null }])
-      await service.whenIdle()
-      const elapsedMs = performance.now() - startedAt
+      try {
+        const module = await import(/* @vite-ignore */ thumbnailsPath)
+        const blob = new Blob([new Uint8Array(bytes)], { type: 'image/jp2' })
 
-      clearInterval(timer)
-      // The gap that runs right up to the end has to be sampled here, not in the callback: a stall
-      // long enough to swallow every remaining tick leaves the callback never firing at all, and a
-      // maximum computed only from callbacks that did fire reports 0 for the worst case there is.
-      // Measured: without this line a 610 ms main-thread block reports a 10 ms longest gap.
-      longestGapMs = Math.max(longestGapMs, performance.now() - last)
-      const cached = service.urlFor('jp2') !== null
-      service.clear()
-      return { longestGapMs, elapsedMs, cached }
+        const service = module.createThumbnailService({ maxEdge: 32 })
+        service.setVisible([{ id: 'jp2', blob, source: { width: 4000, height: 3000 }, edit: null }])
+        await service.whenIdle()
+        const cached = service.urlFor('jp2') !== null
+        service.clear()
+        const mainThreadCallsDuringService = [...wasmCalls]
+
+        // Control, so the check above cannot pass by observing nothing: the same decode called
+        // directly, which is exactly the main-thread run the service must never do.
+        wasmCalls.length = 0
+        const fallback = await import(/* @vite-ignore */ fallbackPath)
+        const decode = fallback.createImageMagickFallbackDecoder()
+        await decode({
+          blob,
+          source: { width: 4000, height: 3000 },
+          edit: null,
+          maxEdge: 32,
+          format: 'image/webp',
+          quality: 0.8,
+        })
+        const mainThreadCallsWhenCalledDirectly = [...wasmCalls]
+
+        return {
+          cached,
+          mainThreadCallsDuringService,
+          mainThreadCallsWhenCalledDirectly,
+          workerScripts,
+        }
+      } finally {
+        scope.Worker = OriginalWorker
+        for (const [name, original] of Object.entries(originals)) {
+          scope.WebAssembly[name] = original
+        }
+      }
     },
-    { thumbnailsPath: THUMBNAILS_MODULE_PATH, bytes: fixture('slow.jp2') },
+    {
+      thumbnailsPath: THUMBNAILS_MODULE_PATH,
+      fallbackPath: FALLBACK_MODULE_PATH,
+      bytes: fixture('slow.jp2'),
+    },
   )
 
-  // The fallback really did run and produce a tile — without this the gap figure below would be
+  // The fallback really did run and produce a tile — without this the checks below would be
   // satisfied by doing nothing at all.
   expect(result.cached).toBe(true)
-
-  // The synchronous decode alone is several hundred milliseconds. On the main thread the event loop
-  // would stall for at least that long; in a worker the gap stays at the timer's own resolution.
-  // The bound is deliberately loose — this is separating "no stall" from "half-second stall", not
-  // measuring scheduler jitter.
-  expect(result.longestGapMs).toBeLessThan(250)
+  expect(result.workerScripts.length).toBeGreaterThan(0)
+  expect(result.mainThreadCallsDuringService).toEqual([])
+  expect(result.mainThreadCallsWhenCalledDirectly.length).toBeGreaterThan(0)
 })

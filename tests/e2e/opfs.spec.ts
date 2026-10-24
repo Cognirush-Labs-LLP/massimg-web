@@ -17,6 +17,14 @@ const REAL_CHUNK_COUNT = 10 // 320 MiB total — "multi-hundred-MB" per T19's do
 const FALLBACK_CHUNK_SIZE = 1024 * 1024
 const FALLBACK_CHUNK_COUNT = 5 // 5 MiB — the fallback test proves the code path, not memory scale.
 
+// Every WebKit test in this file opens its own persistent context, and Playwright's WebKit gives
+// all of them one storage area whatever `userDataDir` each is given (measured: a file written in one
+// context is listed by another context with a different directory). Run in parallel, the tests delete
+// each other's files mid-run and fail with "NotFoundError" or "unknown transient reason". Serial mode
+// keeps this file's tests in one worker, one at a time; it costs seconds, and it is the only
+// isolation available.
+test.describe.configure({ mode: 'serial' })
+
 // WebKit's default Playwright context has no working OPFS at all (T01, docs/task-notes/T01.md);
 // only a real, disk-backed profile via launchPersistentContext does. Chromium and Firefox both work
 // in the default fixture. This gets a page backed by real OPFS regardless of engine.

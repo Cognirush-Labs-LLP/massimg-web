@@ -155,17 +155,6 @@ here either.
   image should do the same. A storage-write failure also halts the run, which is reasonable since
   nothing more can be saved, and both halt paths now log the underlying error to the console.
 
-## BL-012 — `decode.spec.ts` "the fallback decode does not block the main thread" fails on Linux WebKit
-
-- **Disclosed:** no.
-- **Location:** `tests/e2e/decode.spec.ts` (the main-thread stall bound).
-- **What happens:** the fallback decode for a format the browser cannot read (JPEG 2000) still
-  produces its thumbnail, but the longest main-thread gap is 313 to 423 ms against a 250 ms bound
-  on WebKit on Linux, every run, alone or in parallel. It passes on macOS WebKit. It predates T51.
-- **Why backlog:** it will fail the Linux WebKit job in GitHub CI every time. Decide whether to
-  skip it off macOS (`skipWebKitOutsideMac`) or loosen the bound, and whether the stall is real
-  jank worth fixing for the few people on Linux WebKit.
-
 ## BL-013 — `folder-tree` journey skipped on non-Mac WebKit
 
 - **Disclosed:** no.
@@ -183,8 +172,7 @@ here either.
 - **What happened:** 18 failures (`codecs.spec.ts:93`, `gallery-grid.spec.ts:209/250/267`,
   `preview.spec.ts:364/577`, on all three engines) in one full macOS run, then never again in two
   more full Mac runs and two full Linux runs. They all read counters from a module imported inside
-  the page and got 0. Separately, `opfs.spec.ts:197` failed once on macOS WebKit under full load
-  and passed 20 of 20 alone.
+  the page and got 0.
 - **Why backlog:** no action unless they recur. If one does, run it alone, on `main`, and on
   another engine first (`CONTRIBUTING.md`), and capture the page state when it fails.
 
