@@ -1143,8 +1143,6 @@ Known entries, accumulated as earlier tasks created them:
 - `VITE_CF_BEACON_TOKEN` (`src/config/analytics.ts`, read via `.env`) — built against a
   placeholder token (T46) so the beacon mechanism and its Playwright test could be
   verified without waiting on a Cloudflare account; must resolve to the real token.
-- The Privacy and Terms page copy (T44) — placeholder prose shipped so the routes were
-  not withheld waiting on legal text; must resolve to the final legal copy.
 
 A task that ships a non-production stand-in for a real value (API token, production URL,
 legal or other externally-sourced copy) adds a bullet here, naming the value and the file

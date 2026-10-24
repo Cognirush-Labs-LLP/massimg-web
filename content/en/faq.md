@@ -135,13 +135,23 @@ Only the main image is processed. The auxiliary depth or motion data that comes 
 ## 8. Browser & device support
 
 **Which browsers does this work in?**
-Chrome, Firefox and Safari on desktop have all been tested and are supported. One Safari-specific quirk is worth knowing: very occasionally (roughly one job in eighty), GIF compression in Safari falls back to a less efficient method, so that GIF comes out noticeably larger than it would elsewhere. Your image is still correct — just bigger than expected.
+Chrome, Firefox and Safari on a Mac have all been tested and are supported. One Safari-specific quirk is worth knowing: very occasionally (roughly one job in eighty), GIF compression in Safari falls back to a less efficient method, so that GIF comes out noticeably larger than it would elsewhere. Your image is still correct — just bigger than expected.
+
+On Linux, Chrome and Firefox have been tested and work the same as on a Mac. GNOME Web, the browser that comes with the GNOME desktop, is built on the same technology as Safari. We have confirmed that the pages open and you can move around them in it, but we haven't yet run an actual compression in GNOME Web itself, so treat that as untested for now.
+
+We haven't tested on Windows yet. Chrome, Edge and Firefox there are built on the same browser engines we did test, so it's expected to work, but that isn't confirmed.
 
 **Does it work on an iPhone or iPad?**
 It should run, but its specific memory behavior on mobile Safari hasn't been verified yet, so treat that as untested for now.
 
+**Does it work on an Android phone?**
+Yes, on the phone we tried: a mid-range Samsung with 5.5 GB of memory, running Android 16 and Chrome. It compressed photos of up to about 50 megapixels into every output format without the tab being closed, and sharing finished images to other apps worked there too. An older or lower-memory phone may cope with less.
+
 **Will processing a large batch crash my browser tab?**
 The app is designed to stream results to your device's storage instead of holding everything in memory at once, and this has been confirmed to keep memory flat even with several gigabytes of output on desktop browsers. Exact safe batch sizes for phones are still being measured.
+
+**Is there anything to watch out for when downloading in Firefox?**
+Yes, one thing. If you press your browser's Back button after compressing and choose **Download and leave**, Firefox occasionally doesn't actually deliver the file, even though the app moves on, and by then the results are gone. This is a known problem that isn't fixed yet. To be safe, press **Download** on the results screen first, check that the file arrived, and only then leave. The Download button keeps working after you press it, so you can press it again if nothing arrived. We haven't seen this in Chrome or Safari.
 
 **Do I need a powerful computer or a graphics card?**
 No. Everything runs on your device's regular processor inside the browser — no special hardware is required.
@@ -162,6 +172,7 @@ A handful of established open-source image libraries handle the actual decoding,
 The core compression engine — formats, quality, resizing, rotation, cropping, animation, color handling — is built and working as described above, and so are the on-screen gallery, preview and rotate/crop editing screens, the compression run itself, and downloading or sharing the finished result. Some parts of the app are still not finished, including:
 
 - Finalized limits on batch size, file size and image dimensions
+- A fix for Firefox sometimes not delivering the file when you choose “Download and leave”
 - Full keyboard and screen-reader accessibility
 - Translations into languages other than English
 

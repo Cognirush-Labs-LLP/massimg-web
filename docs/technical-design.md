@@ -922,7 +922,7 @@ This is a separate mechanism from the interface string catalogue in §11: a cont
 
 The credits page (`/credits`, §7.2) is a sixth public route but is not one of these pages and takes no locale fallback: it is generated from `3rd_party_licenses/components.json`, and component names, licence names, URLs and filenames are data rather than prose. Only its own chrome — heading, intro and column headers — goes through §11's catalogue.
 
-Privacy and Terms ship with placeholder content. The legal text is out of scope for this design and is not an engineering task; the routes and the fallback mechanism are built now so nothing about the pipeline blocks on it later.
+Privacy and Terms carry the final legal text (T44). Changing that text is not an engineering task; the routes and the fallback mechanism are built so a text change never touches the pipeline.
 
 ### 12.5 SEO surface
 

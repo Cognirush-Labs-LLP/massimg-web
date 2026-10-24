@@ -230,7 +230,8 @@ export function useProcessingRun(): ProcessingRunState {
 
     try {
       await applyOutcome(image.id, source.byteLength, outcome, sink)
-    } catch {
+    } catch (error) {
+      console.error('Run halted: a storage write failed.', error)
       // A sink write failed (OPFS quota exhausted or a real storage error mid-run) — halt the same
       // way out-of-memory does, but distinctly (§10 "Storage write failure mid-run", closed by
       // T40; T39's handover deferred this row to whoever built the mechanism).
@@ -347,8 +348,9 @@ export function useProcessingRun(): ProcessingRunState {
       try {
         // R-X16: a single-image run has no report at all.
         await sink.finish(multiImage ? buildRunReportEntry() : undefined)
-      } catch {
+      } catch (error) {
         if (generation === expected) {
+          console.error('Run halted: finishing the archive failed.', error)
           await sink.abortAndCleanup()
           runStore.haltRun('storage-failure')
         }

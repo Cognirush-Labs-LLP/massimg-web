@@ -46,29 +46,12 @@ test.beforeEach(async ({ context }) => {
   )
 })
 
-// Playwright's WebKit build for Linux refuses the production build's lazy-loaded runtime chunk
-// during a client-side navigation ("Cannot load .../rolldown-runtime-*.js due to access control
-// checks"), yet the page it leads to renders correctly. macOS WebKit, which stands in for Safari,
-// and the other two engines log nothing, and the failure is the same with the service worker
-// allowed (tests/e2e/webkit-platform.ts says why Linux WebKit is not evidence about Safari). Only
-// that one message is tolerated, and only there; any other error still fails.
-function isLinuxWebKitChunkNoise(message: string): boolean {
-  return (
-    test.info().project.name === 'webkit' &&
-    process.platform !== 'darwin' &&
-    /rolldown-runtime|Importing a module script failed|sw\.js load failed/.test(message)
-  )
-}
-
 /** Records page errors and console errors, so a page that renders but throws still fails. */
 function watchForErrors(page: Page): string[] {
   const errors: string[] = []
-  const record = (message: string): void => {
-    if (!isLinuxWebKitChunkNoise(message)) errors.push(message)
-  }
-  page.on('pageerror', (error) => record(error.message))
+  page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
-    if (message.type() === 'error') record(message.text())
+    if (message.type() === 'error') errors.push(message.text())
   })
   return errors
 }
@@ -137,6 +120,10 @@ test('the footer and header reach every public page without a reload', async ({ 
     ['Credits', '/credits'],
   ] as const) {
     await page.goto('/')
+    // Clicking while the page's own scripts are still loading makes WebKit log the cancelled
+    // fetches as errors ("Cannot load .../rolldown-runtime-*.js due to access control checks"),
+    // which would fail the error check below for a reason that is about the test, not the page.
+    await page.waitForLoadState('networkidle')
     await page.evaluate(() => {
       ;(globalThis as unknown as { __stayed: boolean }).__stayed = true
     })

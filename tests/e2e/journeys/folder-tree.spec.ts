@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { skipWebKitOutsideMac } from '../webkit-platform'
 import {
   buildPng,
   downloadResult,
@@ -16,7 +17,11 @@ import {
 
 test('a nested folder keeps its tree in the ZIP, skips hidden files and renames nothing across directories', async ({
   page,
-}) => {
+}, testInfo) => {
+  skipWebKitOutsideMac(
+    testInfo.project.name,
+    'the page intermittently stops answering Playwright after a folder selection (about 3% of runs)',
+  )
   test.slow()
   const root = scratchDir('folder')
   writeAt(root, 'album/photo.png', buildPng(200, 150, 1))

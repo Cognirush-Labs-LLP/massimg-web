@@ -6,6 +6,9 @@ test infrastructure before it can be fixed reliably. Every entry below is alread
 users in `content/en/faq.md` unless marked otherwise — nobody is being told something false, but the
 underlying code gap is still there.
 
+Entries from BL-010 onward come from the T51 end-to-end work and the follow-up Linux runs
+(`docs/task-notes/T51.md`), not from the audit.
+
 The same audit found five other findings that were straightforward to fix; those are already
 fixed in code (`a866ab2`, `02a1679`, `4cc8229`, `0a3aa11`, `528bb8a`) and aren't tracked here.
 T37-A later resolved CORE-004 by wiring R-X24 into the shared output-selection stage. The audit
@@ -119,6 +122,122 @@ here either.
   there is no way to make a real browser report it `false` with the current build. Revisit if a
   future build ever ships without HEIC support, or if genuine runtime HEIC-decode capability
   detection becomes possible.
+
+## BL-010 — Firefox "Download and leave" can lose the download
+
+- **Requirements:** R-X18, R-X25, R-X42
+- **Disclosed:** `content/en/faq.md` §8, "Is there anything to watch out for when downloading in Firefox?"
+- **Location:** `src/app/shell/useBackNavigationGuard.ts` (`download-and-leave`);
+  `src/pipeline/run-download.ts`; the cleanup in `src/ui/processing/useProcessingRun.ts`.
+- **What happens:** the app hands the file to the browser and calls `finishProcessing()` straight
+  away, which unmounts Processing and deletes the run's stored files. Firefox reads the file
+  lazily, so the download dies and the results are gone. The plain Download button is unaffected,
+  because the files stay until the person leaves and "Download again" remains available.
+- **Evidence (T51):** Linux Firefox, three workers: 7 of 40 runs; macOS Firefox: 1 of 40 with one
+  worker, 8 of 40 with four. Delaying the teardown by 6 s let the download arrive in 40 of 40;
+  delaying only the blob URL revoke changed nothing. Not seen on Chromium or WebKit, but only
+  small archives were tested, so a large ZIP there is unverified.
+- **Why backlog:** the fix is a design choice. Options: a grace period before cleanup (smallest
+  change, keeps the dialog as designed); sweeping leftover files on the next start; or holding
+  the file in memory (costs memory on big batches). Hiding the option for Firefox only was
+  rejected: the race is not specific to Firefox, and it would change the R-X18 dialog.
+
+## BL-011 — One oversized image can still halt a whole run
+
+- **Requirements:** §10 ("Out of memory"), R-I22
+- **Disclosed:** no.
+- **Location:** `src/ui/processing/useProcessingRun.ts`; the `out-of-memory` failure kind.
+- **Why backlog:** a product decision, not a confirmed defect. A worker failure of kind
+  `out-of-memory` halts the run and discards partial results by design, while every other
+  per-image failure only fails that image. The intended rule is that one bad image should not stop
+  the rest, and a halt should mean a genuine run-level problem. T50 already made limit breaches
+  per-image failures; what remains is deciding whether an encoder running out of memory on one
+  image should do the same. A storage-write failure also halts the run, which is reasonable since
+  nothing more can be saved, and both halt paths now log the underlying error to the console.
+
+## BL-012 — `decode.spec.ts` "the fallback decode does not block the main thread" fails on Linux WebKit
+
+- **Disclosed:** no.
+- **Location:** `tests/e2e/decode.spec.ts` (the main-thread stall bound).
+- **What happens:** the fallback decode for a format the browser cannot read (JPEG 2000) still
+  produces its thumbnail, but the longest main-thread gap is 313 to 423 ms against a 250 ms bound
+  on WebKit on Linux, every run, alone or in parallel. It passes on macOS WebKit. It predates T51.
+- **Why backlog:** it will fail the Linux WebKit job in GitHub CI every time. Decide whether to
+  skip it off macOS (`skipWebKitOutsideMac`) or loosen the bound, and whether the stall is real
+  jank worth fixing for the few people on Linux WebKit.
+
+## BL-013 — `folder-tree` journey skipped on non-Mac WebKit
+
+- **Disclosed:** no.
+- **Location:** `tests/e2e/journeys/folder-tree.spec.ts`.
+- **What happens:** on Playwright's Linux WebKit the page intermittently stops answering the test
+  after a folder selection (about 3% of runs: 2 of 30, 2 of 60, then 0 of 80). The screenshot at
+  that moment shows the Gallery correct ("3 images"), so the app worked and the automation
+  stalled. Cause not found. The test is skipped there, and the macOS run plus `folder.spec.ts`
+  still cover folder selection. Revisit if Linux WebKit can be driven reliably, or if a real
+  GNOME Web check (see BL-017) shows a real stall.
+
+## BL-014 — Unexplained one-off test failures to watch
+
+- **Disclosed:** no.
+- **What happened:** 18 failures (`codecs.spec.ts:93`, `gallery-grid.spec.ts:209/250/267`,
+  `preview.spec.ts:364/577`, on all three engines) in one full macOS run, then never again in two
+  more full Mac runs and two full Linux runs. They all read counters from a module imported inside
+  the page and got 0. Separately, `opfs.spec.ts:197` failed once on macOS WebKit under full load
+  and passed 20 of 20 alone.
+- **Why backlog:** no action unless they recur. If one does, run it alone, on `main`, and on
+  another engine first (`CONTRIBUTING.md`), and capture the page state when it fails.
+
+## BL-015 — The generated SEO files ignore `.env`
+
+- **Disclosed:** no.
+- **Location:** `scripts/generate-seo-files.mjs`.
+- **What happens:** it reads `VITE_SITE_BASE_URL` from the shell environment only, whereas Vite
+  also reads `.env` files for the page. Setting the URL only in `.env` would put the real URL in
+  the canonical tags but leave `sitemap.xml`, `robots.txt` and `llms.txt` on the
+  `site-base-url-not-set.invalid` placeholder. `tests/e2e-site/routes.spec.ts` would catch the
+  mismatch because it compares the sitemap with each page's canonical URL.
+- **Why backlog:** belongs with T51-A and T52. Either set the variable in the build's environment
+  (for example `VITE_SITE_BASE_URL=https://massimg.com pnpm build`, or a GitHub Actions `env:`
+  block), or make the script load `.env` the way Vite does.
+
+## BL-016 — Cloudflare analytics: our own beacon or Cloudflare's automatic one
+
+- **Requirements:** R-V3
+- **Disclosed:** `content/en/faq.md` §2 ("Does the app track me…") describes the behavior; it does
+  not say which mechanism supplies it.
+- **Why backlog:** a decision for release. Cloudflare can inject its Web Analytics beacon at the
+  edge once the site is proxied, which would need no token in our code. The design (§12.6) chose
+  a beacon fired from the page so that visits served from the service worker's cache are still
+  counted, which edge injection might miss. Running both would count visits twice. Suggested:
+  keep our beacon with the real token (`VITE_CF_BEACON_TOKEN`, T51-A) and turn automatic
+  injection off for the site. Verify in the Cloudflare dashboard before release.
+
+## BL-017 — Pre-release browser checks not yet done
+
+- **Disclosed:** `content/en/faq.md` §8 states GNOME Web and iPhone/iPad as untested.
+- **What is missing:**
+  - A run of the workflow on GitHub itself. Linux was run by hand on Ubuntu 26.04 with three
+    workers; GitHub's runner is Ubuntu 24.04 with one.
+  - A real Safari click-through of the footer links and one compression.
+  - A compression run in real GNOME Web. Only page navigation was checked there, using
+    WebKitGTK 2.52.6 through WebKitWebDriver (`webkitgtk-webdriver` and `xvfb` are installed on
+    the Linux test machine), and WebDriver cannot read the browser's console.
+  - A run on Windows. Only the Share handoff was measured there (Chrome, T39-A); the app itself
+    has never been run on Windows, and `content/en/faq.md` §8 says so.
+  - Other Android phones. One phone has been measured (Galaxy M34, Android 16, Chrome 155, 5.5 GB;
+    T50), and the FAQ says only that. A 3 to 4 GB phone is where the PNG and AVIF encoder memory
+    (not bounded by any limit) is expected to fail first.
+  - Real iPhone and older low-memory phones (BL-008, E4).
+
+## BL-018 — Privacy page does not mention Share
+
+- **Disclosed:** `content/en/faq.md` §2 covers Share.
+- **Why backlog:** `content/en/privacy.md` is final legal text and never mentions Share. Nothing
+  in it is false (Share is an operating-system handoff, not a transmission to us), but a reader
+  following the footer line finds nothing about it. A one-sentence addition for §2 was drafted
+  during T49 and is waiting for the owner's approval; it is legal copy, so it is not an
+  engineering change.
 
 ---
 
