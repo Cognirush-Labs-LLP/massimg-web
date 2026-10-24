@@ -53,6 +53,7 @@ const get = (path, init = {}) => fetch(base + path, { redirect: 'manual', ...ini
 // Every page and asset the checks below cover, fetched with the Accept-Encoding a browser sends.
 const page = await get('/')
 const pageEtag = page.headers.get('etag')
+const pageModified = page.headers.get('last-modified')
 check(
   '/ answers 200 as HTML',
   page.status === 200 && /^text\/html/.test(page.headers.get('content-type') ?? ''),
@@ -63,11 +64,19 @@ check(
   page.headers.get('cache-control') === 'no-cache',
   page.headers.get('cache-control') ?? 'no header',
 )
-check('/ carries an ETag', Boolean(pageEtag), 'no ETag header')
+// Hostinger's server or its CDN leaves the ETag off HTML (the other files keep theirs), so the
+// page revalidates by Last-Modified. Either validator makes a repeat visit a 304.
+check(
+  '/ carries a validator (ETag or Last-Modified)',
+  Boolean(pageEtag || pageModified),
+  'neither header',
+)
 check('/ is compressed', Boolean(page.headers.get('content-encoding')), 'no Content-Encoding')
 
-const revalidated = await get('/', { headers: { 'if-none-match': pageEtag ?? '' } })
-check('/ answers 304 to its own ETag', revalidated.status === 304, `got ${revalidated.status}`)
+const revalidated = await get('/', {
+  headers: pageEtag ? { 'if-none-match': pageEtag } : { 'if-modified-since': pageModified ?? '' },
+})
+check('/ answers 304 to its own validator', revalidated.status === 304, `got ${revalidated.status}`)
 
 const faq = await get('/faq')
 check('/faq (extensionless) answers 200', faq.status === 200, `got ${faq.status}`)
@@ -110,9 +119,13 @@ check(
 )
 
 const sw = await get('/sw.js', { method: 'HEAD' })
+// Cloudflare's "Browser Cache TTL" can replace no-cache with a few hours on .js files. That is
+// harmless for the worker: browsers fetch the worker script past the HTTP cache when checking for
+// an update, and cap its cache time at a day. A year would not be.
+const swMaxAge = Number(/max-age=(\d+)/.exec(sw.headers.get('cache-control') ?? '')?.[1] ?? 0)
 check(
-  'sw.js revalidates',
-  sw.headers.get('cache-control') === 'no-cache',
+  'sw.js is not cached longer than a day',
+  swMaxAge <= 86400 && !/immutable/.test(sw.headers.get('cache-control') ?? ''),
   sw.headers.get('cache-control') ?? 'no header',
 )
 
