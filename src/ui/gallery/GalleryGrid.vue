@@ -8,7 +8,7 @@
 // a module-scope singleton that survives this component unmounting and remounting, because leaving
 // Gallery for Preview/Edit and coming back must not rereads source files it already decoded.
 // This component only starts/stops *generation* against that shared cache.
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 import type { ImageId, ImageRecord } from '@/domain/types'
 import { useBatchStore } from '@/stores/batch'
 import { getSourceFile } from '@/platform/source-files'
@@ -110,7 +110,11 @@ const thumbnailSources = computed<ThumbnailSource[]>(() => {
       id: image.id,
       blob: file,
       source: { width: image.width, height: image.height },
-      edit: image.edit,
+      // `image` is read off the reactive batch array, so its `edit` is a Proxy, and the service
+      // posts the ops straight to its worker, where a Proxy fails structured clone with
+      // `DataCloneError`. The stored edit itself is raw (`stores/batch.ts`'s `sanitizedEdit`), so
+      // one `toRaw` reaches plain objects all the way down.
+      edit: toRaw(image.edit),
     })
   }
   return sources

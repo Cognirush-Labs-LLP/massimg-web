@@ -47,7 +47,8 @@ export type RunDeliveryError = 'download-assembly' | 'download-blocked' | 'share
 /**
  * Run progress (Technical Design §3.3): counts by state, accumulated input/output bytes,
  * failures, skips and caveats. The completed result remains available after returning to Gallery;
- * `startRun` resets every field and clears prior per-image run statuses before the next run.
+ * `startRun` resets every field and clears prior per-image run statuses before the next run;
+ * `resetRun` does the same with nothing pending, for the gap before a new run's count is known.
  *
  * Populated by worker result messages as they arrive. `recordResult`'s parameter shape is
  * intentionally minimal here — T38 (Processing view) is what wires this store to the real
@@ -90,6 +91,18 @@ export const useRunStore = defineStore('run', () => {
    * left exactly where it was: jobs never submitted after the halt are not relabelled as failed.
    */
   const haltReason = ref<'out-of-memory' | 'storage-failure' | null>(null)
+
+  /**
+   * Forgets the previous run without starting a new one. Processing calls this the moment a run
+   * is requested, ahead of the awaited pre-run checks that come before `startRun`: otherwise the
+   * previous run's finished state — its counts, Download/Share and the back guard's R-X18 dialog —
+   * stays live for a run whose artifacts were already deleted on leaving Processing, and stays for
+   * good if the R-X40 preflight then rejects the new batch.
+   */
+  function resetRun(): void {
+    startRun(0)
+    runStartedAt.value = null
+  }
 
   function startRun(totalPending: number): void {
     useBatchStore().clearRunStatuses()
@@ -178,6 +191,7 @@ export const useRunStore = defineStore('run', () => {
     delivery,
     deliveryError,
     haltReason,
+    resetRun,
     startRun,
     recordResult,
     finishRun,

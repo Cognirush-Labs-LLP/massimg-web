@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { effectScope } from 'vue'
 import { runtimeLimits } from '@/config/limits'
 import type { ImageId, ImageRecord, PipelineJob } from '@/domain/types'
+import { editRecordFixture } from '@/domain/types.fixtures'
 import type { JobOutcome } from '@/pipeline/pool'
 import type { JobToken, OutputJobResult } from '@/pipeline/protocol'
 import { deleteRunArtifacts, readArchive } from '@/platform/opfs'
@@ -785,5 +786,191 @@ describe('useProcessingRun unmount', () => {
     // No store to assert against post-dispose would be safe here if a *second* run had started;
     // the direct assertion is that recordResult-driven state did not move after teardown.
     expect(useRunStore().progress).toEqual({ pending: 1, succeeded: 0, failed: 0, skipped: 0 })
+  })
+})
+
+// A second Compress in the same session: Back (or Back to images) from a first run, then Compress
+// again over the same batch. Each test drives two composable scopes, the way two Processing mounts
+// would, sharing the one batch store and the one run directory.
+describe('useProcessingRun second run', () => {
+  beforeEach(async () => {
+    await deleteRunArtifacts()
+  })
+
+  function failedOutcome(imageId: string): JobOutcome {
+    return {
+      token: 1 as JobToken,
+      imageId: imageId as ImageId,
+      outcome: 'failed',
+      reason: { kind: 'decode-failed' },
+    }
+  }
+
+  // The pool here is a mock, so nothing is structured-cloned on the way to a worker unless the
+  // test does it: the real pool's `postMessage` throws `DataCloneError` on any reactive Proxy left
+  // inside a job, which is what used to break the second run of an edited image.
+  it.each([
+    ['without edits', null],
+    ['with a rotate and crop edit', editRecordFixture],
+  ])('submits structured-clonable jobs carrying the stored edit, %s', async (_label, edit) => {
+    seed(['a', 'b'])
+    useBatchStore().updateImage('a' as ImageId, { edit })
+    useBatchStore().updateImage('b' as ImageId, { edit })
+
+    const first = setupRun()
+    first.run.start()
+    await flush()
+    // One success and one failure, so both status rebuilders (clearRunStatuses at the second
+    // run's start, markFailed during the first) have rewritten the records in between.
+    runs[0]?.settle(completedOutput('a'))
+    runs[1]?.settle(failedOutcome('b'))
+    await flush()
+    expect(useRunStore().finished).toBe(true)
+    first.dispose()
+    await flush()
+
+    const second = setupRun()
+    second.run.start()
+    await flush()
+
+    const secondJobs = runs.slice(2)
+    expect(secondJobs).toHaveLength(2)
+    for (const { job } of secondJobs) {
+      expect(() => structuredClone(job)).not.toThrow()
+      expect(job).toMatchObject({ edit })
+    }
+
+    secondJobs[0]?.settle(completedOutput('a'))
+    secondJobs[1]?.settle(completedOutput('b'))
+    await flush()
+
+    expect(useRunStore().finished).toBe(true)
+    expect(useRunStore().progress).toEqual({ pending: 0, succeeded: 2, failed: 0, skipped: 0 })
+  })
+
+  it('waits for the previous session’s cleanup before touching storage', async () => {
+    seed(['a'])
+    const actualWrite = vi.mocked(writeOutputCopy).getMockImplementation()
+    let releaseWrite!: () => void
+    vi.mocked(writeOutputCopy).mockImplementationOnce(async (...args) => {
+      await new Promise<void>((resolve) => {
+        releaseWrite = resolve
+      })
+      await actualWrite?.(...args)
+    })
+
+    const first = setupRun()
+    first.run.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    await flush()
+    // Browser Back while the first run's output is still being written: Processing unmounts at
+    // once, and its cleanup has to let that write finish before it deletes the run directory.
+    first.dispose()
+
+    const second = setupRun()
+    second.run.start()
+    await flush()
+
+    // Had the second run gone ahead, its output copy would be written now and then deleted by the
+    // first session's cleanup the moment the held write below completes.
+    expect(runs).toHaveLength(1)
+
+    releaseWrite()
+    await flush()
+    expect(runs).toHaveLength(2)
+
+    runs[1]?.settle(completedOutput('a'))
+    await flush()
+
+    expect(useRunStore().finished).toBe(true)
+    await expect(readOutputCopies()).resolves.toHaveLength(1)
+  })
+
+  it('does not hold the next run back behind the previous session’s in-flight encode', async () => {
+    seed(['a'])
+    const first = setupRun()
+    first.run.start()
+    await flush()
+    // Browser Back mid-encode. Settling after this can no longer reach storage, so there is
+    // nothing for the next run to wait for.
+    first.dispose()
+
+    const second = setupRun()
+    second.run.start()
+    await flush()
+
+    expect(runs).toHaveLength(2)
+
+    runs[0]?.settle(completedOutput('a')) // the straggler: dropped, writes nothing
+    runs[1]?.settle(completedOutput('a'))
+    await flush()
+
+    expect(useRunStore().finished).toBe(true)
+    expect(useRunStore().progress.succeeded).toBe(1)
+    await expect(readOutputCopies()).resolves.toHaveLength(1)
+  })
+
+  it('shows none of the previous run’s results while its own pre-run checks are pending', async () => {
+    seed(['a', 'b'])
+    const first = setupRun()
+    first.run.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    runs[1]?.settle(completedOutput('b'))
+    await flush()
+    first.dispose()
+    await flush()
+
+    let releaseProbe!: (shareable: boolean) => void
+    vi.mocked(probeFileShareForRun).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          releaseProbe = resolve
+        }),
+    )
+
+    const second = setupRun()
+    second.run.start()
+
+    // Synchronously: the first frame Processing renders for the second run must already be clean,
+    // or it shows the first run's Download/Share for artifacts that were deleted on leaving.
+    const runStore = useRunStore()
+    expect(runStore.finished).toBe(false)
+    expect(runStore.delivery).toBe('pending')
+    expect(runStore.progress).toEqual({ pending: 0, succeeded: 0, failed: 0, skipped: 0 })
+    expect(runStore.successes).toEqual([])
+
+    await flush()
+    releaseProbe(false)
+    await flush()
+    expect(runs).toHaveLength(4)
+  })
+
+  it('leaves no finished state behind when the second run is rejected by the preflight', async () => {
+    seed(['a', 'b'])
+    const first = setupRun()
+    first.run.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    runs[1]?.settle(completedOutput('b'))
+    await flush()
+    first.dispose()
+    await flush()
+
+    vi.mocked(checkCombinedQuota).mockResolvedValueOnce({
+      archive: { ok: false, required: 50_000, available: 10_000 },
+      combined: { ok: false, required: 50_000, available: 10_000 },
+    })
+    const second = setupRun()
+    second.run.start()
+    await flush()
+
+    expect(second.run.quotaRejection.value).not.toBeNull()
+    // The back guard reads exactly these: a finished, undelivered run with successes would raise
+    // R-X18's "Download and leave" for the first run's long-deleted artifacts.
+    const runStore = useRunStore()
+    expect(runStore.finished).toBe(false)
+    expect(runStore.progress.succeeded).toBe(0)
   })
 })

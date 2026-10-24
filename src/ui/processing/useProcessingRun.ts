@@ -57,6 +57,15 @@ export interface ProcessingRunState {
   cancel: () => Promise<void>
 }
 
+// The previous Processing session's cleanup, which can outlive its component. Leaving mid-run
+// unmounts at once, but the cleanup first lets any storage write already under way finish and only
+// then deletes the run directory — the one OPFS directory every run shares, along with
+// `platform/opfs.ts`'s module-scope output metadata. A new run started inside that window would
+// have its archive and copies deleted from under it, so every run waits on this before touching
+// storage. Chained rather than replaced, and never rejecting, so a later session that
+// disposes quickly cannot let a still-pending earlier cleanup slip out from behind it.
+let pendingCleanup: Promise<void> = Promise.resolve()
+
 type ResolvedResolution = Extract<SettingsResolution, { kind: 'resolved' }>
 
 function isResolved<T extends { resolution: SettingsResolution }>(
@@ -82,6 +91,19 @@ export function useProcessingRun(): ProcessingRunState {
   let outstanding: Promise<void>[] = []
   let generation = 0
   let currentSink: RunArchiveSink | null = null
+  // Sink writes and run completion already under way. Everything else a run does past its encode
+  // is behind a `generation` check, so once the scope is disposed this is the only work that can
+  // still touch storage — and, unlike `outstanding`, it never waits on an encode.
+  const storageWork = new Set<Promise<void>>()
+
+  function trackStorage(work: Promise<void>): Promise<void> {
+    storageWork.add(work)
+    const forget = (): void => {
+      storageWork.delete(work)
+    }
+    work.then(forget, forget)
+    return work
+  }
 
   const total = computed(() => {
     const progress = runStore.progress
@@ -229,7 +251,7 @@ export function useProcessingRun(): ProcessingRunState {
     }
 
     try {
-      await applyOutcome(image.id, source.byteLength, outcome, sink)
+      await trackStorage(applyOutcome(image.id, source.byteLength, outcome, sink))
     } catch (error) {
       console.error('Run halted: a storage write failed.', error)
       // A sink write failed (OPFS quota exhausted or a real storage error mid-run) — halt the same
@@ -245,6 +267,14 @@ export function useProcessingRun(): ProcessingRunState {
   }
 
   async function runInternal(expected: number): Promise<void> {
+    // Before the preflight too, not just before the sink opens: the previous run's artifacts still
+    // count against the quota estimate until they are gone.
+    await pendingCleanup
+
+    if (generation !== expected) {
+      return
+    }
+
     // R-X1: grid order is the batch array's own insertion order (see stores/batch.ts). `toRaw`
     // avoids handing a worker a reactive Proxy, which fails structured clone at `postMessage` time
     // (see usePreviewEncode.ts's own note on this).
@@ -340,34 +370,43 @@ export function useProcessingRun(): ProcessingRunState {
 
     outstanding = resolved.map(({ image, resolution }) => runOne(image, resolution, expected, sink))
 
-    void Promise.all(outstanding).then(async () => {
-      if (generation !== expected) {
-        return
-      }
+    void Promise.all(outstanding).then(() =>
+      trackStorage(completeRun(expected, sink, multiImage, shareEligible)),
+    )
+  }
 
-      try {
-        // R-X16: a single-image run has no report at all.
-        await sink.finish(multiImage ? buildRunReportEntry() : undefined)
-      } catch (error) {
-        if (generation === expected) {
-          console.error('Run halted: finishing the archive failed.', error)
-          await sink.abortAndCleanup()
-          runStore.haltRun('storage-failure')
-        }
-        return
-      }
+  async function completeRun(
+    expected: number,
+    sink: RunArchiveSink,
+    multiImage: boolean,
+    shareEligible: boolean,
+  ): Promise<void> {
+    if (generation !== expected) {
+      return
+    }
 
-      // Guarded so a Cancel racing the very last image's natural completion can't flip `finished`
-      // after cancel() has already decided this run is over.
-      if (generation === expected && !stopping.value) {
-        runStore.finishRun()
-        // A storage error while merely *checking* shareability is one of R-X48's "failure of any
-        // of these checks": Share is not offered, Download is left exactly as it was. It must not
-        // halt a run that has already completed successfully, so it is caught here rather than
-        // joining the storage-failure path above.
-        await decideShareAvailability(expected, multiImage, shareEligible).catch(() => {})
+    try {
+      // R-X16: a single-image run has no report at all.
+      await sink.finish(multiImage ? buildRunReportEntry() : undefined)
+    } catch (error) {
+      if (generation === expected) {
+        console.error('Run halted: finishing the archive failed.', error)
+        await sink.abortAndCleanup()
+        runStore.haltRun('storage-failure')
       }
-    })
+      return
+    }
+
+    // Guarded so a Cancel racing the very last image's natural completion can't flip `finished`
+    // after cancel() has already decided this run is over.
+    if (generation === expected && !stopping.value) {
+      runStore.finishRun()
+      // A storage error while merely *checking* shareability is one of R-X48's "failure of any
+      // of these checks": Share is not offered, Download is left exactly as it was. It must not
+      // halt a run that has already completed successfully, so it is caught here rather than
+      // joining the storage-failure path above.
+      await decideShareAvailability(expected, multiImage, shareEligible).catch(() => {})
+    }
   }
 
   /**
@@ -428,6 +467,9 @@ export function useProcessingRun(): ProcessingRunState {
     stopping.value = false
     quotaRejection.value = null
     shareAvailable.value = false
+    // Synchronously, before any await below, so the previous run's finished screen never renders
+    // for this one (see `resetRun`).
+    runStore.resetRun()
     void runInternal(expected)
   }
 
@@ -442,13 +484,20 @@ export function useProcessingRun(): ProcessingRunState {
   onScopeDispose(() => {
     generation += 1
     pool.cancel()
-    // Awaited asynchronously (onScopeDispose itself cannot be async): every in-flight `runOne` must
-    // settle before cleanup, the same ordering `cancel()` uses, or a straggling `sink.submit()`
-    // could still be mid-write when `abortAndCleanup()` deletes the directory out from under it.
-    void (async () => {
-      await Promise.all(outstanding)
+    // Awaited asynchronously (onScopeDispose itself cannot be async): storage work already under
+    // way must finish before cleanup, or a `sink.submit()` could still be mid-write when
+    // `abortAndCleanup()` deletes the directory out from under it. Only that work, not every
+    // in-flight `runOne`: the generation bump above means an encode settling from here on never
+    // reaches the sink, and waiting on encodes would hold the next run back behind them too.
+    const previous = pendingCleanup
+    const draining = [...storageWork]
+    pendingCleanup = (async () => {
+      await previous
+      await Promise.allSettled(draining)
       await currentSink?.abortAndCleanup()
-    })()
+    })().catch((error: unknown) => {
+      console.error('Cleanup after leaving Processing failed.', error)
+    })
   })
 
   return { total, processed, stopping, quotaRejection, shareAvailable, start, cancel }

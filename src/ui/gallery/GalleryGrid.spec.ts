@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import type { ImageId } from '@/domain/types'
-import { imageRecordFixture } from '@/domain/types.fixtures'
+import { editRecordFixture, imageRecordFixture } from '@/domain/types.fixtures'
 import { useBatchStore } from '@/stores/batch'
 
 const dimensionErrors = new Set<ImageId>()
@@ -95,6 +95,20 @@ describe('GalleryGrid', () => {
 
     const requested = serviceMock.setVisible.mock.calls.at(-1)?.[0] as { id: ImageId }[]
     expect(requested.map((source) => source.id)).toEqual(['a'])
+  })
+
+  it('hands the service an edit it can post to its worker (structured-clonable)', async () => {
+    // The real service posts `edit.ops` to a worker; a reactive Proxy there throws DataCloneError.
+    useBatchStore().addImages([image('a')])
+    useBatchStore().updateImage('a' as ImageId, { edit: editRecordFixture })
+    sourceFiles.set('a' as ImageId, new File(['x'], 'a.jpg'))
+
+    mount(GalleryGrid)
+    await vi.runAllTimersAsync()
+
+    const requested = serviceMock.setVisible.mock.calls.at(-1)?.[0] as { edit: unknown }[]
+    expect(requested[0]?.edit).toEqual(editRecordFixture)
+    expect(() => structuredClone(requested[0]?.edit)).not.toThrow()
   })
 
   it('omits images with no source file from the thumbnail request', async () => {
