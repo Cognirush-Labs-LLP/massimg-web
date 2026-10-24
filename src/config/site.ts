@@ -45,3 +45,18 @@ export function resolveSiteBaseUrl(raw: string | undefined): string {
 // time) rather than hardcoded, so a local or staging build never claims to be the production
 // canonical URL in canonical tags, JSON-LD or sitemap.xml. See .env.example.
 export const siteBaseUrl = resolveSiteBaseUrl(import.meta.env.VITE_SITE_BASE_URL)
+
+/**
+ * Who runs this deployment and where users reach them. Components import these directly, and
+ * content/<locale>/*.md refers to them as `{{legalName}}`, `{{supportEmail}}`, `{{sourceUrl}}`
+ * and `{{desktopDownloadUrl}}` (substituted in src/app/content/content.ts).
+ *
+ * A fork edits this block and rewrites the legal pages. Terms sections 10 and 11 name the
+ * upstream author on purpose and are not tokenised; see CONTRIBUTING.md, "Forking".
+ */
+export const operator = {
+  legalName: 'Cognirush Labs LLP',
+  supportEmail: 'support@cognirush.com',
+  sourceUrl: 'https://github.com/Cognirush-Labs-LLP/massimg-web',
+  desktopDownloadUrl: 'https://mic.cognirush.com/download/',
+} as const

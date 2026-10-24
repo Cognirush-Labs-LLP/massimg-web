@@ -14,6 +14,7 @@
 // phone — the source URLs alone are wider than the viewport — so it always needed a horizontal
 // scroller, on every screen size, even where there was room. This layout wraps instead, so no
 // width ever produces a horizontal scrollbar.
+import { operator } from '@/config/site'
 import { t } from '@/i18n/t'
 import {
   creditedComponents,
@@ -21,8 +22,6 @@ import {
   sourceLinkText,
   type CreditedComponent,
 } from './componentsManifest'
-
-const APP_SOURCE_URL = 'https://github.com/Cognirush-Labs-LLP/massimg-web'
 
 /**
  * The licence name, with the SPDX identifier appended only when it adds something. For most
@@ -42,7 +41,7 @@ function licenseLabel(component: CreditedComponent): string {
   <article class="credits-page">
     <h1>{{ t('credits.heading') }}</h1>
     <p class="app-license">
-      <a :href="APP_SOURCE_URL" target="_blank" rel="noopener">{{ t('credits.appLicense') }}</a>
+      <a :href="operator.sourceUrl" target="_blank" rel="noopener">{{ t('credits.appLicense') }}</a>
     </p>
     <p>{{ t('credits.intro') }}</p>
 

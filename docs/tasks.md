@@ -1154,6 +1154,33 @@ codebase for known placeholder markers (the non-production URL fallback, any pla
 token string) turns up nothing reachable from the production build, and this task's
 handover note records what each value was set to (without committing secrets).
 
+### T51-B — Fork-ready links, README and contributor guide
+
+**Depends on:** T49, T51
+
+Cognirush's own contact points (support email, source URL, desktop download URL, legal entity
+name) kept in one place so a fork can replace them, and the repository's front door written.
+
+- An `operator` block in `src/config/site.ts` is the only place those values are written. The
+  footer and credits page import it; `content/en/*.md` uses `{{supportEmail}}`, `{{sourceUrl}}`,
+  `{{desktopDownloadUrl}}` and `{{legalName}}` tokens, substituted when the page is loaded, and an
+  unknown token throws. Terms sections 10 and 11 name the upstream author and stay literal.
+- `README.md`: what the project is and how it complements the desktop app, the privacy and
+  quality aim, features, the formats table with browser and platform notes, PWA support, the AI
+  declaration ("engineered, not vibe-coded"), and how to run it.
+- `CONTRIBUTING.md`: where help is welcome, the simple-mental-model principle, the rules for using
+  AI, why a green run is not the whole proof, and a forking checklist. The pull-request template
+  asks about AI use and manual checks.
+- No massimg.com-specific build script: `VITE_SITE_BASE_URL` and `VITE_CF_BEACON_TOKEN` already
+  carry what differs, and T51-A and T52 set them.
+
+**Done when:** no `cognirush` or `massimg-web` string appears under `src/` or `content/` outside the
+`operator` block and Terms sections 10 and 11, enforced by a unit test; the built pages are the
+same as before for the default values; the README and CONTRIBUTING additions exist; and the
+handover note names the operating system the tests ran on.
+
+---
+
 ### T52 — Build and deploy
 
 **Technical Design:** §12

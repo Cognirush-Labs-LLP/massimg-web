@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CreditsPage from './CreditsPage.vue'
+import { operator } from '@/config/site'
 import { creditedComponents, licenseTextUrl } from './componentsManifest'
 
 // Deliberately mounted with no router plugin, no Pinia and no matchMedia stub (contrast
@@ -36,7 +37,7 @@ describe('CreditsPage (R-V4)', () => {
     const appLicense = wrapper.find('.app-license a')
 
     expect(appLicense.text()).toContain('AGPL')
-    expect(appLicense.attributes('href')).toBe('https://github.com/Cognirush-Labs-LLP/massimg-web')
+    expect(appLicense.attributes('href')).toBe(operator.sourceUrl)
   })
 
   it('links every component to its upstream source, opened safely', () => {

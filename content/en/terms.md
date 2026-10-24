@@ -28,7 +28,7 @@
 ## 1. Scope and acceptance of these terms
 
 These Terms of Service govern your use of this website and the Mass Image Compressor web
-application served from it (together, the "App"), provided by Cognirush Labs LLP ("we", "us",
+application served from it (together, the "App"), provided by {{legalName}} ("we", "us",
 "our"). By opening and using the App you accept these terms. If you don't agree with them, please
 don't use the App.
 
@@ -163,7 +163,7 @@ logo or branding beyond what's needed to refer to the App itself.
 
 ## 11. Open source license and redistribution
 
-The App's [source code is public](https://github.com/Cognirush-Labs-LLP/massimg-web), licensed
+The App's [source code is public]({{sourceUrl}}), licensed
 under the GNU Affero General Public License v3.0 (AGPL v3). You're welcome to read it, run your own
 copy, and redistribute or modify it under that license's terms.
 
@@ -184,14 +184,14 @@ without owing you credit, compensation, or any license back. You retain ownershi
 us, but you're not entitled to claim intellectual property rights, credit or payment for an idea or
 suggestion we end up building, even if it closely resembles what you proposed.
 
-Images or other files you send to support@cognirush.com are handled as described in our
+Images or other files you send to {{supportEmail}} are handled as described in our
 [Privacy Policy](/privacy). If you submit feedback or files through another platform instead — for
 example, by opening an issue on GitHub — that platform's own privacy policy governs that
 submission, not ours.
 
 ## 13. Limitation of liability
 
-To the maximum extent permitted by law, Cognirush Labs LLP will not be liable for any indirect,
+To the maximum extent permitted by law, {{legalName}} will not be liable for any indirect,
 incidental, special, consequential or punitive damages, or any loss of data, images, profits or
 goodwill, arising from or related to your use of, or inability to use, the App — even if we have
 been advised of the possibility of such damages.
@@ -205,6 +205,6 @@ exclusive jurisdiction of the courts of Bengaluru, Karnataka.
 
 Questions about these terms are welcome at:
 
-**Email:** support@cognirush.com
+**Email:** {{supportEmail}}
 
 **Address:** F-402, MJR Pearl, Opp Whitefield Metro, Kadugodi, Bengaluru, Karnataka, India

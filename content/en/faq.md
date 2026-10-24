@@ -162,7 +162,7 @@ No. Everything runs on your device's regular processor inside the browser — no
 Yes, it's licensed under the GNU AGPL v3.
 
 **Can I see the source code?**
-Yes, the [project's source](https://github.com/Cognirush-Labs-LLP/massimg-web) is public, also linked from the footer on every page, alongside a [credits page](/credits) listing every bundled library with its licence and a link to its own source. Nothing about the project is private.
+Yes, the [project's source]({{sourceUrl}}) is public, also linked from the footer on every page, alongside a [credits page](/credits) listing every bundled library with its licence and a link to its own source. Nothing about the project is private.
 
 **What other software does this rely on?**
 A handful of established open-source image libraries handle the actual decoding, compressing and animating under the hood. Each one is named and credited on the [credits page](/credits), with its licence text and a link to its source.
@@ -170,13 +170,13 @@ A handful of established open-source image libraries handle the actual decoding,
 ## 10. Contributing & contact
 
 **Can I help translate the app into my language?**
-Yes, we'd welcome that. The app is in English only for now. Open a pull request on the [project's GitHub page](https://github.com/Cognirush-Labs-LLP/massimg-web), or email [support@cognirush.com](mailto:support@cognirush.com) to tell us which language you'd like to work on.
+Yes, we'd welcome that. The app is in English only for now. Open a pull request on the [project's GitHub page]({{sourceUrl}}), or email [{{supportEmail}}](mailto:{{supportEmail}}) to tell us which language you'd like to work on.
 
 **Can I contribute to the software itself, for example a bug fix or support for a newer image format?**
-Yes. Open a pull request on [GitHub](https://github.com/Cognirush-Labs-LLP/massimg-web), or email [support@cognirush.com](mailto:support@cognirush.com) first if you'd like to talk the idea through.
+Yes. Open a pull request on [GitHub]({{sourceUrl}}), or email [{{supportEmail}}](mailto:{{supportEmail}}) first if you'd like to talk the idea through.
 
 **Can I use AI tools to write my changes?**
 Yes, and we encourage it — the project is set up to work well with AI coding assistants. But this project is engineered, not "vibe coded": the changes must be made by a programmer, and an AI tool must not make the engineering decisions or decide what the app should do. Only open a pull request if you understand every change in it and can explain and defend it yourself.
 
 **How can I contact you?**
-Email [support@cognirush.com](mailto:support@cognirush.com) with questions, feedback or bug reports. If a problem involves a particular image, you can attach it; the [Privacy Policy](/privacy) explains how we handle it.
+Email [{{supportEmail}}](mailto:{{supportEmail}}) with questions, feedback or bug reports. If a problem involves a particular image, you can attach it; the [Privacy Policy](/privacy) explains how we handle it.

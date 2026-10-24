@@ -6,10 +6,8 @@
 // route: compact (tool route, any viewport — tight padding and an icon-only GitHub link, so the
 // tool still fits the viewport with no page scroll) and regular (every other route — GitHub link
 // carries a visible label too, roomier padding).
+import { operator } from '@/config/site'
 import { t } from '@/i18n/t'
-
-const GITHUB_URL = 'https://github.com/Cognirush-Labs-LLP/massimg-web'
-const DESKTOP_DOWNLOAD_URL = 'https://mic.cognirush.com/download/'
 
 defineProps<{ compact: boolean }>()
 </script>
@@ -18,7 +16,7 @@ defineProps<{ compact: boolean }>()
   <footer class="site-footer" :class="{ 'site-footer--compact': compact }">
     <a
       class="github-link"
-      :href="GITHUB_URL"
+      :href="operator.sourceUrl"
       target="_blank"
       rel="noopener"
       :aria-label="compact ? t('site.footer.githubAriaLabel') : undefined"
@@ -49,7 +47,7 @@ defineProps<{ compact: boolean }>()
          frame. R-V1's reachability is carried by this link; the claim itself is stated in full in
          the Gallery empty state. -->
     <RouterLink :to="{ name: 'privacy' }">{{ t('site.nav.privacy') }}</RouterLink>
-    <a class="for-desktops-link" :href="DESKTOP_DOWNLOAD_URL" target="_blank" rel="noopener">
+    <a class="for-desktops-link" :href="operator.desktopDownloadUrl" target="_blank" rel="noopener">
       {{ t('site.nav.desktop') }}
     </a>
     <RouterLink :to="{ name: 'terms' }">{{ t('site.nav.terms') }}</RouterLink>

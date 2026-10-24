@@ -66,6 +66,9 @@ check whether an existing answer no longer matches what the app does.
   paths or code identifiers in the FAQ itself.
 - Where a behaviour is deliberately unfinished or undecided, the answer says so plainly rather than
   describing the intended end state as though it already works.
+- Write the support email, source URL, desktop download URL and legal name in `content/` as
+  `{{supportEmail}}`, `{{sourceUrl}}`, `{{desktopDownloadUrl}}` and `{{legalName}}`, never literally. A
+  unit test fails on a literal copy outside Terms sections 10 and 11.
 - This rule covers the English source only. Keeping a locale's translated FAQ file in
   sync with a behaviour change is a translation task, not an engineering one, and does
   not block this rule.
@@ -87,13 +90,16 @@ docs/
   sample_design/        imported Claude Design prototype — visual/interaction reference only, see its README
 3rd_party_licenses/    one directory per bundled component (populated by T06)
 src/                   application code — see docs/technical-design.md §2 for the module structure
-  config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T31)
+  config/site.ts        canonical base URL, supported locales and default locale — single source of truth (T31);
+                        also the `operator` block (legal name, support email, source and desktop URLs) that
+                        the footer, credits page and content/ `{{tokens}}` read (T51-B)
 verification/          Phase 0 throwaway harnesses (T01, T02, T03), each its own package.json
 tests/                 permanent browser/e2e test suite, added from T05 onward
   e2e/webkit-platform.ts  which WebKit tests only hold on macOS, and why — not a test file itself
   e2e/journeys/           whole-run journeys through the real interface, Share stubbed (T51)
   e2e-site/               public pages, sitemap.xml and robots.txt, against a production build (T51)
-CONTRIBUTING.md        contributor guide: what to run, and what a green run on each OS proves
+README.md              what the project is, formats, features, how it is built
+CONTRIBUTING.md        contributor guide: what to run, what a green run proves, AI use, forking
 .github/
   pull_request_template.md  the PR form, including the required "which OS did you test on"
 LICENSE                AGPL v3 (added by T06)

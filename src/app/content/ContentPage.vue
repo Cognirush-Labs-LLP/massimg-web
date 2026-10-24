@@ -67,6 +67,24 @@ const html = computed(() => renderMarkdown(loadRawContent(defaultLocale, props.p
   font-weight: var(--font-weight-wordmark);
 }
 
+.content-page table {
+  inline-size: 100%;
+  margin-block: 0 1em;
+  border-collapse: collapse;
+}
+
+.content-page th,
+.content-page td {
+  padding-block: 0.5em;
+  padding-inline: 0.6em;
+  border-block-end: 1px solid var(--color-border-group);
+  text-align: start;
+}
+
+.content-page th {
+  font-weight: var(--font-weight-heading);
+}
+
 /* Each FAQ entry is one <p> (bold question, soft line break, plain answer) rather than two
    paragraphs — extractFaqEntries.ts's token walk requires that shape to pull question/answer
    pairs out for JSON-LD. `display: block` on the leading <strong> gives the question its own

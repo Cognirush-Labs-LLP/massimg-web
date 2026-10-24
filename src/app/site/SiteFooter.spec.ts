@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import SiteFooter from './SiteFooter.vue'
 import { routes } from '@/app/router'
+import { operator } from '@/config/site'
 
 // Same rationale as SiteShell.spec.ts: importing router.ts pulls in ToolPage.vue's real
 // pipeline/codecs/loader.ts, which Vitest can't transform (T31 Surprises).
@@ -63,7 +64,7 @@ describe('SiteFooter', () => {
     async (compact) => {
       const link = (await mountFooter(compact)).find('.github-link')
 
-      expect(link.attributes('href')).toBe('https://github.com/Cognirush-Labs-LLP/massimg-web')
+      expect(link.attributes('href')).toBe(operator.sourceUrl)
       expect(link.attributes('target')).toBe('_blank')
       expect(link.attributes('rel')).toBe('noopener')
     },

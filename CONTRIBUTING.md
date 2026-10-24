@@ -4,6 +4,33 @@ Thanks for working on Mass Image Compressor. This page covers what to run before
 request, and the one thing about this repository that is easy to get wrong: **not every test runs
 on every operating system.**
 
+## Where help is welcome
+
+- **Translations.** The app is English only today.
+- **More image formats**, input or output.
+- **Bug fixes.**
+- **Features from the desktop versions** of Mass Image Compressor.
+
+For anything bigger than a fix, open an issue first so the idea can be agreed before you build it.
+
+## The core principle: a simple mental model
+
+Every feature, setting and option has to leave the user with a simple mental model of what the app
+does. Before you propose one, ask whether you can explain it in a sentence, and whether it adds a
+decision the user did not need to make. If it fails either test, it does not go in, however
+useful it is to some people. The Functional Design's principles (`docs/functional-design.md`) are
+the longer version.
+
+## Using AI
+
+This project is built with AI assistance, and you may use it too, to carry out a task that has
+already been defined. It is engineered, not vibe-coded, and contributions that are vibe-coded are
+not accepted.
+
+You define the work. You review every line of the change. You must be able to explain and defend
+it when a reviewer asks why it is the way it is, so a pull request you cannot talk through will
+not be merged, whoever or whatever wrote it.
+
 ## Setting up
 
 You need **Node 22.13 or newer** and **pnpm 11.13** (pinned in `package.json` as `packageManager`,
@@ -52,6 +79,16 @@ really tested when someone runs the suite on a Mac.
 So we need to know which you did. That is not a judgement on your machine; it tells a reviewer how
 much the green tick is worth, and whether someone else needs to run it on a Mac before merging.
 
+## A green test run is not the whole proof
+
+Passing automated tests do not show that the application works. Several things are not covered
+at all, or only on a Mac: the Web Share path on a real device, animated frame output in Safari,
+Firefox's handling of "Download and leave", and anything on a real iPhone or a low-memory phone.
+`docs/backlog.md` (BL-017 and the entries around it) lists what has not been checked.
+
+If your change touches delivery, sharing, animation or storage, run it by hand in a real browser,
+say what you did, and say what you could not check.
+
 ## Raising a pull request
 
 Fill in the pull-request template. It asks, and **this is required**:
@@ -79,3 +116,20 @@ It might be. This suite has had tests drift behind the application before. But c
 Say which of these you checked in the pull request. Do not weaken or delete an assertion to get a
 green tick without saying why in the description — if an assertion is genuinely stale, explain what
 changed and when, so the reviewer can agree it is stale rather than take it on trust.
+
+## Forking
+
+You are welcome to run your own copy under the AGPL. To make it yours and not ours:
+
+- **Contact points.** Edit the `operator` block in `src/config/site.ts`: legal name, support email,
+  source URL and desktop download URL. The footer, the credits page and the FAQ, Privacy and
+  Terms pages read it. Point the source URL at your own repository; if you modify the app and
+  serve it over a network, the AGPL requires you to offer your users your source.
+- **Legal text.** Rewrite `content/en/privacy.md` and `content/en/terms.md` for your deployment.
+  Sections 10 and 11 of the Terms name Cognirush Labs LLP as the original author and are
+  deliberately not substituted; adapt them and keep the credit `NOTICE.txt` asks for.
+- **Branding.** The site name in `src/config/site.ts`, the title in `index.html`, the name in
+  `public/manifest.json` and the icons in `public/icons/`. Our name, logo and branding are not
+  licensed for your use (`NOTICE.txt`).
+- **Deployment values.** `VITE_SITE_BASE_URL` and `VITE_CF_BEACON_TOKEN`; see `.env.example`.
+- **README.md** and the Cognirush links in it.

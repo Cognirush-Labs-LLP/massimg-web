@@ -1,4 +1,4 @@
-import { defaultLocale } from '@/config/site'
+import { defaultLocale, operator } from '@/config/site'
 
 export type ContentPageId = 'faq' | 'privacy' | 'terms' | 'desktop'
 
@@ -16,6 +16,20 @@ function keyFor(locale: string, page: ContentPageId): string {
 }
 
 /**
+ * Replaces each `{{name}}` with the matching value of `operator` (src/config/site.ts). An unknown
+ * name throws rather than rendering literally, so a typo cannot ship as visible `{{...}}` text
+ * inside a legal page or a FAQ answer.
+ */
+export function substituteOperatorTokens(raw: string): string {
+  return raw.replace(/\{\{(\w+)\}\}/g, (_token, name: string) => {
+    if (!Object.hasOwn(operator, name)) {
+      throw new Error(`content: unknown token "{{${name}}}"`)
+    }
+    return operator[name as keyof typeof operator]
+  })
+}
+
+/**
  * Returns the raw markdown for `page` in `locale`, falling back to the default locale's file
  * when `locale` has none (R-S5). Throws only if the default locale is also missing the file,
  * which is an authoring bug (every page must exist at least in the default locale).
@@ -23,12 +37,12 @@ function keyFor(locale: string, page: ContentPageId): string {
 export function loadRawContent(locale: string, page: ContentPageId): string {
   const localized = rawFiles[keyFor(locale, page)]
   if (localized !== undefined) {
-    return localized
+    return substituteOperatorTokens(localized)
   }
 
   const fallback = rawFiles[keyFor(defaultLocale, page)]
   if (fallback === undefined) {
     throw new Error(`content: no "${page}" page found for locale "${locale}" or fallback "${defaultLocale}"`)
   }
-  return fallback
+  return substituteOperatorTokens(fallback)
 }

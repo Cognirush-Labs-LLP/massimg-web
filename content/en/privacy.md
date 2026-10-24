@@ -10,7 +10,7 @@
   cookie-free analytics service that tells us roughly how many people visited today — nothing
   about who you are or what you processed.
 - **Should you trust us?** You don't have to take our word for it — the
-  [source code of this application is public](https://github.com/Cognirush-Labs-LLP/massimg-web),
+  [source code of this application is public]({{sourceUrl}}),
   so anyone can check exactly what it does. We've also been building image-compression software
   under the Mass Image Compressor name for close to two decades — a reputation we keep having to
   earn, not one we get to just claim.
@@ -24,7 +24,7 @@ expected to.
 ## 1. Scope of this policy
 
 This Privacy Policy covers two things only: this website, and your email conversations with our
-support team at support@cognirush.com. If you choose to reach us or collaborate with us through
+support team at {{supportEmail}}. If you choose to reach us or collaborate with us through
 some other platform instead — for example, by opening an issue on GitHub — that platform's own
 privacy policy applies to that interaction, not this one.
 
@@ -52,7 +52,7 @@ sends nothing to either service.
 
 ## 4. Contacting our support team
 
-If you contact support@cognirush.com — for example, to report a bug — and you choose to attach
+If you contact {{supportEmail}} — for example, to report a bug — and you choose to attach
 one or more images to help us understand or reproduce the problem, we will use those images only
 for that purpose. We retain them for only as long as reasonably necessary to investigate and
 resolve the issue, and we will delete them sooner at your request: just email us and ask.
@@ -78,7 +78,7 @@ occasionally; the date at the top always reflects the latest revision.
 
 Questions about this policy, or about privacy generally, are welcome at:
 
-**Email:** support@cognirush.com
+**Email:** {{supportEmail}}
 
 **Address:** F-402, MJR Pearl, Opp Whitefield Metro, Kadugodi, Bengaluru, Karnataka, India
 

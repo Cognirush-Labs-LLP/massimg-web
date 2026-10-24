@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { extractFaqEntries } from './extractFaqEntries'
+import { operator } from '@/config/site'
 import { loadRawContent } from './content'
 
 describe('extractFaqEntries', () => {
@@ -59,5 +60,14 @@ describe('extractFaqEntries', () => {
       answer:
         'It shrinks the file size of your images — and can convert them to a different format, resize them, rotate them or crop them — without uploading anything anywhere.',
     })
+  })
+
+  it('carries the resolved support email, never a raw token, in the FAQ answers', () => {
+    const answers = extractFaqEntries(loadRawContent('en', 'faq'))
+      .map((entry) => entry.answer)
+      .join('\n')
+
+    expect(answers).toContain(operator.supportEmail)
+    expect(answers).not.toContain('{{')
   })
 })

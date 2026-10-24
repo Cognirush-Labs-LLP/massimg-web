@@ -22,6 +22,16 @@
 <!-- If you could not run something — no Mac, browsers not installed, flaky machine — say so here.
      That is expected and fine; it just tells a reviewer what still needs covering. -->
 
+## AI use and ownership
+
+<!-- Say whether AI wrote or changed any of this. Either way, can you explain and defend every
+     change if asked? A pull request you cannot talk through will not be merged. -->
+
+## What you checked by hand
+
+<!-- Automated tests do not cover everything, Share and Safari animation among them. List what
+     you ran in a real browser or on a real device, and what you could not. -->
+
 ## Anything a reviewer should look at closely
 
 <!-- Known gaps, judgement calls, assertions you changed and why. -->
