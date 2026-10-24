@@ -10,29 +10,39 @@
 The site is static files. There is no server process, no PHP and no database. `public/.htaccess`
 is copied into `dist/` by the build and carries every server rule (Technical Design §12).
 
-## 1. Build
+## 1. Build and pack
 
 ```sh
-VITE_SITE_BASE_URL=https://massimg.com pnpm build
-pnpm verify:ssg
+pnpm package:release
 ```
 
-`VITE_SITE_BASE_URL` has to be in the shell environment, not only in `.env`: the sitemap and
-`robots.txt` script reads `process.env` alone (BL-015). Without it the canonical tags, sitemap and
-`robots.txt` carry the `.invalid` placeholder. After the build, `grep -c massimg.com
-dist/sitemap.xml dist/robots.txt` must be non-zero.
+This builds with `VITE_SITE_BASE_URL` set to `https://massimg.com`, runs `verify:ssg`, refuses to
+continue if the placeholder address is still in any page or the sitemap does not list the real one,
+and writes `release/massimg.com-<date>-<time>.zip`. The zip holds the contents of `dist/` without
+`.vite/` (build bookkeeping the site never reads) and without `.DS_Store`. It includes
+`.htaccess`, which Finder hides but a zip keeps. It needs no `zip` program, so it works on Windows
+too.
+
+To build for another address, set it for that run: `VITE_SITE_BASE_URL=https://example.org pnpm
+package:release`. The default is the `DEFAULT_SITE_BASE_URL` constant at the top of
+`scripts/package-release.mjs`. The variable has to be in the shell environment, not only in
+`.env`: the sitemap and `robots.txt` script reads `process.env` alone (BL-015).
 
 ## 2. Upload
 
-Upload the **contents** of `dist/` into the site's `public_html/`, so `index.html` and `.htaccess`
-sit directly in it. Skip `dist/.vite/` (build bookkeeping, never needed).
+In hPanel, Files, File Manager, open `public_html`:
 
-- **`.htaccess` is a hidden file.** Turn on "show hidden files" in the FTP client or it is skipped
-  without a message, and the site then serves with none of the rules below.
-- Delete Hostinger's placeholder `public_html/default.php`, if present.
-- Replace the old release as a whole: hashed filenames mean old `assets/` files are unreferenced
-  after an upload, and the new `index.html` must arrive together with the new `assets/`. Upload
-  `assets/` first and `*.html`, `sw.js` and `registerSW.js` last.
+1. Delete Hostinger's placeholder `default.php`, and the previous release's files if you are
+   replacing one.
+2. Upload the zip, right-click it, choose **Extract** into `public_html` itself (not a new
+   subfolder), then delete the zip.
+3. Check that `index.html` and `.htaccess` sit directly in `public_html`. If `.htaccess` is not
+   listed, enable "show hidden files" in File Manager's settings. Without it the site serves with
+   none of the rules below.
+
+Uploading the files by FTP instead also works: turn on hidden files in the client first (FileZilla:
+Server, Force showing hidden files), and upload `assets/` before the `.html` files, `sw.js` and
+`registerSW.js`, so a visitor never gets a page that points at assets not yet there.
 
 ## 3. Hostinger and Cloudflare settings
 

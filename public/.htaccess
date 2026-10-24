@@ -12,6 +12,10 @@ RewriteRule (^|/)\.(?!well-known) - [F,L]
 
 Options -Indexes -MultiViews
 
+# Hostinger ships public_html with a default.php placeholder that this site never uses. Naming the
+# index file keeps the home page on index.html whatever order the host lists index files in.
+DirectoryIndex index.html
+
 # --- Routing --------------------------------------------------------------------------------
 # vite-ssg writes /faq as faq.html. Serve it at the extensionless URL the sitemap and canonical
 # tags use, and send the .html spelling there with a redirect so one page has one address.

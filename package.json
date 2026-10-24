@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "verify:ssg": "node scripts/verify-ssg-html.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
+    "package:release": "node scripts/package-release.mjs",
     "type-check": "vue-tsc -b --force",
     "lint": "eslint .",
     "lint:css": "stylelint \"src/**/*.{css,vue}\"",
