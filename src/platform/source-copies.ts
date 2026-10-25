@@ -1,3 +1,9 @@
+import {
+  temporarySessionId as sessionId,
+  holdTemporarySessionLease,
+  cleanupIfAbandoned,
+} from './temporary-session'
+
 const DATABASE_NAME = 'icompress-sources'
 const STORE_NAME = 'sources'
 
@@ -12,42 +18,8 @@ interface StoredSource {
 }
 
 let database: Promise<IDBDatabase> | undefined
-let session: string | undefined
-let lease: Promise<void> | undefined
+let exitCleanupInstalled = false
 let storeBlobs = true
-
-function sessionId(): string {
-  return (session ??= crypto.randomUUID())
-}
-
-function lockName(owner: string): string {
-  return `${DATABASE_NAME}:${owner}`
-}
-
-function holdSessionLease(): Promise<void> {
-  return (lease ??= new Promise<void>((resolve, reject) => {
-    if (!navigator.locks) {
-      reject(new Error('Temporary source storage requires Web Locks'))
-      return
-    }
-
-    const owner = sessionId()
-    window.addEventListener('pagehide', (event) => {
-      if (!event.persisted && database) {
-        void database.then((db) => deleteSession(db, owner)).catch(() => {})
-      }
-    })
-
-    // A live tab holds its lease until the browser destroys it. Another tab can then distinguish
-    // abandoned copies from sources that are still in use, including across a crash or reload.
-    void navigator.locks
-      .request(lockName(owner), async () => {
-        resolve()
-        await new Promise<void>(() => {})
-      })
-      .catch(reject)
-  }))
-}
 
 function openDatabase(): Promise<IDBDatabase> {
   if (database) return database
@@ -83,7 +55,16 @@ export async function writeSourceCopy(
   source: File,
   bytes: Uint8Array<ArrayBuffer>,
 ): Promise<File> {
-  await holdSessionLease()
+  await holdTemporarySessionLease()
+  if (!exitCleanupInstalled) {
+    exitCleanupInstalled = true
+    const owner = sessionId()
+    window.addEventListener('pagehide', (event) => {
+      if (!event.persisted && database) {
+        void database.then((db) => deleteSession(db, owner)).catch(() => {})
+      }
+    })
+  }
   const db = await openDatabase()
   const owner = sessionId()
   const metadata = {
@@ -153,7 +134,13 @@ export async function deleteSourceCopies(ids: readonly string[]): Promise<void> 
   const transaction = db.transaction(STORE_NAME, 'readwrite')
   const finished = transactionDone(transaction)
   const store = transaction.objectStore(STORE_NAME)
-  for (const id of ids) store.delete([sessionId(), id])
+  try {
+    for (const id of ids) store.delete([sessionId(), id])
+  } catch (error) {
+    transaction.abort()
+    await finished.catch(() => {})
+    throw error
+  }
   await finished
 }
 
@@ -191,8 +178,6 @@ export async function cleanupAbandonedSourceCopies(): Promise<void> {
   await finished
 
   for (const owner of owners) {
-    await navigator.locks.request(lockName(owner), { ifAvailable: true }, async (lock) => {
-      if (lock) await deleteSession(db, owner)
-    })
+    await cleanupIfAbandoned(owner, () => deleteSession(db, owner))
   }
 }

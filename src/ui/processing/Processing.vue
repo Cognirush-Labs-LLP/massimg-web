@@ -9,7 +9,7 @@
 //
 // Single column at every width (ui-design.md §13, R-R5) — unlike Gallery/Preview, Processing never
 // attempts a two-column layout, so there is no breakpoint split here at all.
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { describeSizeComparison, formatUiSize } from '@/domain/sizes'
 import type { ImageId } from '@/domain/types'
@@ -19,6 +19,8 @@ import { shareFinishedRun } from '@/pipeline/run-share'
 import { useBatchStore } from '@/stores/batch'
 import { useRunStore } from '@/stores/run'
 import { useUiStore } from '@/stores/ui'
+import HelpDialog from '@/app/shell/HelpDialog.vue'
+import { prepareGalleryCleanup } from '@/ui/gallery/ingest'
 import ProcessingDonut from './ProcessingDonut.vue'
 import { describeFailureReason, describeSkipReason } from './processingText'
 import { useProcessingRun } from './useProcessingRun'
@@ -34,6 +36,42 @@ const { quotaRejection, shareAvailable } = processingRun
 
 const announcement = ref('')
 const lastAnnouncedQuartile = ref(-1)
+const clearing = ref(false)
+const cleanupAttempted = ref(false)
+const cleanupFailed = ref(false)
+const helpOpen = ref(false)
+const helpTrigger = ref<HTMLElement | null>(null)
+let active = true
+onBeforeUnmount(() => {
+  active = false
+})
+
+function openCleanupHelp(event: Event): void {
+  helpTrigger.value = event.currentTarget as HTMLElement
+  helpOpen.value = true
+}
+
+async function onClearTemporaryData(): Promise<void> {
+  if (clearing.value || delivery.value === 'pending') return
+  clearing.value = true
+  cleanupAttempted.value = true
+  cleanupFailed.value = false
+  const startedAt = runStore.runStartedAt
+  const clearGallery = prepareGalleryCleanup()
+  try {
+    await processingRun.cleanup()
+    await clearGallery()
+    if (runStore.runStartedAt === startedAt) runStore.resetRun()
+    if (active) uiStore.finishProcessing()
+  } catch {
+    if (active) {
+      cleanupFailed.value = true
+      announcement.value = t('processing.cleanup.failed')
+    }
+  } finally {
+    clearing.value = false
+  }
+}
 
 function nameFor(imageId: ImageId): string {
   return batchStore.images.find((image) => image.id === imageId)?.name ?? imageId
@@ -112,6 +150,7 @@ async function onCancel(): Promise<void> {
 // from the return value, so a failure raised by the back guard's "Download and leave" surfaces
 // through the same inline message as one raised here.
 async function onDownload(): Promise<void> {
+  if (clearing.value || cleanupAttempted.value) return
   await downloadFinishedRun()
 }
 
@@ -119,6 +158,7 @@ async function onDownload(): Promise<void> {
 // and T39-A measured a real harness losing its transient activation to one slow await.
 // R-X50: a cancelled share is silent — no message, no state change, both actions still offered.
 async function onShare(): Promise<void> {
+  if (clearing.value) return
   await shareFinishedRun()
 }
 
@@ -295,6 +335,7 @@ onMounted(() => {
             class="action"
             :class="{ 'action--primary': delivery !== 'pending' }"
             data-testid="processing-back"
+            :disabled="clearing"
             @click="uiStore.finishProcessing()"
           >
             {{ t('processing.complete.back') }}
@@ -323,6 +364,7 @@ onMounted(() => {
                 class="action"
                 :class="{ 'action--primary': delivery === 'pending' }"
                 data-testid="processing-download"
+                :disabled="clearing || cleanupAttempted"
                 @click="onDownload"
               >
                 {{
@@ -346,7 +388,45 @@ onMounted(() => {
           </template>
         </template>
       </div>
+      <div
+        v-if="delivery !== 'pending' && haltReason === null && progress.succeeded > 0"
+        class="cleanup"
+        :aria-busy="clearing"
+        data-testid="processing-cleanup"
+      >
+        <p class="cleanup-description">{{ t('processing.cleanup.description') }}</p>
+        <div class="cleanup-row">
+          <button
+            type="button"
+            class="action"
+            data-testid="processing-clear-temporary"
+            :disabled="clearing"
+            @click="onClearTemporaryData"
+          >
+            {{ t(clearing ? 'processing.cleanup.clearing' : 'processing.cleanup.label') }}
+          </button>
+          <button
+            type="button"
+            class="cleanup-help-button"
+            :aria-label="t('processing.cleanup.helpLabel')"
+            data-testid="processing-cleanup-help"
+            @click="openCleanupHelp"
+          >
+            ?
+          </button>
+        </div>
+        <p v-if="cleanupFailed" class="cleanup-description" data-testid="processing-cleanup-error">
+          {{ t('processing.cleanup.failed') }}
+        </p>
+      </div>
     </template>
+    <HelpDialog
+      v-model="helpOpen"
+      :return-focus-to="helpTrigger"
+      :title="t('processing.cleanup.helpTitle')"
+      :body="t('processing.cleanup.helpBody')"
+      :note="t('processing.cleanup.helpNote')"
+    />
   </div>
 </template>
 
@@ -507,5 +587,41 @@ onMounted(() => {
   background: var(--color-tint);
   border-color: var(--color-tint);
   font-weight: var(--font-weight-wordmark);
+}
+
+.cleanup {
+  inline-size: 100%;
+}
+
+.cleanup-description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.cleanup-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cleanup-row > .action {
+  flex: 0 1 auto;
+  white-space: normal;
+}
+
+.cleanup-help-button {
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--color-border-control);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 </style>

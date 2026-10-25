@@ -554,6 +554,20 @@ A WASM encode cannot be interrupted once it has started. Cancellation therefore 
 - R-X50 Download and Share are alternative delivery actions. Resolution of `navigator.share()` means the browser has handed the payload to the chosen target or operating system and counts as successful delivery; the app cannot know whether the target later used it. User cancellation is not an error. Cancellation or any handoff failure retains the results and both available actions; a non-cancellation failure is stated inline and Share can be retried.
 - R-X54 After the first successful delivery, the completed Processing view remains open with its summary and skipped/failure lists. Download and Share are replaced by a checked, non-interactive completion state that identifies the outcome as **Download started** or **Shared**; **Back to images** becomes the remaining primary action. The app returns to Gallery only when the user selects that action or uses browser Back, and does not show the undelivered-results confirmation because delivery is complete.
 
+- R-X55 After Download started or Shared, offer **Clear temporary data and start again** in its own
+  secondary-button row below completion controls, matching Download again, with the optional-storage
+  description and the existing question-mark informational help pattern. The user must wait for saving/sharing to finish; the app
+  cannot detect completion of external reads. No additional confirmation appears. Clearing removes
+  this batch's temporary sources and results, thumbnails, and batch/run metadata, then opens the empty
+  Gallery with compression settings unchanged. Disable repeated presses and delivery while clearing.
+  On failure stay on completion, state that data may remain locally and manual cleanup may be needed,
+  allow retry and Back to images, and disable Download again because outputs may be partly deleted.
+  Cleanup is best effort and is not a promise of immediate, complete, or secure deletion.
+- R-X56 Source and output storage belong to page sessions protected by one Web Lock ownership
+  protocol. Clear and lifecycle cleanup affect only their owner's artifacts. Startup cleanup deletes
+  only owners whose locks can be acquired, without age or inactivity heuristics. Preserve unowned
+  legacy output storage because an older open tab may still use it.
+
 ### 6.6 The report
 
 `image_compression_report.txt` is written for every multi-image run, whether or not anything went wrong. With folder input the user otherwise has no way to confirm that every file was found.
@@ -588,7 +602,7 @@ The archive is streamed to browser-owned storage as the run proceeds, rather tha
 - R-X39 Compression therefore begins when the user presses the primary action and does not wait for the Download press. Download moves the finished archive out of storage.
 - R-X40 Before a run, the app checks available quota against the predicted stored artifacts. If the ordinary Download artifact will not fit, it rejects the batch up front and names both figures. If Download will fit but the additional Share copies will not, the run proceeds as Download-only under R-X52.
 - R-X41 Where origin-private storage is unavailable, most notably in private browsing windows, the app falls back to in-memory assembly with a reduced batch cap, and says so when the cap is what blocks a batch.
-- R-X42 The stored archive and every individual output copy are deleted after cancellation, after the user leaves the Processing view, after a storage failure, and on application start, so abandoned runs do not accumulate. They are not deleted at the moment of a successful Download or Share: the browser, or the app the user shares to, can read the files after the handoff is reported as done.
+- R-X42 The stored archive and every individual output copy are deleted after cancellation, after the user leaves the Processing view, after a storage failure, on an explicit R-X55 cleanup, and for abandoned sessions on application start (R-X56). Cleanup is attempted; browser errors or interruption can leave artifacts. They are not deleted at the moment of a successful Download or Share: the browser, or the app the user shares to, can read the files after the handoff is reported as done.
 - R-X51 For a run eligible under R-X47, each successful output is both appended to the normal ZIP path and written as a separate temporary file as it arrives. An exactly one-image run writes only its direct artifact because it can never need a ZIP. The extra write is a tee of the one encoded result, not a second encode, and it does not retain the batch in memory. A single successful output is one shared direct artifact rather than two copies of the same image.
 - R-X52 The quota preflight for a share-eligible run includes the archive, every predicted individual output copy and filesystem overhead. The private-browsing fallback applies its measured in-memory cap to the combined artifacts. When the archive fits but the combined artifacts do not, the run becomes Download-only before processing; Share storage limits never weaken the ordinary Download path.
 

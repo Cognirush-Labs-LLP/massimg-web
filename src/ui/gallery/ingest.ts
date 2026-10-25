@@ -31,6 +31,7 @@ import {
   deleteSourceFile,
   getSourceFile,
   preserveSourceFile,
+  prepareSourceFileCleanup,
 } from '@/platform/source-files'
 import { useBatchStore } from '@/stores/batch'
 import { useUiStore } from '@/stores/ui'
@@ -381,6 +382,18 @@ export function clearGallery(): void {
   // is gone, so unlike removeIngestedImage below there is no cache worth keeping.
   getThumbnailService().clear()
   useBatchStore().clearAll()
+}
+
+export function prepareGalleryCleanup(): () => Promise<void> {
+  ingestGeneration += 1
+  const batch = useBatchStore()
+  const ids = batch.images.map(({ id }) => id)
+  const clearSources = prepareSourceFileCleanup()
+  return async () => {
+    await clearSources()
+    for (const id of ids) removeIngestedImage(id)
+    if (batch.images.length === 0) batch.dismissRejections()
+  }
 }
 
 /**

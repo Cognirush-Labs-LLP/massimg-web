@@ -1042,11 +1042,33 @@ even on desktop — Processing does not attempt a two-column layout.
   containing the images plus `image_compression_report.txt` **inside** the
   archive, not offered as a separate download alongside it.
 
+### Optional temporary-data cleanup (R-X55)
+
+After Download started or Shared, place a separate row below the completion controls. Its muted
+intro reads: "Finished saving or sharing? You can optionally free temporary browser storage."
+Below it, a secondary outlined button matching Download again reads
+**Clear temporary data and start again**, with the Dimension help's circular **?** beside it. Keep a visible focus indicator and at least
+44px action height; allow text wrapping on narrow screens. Reuse HelpDialog's focus trap,
+Escape/scrim/Close dismissal and focus restoration, without adding a confirmation dialog.
+
+- Help title: "Clear temporary data"
+- Body: "Wait until saving or sharing has finished. This clears this batch’s temporary images and
+  results from browser storage. It does not delete your original photos or files already saved or
+  received by another app."
+- Quieter note: "Cleanup is best effort; complete or secure deletion is not guaranteed."
+
+During cleanup show **Clearing temporary data…** and disable repeat presses, Back to images, and
+delivery. On success open the empty Gallery with compression settings unchanged. On failure keep the
+completion summary and selected sources, restore Back and the cleanup button for retry, disable
+Download again, and show muted, politely announced text: "Some temporary data could not be cleared.
+It remains on this device and may use storage. You can try again or clear this site’s data in your
+browser settings."
+
 ### Storage lifecycle (implementation obligation, not just a visual rule)
 
-The staged archive in OPFS is **deleted** after a successful download, when the
-user leaves the Processing view by any path, and again on application start
-(R-X42) — this is a cleanup obligation the Processing component/store must
+Cleanup of the staged archive and individual outputs is **attempted** when the
+user leaves Processing, explicitly clears temporary data, or startup discovers an abandoned owner
+(R-X42, R-X55/R-X56) — this is a cleanup obligation the Processing component/store must
 implement on unmount and on the "Back to images" / leave-confirmation actions
 (§14), not something left to eventually get garbage collected.
 

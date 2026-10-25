@@ -32,6 +32,12 @@ vi.mock('./processing-pool', () => ({ getProcessingPool: () => ({ run, cancel, r
 const sourceFiles = new Map<ImageId, File>()
 vi.mock('@/platform/source-files', () => ({
   getSourceFile: (id: ImageId) => sourceFiles.get(id),
+  deleteSourceFile: (id: ImageId) => sourceFiles.delete(id),
+  prepareSourceFileCleanup:
+    (ids: ImageId[] = [...sourceFiles.keys()]) =>
+    async () => {
+      for (const id of ids) sourceFiles.delete(id)
+    },
 }))
 
 // Every other test in this file relies on the *real* platform/opfs, platform/share and
@@ -44,6 +50,7 @@ vi.mock('@/platform/opfs', async (importOriginal) => {
     ...actual,
     checkCombinedQuota: vi.fn(actual.checkCombinedQuota),
     writeOutputCopy: vi.fn(actual.writeOutputCopy),
+    deleteRunArtifacts: vi.fn(actual.deleteRunArtifacts),
   }
 })
 
@@ -72,7 +79,7 @@ vi.mock('@/pipeline/run-share', () => ({
 }))
 
 const Processing = (await import('./Processing.vue')).default
-const { checkCombinedQuota, writeOutputCopy } = await import('@/platform/opfs')
+const { checkCombinedQuota, writeOutputCopy, deleteRunArtifacts } = await import('@/platform/opfs')
 const { probeFileShareForRun, canShareExactFiles } = await import('@/platform/share')
 const { downloadFinishedRun } = await import('@/pipeline/run-download')
 const { shareFinishedRun } = await import('@/pipeline/run-share')
@@ -124,6 +131,7 @@ enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  vi.mocked(deleteRunArtifacts).mockClear()
   runs = []
   cancel.mockClear()
   resume.mockClear()
@@ -787,5 +795,130 @@ describe('Processing view (T38)', () => {
         'browser blocked the download',
       )
     })
+  })
+})
+
+describe('optional temporary data cleanup', () => {
+  async function delivered(outcome: 'downloaded' | 'shared' = 'downloaded') {
+    seed(['a', 'b'])
+    useUiStore().enterProcessing()
+    const wrapper = await mountProcessing()
+    await completeAll()
+    const store = useRunStore()
+    if (outcome === 'shared') store.markShared()
+    else store.markDownloaded()
+    await flushPromises()
+    return wrapper
+  }
+
+  it('is absent before delivery and after cancelled/failed delivery', async () => {
+    seed(['a'])
+    const wrapper = await mountProcessing()
+    expect(wrapper.find('[data-testid="processing-cleanup"]').exists()).toBe(false)
+    await completeAll()
+    expect(wrapper.find('[data-testid="processing-cleanup"]').exists()).toBe(false)
+    useRunStore().markDeliveryFailed('share')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="processing-cleanup"]').exists()).toBe(false)
+  })
+
+  it.each(['downloaded', 'shared'] as const)(
+    'clears sources and results after %s while preserving settings',
+    async (outcome) => {
+      const { useSettingsStore } = await import('@/stores/settings')
+      const settings = useSettingsStore()
+      settings.quality = { kind: 'quality', value: 80 }
+      const wrapper = await delivered(outcome)
+      expect(wrapper.get('[data-testid="processing-clear-temporary"]').classes()).toEqual([
+        'action',
+      ])
+      expect(wrapper.get('[data-testid="processing-cleanup"]').element.parentElement).toBe(
+        wrapper.element,
+      )
+      await wrapper.get('[data-testid="processing-clear-temporary"]').trigger('click')
+      await flushPromises()
+      expect(useUiStore().stageMode).toBe('gallery')
+      expect(useBatchStore().images).toEqual([])
+      expect(useRunStore().successes).toEqual([])
+      expect(sourceFiles.size).toBe(0)
+      expect(settings.quality).toEqual({ kind: 'quality', value: 80 })
+      expect(deleteRunArtifacts).toHaveBeenCalled()
+    },
+  )
+
+  it('waits, blocks repeat presses and delivery, and reports a nonurgent retryable failure', async () => {
+    const wrapper = await delivered()
+    let fail!: (error: Error) => void
+    vi.mocked(deleteRunArtifacts).mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          fail = reject
+        }),
+    )
+    const button = wrapper.get('[data-testid="processing-clear-temporary"]')
+    await button.trigger('click')
+    await flushPromises()
+    expect(button.attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="processing-back"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="processing-download"]').attributes('disabled')).toBeDefined()
+    const count = vi.mocked(deleteRunArtifacts).mock.calls.length
+    await button.trigger('click')
+    expect(vi.mocked(deleteRunArtifacts).mock.calls.length).toBe(count)
+    fail(new Error('storage denied'))
+    await flushPromises()
+    expect(useUiStore().stageMode).toBe('processing')
+    expect(useBatchStore().images).toHaveLength(2)
+    expect(sourceFiles.size).toBe(2)
+    expect(wrapper.get('[data-testid="processing-cleanup-error"]').text()).toContain(
+      'browser settings',
+    )
+    expect(wrapper.get('[data-testid="processing-announcement"]').text()).toContain(
+      'Some temporary data',
+    )
+    expect(wrapper.get('[data-testid="processing-download"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="processing-back"]').attributes('disabled')).toBeUndefined()
+    await button.trigger('click')
+    await flushPromises()
+    expect(useBatchStore().images).toEqual([])
+    expect(useUiStore().stageMode).toBe('gallery')
+  })
+
+  it('does not clear a new batch or change its screen when old cleanup finishes late', async () => {
+    const wrapper = await delivered()
+    let finish!: () => void
+    vi.mocked(deleteRunArtifacts).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    await wrapper.get('[data-testid="processing-clear-temporary"]').trigger('click')
+    await flushPromises()
+    wrapper.unmount()
+    useUiStore().finishProcessing()
+    useBatchStore().clearAll()
+    seed(['new'])
+    useRunStore().resetRun()
+    useRunStore().startRun(1)
+    const startedAt = useRunStore().runStartedAt
+    finish()
+    await flushPromises()
+    expect(useBatchStore().images.map(({ id }) => id)).toEqual(['new'])
+    expect(sourceFiles.has('new' as ImageId)).toBe(true)
+    expect(useUiStore().stageMode).toBe('preview')
+    expect(useRunStore().runStartedAt).toBe(startedAt)
+    expect(useRunStore().progress.pending).toBe(1)
+  })
+
+  it('reuses the informational help dialog without clearing anything', async () => {
+    const wrapper = await delivered()
+    await wrapper.get('[data-testid="processing-cleanup-help"]').trigger('click')
+    expect(wrapper.get('[data-testid="help-dialog"]').text()).toContain(
+      'Wait until saving or sharing has finished',
+    )
+    expect(wrapper.get('[data-testid="help-dialog"]').text()).toContain('not guaranteed')
+    await wrapper.get('[data-testid="help-dialog-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="help-dialog"]').exists()).toBe(false)
+    expect(useBatchStore().images).toHaveLength(2)
   })
 })

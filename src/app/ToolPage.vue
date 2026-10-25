@@ -9,7 +9,7 @@ import { computed, onMounted, ref, shallowRef, type Component } from 'vue'
 import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
-import { deleteRunArtifacts } from '@/platform/opfs'
+import { cleanupAbandonedRunArtifacts } from '@/platform/opfs'
 import { cleanupAbandonedSourceCopies } from '@/platform/source-copies'
 import { getPreviewPool } from '@/ui/preview/preview-pool'
 import Gallery from '@/ui/gallery/Gallery.vue'
@@ -155,7 +155,9 @@ onMounted(() => {
   // R-X42: clears anything orphaned by a crashed or closed tab from a previous session. Fire-and-
   // forget — nothing in this app session depends on a stale prior run's artifacts, so there is
   // nothing to wait for before the rest of the page continues.
-  void deleteRunArtifacts()
+  void cleanupAbandonedRunArtifacts().catch((error: unknown) => {
+    console.error('Could not clean abandoned output copies', error)
+  })
   void cleanupAbandonedSourceCopies().catch((error: unknown) => {
     console.error('Could not clean abandoned source copies', error)
   })

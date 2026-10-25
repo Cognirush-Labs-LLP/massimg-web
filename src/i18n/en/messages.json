@@ -249,5 +249,13 @@
   "notFound.body": "There is nothing at this address. The link may be mistyped or out of date.",
   "notFound.homeLink": "Back to the home page",
   "site.seo.notFound.title": "Page not found — Mass Image Compressor",
-  "site.seo.notFound.description": "This page does not exist. Go back to Mass Image Compressor to compress, resize and convert your images."
+  "site.seo.notFound.description": "This page does not exist. Go back to Mass Image Compressor to compress, resize and convert your images.",
+  "processing.cleanup.description": "Finished saving or sharing? You can optionally free temporary browser storage.",
+  "processing.cleanup.label": "Clear temporary data and start again",
+  "processing.cleanup.clearing": "Clearing temporary data…",
+  "processing.cleanup.helpLabel": "About clearing temporary data",
+  "processing.cleanup.helpTitle": "Clear temporary data",
+  "processing.cleanup.helpBody": "Wait until saving or sharing has finished. This clears this batch’s temporary images and results from browser storage. It does not delete your original photos or files already saved or received by another app.",
+  "processing.cleanup.helpNote": "Cleanup is best effort; complete or secure deletion is not guaranteed.",
+  "processing.cleanup.failed": "Some temporary data could not be cleared. It remains on this device and may use storage. You can try again or clear this site’s data in your browser settings."
 }

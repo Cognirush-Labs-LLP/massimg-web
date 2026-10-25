@@ -10,6 +10,7 @@ import { deleteSourceCopies, readSourceCopy, writeSourceCopy } from './source-co
 const files = new Map<ImageId, File>()
 const copies = new Map<ImageId, string>()
 const pending = new Map<ImageId, string>()
+const writes = new Map<string, Promise<File>>()
 
 function releaseCopies(ids: readonly string[]): void {
   void deleteSourceCopies(ids).catch((error: unknown) => {
@@ -29,8 +30,10 @@ export async function preserveSourceFile(
 ): Promise<File | undefined> {
   const copyId = crypto.randomUUID()
   pending.set(id, copyId)
+  const writing = writeSourceCopy(copyId, source, bytes)
+  writes.set(copyId, writing)
   try {
-    const copy = await writeSourceCopy(copyId, source, bytes)
+    const copy = await writing
     if (pending.get(id) !== copyId) {
       await deleteSourceCopies([copyId])
       return undefined
@@ -44,6 +47,7 @@ export async function preserveSourceFile(
     await deleteSourceCopies([copyId]).catch(() => {})
     throw error
   } finally {
+    writes.delete(copyId)
     if (pending.get(id) === copyId) pending.delete(id)
   }
 }
@@ -76,4 +80,32 @@ export function clearSourceFiles(): void {
   releaseCopies([...copies.values(), ...pending.values()])
   copies.clear()
   pending.clear()
+}
+
+export function prepareSourceFileCleanup(
+  ids: readonly ImageId[] = [...new Set([...files.keys(), ...copies.keys(), ...pending.keys()])],
+): () => Promise<void> {
+  const captured = ids.map((id) => ({
+    id,
+    copyId: copies.get(id),
+    pendingId: pending.get(id),
+    file: files.get(id),
+  }))
+  const copyIds = captured.flatMap(({ copyId, pendingId }) =>
+    [copyId, pendingId].filter((id): id is string => id !== undefined),
+  )
+  const draining = copyIds.flatMap((id) => (writes.has(id) ? [writes.get(id)!] : []))
+  return async () => {
+    // A selection can still be copying its next chunk when Processing starts. Include those
+    // unpublished sources and let their writes settle before issuing the deletion transaction.
+    await Promise.allSettled(draining)
+    // One transaction removes the captured rows atomically. Keep the live locators on failure
+    // and never remove a replacement installed while storage deletion was awaiting completion.
+    await deleteSourceCopies(copyIds)
+    for (const { id, copyId, pendingId, file } of captured) {
+      const current = copies.get(id)
+      if (current && (current === copyId || current === pendingId)) copies.delete(id)
+      if (file && files.get(id) === file) files.delete(id)
+    }
+  }
 }

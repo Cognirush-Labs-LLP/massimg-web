@@ -23,7 +23,7 @@
   read it, run it and redistribute it under its license, with a couple of conditions explained
   below.
 
-*Last updated: 18 October 2026*
+*Last updated: 25 October 2026*
 
 ## 1. Scope and acceptance of these terms
 
@@ -146,6 +146,17 @@ preserve every original byte. Once that information is gone, it generally cannot
 The App does not delete or modify your original files on its own, but **you are solely responsible
 for keeping a safe copy of anything you can't afford to lose**, independent of the App, before you
 process it.
+
+The App temporarily stores selected-image copies and processing results in your browser on your
+device. Its cleanup actions and automatic abandoned-session cleanup are best effort. Browser
+behavior, errors, crashes, or interruptions may leave temporary data behind; we do not guarantee
+immediate, complete, or secure deletion. You can clear this site's data using your browser settings,
+but the App does not provide a secure-erasure service. See our [Privacy Policy](/privacy) for the
+storage and cleanup behavior.
+
+Wait until downloading or sharing has finished before clearing temporary data. The App cannot
+confirm that a browser or receiving app has finished reading the files. Cleanup does not delete your
+original files or copies already saved or received outside the App.
 
 ## 9. Changes to the software and these terms
 

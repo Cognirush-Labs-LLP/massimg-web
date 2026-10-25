@@ -1,17 +1,13 @@
 import { getCapabilities } from './capability'
 
-// Origin-private storage for one run's output artifacts (Technical Design §9.1-9.2, Functional
-// Design R-X38 to R-X42, R-X51, R-X52). T19 built this as a single named entry because OPFS had
-// exactly one consumer then, the ZIP archive; T40 replaces that with a run-scoped artifact set —
-// zero or one archive, zero to `maximumShareFiles` individual output copies, and the metadata
-// needed to reconstruct their public names and MIME types — because a run now also needs to retain
-// the R-X16 direct-download candidate and, for a Share-eligible run, every individual successful
-// output alongside the archive. Only one run is ever active at a time, so this module holds exactly
-// one such set, not a collection keyed by run id.
-//
-// Storage is one directory (`RUN_DIR`) containing an optional `archive` file and an `outputs/`
-// subdirectory of index-named files, so the whole set can be deleted in one idempotent call rather
-// than tracked and removed member by member.
+import {
+  temporarySessionId,
+  holdTemporarySessionLease,
+  cleanupIfAbandoned,
+} from './temporary-session'
+
+// Each page owns one output directory, protected by the same lease as its source copies.
+// The separate namespace prevents older tabs from deleting these outputs through icompress-run.
 
 export interface QuotaCheck {
   ok: boolean
@@ -32,13 +28,10 @@ export interface OutputCopyMeta {
   mimeType: string
 }
 
-const RUN_DIR = 'icompress-run'
+const SESSIONS_DIR = 'icompress-output-sessions'
 const ARCHIVE_NAME = 'archive'
 const OUTPUTS_DIR = 'outputs'
 
-// Share/Download only ever act within the same page session that produced the run, so this map
-// need not survive a reload — cleanup-on-startup below removes the whole OPFS directory without
-// needing it, regardless of whether this module has ever been loaded in the current session.
 const outputMeta = new Map<number, OutputCopyMeta>()
 
 interface FallbackState {
@@ -51,8 +44,10 @@ interface FallbackState {
 let fallback: FallbackState = { archive: null, outputs: new Map() }
 
 async function getRunDirectory(create: boolean): Promise<FileSystemDirectoryHandle> {
+  if (create) await holdTemporarySessionLease()
   const root = await navigator.storage.getDirectory()
-  return root.getDirectoryHandle(RUN_DIR, { create })
+  const sessions = await root.getDirectoryHandle(SESSIONS_DIR, { create })
+  return sessions.getDirectoryHandle(temporarySessionId(), { create })
 }
 
 async function getOutputsDirectory(create: boolean): Promise<FileSystemDirectoryHandle> {
@@ -130,8 +125,8 @@ export async function writeOutputCopy(
 export async function deleteOutputCopy(index: number): Promise<void> {
   const { opfs } = await getCapabilities()
   if (opfs) {
-    const outputsDir = await getOutputsDirectory(false).catch(() => null)
-    await outputsDir?.removeEntry(String(index)).catch(() => {})
+    const outputsDir = await getOutputsDirectory(false).catch(ignoreMissing)
+    await outputsDir?.removeEntry(String(index)).catch(ignoreMissing)
     outputMeta.delete(index)
     return
   }
@@ -188,20 +183,34 @@ export async function readOutputCopies(): Promise<File[]> {
     )
 }
 
-/**
- * The one cleanup operation (R-X42): removes the archive, every individual copy and their
- * metadata, idempotently. Called after the first successful Download or Share, after
- * cancellation, after a storage failure, after leaving Processing, and once on application start.
- */
+function ignoreMissing(error: unknown): undefined {
+  if (!(error instanceof DOMException) || error.name !== 'NotFoundError') throw error
+}
+
+/** Removes only this page's outputs. Storage errors propagate so explicit cleanup can report them. */
 export async function deleteRunArtifacts(): Promise<void> {
   const { opfs } = await getCapabilities()
   if (opfs) {
     const root = await navigator.storage.getDirectory()
-    await root.removeEntry(RUN_DIR, { recursive: true }).catch(() => {})
+    const sessions = await root.getDirectoryHandle(SESSIONS_DIR).catch(ignoreMissing)
+    await sessions?.removeEntry(temporarySessionId(), { recursive: true }).catch(ignoreMissing)
   }
 
   outputMeta.clear()
   fallback = { archive: null, outputs: new Map() }
+}
+
+export async function cleanupAbandonedRunArtifacts(): Promise<void> {
+  if (!navigator.locks || !(await getCapabilities()).opfs) return
+  const root = await navigator.storage.getDirectory()
+  const sessions = await root.getDirectoryHandle(SESSIONS_DIR).catch(ignoreMissing)
+  if (!sessions) return
+  for await (const [owner, handle] of sessions.entries()) {
+    if (handle.kind !== 'directory') continue
+    await cleanupIfAbandoned(owner, () =>
+      sessions.removeEntry(owner, { recursive: true }).catch(ignoreMissing),
+    )
+  }
 }
 
 export async function estimateQuota(): Promise<{ usage: number; quota: number }> {

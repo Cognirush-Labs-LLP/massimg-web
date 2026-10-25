@@ -478,6 +478,41 @@ describe('useProcessingRun cleanup on leaving Processing (R-X42)', () => {
   })
 })
 
+describe('awaited explicit output cleanup', () => {
+  it('drains active writes before deletion and prevents a late outcome from recreating outputs', async () => {
+    seed(['a', 'b'])
+    let finish!: () => void
+    const actualWrite = vi.mocked(writeOutputCopy).getMockImplementation()!
+    vi.mocked(writeOutputCopy).mockImplementationOnce(async (...args) => {
+      await new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      await actualWrite(...args)
+    })
+    const { run: api, dispose } = setupRun()
+    api.start()
+    await flush()
+    runs[0]?.settle(completedOutput('a'))
+    await flush()
+    let cleaned = false
+    const cleanup = api.cleanup().then(() => {
+      cleaned = true
+    })
+    await flush()
+    expect(api.cleaning.value).toBe(true)
+    expect(cleaned).toBe(false)
+    finish()
+    await cleanup
+    expect(api.cleaning.value).toBe(false)
+    runs[1]?.settle(completedOutput('b'))
+    await flush()
+    expect(await readOutputCopies()).toEqual([])
+    await expect(readArchive()).rejects.toThrow()
+    dispose()
+    await flush()
+  })
+})
+
 describe('useProcessingRun Share availability (T42, R-X47/R-X48/R-X49/R-X53)', () => {
   // platform/opfs's in-memory fallback is module-scoped and survives setActivePinia (see T41's
   // handover note) — these tests read the copies back for real, so each needs a clean slate.

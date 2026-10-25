@@ -917,6 +917,22 @@ remains visible; Back to images and browser Back then reach Gallery without an u
 confirmation; the other existing confirmations and physical-back transitions still pass with
 delivery state replacing download state; and zero successes expose neither action.
 
+### T42-A — Clear temporary data and start again
+
+**Functional Design:** R-X55, R-X56, R-X42, R-I36
+**Technical Design:** §9.2, §10.1
+**Depends on:** T36-C, T42
+
+Add the optional completed-run cleanup row with the existing question-mark help dialog. Await output
+cleanup before atomic source deletion, report failures without losing selected sources, and preserve
+settings on return to empty Gallery. Isolate outputs by the existing page-session lease, clean only
+abandoned owners on startup, and retain legacy unowned output storage. Update Privacy, Terms, and
+existing FAQ wording without promising complete or secure deletion.
+
+**Done when:** single-image, ZIP and stubbed Share cleanup journeys pass on all three engines; failure,
+retry, source atomicity, late completion, help accessibility and live-tab isolation are covered; the
+check/unit/build/SSG gates pass; and a handover records OS, physical-device results and remaining gaps.
+
 ---
 
 # Phase 7 — Public site

@@ -726,7 +726,27 @@ A run starting with 1–10 accepted images takes the additional Share path only 
 
 OPFS is Baseline Widely available (**B1**, 97%). Quota comes from `navigator.storage.estimate()`, and differs sharply by platform: roughly 60% of disk on Chromium, roughly 20% on iOS WebKit (**B2**).
 
-The OPFS layer owns a run-scoped artifact set rather than one global archive slot: zero or one archive, the temporary first-success direct candidate when required, zero to ten Share output files, and the metadata needed to reconstruct their public names and MIME types. One physical file may serve both candidate and Share roles. Its cleanup operation removes the whole set idempotently. It runs after cancellation, every Processing exit, a storage failure and application startup, not on a successful Download or Share (R-X42). If a run ends with one success, that individual file is the direct Download and, when eligible, Share source, and any unused archive is removed before completion actions appear.
+The OPFS layer owns a run-scoped artifact set rather than one global archive slot: zero or one archive, the temporary first-success direct candidate when required, zero to ten Share output files, and the metadata needed to reconstruct their public names and MIME types. One physical file may serve both candidate and Share roles. Its cleanup operation removes the whole set idempotently. It runs after cancellation, every Processing exit, a storage failure and explicit cleanup; application startup cleans abandoned sessions only, never another live owner. Successful Download or Share alone does not delete artifacts (R-X42, R-X55/R-X56). If a run ends with one success, that individual file is the direct Download and, when eligible, Share source, and any unused archive is removed before completion actions appear.
+
+**Session isolation and explicit cleanup (R-X55/R-X56).** `platform/temporary-session.ts` supplies the
+same random page owner and lifetime Web Lock to source and output storage. Outputs live under
+`icompress-output-sessions/<owner>/`, separate from the legacy `icompress-run` namespace. Output
+read/write/delete APIs remain page-local; startup enumerates owners and deletes only those whose
+lease it can acquire immediately. It never deletes the legacy namespace or uses timestamps to infer
+abandonment. The source database format and existing lock names remain compatible with T36-C.
+
+Processing exposes awaited output cleanup and a busy flag. The explicit action drains storage work,
+removes current outputs, drains captured source writes (including unpublished selection chunks),
+then deletes captured source rows in one transaction. Synchronous request
+errors explicitly abort the source transaction. Locators and Gallery/run metadata are released only
+after source deletion commits. Only NotFoundError is treated as already cleaned; other storage errors
+reach the completion screen for retry/manual-cleanup guidance. A partial output deletion disables
+Download again. Captured IDs and component/run guards prevent a late cleanup from clearing new inputs
+or changing a newer screen. Ordinary unmount cleanup remains best effort and logs errors.
+
+The small helper uses the existing HelpDialog and all wording is localized. Explicit cleanup leaves
+settings, service workers, offline caches, and other sessions untouched. Download/Share success alone
+never triggers cleanup: external consumers can still be reading the files after handoff.
 
 R-X40's preflight has two thresholds. The ordinary Download artifact prediction—including the first-success candidate for a multi-image run—must fit or the run is rejected. For a preliminarily Share-capable run, the same predicted successful-output bytes, plus per-file overhead, are counted again for the individual copies; if only that combined figure exceeds quota, the run proceeds archive-only. The final exact output-byte total is checked against `maximumShareBytes` before the exact `canShare` call.
 

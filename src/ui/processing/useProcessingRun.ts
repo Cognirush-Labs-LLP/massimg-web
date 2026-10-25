@@ -53,6 +53,8 @@ export interface ProcessingRunState {
    * `maximumShareBytes` total or the exact `navigator.canShare({ files })` check says no.
    */
   shareAvailable: Ref<boolean>
+  cleaning: Ref<boolean>
+  cleanup: () => Promise<void>
   start: () => void
   cancel: () => Promise<void>
 }
@@ -88,6 +90,7 @@ export function useProcessingRun(): ProcessingRunState {
   const stopping = ref(false)
   const quotaRejection = ref<QuotaRejection | null>(null)
   const shareAvailable = ref(false)
+  const cleaning = ref(false)
   let outstanding: Promise<void>[] = []
   let generation = 0
   let currentSink: RunArchiveSink | null = null
@@ -474,6 +477,24 @@ export function useProcessingRun(): ProcessingRunState {
     uiStore.cancelProcessing() // R-X19/R-X20: straight to Gallery, no dialog.
   }
 
+  async function cleanup(): Promise<void> {
+    if (cleaning.value) return
+    cleaning.value = true
+    generation += 1
+    pool.cancel()
+    const draining = [...storageWork]
+    try {
+      await trackStorage(
+        (async () => {
+          await Promise.all(draining)
+          await currentSink?.abortAndCleanup()
+        })(),
+      )
+    } finally {
+      cleaning.value = false
+    }
+  }
+
   onScopeDispose(() => {
     generation += 1
     pool.cancel()
@@ -493,5 +514,15 @@ export function useProcessingRun(): ProcessingRunState {
     })
   })
 
-  return { total, processed, stopping, quotaRejection, shareAvailable, start, cancel }
+  return {
+    total,
+    processed,
+    stopping,
+    quotaRejection,
+    shareAvailable,
+    cleaning,
+    cleanup,
+    start,
+    cancel,
+  }
 }

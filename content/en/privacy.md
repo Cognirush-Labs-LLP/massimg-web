@@ -19,7 +19,7 @@ If you ever email our support team, the clauses below explain exactly how that's
 That's the whole story; the rest of this page just says it in the more formal way a policy is
 expected to.
 
-*Last updated: 18 October 2026*
+*Last updated: 25 October 2026*
 
 ## 1. Scope of this policy
 
@@ -30,10 +30,25 @@ privacy policy applies to that interaction, not this one.
 
 ## 2. Information we collect
 
-We do not collect, store or transmit your images, your files or any information about them.
+We do not receive, collect, or store your images, your files, or information about them on our servers.
 There is no account to create, no sign-in, and no server-side processing of any kind — everything
 the tool does to an image happens on your own device, using your browser's own processing power.
 We have no mechanism to receive your images even if we wanted to.
+
+The App temporarily stores copies of selected images and compressed results in your browser's local
+storage on your device. These copies let it reliably preview and process your images; they are not
+uploaded to us. Removing an image or clearing the batch attempts to remove its source copy. Leaving
+the compression results screen attempts to remove its temporary results. After saving or sharing has
+finished, **Clear temporary data and start again** attempts to remove that batch's temporary sources
+and results together. It does not delete your original photos or files already saved or received by
+another app, and it leaves the App's offline files and settings intact.
+
+On startup, the App attempts to clean copies belonging to abandoned sessions while preserving copies
+owned by other live tabs. Cleanup is best effort: browser restrictions, errors, crashes, or interrupted
+operations can leave data behind until a later cleanup or until you clear this site's data in your
+browser settings. We do not guarantee immediate, complete, or secure deletion from browser or device
+storage. The App cannot confirm that a download or another app has finished reading shared files;
+wait until saving or sharing finishes before clearing temporary data.
 
 We do not use tracking cookies, fingerprinting, or any form of targeted or behavioural analytics.
 We do not know who you are, and this policy is written with that fact in mind.

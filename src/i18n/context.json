@@ -1253,5 +1253,45 @@
     "situation": "The meta description of the not-found page. Search engines are told not to index the page, so this is read mainly by link-preview tools.",
     "control": "Meta description tag.",
     "maxLength": 160
+  },
+  "processing.cleanup.description": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.label": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.clearing": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.helpLabel": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.helpTitle": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.helpBody": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.helpNote": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
+  },
+  "processing.cleanup.failed": {
+    "situation": "Completed Processing screen after Download started or Shared. Optional cleanup removes only this batch’s local sources and outputs; saving/sharing must finish first. Cleanup is best effort and may fail, with manual browser-site-data cleanup as a nonurgent fallback. The question-mark opens the existing informational help dialog.",
+    "tone": "Plain, restrained, nontechnical. Do not promise that saving finished or that deletion is complete or secure.",
+    "lengthConstraint": "Keep button and help labels short; description and error may wrap on mobile."
   }
 }

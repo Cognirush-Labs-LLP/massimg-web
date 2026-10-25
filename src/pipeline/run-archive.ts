@@ -278,6 +278,9 @@ export function openRunArchiveSink(options: {
 
   async function abortAndCleanup(): Promise<void> {
     queue?.close()
+    // Closing the queue only ends production; the archive writer may still be flushing bytes.
+    // Deleting before it settles can recreate the fallback archive or race the OPFS writer.
+    await archiveDone.catch(() => {})
     await deleteRunArtifacts()
   }
 

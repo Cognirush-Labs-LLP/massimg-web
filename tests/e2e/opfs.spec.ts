@@ -17,12 +17,7 @@ const REAL_CHUNK_COUNT = 10 // 320 MiB total — "multi-hundred-MB" per T19's do
 const FALLBACK_CHUNK_SIZE = 1024 * 1024
 const FALLBACK_CHUNK_COUNT = 5 // 5 MiB — the fallback test proves the code path, not memory scale.
 
-// Every WebKit test in this file opens its own persistent context, and Playwright's WebKit gives
-// all of them one storage area whatever `userDataDir` each is given (measured: a file written in one
-// context is listed by another context with a different directory). Run in parallel, the tests delete
-// each other's files mid-run and fail with "NotFoundError" or "unknown transient reason". Serial mode
-// keeps this file's tests in one worker, one at a time; it costs seconds, and it is the only
-// isolation available.
+// Keep the large-archive and persistent-profile checks serial to bound disk and memory pressure.
 test.describe.configure({ mode: 'serial' })
 
 // WebKit's default Playwright context has no working OPFS at all (T01, docs/task-notes/T01.md);
@@ -377,4 +372,113 @@ test("falls back to in-memory storage in WebKit's default ephemeral context", as
   }, OPFS_MODULE_PATH)
   expect(quota.ok).toBe(true)
   expect(quota.available).toBe(Infinity)
+})
+
+test('session cleanup preserves another live tab, legacy outputs, and abandoned-session isolation', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    await page.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+      await mod.writeArchive(new Blob(['first']).stream())
+      await mod.writeOutputCopy(0, new Uint8Array([1, 2]), {
+        name: 'first.png',
+        mimeType: 'image/png',
+      })
+    }, OPFS_MODULE_PATH)
+    const firstOwner = await page.evaluate(
+      async (path) => (await import(/* @vite-ignore */ path)).temporarySessionId(),
+      '/src/platform/temporary-session.ts',
+    )
+    const second = await page.context().newPage()
+    await second.goto('/')
+    const readFirst = () =>
+      page.evaluate(
+        async (path) => (await (await import(/* @vite-ignore */ path)).readArchive()).text(),
+        OPFS_MODULE_PATH,
+      )
+    expect(await readFirst()).toBe('first')
+    await second.evaluate(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+      await mod.writeArchive(new Blob(['second']).stream())
+      await mod.deleteRunArtifacts()
+      await mod.cleanupAbandonedRunArtifacts()
+    }, OPFS_MODULE_PATH)
+    expect(await readFirst()).toBe('first')
+    await second.reload()
+    expect(await readFirst()).toBe('first')
+    const checks = await second.evaluate<{
+      names: string[]
+      legacyText: string
+    }>(`(async (path) => {
+      const root = await navigator.storage.getDirectory()
+      const legacy = await root.getDirectoryHandle('icompress-run', { create: true })
+      const sentinel = await legacy.getFileHandle('cleanup-test-sentinel', { create: true })
+      const writer = await sentinel.createWritable()
+      await writer.write('legacy')
+      await writer.close()
+      const sessions = await root.getDirectoryHandle('icompress-output-sessions', { create: true })
+      await sessions.getDirectoryHandle('abandoned-test-owner', { create: true })
+      await (await import(/* @vite-ignore */ path)).cleanupAbandonedRunArtifacts()
+      const names = []
+      for await (const [name] of sessions.entries()) names.push(name)
+      const legacyText = await (await sentinel.getFile()).text()
+      await legacy.removeEntry('cleanup-test-sentinel')
+      return { names, legacyText }
+    })('/src/platform/opfs.ts')`)
+    expect(checks.names).toContain(firstOwner)
+    expect(checks.names).not.toContain('abandoned-test-owner')
+    expect(checks.legacyText).toBe('legacy')
+    await page.close()
+    await expect
+      .poll(async () => {
+        await second.evaluate(
+          async (path) => (await import(/* @vite-ignore */ path)).cleanupAbandonedRunArtifacts(),
+          OPFS_MODULE_PATH,
+        )
+        return second.evaluate(`(async (owner) => {
+        const root = await navigator.storage.getDirectory()
+        const sessions = await root.getDirectoryHandle('icompress-output-sessions')
+        try { await sessions.getDirectoryHandle(owner); return true } catch { return false }
+      })(${JSON.stringify(firstOwner)})`)
+      })
+      .toBe(false)
+    await second.close()
+  } finally {
+    await cleanup()
+  }
+})
+
+test('explicit output cleanup propagates storage errors and can be retried', async ({
+  page: fixturePage,
+}, testInfo) => {
+  const { page, cleanup } = await getRealOpfsPage(fixturePage, testInfo)
+  try {
+    await page.goto('/')
+    const result = await page.evaluate(`(async (path) => {
+      const mod = await import(/* @vite-ignore */ path)
+      await mod.writeArchive(new Blob(['keep me']).stream())
+      const original = FileSystemDirectoryHandle.prototype.removeEntry
+      FileSystemDirectoryHandle.prototype.removeEntry = async function () {
+        throw new DOMException('Denied', 'NotAllowedError')
+      }
+      let errorName = ''
+      try {
+        await mod.deleteRunArtifacts()
+      } catch (error) {
+        errorName = error.name
+      } finally {
+        FileSystemDirectoryHandle.prototype.removeEntry = original
+      }
+      const retained = await (await mod.readArchive()).text()
+      await mod.deleteRunArtifacts()
+      await mod.deleteRunArtifacts()
+      return { errorName, retained }
+    })('/src/platform/opfs.ts')`)
+    expect(result).toEqual({ errorName: 'NotAllowedError', retained: 'keep me' })
+  } finally {
+    await cleanup()
+  }
 })
