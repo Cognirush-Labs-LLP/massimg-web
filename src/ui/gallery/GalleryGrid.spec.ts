@@ -13,6 +13,7 @@ vi.mock('./ingest', () => ({ dimensionErrors, removeIngestedImage }))
 const sourceFiles = new Map<ImageId, File>()
 vi.mock('@/platform/source-files', () => ({
   getSourceFile: (id: ImageId) => sourceFiles.get(id),
+  hasSourceFile: (id: ImageId) => sourceFiles.has(id),
 }))
 
 const thumbnailTick = ref(0)

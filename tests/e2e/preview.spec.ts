@@ -425,6 +425,29 @@ test('the stepper wraps at both ends and keeps the comparison tab (R-P7)', async
   expect(errors).toEqual([])
 })
 
+test('Preview selects Compressed again after returning to Gallery or replacing the batch (R-P2)', async ({
+  page,
+}) => {
+  const errors = watchForErrors(page)
+  await page.goto('/')
+  await seed(page, [{ id: 'a', name: 'a.jpeg' }])
+  await expect(page.getByTestId('preview-image')).toBeVisible({ timeout: 120_000 })
+  await page.getByTestId('preview-comparison-toggle').click()
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('data-tab', 'original')
+
+  await page.getByTestId('preview-back').click()
+  await page.getByTestId('gallery-tile-open').click()
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('data-tab', 'compressed')
+
+  await page.getByTestId('preview-comparison-toggle').click()
+  await page.getByTestId('preview-back').click()
+  await page.getByRole('button', { name: 'Clear', exact: true }).click()
+  await seed(page, [{ id: 'b', name: 'b.jpeg' }])
+  await expect(page.getByTestId('preview-image')).toHaveAttribute('data-tab', 'compressed')
+
+  expect(errors).toEqual([])
+})
+
 test('stepping releases the outgoing image before encoding the incoming one (R-B5)', async ({
   page,
 }) => {

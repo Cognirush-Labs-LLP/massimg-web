@@ -26,7 +26,12 @@ import { pickFolder, readDroppedFolder } from '@/platform/folder'
 import type { FolderSelection } from '@/platform/folder'
 import { pickFiles } from '@/platform/picker'
 import type { SelectedFile } from '@/platform/picker'
-import { clearSourceFiles, deleteSourceFile, setSourceFile } from '@/platform/source-files'
+import {
+  clearSourceFiles,
+  deleteSourceFile,
+  getSourceFile,
+  preserveSourceFile,
+} from '@/platform/source-files'
 import { useBatchStore } from '@/stores/batch'
 import { useUiStore } from '@/stores/ui'
 import { getThumbnailService } from './thumbnail-service'
@@ -52,6 +57,7 @@ function mintRejectionId(): string {
 }
 
 let probeService: DimensionProbeService | null = null
+let ingestGeneration = 0
 
 // Lazy: created (and its stageMode watcher installed) on first real use, which is guaranteed to
 // be after Pinia is active — never at module-evaluation time, which could race app setup.
@@ -90,7 +96,7 @@ function getDimensionProbeService(): DimensionProbeService {
 }
 
 type IngestOutcome =
-  | { kind: 'image'; record: ImageRecord }
+  | { kind: 'image'; record: ImageRecord; bytes: Uint8Array<ArrayBuffer> }
   | { kind: 'rejected'; entry: RejectionEntry }
   | { kind: 'ignored' }
 
@@ -111,7 +117,12 @@ async function buildIngestOutcome(
   // of a multi-gigabyte file must never be pulled into memory just to be turned away.
   const source =
     item.file.size > runtimeLimits.maximumFileBytes ? item.file.slice(0, PREFIX_BYTES) : item.file
-  const bytes = new Uint8Array(await source.arrayBuffer())
+  let bytes: Uint8Array<ArrayBuffer>
+  try {
+    bytes = new Uint8Array(await source.arrayBuffer())
+  } catch {
+    return { kind: 'rejected', entry: rejectionEntry(item, { kind: 'source-unreadable' }) }
+  }
   const classification = classify(bytes)
 
   if (classification.class === 'not-image') {
@@ -156,6 +167,7 @@ async function buildIngestOutcome(
 
   return {
     kind: 'image',
+    bytes,
     record: {
       id: mintImageId(),
       name: item.file.name,
@@ -201,6 +213,7 @@ export async function ingestSelectedFiles(
     return { addedCount: 0, rejections: [] }
   }
 
+  const generation = ingestGeneration
   const service = getDimensionProbeService()
   const batchStore = useBatchStore()
   const capabilities = await getCapabilities()
@@ -225,6 +238,7 @@ export async function ingestSelectedFiles(
 
   for (const item of selected) {
     const outcome = await buildIngestOutcome(item, capabilities)
+    if (generation !== ingestGeneration) return { addedCount: 0, rejections: [] }
 
     if (outcome.kind === 'ignored') {
       continue
@@ -245,9 +259,18 @@ export async function ingestSelectedFiles(
       continue
     }
 
-    setSourceFile(outcome.record.id, item.file)
+    let sourceFile: File | undefined
+    try {
+      sourceFile = await preserveSourceFile(outcome.record.id, item.file, outcome.bytes)
+    } catch {
+      if (generation !== ingestGeneration) return { addedCount: 0, rejections: [] }
+      rejections.push(rejectionEntry(item, { kind: 'source-storage-unavailable' }))
+      continue
+    }
+    if (generation !== ingestGeneration) return { addedCount: 0, rejections: [] }
+    if (!sourceFile) continue
     if (outcome.record.width === 0) {
-      service.enqueue(outcome.record.id, item.file)
+      service.enqueue(outcome.record.id, () => getSourceFile(outcome.record.id))
     }
     pending.push(outcome.record)
     addedCount += 1
@@ -350,6 +373,7 @@ export async function ingestDrop(dataTransfer: DataTransfer): Promise<void> {
 
 /** Wired to the "Clear" toolbar action (R-G6). */
 export function clearGallery(): void {
+  ingestGeneration += 1
   probeService?.clear()
   dimensionErrors.clear()
   clearSourceFiles()

@@ -773,6 +773,24 @@ the rejection list, ordinary non-images are absent from it, and decode failures 
 both selection-time rejections and size-ceiling skips. Folder-empty and traversal-cap tests assert the
 reported figures and remediation.
 
+### T36-C — Durable local sources and the Preview entry tab
+
+**Functional Design:** R-I36, R-P2, R-P7, R-E1 to R-E3, R-B2 to R-B5
+**Technical Design:** §1.1, §8.1, §10.1
+**Assumption:** C9
+**Depends on:** T33-A, T36, T38, T39
+
+Keep the ordinary photo picker, but preserve each accepted source in temporary on-device storage
+from the successful classification read. Later stages read independent copies lazily. Removal,
+Clear, and abandoned-session cleanup release copies without invalidating another live tab. Source
+read/storage failures are selection rejections with actionable copy. Returning from Gallery to
+Preview selects Compressed; stepping within Preview preserves the selected tab.
+
+**Done when:** the Android photo-picker failure is recorded, the same photo completes repeated
+compression/Gallery/Preview cycles on the connected Android using the copy, the lost-reference and
+storage cleanup regressions pass on all three engines, the unit/check/build gates pass, and the
+handover note records the tested OS and remaining device coverage.
+
 ---
 
 # Phase 6 — Output

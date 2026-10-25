@@ -17,6 +17,10 @@ export function describeRejection(entry: RejectionEntry): string {
   const reason = entry.reason
 
   switch (reason.kind) {
+    case 'source-unreadable':
+      return t('rejection.reason.sourceUnreadable', { name: entry.name ?? '' })
+    case 'source-storage-unavailable':
+      return t('rejection.reason.sourceStorageUnavailable', { name: entry.name ?? '' })
     case 'unhandled':
       switch (reason.reason) {
         case 'psd':

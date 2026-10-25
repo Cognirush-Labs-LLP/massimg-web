@@ -11,6 +11,19 @@ function entry(
 }
 
 describe('describeRejection', () => {
+  it('explains selection access failures without claiming the image is damaged', () => {
+    const text = describeRejection(entry({ kind: 'source-unreadable' }))
+    expect(text).toContain('photo.jpg')
+    expect(text).toMatch(/select the image again/i)
+    expect(text).not.toMatch(/damaged/i)
+  })
+
+  it('explains why a source storage failure prevented adding the image', () => {
+    const text = describeRejection(entry({ kind: 'source-storage-unavailable' }))
+    expect(text).toContain('photo.jpg')
+    expect(text).toMatch(/temporary local copy/i)
+    expect(text).toMatch(/wasn't added/i)
+  })
   it('names the file for each unhandled reason', () => {
     expect(describeRejection(entry({ kind: 'unhandled', reason: 'psd' }))).toContain('photo.jpg')
     expect(describeRejection(entry({ kind: 'unhandled', reason: 'ico' }))).toContain('photo.jpg')

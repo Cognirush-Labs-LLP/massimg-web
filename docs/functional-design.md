@@ -419,6 +419,12 @@ Based on the verified capabilities of the chosen toolchain (§13).
 - R-I3 Rejection of some files does not prevent the remaining files in the same selection from being added.
 - R-I4 An APNG file must be detected as animated rather than read as a single-frame PNG. Detection is by the presence of the `acTL` chunk, not by file extension.
 - R-I23 Classification is by content where cheaply possible, not by extension alone. A JPEG named `.png` is processed as a JPEG.
+- R-I36 Before accepting an image, preserve a temporary on-device copy of its source bytes. Keep the
+  photo picker; Preview, Edit, thumbnails, dimension probes, and compression read the copy rather than
+  depending on the picker's reference remaining readable. Remove the copy with its image or when the
+  batch is cleared, and clean abandoned copies on startup without touching another live tab's sources.
+  A selection that cannot be read or copied is rejected with a file-specific explanation and a next
+  step; other images in the selection continue. Source copies do not accumulate in application memory.
 
 ### 5.2 HEIC
 
@@ -686,6 +692,8 @@ Every condition below has a defined surface and message. No condition may fail s
 | Condition | When detected | Surface |
 | --- | --- | --- |
 | Unsupported file type | Selection | Rejection list, file named |
+| Selected file cannot be read | Selection | Rejection list, file named; ask to select it again or choose it through Files |
+| Temporary local source copy cannot be stored | Selection | Rejection list, file named; explain it was not added and suggest freeing device storage or another browser |
 | HEIC with no available decoder | Selection | Rejection list, message per R-I7 |
 | File exceeds size or pixel cap | Selection | Rejection list with actual value and cap |
 | Animated file exceeds frame or pixel budget | Selection | Rejection list, values stated |

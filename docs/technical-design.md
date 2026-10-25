@@ -38,7 +38,7 @@ The rule: reactive stores hold metadata only. Binary data lives in a plain non-r
 
 ```ts
 // module-scope, deliberately not reactive
-const sourceFiles = new Map<ImageId, File>()
+const sourceCopyIds = new Map<ImageId, string>()
 const thumbnails = new Map<ImageId, Blob>()
 ```
 
@@ -795,6 +795,26 @@ It exposes two collision scopes over the same ordered candidate list. ZIP naming
 ### 10.1 Selection
 
 Three entry points: file picker, folder picker (`webkitdirectory`), and drop. Drop handles both files and directory entries via `DataTransferItem.webkitGetAsEntry`.
+
+**Source lifetime (R-I36, C9).** A selected `File` is not a durable source reference: Android's photo
+picker can return one that fails with `ERR_UPLOAD_FILE_CHANGED` after successful import and preview
+reads even when the actual photo is unchanged. Keep the photo picker, but preserve the bytes already
+read for classification after the format and size checks pass. An image enters the batch only after
+that copy commits to IndexedDB (`platform/source-copies.ts`). Read and storage failures become distinct
+selection rejections; importing the rest continues.
+
+The database stores a Blob where supported. WebKit's ephemeral context rejects Blob/File writes but
+accepts byte arrays, so that backend stores bytes instead. `platform/source-files.ts` retains copy IDs,
+not all of the source Files. Its asynchronous `getSourceFile` materializes one File for its consumer;
+thumbnail and dimension queues carry lazy readers so queued work does not load an entire batch. The
+Original tab and Edit create their object URLs only while their stage needs them, and generation
+checks discard a read that finishes after navigation or cancellation.
+
+Each copy has a random ID under a random page-session owner. Image removal and batch clear remove
+their rows; page exit attempts cleanup, and startup removes abandoned owners. A Web Lock held by the
+live page protects its owner from another tab's cleanup. Inputs remain separate from run-output OPFS
+artifacts: leaving Processing deletes delivery artifacts without deleting selected sources. All of
+this storage is on-device; it makes no network request and adds no account or history feature.
 
 **B5 is 75% confident.** Folder input may not work on iOS Safari. R-I31 requires hiding the control rather than letting it fail, so the platform layer feature-detects and the UI binds to that.
 

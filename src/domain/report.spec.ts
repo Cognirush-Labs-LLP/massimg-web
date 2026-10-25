@@ -232,6 +232,12 @@ describe('real-run formatters (T41)', () => {
   })
 
   it('formats every RejectionReason as hardcoded English, without routing through i18n', () => {
+    expect(formatRejectionReason({ kind: 'source-unreadable' })).toBe(
+      'Browser could not read the selected file',
+    )
+    expect(formatRejectionReason({ kind: 'source-storage-unavailable' })).toBe(
+      'Browser could not store a temporary local source copy',
+    )
     expect(formatRejectionReason({ kind: 'unhandled', reason: 'psd' })).toBe(
       'Photoshop documents are not supported',
     )

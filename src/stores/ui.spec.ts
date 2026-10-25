@@ -37,6 +37,40 @@ describe('useUiStore explicit actions', () => {
     expect(ui.currentImageId).toBe(idA)
   })
 
+  it('opens Gallery images on Compressed after previously viewing Original', () => {
+    const ui = useUiStore()
+    ui.openPreview(idA)
+    ui.setComparisonTab('original')
+    ui.backToGallery()
+
+    ui.openPreview(idA)
+
+    expect(ui.comparisonTab).toBe('compressed')
+  })
+
+  it('preserves Original when stepping between images within Preview', () => {
+    const ui = useUiStore()
+    ui.openPreview(idA)
+    ui.setComparisonTab('original')
+
+    ui.openPreview(idB)
+
+    expect(ui.comparisonTab).toBe('original')
+  })
+
+  it('selects Compressed when a new single-image batch opens Preview', () => {
+    const ui = useUiStore()
+    ui.openPreview(idA)
+    ui.setComparisonTab('original')
+    ui.onBatchCountChanged(0, [])
+
+    ui.onBatchCountChanged(1, [recordWithId(idB)])
+
+    expect(ui.stageMode).toBe('preview')
+    expect(ui.currentImageId).toBe(idB)
+    expect(ui.comparisonTab).toBe('compressed')
+  })
+
   it('openEdit sets the current image and switches to Edit', () => {
     const ui = useUiStore()
 

@@ -18,7 +18,7 @@ Yes, a separate [desktop application](/desktop) exists for people who need to pr
 ## 2. Privacy
 
 **Do my images ever leave my device?**
-Not unless you send them somewhere yourself. Every image is decoded, edited and compressed locally in your browser, and nothing is ever uploaded to a server. The only way a result leaves your device is if you press Share on a finished batch and pick an app or destination to hand the images to — that choice is yours, and the tool itself still sends nothing anywhere. See our [Privacy Policy](/privacy) for the full details.
+Not unless you send them somewhere yourself. Every image is decoded, edited and compressed locally in your browser, and nothing is ever uploaded to a server. The browser keeps a temporary local copy of each selected image so it can reliably read it again; removing the image or clearing the batch deletes its copy. The only way a result leaves your device is if you press Share on a finished batch and pick an app or destination to hand the images to — that choice is yours, and the tool itself still sends nothing anywhere. See our [Privacy Policy](/privacy) for the full details.
 
 **What does Share do, and where do my images go?**
 Share hands your finished images to a system share sheet or app picker, so you can choose where they go — a messaging app, email, cloud storage, whatever your device offers. The app itself doesn't send them anywhere: it passes the files to your operating system in one call and then waits to be told whether that handoff succeeded or you cancelled it. We can't see, and don't control, which app or destination you pick.
@@ -27,7 +27,7 @@ Share hands your finished images to a system share sheet or app picker, so you c
 No. No image bytes, file names, dimensions or sizes are sent to us or to any analytics service.
 
 **Is it safe to use this in a private/incognito window?**
-Yes, but with a small difference: some browsers (Firefox and Safari, in their private modes) don't allow the on-device temporary storage the app normally uses, so it automatically switches to keeping data in memory for the run instead. It still works, but it may handle somewhat smaller batches in that mode. The exact reduced limit for private browsing hasn't been finalized yet.
+Yes, but with a small difference: some browsers (Firefox and Safari, in their private modes) don't allow the on-device temporary storage the app normally uses for results, so it automatically switches to keeping results in memory for the run instead. Selected images also need temporary browser storage; if that is blocked or full, affected images are not added and an explanation is shown. It may handle somewhat smaller batches in private mode. The exact reduced limit for private browsing hasn't been finalized yet.
 
 ## 3. Files, formats & folders
 

@@ -46,7 +46,7 @@ export const DEFAULT_QUALITY = 0.75
 export interface ThumbnailSource {
   id: ImageId
   /** The source file to decode. */
-  blob: Blob
+  blob: Blob | (() => Promise<Blob | undefined>)
   /** From ImageRecord.width/height — lets both axes be bounded without a probe decode. */
   source: PixelSize
   edit: EditRecord | null
@@ -147,6 +147,7 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
   // completion that raced cancellation can never enter the cache (R-G12).
   let generation = 0
   let active: ThumbnailSource | null = null
+  let activeBlob: Blob | null = null
   let activeDropped = false
   let idleWaiters: (() => void)[] = []
 
@@ -218,16 +219,23 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
 
   async function settle(response: ThumbnailJobResponse | null): Promise<void> {
     const job = active
+    const blob = activeBlob
     const stale =
       job === null || activeDropped || response === null || response.token !== generation
 
     if (!stale && response.ok) {
       store(job.id, response.blob)
-    } else if (!stale && !response.ok && response.reason === 'unsupported' && customFallback) {
+    } else if (
+      !stale &&
+      !response.ok &&
+      response.reason === 'unsupported' &&
+      customFallback &&
+      blob
+    ) {
       // Only a caller-supplied decoder reaches here. The default ImageMagick fallback has already
       // run inside the worker by this point, and arrives as an ordinary `ok: true` response above.
       const decoded = await customFallback({
-        blob: job.blob,
+        blob,
         source: job.source,
         edit: job.edit,
         maxEdge,
@@ -241,6 +249,7 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
     }
 
     active = null
+    activeBlob = null
     activeDropped = false
     running = false
     pump()
@@ -268,18 +277,32 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
       active = next
       activeDropped = false
 
-      const request: ThumbnailJobRequest = {
-        token: generation,
-        id: next.id,
-        blob: next.blob,
-        source: next.source,
-        ops: next.edit?.ops ?? [],
-        maxEdge,
-        format,
-        quality,
-        allowFallback: allowWorkerFallback,
+      const token = generation
+      const send = (blob: Blob | undefined): void => {
+        if (token !== generation) return
+        if (!blob) {
+          void settle(null)
+          return
+        }
+        activeBlob = blob
+        const request: ThumbnailJobRequest = {
+          token,
+          id: next.id,
+          blob,
+          source: next.source,
+          ops: next.edit?.ops ?? [],
+          maxEdge,
+          format,
+          quality,
+          allowFallback: allowWorkerFallback,
+        }
+        context.postMessage(request)
       }
-      context.postMessage(request)
+      if (typeof next.blob === 'function') {
+        void next.blob().then(send, () => send(undefined))
+      } else {
+        send(next.blob)
+      }
       return
     }
 
@@ -294,6 +317,7 @@ export function createThumbnailService(options: ThumbnailServiceOptions = {}): T
       worker = null
     }
     active = null
+    activeBlob = null
     activeDropped = false
     running = false
     releaseWaiters()

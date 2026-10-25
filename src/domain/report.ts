@@ -162,6 +162,10 @@ function formatReportMegapixels(pixels: number): string {
  * call to action. The report already carries the file name as its own field. */
 export function formatRejectionReason(reason: RejectionReason): string {
   switch (reason.kind) {
+    case 'source-unreadable':
+      return 'Browser could not read the selected file'
+    case 'source-storage-unavailable':
+      return 'Browser could not store a temporary local source copy'
     case 'unhandled':
       switch (reason.reason) {
         case 'psd':

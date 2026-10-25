@@ -11,7 +11,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 import type { ImageId, ImageRecord } from '@/domain/types'
 import { useBatchStore } from '@/stores/batch'
-import { getSourceFile } from '@/platform/source-files'
+import { getSourceFile, hasSourceFile } from '@/platform/source-files'
 import type { ThumbnailSource } from '@/platform/thumbnails'
 import GalleryTile from './GalleryTile.vue'
 import { computeGridLayout, computeGridWindow } from './gridWindow'
@@ -102,13 +102,12 @@ const thumbnailSources = computed<ThumbnailSource[]>(() => {
     if (image.width === 0 || image.height === 0) {
       continue
     }
-    const file = getSourceFile(image.id)
-    if (!file) {
+    if (!hasSourceFile(image.id)) {
       continue
     }
     sources.push({
       id: image.id,
-      blob: file,
+      blob: () => getSourceFile(image.id),
       source: { width: image.width, height: image.height },
       // `image` is read off the reactive batch array, so its `edit` is a Proxy, and the service
       // posts the ops straight to its worker, where a Proxy fails structured clone with

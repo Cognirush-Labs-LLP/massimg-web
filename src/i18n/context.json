@@ -1014,6 +1014,16 @@
     "control": "Plain text in a dismissible list row.",
     "maxLength": 140
   },
+  "rejection.reason.sourceUnreadable": {
+    "situation": "A selected file could not be read before it could be classified or copied. {name} is the file name. This can be an Android photo-picker reference failure and does not mean the image is damaged.",
+    "control": "Plain text in a dismissible rejection-list row.",
+    "maxLength": 180
+  },
+  "rejection.reason.sourceStorageUnavailable": {
+    "situation": "A selected image could not be copied into temporary on-device browser storage. It is rejected rather than accepted with a source reference that may fail later. {name} is the file name.",
+    "control": "Plain text in a dismissible rejection-list row.",
+    "maxLength": 220
+  },
   "rejection.reason.heicUnavailable": {
     "situation": "Per-row reason text when a selected HEIC/HEIF file is rejected because this build's decoder capability is unavailable (§10 'HEIC with no available decoder'). {name} is the file name. Unreachable in the current build — see docs/backlog.md BL-009.",
     "control": "Plain text in a dismissible list row.",

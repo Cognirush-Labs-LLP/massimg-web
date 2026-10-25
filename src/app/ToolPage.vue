@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 import { t } from '@/i18n/t'
 import { scheduleImageMagickPreload } from '@/pipeline/codecs/loader'
 import { deleteRunArtifacts } from '@/platform/opfs'
+import { cleanupAbandonedSourceCopies } from '@/platform/source-copies'
 import { getPreviewPool } from '@/ui/preview/preview-pool'
 import Gallery from '@/ui/gallery/Gallery.vue'
 import GalleryToolbar from '@/ui/gallery/GalleryToolbar.vue'
@@ -155,6 +156,9 @@ onMounted(() => {
   // forget — nothing in this app session depends on a stale prior run's artifacts, so there is
   // nothing to wait for before the rest of the page continues.
   void deleteRunArtifacts()
+  void cleanupAbandonedSourceCopies().catch((error: unknown) => {
+    console.error('Could not clean abandoned source copies', error)
+  })
 })
 </script>
 

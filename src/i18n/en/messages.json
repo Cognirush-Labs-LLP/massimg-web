@@ -198,6 +198,8 @@
   "edit.frame.handleBottomRight": "Resize crop, bottom-right corner",
   "rejection.heading": "Some files weren't added",
   "rejection.dismiss": "Dismiss",
+  "rejection.reason.sourceUnreadable": "{name}: your browser could not read this selection. Select the image again, or choose it through Files in the picker.",
+  "rejection.reason.sourceStorageUnavailable": "{name}: your browser could not keep a temporary local copy, so the image wasn't added. Free some device storage or try another browser, then select it again.",
   "rejection.reason.psd": "{name}: Photoshop (PSD) files aren't supported. Export it as JPEG or PNG first.",
   "rejection.reason.ico": "{name}: icon (ICO) files aren't supported. Choose a different file.",
   "rejection.reason.svg": "{name}: SVG files aren't supported. Choose a different file.",

@@ -92,6 +92,7 @@ onBeforeUnmount(() => {
 // Object URL lifecycle for the source file (no encode involved, see header comment).
 const imageUrl = ref<string | null>(null)
 let currentObjectUrl: string | null = null
+let sourceGeneration = 0
 
 function revokeCurrentUrl(): void {
   if (currentObjectUrl !== null) {
@@ -102,9 +103,12 @@ function revokeCurrentUrl(): void {
 
 watch(
   currentImageId,
-  (id) => {
+  async (id) => {
+    const expected = ++sourceGeneration
     revokeCurrentUrl()
-    const file = id === null ? undefined : getSourceFile(id)
+    imageUrl.value = null
+    const file = id === null ? undefined : await getSourceFile(id).catch(() => undefined)
+    if (sourceGeneration !== expected) return
     if (file === undefined) {
       imageUrl.value = null
       return
@@ -117,6 +121,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  sourceGeneration += 1
   revokeCurrentUrl()
 })
 

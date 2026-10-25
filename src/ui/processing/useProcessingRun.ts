@@ -208,17 +208,10 @@ export function useProcessingRun(): ProcessingRunState {
       return
     }
 
-    const file = getSourceFile(image.id)
-
-    if (file === undefined) {
-      if (generation === expected) {
-        runStore.recordResult(image.id, { kind: 'failed', reason: { kind: 'decode-failed' } })
-      }
-      return
-    }
-
     let source: Uint8Array
     try {
+      const file = await getSourceFile(image.id)
+      if (!file) throw new Error('Source copy is missing')
       source = new Uint8Array(await file.arrayBuffer())
     } catch {
       if (generation === expected) {

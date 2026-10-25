@@ -12,7 +12,7 @@ import { useUiStore } from '@/stores/ui'
 
 const sourceFiles = new Map<ImageId, File>()
 vi.mock('@/platform/source-files', () => ({
-  getSourceFile: (id: ImageId) => sourceFiles.get(id),
+  getSourceFile: async (id: ImageId) => sourceFiles.get(id),
 }))
 
 const EditFrame = (await import('./EditFrame.vue')).default

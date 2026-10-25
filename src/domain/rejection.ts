@@ -9,6 +9,8 @@ import type { UnhandledReason } from './classify'
 // is. This mirrors `domain/report.ts`'s own split from that file.
 export type RejectionReason =
   | { kind: 'unhandled'; reason: UnhandledReason }
+  | { kind: 'source-unreadable' }
+  | { kind: 'source-storage-unavailable' }
   | { kind: 'heic-decoder-unavailable' }
   | { kind: 'file-too-large'; actualBytes: number; capBytes: number }
   | { kind: 'image-too-large'; width: number; height: number; capPixels: number }

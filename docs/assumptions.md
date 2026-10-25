@@ -63,6 +63,7 @@ When an entry is settled, update it in place. Do not delete refuted entries. Tes
 | C5 | Thumbnail generation throughput | 85 | TESTED | P2 |
 | C7 | Animated sources processed incrementally | 95 | REFUTED | P2 |
 | C8 | Six WASM modules coexist acceptably, loaded lazily | 80 | TESTED | P2 |
+| C9 | A selected File stays readable for the batch lifetime | 99 | REFUTED | P1 |
 | D1 | Size-target search is affordable | 99 | TESTED | P2 |
 | D2 | WebP lossless wins on graphics, loses on photos | 98 | TESTED | P2 |
 | D3 | ICC profiles survive every encoder path | 92 | TESTED | P2 |
@@ -401,6 +402,10 @@ Hostinger allows response headers on a static site via `.htaccess` or equivalent
 ### C1 `DOC` `90%` `P1` File handles are not backed by memory
 
 Holding hundreds or thousands of `File` objects costs kilobytes. They are lazy references to bytes on disk; memory is consumed only on an explicit read.
+
+This concerns memory cost, not reference durability; C9 records a counterexample to assuming a picked
+File can always be read again. Accepted sources now use temporary database copies, with only their
+IDs retained for the batch and Files read lazily for active consumers.
 
 **Method.** Select 1000 files, hold the array, measure tab memory before and after, then read one and measure again.
 
@@ -831,6 +836,34 @@ this is 80% and not higher.**
   JPEG-only session its 12–30 MB saving, and the browser test proves the gate is real, not aspirational.
 
 **Method.** Measure total bundle and peak memory with all three initialised, against lazy initialisation where gifsicle loads only for GIF output and UPNG only for animated PNG. Pass condition for lazy loading: first paint is not delayed by codecs the user may never invoke. *(T22 measured all six named modules in §5.2's table, not three — the "three" in the original method predates the six being individually named. The 3-concurrent-worker case remains open; see "The core claim holds, with one genuine gap" above.)*
+
+---
+
+### C9 `REFUTED` `99%` `P1` A selected File stays readable for the batch lifetime
+
+**Measured on October 25, 2026:** Samsung SM-E346B, Android 16, Chrome 156.0.8078.47, debugging the
+deployed app over USB from macOS. Import and Preview successfully read the same picker File within
+the first 0.4 seconds. About eleven seconds after selection, an Original-tab image request failed;
+subsequent direct reads threw `NotReadableError`, and a local blob-URL fetch reported the underlying
+`net::ERR_UPLOAD_FILE_CHANGED`. Compression then completed with zero successes and one read failure.
+The wording about permissions in `NotReadableError` is generic; it is not proof that Android revoked
+a permission.
+
+The underlying photo's SHA-256 matched the bytes independently saved during an earlier successful
+read. Slicing the failing File or wrapping it in a new File did not restore access. A separate local
+copy rendered Original, compressed, and reopened successfully. Selecting the exact same photo through
+Android Files produced fifteen successful repeated reads and three successful compression/Gallery
+cycles, including entry on Compressed. Keeping Original selected was therefore not necessary for a
+successful run. These observations establish a bad picker reference, not the exact Android/Chrome
+internal cause or its prevalence across other devices.
+
+**Resolution chosen by the user:** keep the photo picker and preserve temporary local source copies.
+Technical Design §10.1 replaces reliance on the picked File with an independent IndexedDB copy made
+from the first successful read. Blob values work on Chromium and Firefox. WebKit's ephemeral test
+context rejects Blob writes with `UnknownError: Error preparing Blob/File data to be stored in object
+store`, while byte arrays and strings succeed; it therefore stores bytes and reads Files lazily.
+`tests/e2e/source-copies.spec.ts` covers the storage paths, source-reference loss, cleanup, and live-tab
+protection. The original C1 memory-cost claim is not refuted by this finding.
 
 ---
 

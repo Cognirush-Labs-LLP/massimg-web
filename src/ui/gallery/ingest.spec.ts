@@ -32,6 +32,19 @@ const DEFAULT_CAPABILITIES: Capabilities = {
 const getCapabilitiesMock = vi.fn<() => Promise<Capabilities>>()
 vi.mock('@/platform/capability', () => ({ getCapabilities: () => getCapabilitiesMock() }))
 
+const writeSourceCopyMock =
+  vi.fn<(id: string, file: File, bytes: Uint8Array<ArrayBuffer>) => Promise<File>>()
+const storedCopies = new Map<string, File>()
+vi.mock('@/platform/source-copies', () => ({
+  writeSourceCopy: async (id: string, file: File, bytes: Uint8Array<ArrayBuffer>) => {
+    const copy = await writeSourceCopyMock(id, file, bytes)
+    storedCopies.set(id, copy)
+    return copy
+  },
+  readSourceCopy: async (id: string) => storedCopies.get(id),
+  deleteSourceCopies: async () => {},
+}))
+
 // Imported after the mocks above so it picks up the mocked modules.
 const {
   addViaFilePicker,
@@ -102,6 +115,12 @@ beforeEach(() => {
   getCapabilitiesMock.mockResolvedValue(DEFAULT_CAPABILITIES)
   dimensionErrors.clear()
   clearSourceFiles()
+  writeSourceCopyMock.mockReset()
+  storedCopies.clear()
+  writeSourceCopyMock.mockImplementation(
+    async (_id, file, bytes) =>
+      new File([bytes], file.name, { type: file.type, lastModified: file.lastModified }),
+  )
 })
 
 afterEach(() => {
@@ -150,7 +169,67 @@ describe('ingestSelectedFiles', () => {
     })
     expect(record?.id).toBeTruthy()
     expect(hasSourceFile(record!.id)).toBe(true)
-    expect(getSourceFile(record!.id)).toBe(file.file)
+    const copy = await getSourceFile(record!.id)
+    expect(copy).not.toBe(file.file)
+    expect(copy?.name).toBe(file.file.name)
+    expect(copy?.size).toBe(file.file.size)
+  })
+
+  it('preserves the first read without rereading the picker reference', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    const bytes = jpegDeclaring(20, 30)
+    const file = new File([bytes], 'photo.jpg', { type: 'image/jpeg' })
+    const read = vi.spyOn(file, 'arrayBuffer')
+    read
+      .mockResolvedValueOnce(bytes.buffer)
+      .mockRejectedValue(new DOMException('', 'NotReadableError'))
+
+    await ingestSelectedFiles([{ file, relativePath: null }])
+
+    const record = useBatchStore().images[0]!
+    expect(read).toHaveBeenCalledOnce()
+    const copy = await getSourceFile(record.id)
+    expect(new Uint8Array(await copy!.arrayBuffer())).toEqual(bytes)
+  })
+
+  it('reports a picker read failure and continues importing the other images', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    const failed = selectedFile('lost.jpg')
+    vi.spyOn(failed.file, 'arrayBuffer').mockRejectedValue(new DOMException('', 'NotReadableError'))
+
+    const summary = await ingestSelectedFiles([failed, selectedFile('good.jpg')])
+
+    expect(summary.addedCount).toBe(1)
+    expect(summary.rejections).toMatchObject([
+      { name: 'lost.jpg', reason: { kind: 'source-unreadable' } },
+    ])
+    expect(useBatchStore().images.map((image) => image.name)).toEqual(['good.jpg'])
+  })
+
+  it('reports storage failure without accepting an unsafe source reference', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    writeSourceCopyMock.mockRejectedValueOnce(new DOMException('Full', 'QuotaExceededError'))
+
+    const summary = await ingestSelectedFiles([selectedFile('full.jpg'), selectedFile('good.jpg')])
+
+    expect(summary.addedCount).toBe(1)
+    expect(summary.rejections).toMatchObject([
+      { name: 'full.jpg', reason: { kind: 'source-storage-unavailable' } },
+    ])
+    expect(useBatchStore().images.map((image) => image.name)).toEqual(['good.jpg'])
+  })
+
+  it('does not repopulate a cleared batch when a source copy completes', async () => {
+    classifyMock.mockReturnValue({ class: 'supported', format: 'jpeg', isAnimated: false })
+    writeSourceCopyMock.mockImplementationOnce(async (_id, file, bytes) => {
+      clearGallery()
+      return new File([bytes], file.name)
+    })
+
+    await ingestSelectedFiles([selectedFile('a.jpg'), selectedFile('b.jpg')])
+
+    expect(useBatchStore().images).toHaveLength(0)
+    expect(writeSourceCopyMock).toHaveBeenCalledOnce()
   })
 
   it('does nothing for an empty selection', async () => {

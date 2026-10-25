@@ -24,9 +24,11 @@ export interface DimensionProbeServiceOptions {
   onFailed?: (id: ImageId) => void
 }
 
+type ProbeSource = File | (() => Promise<File | undefined>)
+
 export interface DimensionProbeService {
   /** Queues one image. Ignored if already queued, in flight, or the batch has moved past it. */
-  enqueue(id: ImageId, file: File): void
+  enqueue(id: ImageId, file: ProbeSource): void
   /** Drops one queued/in-flight entry without reporting a result for it (image removed). */
   cancel(id: ImageId): void
   /** Terminates the worker immediately. The queue is kept — see module doc. */
@@ -39,7 +41,7 @@ export interface DimensionProbeService {
 
 interface QueueEntry {
   id: ImageId
-  file: File
+  file: ProbeSource
 }
 
 export function createDimensionProbeService(
@@ -53,6 +55,7 @@ export function createDimensionProbeService(
   let running = false
   let halted = false
   let active: QueueEntry | null = null
+  let sourceLoading = false
 
   // Bumped by stop() and clear(). A response carrying a stale generation is discarded — defence
   // in depth alongside terminate() itself, matching thumbnails.ts's own pattern.
@@ -82,6 +85,7 @@ export function createDimensionProbeService(
   function settle(response: DimensionProbeResponse | null): void {
     const job = active
     active = null
+    sourceLoading = false
     running = false
 
     const stale = job === null || response === null || response.token !== generation
@@ -114,8 +118,24 @@ export function createDimensionProbeService(
 
     running = true
     active = next
-    const request: DimensionProbeRequest = { token: generation, id: next.id, file: next.file }
-    context.postMessage(request)
+    const token = generation
+    const send = (file: File | undefined): void => {
+      if (token !== generation || active !== next || halted) return
+      if (!file) {
+        onFailed?.(next.id)
+        settle(null)
+        return
+      }
+      const request: DimensionProbeRequest = { token, id: next.id, file }
+      context.postMessage(request)
+      sourceLoading = false
+    }
+    if (typeof next.file === 'function') {
+      sourceLoading = true
+      void next.file().then(send, () => send(undefined))
+    } else {
+      send(next.file)
+    }
   }
 
   function teardownWorker(): void {
@@ -132,6 +152,7 @@ export function createDimensionProbeService(
       queuedIds.add(active.id)
     }
     active = null
+    sourceLoading = false
     running = false
   }
 
@@ -155,6 +176,11 @@ export function createDimensionProbeService(
         // every other queued entry.
         generation += 1
         active = null
+        if (sourceLoading) {
+          sourceLoading = false
+          running = false
+          pump()
+        }
       }
     },
 

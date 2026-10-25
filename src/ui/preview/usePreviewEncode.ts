@@ -183,13 +183,9 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
   }
 
   async function sourceBytes(image: ImageRecord): Promise<Uint8Array | null | undefined> {
-    const file = getSourceFile(image.id)
-
-    if (file === undefined) {
-      return undefined
-    }
-
     try {
+      const file = await getSourceFile(image.id)
+      if (file === undefined) return undefined
       return new Uint8Array(await file.arrayBuffer())
     } catch {
       return null
@@ -314,6 +310,8 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
 
     const source = await sourceBytes(image)
 
+    if (generation !== expected) return
+
     if (source === undefined) {
       fail({ kind: 'source-missing' })
       return
@@ -321,11 +319,6 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
 
     if (source === null) {
       fail({ kind: 'decode-failed' })
-      return
-    }
-
-    // The read is asynchronous, so the frame may have moved on while it ran.
-    if (generation !== expected) {
       return
     }
 
@@ -439,18 +432,33 @@ export function usePreviewEncode(options: PreviewEncodeOptions): PreviewEncodeSt
   // Ordered after the watcher above, so an image change has already released the previous URL.
   watch(
     [(): ImageId | null => options.image.value?.id ?? null, options.wantsOriginal],
-    ([id, wantsOriginal]) => {
+    async ([id, wantsOriginal]) => {
       if (!wantsOriginal || id === null || originalUrl.value !== null) {
         return
       }
 
-      const file = getSourceFile(id)
-
-      if (file === undefined) {
-        return
+      const expected = generation
+      try {
+        const file = await getSourceFile(id)
+        if (
+          file === undefined ||
+          generation !== expected ||
+          !options.wantsOriginal.value ||
+          options.image.value?.id !== id ||
+          originalUrl.value !== null
+        ) {
+          return
+        }
+        originalUrl.value = URL.createObjectURL(file)
+      } catch {
+        if (
+          generation === expected &&
+          options.wantsOriginal.value &&
+          options.image.value?.id === id
+        ) {
+          originalUnrenderable.value = true
+        }
       }
-
-      originalUrl.value = URL.createObjectURL(file)
     },
     { immediate: true },
   )

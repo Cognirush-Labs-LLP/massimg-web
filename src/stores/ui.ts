@@ -42,6 +42,9 @@ export const useUiStore = defineStore('ui', () => {
   const editRatioPreference = ref<RatioId>('free')
 
   function openPreview(id: ImageId): void {
+    if (stageMode.value !== 'preview') {
+      comparisonTab.value = 'compressed'
+    }
     currentImageId.value = id
     stageMode.value = 'preview'
   }
@@ -136,8 +139,10 @@ export const useUiStore = defineStore('ui', () => {
     }
 
     if (count === 1) {
-      currentImageId.value = images[0]?.id ?? null
-      stageMode.value = 'preview'
+      const image = images[0]
+      if (image !== undefined) {
+        openPreview(image.id)
+      }
       return
     }
 
