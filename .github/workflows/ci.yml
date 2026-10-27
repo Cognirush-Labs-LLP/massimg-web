@@ -31,6 +31,11 @@ on:
 # --with-deps`) is an apt download of a hundred-odd packages; it normally takes under a minute and
 # once stalled for 27. The image tag and the version check in each job must match the
 # `@playwright/test` version in package.json: when that is upgraded, change all of them together.
+#
+# The container runs as root, but GitHub mounts $HOME at /github/home, owned by the image's
+# pwuser. Firefox refuses to launch as root under a $HOME it does not own ("Running Nightly as
+# root in a regular user's session is not supported"), so each test step sets HOME=/root.
+# Only that step: the setup and install steps keep the default $HOME their caches resolve under.
 
 # Cancel superseded runs on the same branch/PR so browser installs and test
 # runs don't queue up behind stale pushes.
@@ -110,6 +115,8 @@ jobs:
             exit 1
           fi
       - run: pnpm exec playwright test --project=${{ matrix.project }}
+        env:
+          HOME: /root
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -145,6 +152,8 @@ jobs:
             exit 1
           fi
       - run: pnpm exec playwright test --config=playwright.pwa.config.ts --project=${{ matrix.project }}
+        env:
+          HOME: /root
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -178,6 +187,8 @@ jobs:
             exit 1
           fi
       - run: pnpm exec playwright test --config=playwright.site.config.ts --project=${{ matrix.project }}
+        env:
+          HOME: /root
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
