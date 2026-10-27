@@ -93,6 +93,13 @@ export default defineConfig({
         // codec (ImageMagick on idle-after-first-paint, the rest on first use of that format),
         // so the first real fetch is enough to get it cached for the next offline visit.
         globPatterns: ['**/*.{js,css,html}', 'manifest.json', 'icons/*.png'],
+        // The navigation fallback answers every browser navigation with the app shell, whose
+        // router renders "Page not found" for anything it has no route for. Static files opened
+        // directly (sitemap.xml, robots.txt, llms.txt, the extensionless license texts the
+        // Credits page links to) must reach the network instead. Prerendered pages are
+        // unaffected: the precache route, registered ahead of this fallback, already serves
+        // `/faq` from its precached `faq.html`.
+        navigateFallbackDenylist: [/^\/3rd_party_licenses\//, /\/[^/]+\.[^/]+$/],
         runtimeCaching: [
           {
             // Technical Design §12.6: Cloudflare injects its analytics script at the edge, so

@@ -219,10 +219,12 @@ try {
   licenceFailed = true
 }
 
+// Matches precache manifest entries (`{url:"3rd_party_licenses/...",revision:...}`) only: sw.js
+// also names the directory in the navigation fallback denylist, which is not precaching.
 const serviceWorker = join(dist, 'sw.js')
 if (
   existsSync(serviceWorker) &&
-  readFileSync(serviceWorker, 'utf8').includes('3rd_party_licenses')
+  /url:\s*"\/?3rd_party_licenses\//.test(readFileSync(serviceWorker, 'utf8'))
 ) {
   console.error(
     'T49 check: sw.js references 3rd_party_licenses — the licence texts have entered the ' +

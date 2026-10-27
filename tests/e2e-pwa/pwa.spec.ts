@@ -23,3 +23,19 @@ test('the shell loads from the service worker cache with no network', async ({ p
   // if the response came from the service worker's cache.
   await expect(page.getByRole('button', { name: /compress/i })).toBeVisible()
 })
+
+test('static files opened directly bypass the app-shell navigation fallback', async ({ page }) => {
+  await page.goto('/')
+  await page.waitForFunction('navigator.serviceWorker.controller !== null')
+
+  for (const path of [
+    '/sitemap.xml',
+    '/robots.txt',
+    '/llms.txt',
+    '/3rd_party_licenses/aom/LICENSE',
+  ]) {
+    const response = await page.goto(path)
+    expect(response!.fromServiceWorker(), `${path} is not answered with the app shell`).toBe(false)
+    expect(response!.headers()['content-type'], path).not.toContain('text/html')
+  }
+})
