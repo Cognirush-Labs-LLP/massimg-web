@@ -96,6 +96,14 @@ test('Download stays available after the first attempt and delivers again (R-X42
 
     expect(back?.height, `Back to images is one line at ${width}px`).toBeLessThanOrEqual(48)
     expect(retry?.height, `Download again is one line at ${width}px`).toBeLessThanOrEqual(48)
+
+    const checked = await page.getByTestId('processing-delivered').boundingBox()
+    const checkedMid = (checked?.y ?? 0) + (checked?.height ?? 0) / 2
+    const retryMid = (retry?.y ?? 0) + (retry?.height ?? 0) / 2
+    expect(
+      Math.abs(checkedMid - retryMid),
+      `Download started and Download again share a row at ${width}px`,
+    ).toBeLessThanOrEqual(2)
   }
 
   // ...and no width makes the page scroll sideways to accommodate it.

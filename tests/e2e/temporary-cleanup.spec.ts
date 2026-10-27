@@ -143,7 +143,8 @@ test('help follows the dimension dialog pattern and the secondary action fits a 
     return { background: s.backgroundColor, border: s.borderTopWidth }
   })
   expect(style).toMatchObject({ ...downloadStyle, border: '1px', fits: true })
-  expect(style.height).toBeGreaterThanOrEqual(44)
+  const helpHeight = (await help.boundingBox())?.height ?? 0
+  expect(Math.abs(style.height - helpHeight)).toBeLessThanOrEqual(1)
   expect(await sourceCount(page)).toBe(1)
 })
 

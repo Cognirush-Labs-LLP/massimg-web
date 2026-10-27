@@ -94,16 +94,20 @@ useFocusTrap({
   border-block-end: 1px solid var(--color-border-group);
 }
 
+/* Styled as the header's Options button, the control it pairs with. */
 .drawer-hide-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   min-block-size: 44px;
-  padding-block: 0.5rem;
-  padding-inline: 0.8rem;
-  background: var(--color-surface-control);
-  border: 1px solid var(--color-border-control);
+  padding-block: 9px;
+  padding-inline: 15px;
+  background: var(--color-tint);
+  border: 1px solid var(--color-tint);
   border-radius: var(--radius-md);
   color: var(--color-primary);
-  font-size: 0.85rem;
-  font-weight: var(--font-weight-control);
+  font-size: 13.5px;
+  font-weight: var(--font-weight-wordmark);
   cursor: pointer;
 }
 </style>

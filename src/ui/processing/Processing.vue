@@ -344,7 +344,9 @@ onMounted(() => {
                "Out of memory") means there is nothing to offer regardless of how many images
                succeeded before the halt — nor with zero successes (R-X14, §10 "Every image in a
                run failed or was skipped"). -->
-          <template v-if="haltReason === null && progress.succeeded > 0">
+          <!-- Grouped so the outer row wraps Back onto its own line before it separates the
+               checked state from Download again. -->
+          <div v-if="haltReason === null && progress.succeeded > 0" class="delivery-group">
             <!-- R-X54: the two delivery actions are replaced by one checked, non-interactive
                  state once either of them has succeeded. The check glyph is decoration; the
                  label is what identifies the outcome. -->
@@ -385,7 +387,7 @@ onMounted(() => {
                 {{ t('processing.complete.share') }}
               </button>
             </template>
-          </template>
+          </div>
         </template>
       </div>
       <div
@@ -403,6 +405,16 @@ onMounted(() => {
             :disabled="clearing"
             @click="onClearTemporaryData"
           >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path
+                d="M2.5 4h11M6 4V2.5h4V4M3.8 4l.7 9.1a1 1 0 0 0 1 .9h5a1 1 0 0 0 1-.9L12.2 4M6.7 6.6v4.8M9.3 6.6v4.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
             {{ t(clearing ? 'processing.cleanup.clearing' : 'processing.cleanup.label') }}
           </button>
           <button
@@ -437,6 +449,8 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   inline-size: min(100%, 520px);
+  /* Fills the stage body so .cleanup's auto top margin can push it to the bottom. */
+  min-block-size: 100%;
   margin-inline: auto;
   padding-block: 24px;
   text-align: center;
@@ -569,6 +583,15 @@ onMounted(() => {
   gap: 10px;
 }
 
+.delivery-group {
+  display: flex;
+  /* Still wraps below ~330px, where the pair cannot fit side by side without page overflow. */
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 .action {
   flex: none;
   min-block-size: 44px;
@@ -590,37 +613,51 @@ onMounted(() => {
 }
 
 .cleanup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   inline-size: 100%;
+  margin-block-start: auto;
 }
 
 .cleanup-description {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .cleanup-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 16px;
 }
 
+/* Matches .cleanup-help-button's height so the pair reads as one row; deliberately below the 44px
+   touch target used by the other actions, since this is a quiet, optional control. */
 .cleanup-row > .action {
+  display: inline-flex;
   flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 32px;
+  padding-block: 4px;
+  padding-inline: 10px;
   white-space: normal;
+  font-size: 0.8rem;
 }
 
 .cleanup-help-button {
   flex: none;
-  inline-size: 20px;
-  block-size: 20px;
+  inline-size: 32px;
+  block-size: 32px;
   padding: 0;
   background: none;
   border: 1px solid var(--color-border-control);
   border-radius: 50%;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
 }

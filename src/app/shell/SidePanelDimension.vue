@@ -328,6 +328,7 @@ function openHelp(row: DimensionRowConfig, event: Event): void {
 }
 
 .dimension-row.expanded .dimension-dot {
+  border-width: 4px;
   border-color: var(--color-tint);
 }
 

@@ -199,7 +199,7 @@ mapping (R-L1/R-L5).
     until they were removed. If it ever becomes an overlay again, the clearance has
     to return with it — `tests/e2e/app.spec.ts` pins the current contract.
 - **Touch targets** are at least 44px in their primary dimension everywhere in the
-  stage and panel (R-R3); crop handles get a touch-hit area larger than their
+  stage and panel (R-R3), except the Processing cleanup row (§13); crop handles get a touch-hit area larger than their
   visual size (R-R4, detailed in §12).
 - **Processing view** is single-column on mobile with the counter and donut above
   the detail text, on all widths (R-R5) — Processing does not attempt a two-column
@@ -1047,8 +1047,10 @@ even on desktop — Processing does not attempt a two-column layout.
 After Download started or Shared, place a separate row below the completion controls. Its muted
 intro reads: "Finished saving or sharing? You can optionally free temporary browser storage."
 Below it, a secondary outlined button matching Download again reads
-**Clear temporary data and start again**, with the Dimension help's circular **?** beside it. Keep a visible focus indicator and at least
-44px action height; allow text wrapping on narrow screens. Reuse HelpDialog's focus trap,
+**Clear temporary data and start again**, in smaller text with a leading trash-can icon, with a 32px circular **?** beside it and
+a 16px gap between them. The button matches the **?**'s 32px height — a deliberate exception to the
+44px touch target, as this optional control is kept quiet. The row sits at the bottom of the
+Processing view. Keep a visible focus indicator; allow text wrapping on narrow screens. Reuse HelpDialog's focus trap,
 Escape/scrim/Close dismissal and focus restoration, without adding a confirmation dialog.
 
 - Help title: "Clear temporary data"
